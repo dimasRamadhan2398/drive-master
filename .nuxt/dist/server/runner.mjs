@@ -1,0 +1,1 @@
+export { default } from "file:///C:/Users/Dimas/drive-masterv3.2/node_modules/@nuxt/vite-builder/dist/vite-node-runner.mjs"

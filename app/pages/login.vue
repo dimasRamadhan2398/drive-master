@@ -1,0 +1,101 @@
+<script setup lang="ts">
+import { z } from 'zod'
+import type { FormSubmitEvent } from '@nuxt/ui'
+
+const schema = z.object({
+  email: z.string().email('Please enter a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  remember: z.boolean().optional()
+})
+
+type Schema = z.output<typeof schema>
+
+const state = reactive({
+  email: '',
+  password: '',
+  remember: false
+})
+
+const loading = ref(false)
+
+async function onSubmit(event: FormSubmitEvent<Schema>) {
+  loading.value = true
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  loading.value = false
+  
+  // Navigate to dashboard
+  navigateTo('/dashboard')
+}
+</script>
+
+<template>
+  <div class="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
+    <UCard class="w-full max-w-md">
+      <template #header>
+        <div class="text-center">
+          <div class="flex items-center justify-center gap-2 mb-4">
+            <UIcon name="i-lucide-zap" class="size-8 text-primary" />
+            <span class="text-xl font-bold">EV Drive Academy</span>
+          </div>
+          <h1 class="text-2xl font-bold">Welcome Back</h1>
+          <p class="text-muted mt-2">Sign in to access your member dashboard</p>
+        </div>
+      </template>
+
+      <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
+        <UFormField name="email" label="Email Address">
+          <UInput 
+            v-model="state.email" 
+            type="email"
+            placeholder="you@example.com"
+            icon="i-lucide-mail"
+            size="lg"
+          />
+        </UFormField>
+
+        <UFormField name="password" label="Password">
+          <UInput 
+            v-model="state.password" 
+            type="password"
+            placeholder="Enter your password"
+            icon="i-lucide-lock"
+            size="lg"
+          />
+        </UFormField>
+
+        <div class="flex items-center justify-between">
+          <UCheckbox v-model="state.remember" label="Remember me" />
+          <NuxtLink to="/forgot-password" class="text-sm text-primary hover:underline">
+            Forgot password?
+          </NuxtLink>
+        </div>
+
+        <UButton type="submit" label="Sign In" :loading="loading" block size="lg" />
+      </UForm>
+
+      <template #footer>
+        <div class="text-center space-y-4">
+          <p class="text-sm text-muted">
+            Don&apos;t have an account?
+            <NuxtLink to="/register" class="text-primary font-medium hover:underline">
+              Register here
+            </NuxtLink>
+          </p>
+          
+          <USeparator label="or" />
+
+          <NuxtLink to="https://wa.me/6281234567890" target="_blank" class="block">
+            <UButton 
+              label="Contact Support" 
+              icon="i-simple-icons-whatsapp" 
+              color="neutral" 
+              variant="outline"
+              block
+            />
+          </NuxtLink>
+        </div>
+      </template>
+    </UCard>
+  </div>
+</template>
