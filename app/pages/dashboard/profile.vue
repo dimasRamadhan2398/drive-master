@@ -88,14 +88,14 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
     <template #body>
       <div class="p-6 space-y-6 max-w-4xl">
         <!-- Member Card -->
-        <UCard class="bg-gradient-to-r from-primary/10 to-primary/5">
+        <UCard class="bg-gradient-to-r from-warning/10 to-warning/5">
           <div class="flex flex-col sm:flex-row items-center gap-6">
-            <UAvatar text="JD" size="3xl" class="ring-4 ring-primary/20" />
+            <UAvatar text="JD" size="3xl" class="ring-4 ring-warning/20" />
             <div class="text-center sm:text-left">
               <h2 class="text-2xl font-bold">{{ profileData.fullName }}</h2>
               <p class="text-muted">{{ profileData.email }}</p>
               <div class="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
-                <UBadge :label="memberInfo.package" color="primary" />
+                <UBadge :label="memberInfo.package" color="warning" />
                 <UBadge :label="`ID: ${memberInfo.memberId}`" variant="subtle" />
               </div>
             </div>

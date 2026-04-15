@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+
 definePageMeta({ layout: 'dashboard' })
 
 const searchQuery = ref('')

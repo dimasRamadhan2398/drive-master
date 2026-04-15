@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { reactive, ref } from 'vue'
+import { navigateTo } from 'nuxt/app'
 
 const schema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -35,7 +37,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       <template #header>
         <div class="text-center">
           <div class="flex items-center justify-center gap-2 mb-4">
-            <UIcon name="i-lucide-zap" class="size-8 text-primary" />
+            <UIcon name="i-lucide-zap" class="size-8 text-warning" />
             <span class="text-xl font-bold">EV Drive Academy</span>
           </div>
           <h1 class="text-2xl font-bold">Welcome Back</h1>
@@ -65,20 +67,20 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         </UFormField>
 
         <div class="flex items-center justify-between">
-          <UCheckbox v-model="state.remember" label="Remember me" />
-          <NuxtLink to="/forgot-password" class="text-sm text-primary hover:underline">
+          <UCheckbox v-model="state.remember" label="Remember me" color="warning" />
+          <NuxtLink to="/forgot-password" class="text-sm text-warning hover:underline">
             Forgot password?
           </NuxtLink>
         </div>
 
-        <UButton type="submit" label="Sign In" :loading="loading" block size="lg" />
+        <UButton type="submit" label="Sign In" color="warning" :loading="loading" block size="lg" />
       </UForm>
 
       <template #footer>
         <div class="text-center space-y-4">
           <p class="text-sm text-muted">
             Don&apos;t have an account?
-            <NuxtLink to="/register" class="text-primary font-medium hover:underline">
+            <NuxtLink to="/register" class="text-warning font-medium hover:underline">
               Register here
             </NuxtLink>
           </p>

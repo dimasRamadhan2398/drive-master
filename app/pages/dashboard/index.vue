@@ -45,9 +45,9 @@ const recentActivity = [
 ]
 
 const quickActions = [
-  { label: 'Book Session', icon: 'i-lucide-calendar-plus', to: '/dashboard/schedule', color: 'primary' as const },
+  { label: 'Book Session', icon: 'i-lucide-calendar-plus', to: '/dashboard/schedule', color: 'warning' as const },
   { label: 'View History', icon: 'i-lucide-history', to: '/dashboard/history', color: 'neutral' as const },
-  { label: 'Get Support', icon: 'i-simple-icons-whatsapp', to: 'https://wa.me/6281234567890', external: true, color: 'neutral' as const }
+  { label: 'Get Support', icon: 'i-simple-icons-whatsapp', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', external: true, color: 'primary' as const }
 ]
 </script>
 
@@ -65,14 +65,14 @@ const quickActions = [
     <template #body>
       <div class="p-6 space-y-6">
         <!-- Welcome Banner -->
-        <UCard class="bg-primary/5 border-primary/20">
+        <UCard class="bg-warning/5 border-warning/20">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 class="text-2xl font-bold">Welcome back, {{ userData.name.split(' ')[0] }}!</h1>
               <p class="text-muted mt-1">You have {{ userData.remainingSessions }} sessions remaining in your {{ userData.package }}.</p>
             </div>
             <NuxtLink to="/dashboard/schedule">
-              <UButton label="Book Next Session" icon="i-lucide-calendar-plus" />
+              <UButton label="Book Next Session" icon="i-lucide-calendar-plus" color="warning" />
             </NuxtLink>
           </div>
         </UCard>
@@ -105,8 +105,8 @@ const quickActions = [
 
           <UCard>
             <div class="flex items-center gap-4">
-              <div class="p-3 rounded-xl bg-blue-500/10">
-                <UIcon name="i-lucide-target" class="size-6 text-blue-500" />
+              <div class="p-3 rounded-xl bg-info/10">
+                <UIcon name="i-lucide-target" class="size-6 text-info" />
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ userData.progress }}%</p>
@@ -117,8 +117,8 @@ const quickActions = [
 
           <UCard>
             <div class="flex items-center gap-4">
-              <div class="p-3 rounded-xl bg-green-500/10">
-                <UIcon name="i-lucide-award" class="size-6 text-green-500" />
+              <div class="p-3 rounded-xl bg-neutral/10">
+                <UIcon name="i-lucide-award" class="size-6 text-neutral" />
               </div>
               <div>
                 <p class="text-2xl font-bold">Pending</p>
@@ -142,7 +142,7 @@ const quickActions = [
               <div class="flex-1 space-y-4">
                 <div class="flex items-center gap-3">
                   <div class="p-2 rounded-lg bg-muted">
-                    <UIcon name="i-lucide-calendar" class="size-5 text-primary" />
+                    <UIcon name="i-lucide-calendar" class="size-5 text-warning" />
                   </div>
                   <div>
                     <p class="text-sm text-muted">Date</p>
@@ -152,7 +152,7 @@ const quickActions = [
 
                 <div class="flex items-center gap-3">
                   <div class="p-2 rounded-lg bg-muted">
-                    <UIcon name="i-lucide-clock" class="size-5 text-primary" />
+                    <UIcon name="i-lucide-clock" class="size-5 text-warning" />
                   </div>
                   <div>
                     <p class="text-sm text-muted">Time</p>
@@ -164,7 +164,7 @@ const quickActions = [
               <div class="flex-1 space-y-4">
                 <div class="flex items-center gap-3">
                   <div class="p-2 rounded-lg bg-muted">
-                    <UIcon name="i-lucide-car" class="size-5 text-primary" />
+                    <UIcon name="i-lucide-car" class="size-5 text-warning" />
                   </div>
                   <div>
                     <p class="text-sm text-muted">Vehicle</p>
@@ -174,7 +174,7 @@ const quickActions = [
 
                 <div class="flex items-center gap-3">
                   <div class="p-2 rounded-lg bg-muted">
-                    <UIcon name="i-lucide-user" class="size-5 text-primary" />
+                    <UIcon name="i-lucide-user" class="size-5 text-warning" />
                   </div>
                   <div>
                     <p class="text-sm text-muted">Instructor</p>
@@ -218,7 +218,7 @@ const quickActions = [
                       stroke="currentColor"
                       stroke-width="12"
                       fill="none"
-                      class="text-primary"
+                      class="text-warning"
                       :stroke-dasharray="352"
                       :stroke-dashoffset="352 - (352 * userData.progress) / 100"
                       stroke-linecap="round"
@@ -252,7 +252,7 @@ const quickActions = [
               <div class="flex items-center justify-between">
                 <h2 class="font-semibold">Recent Activity</h2>
                 <NuxtLink to="/dashboard/history">
-                  <UButton label="View All" variant="ghost" size="sm" trailingIcon="i-lucide-arrow-right" />
+                  <UButton label="View All" variant="ghost" color="warning" size="sm" trailingIcon="i-lucide-arrow-right" />
                 </NuxtLink>
               </div>
             </template>

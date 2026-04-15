@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useToast } from '@nuxt/ui/runtime/composables/index.js'
+import { ref } from 'vue'
+
 definePageMeta({ layout: 'dashboard' })
 
 const toast = useToast()
@@ -99,16 +102,15 @@ function downloadCertificate(certId: string) {
                 <h2 class="font-semibold">Certificate Preview</h2>
               </template>
 
-              <div class="aspect-[1.414/1] bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border-2 border-dashed border-primary/30 flex flex-col items-center justify-center p-8 text-center">
+              <div class="aspect-[1.414/1] bg-gradient-to-br from-warning/5 to-warning/10 rounded-lg border-2 border-dashed border-warning/30 flex flex-col items-center justify-center p-8 text-center">
                 <div class="flex items-center gap-2 mb-4">
-                  <UIcon name="i-lucide-zap" class="size-8 text-primary" />
-                  <span class="font-bold text-xl">EV Drive Academy</span>
+                  <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
                 </div>
                 
                 <p class="text-sm text-muted mb-2">This is to certify that</p>
                 <p class="text-2xl font-bold mb-2">John Doe</p>
                 <p class="text-sm text-muted mb-4">has successfully completed the</p>
-                <p class="text-lg font-semibold text-primary mb-4">EV Driving Proficiency Course</p>
+                <p class="text-lg font-semibold text-warning mb-4">EV Driving Proficiency Course</p>
                 
                 <div class="mt-4 pt-4 border-t border-dashed border-muted w-full">
                   <div class="flex justify-between text-sm text-muted">
@@ -166,7 +168,7 @@ function downloadCertificate(certId: string) {
               <UCard>
                 <template #header>
                   <div class="flex items-center gap-2">
-                    <UIcon name="i-lucide-shield-check" class="size-5 text-primary" />
+                    <UIcon name="i-lucide-shield-check" class="size-5 text-warning" />
                     <h2 class="font-semibold">Verification</h2>
                   </div>
                 </template>
@@ -192,22 +194,22 @@ function downloadCertificate(certId: string) {
 
           <div class="grid md:grid-cols-3 gap-6">
             <div class="text-center">
-              <div class="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                <UIcon name="i-lucide-file-badge" class="size-7 text-primary" />
+              <div class="mx-auto w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center mb-3">
+                <UIcon name="i-lucide-file-badge" class="size-7 text-warning" />
               </div>
               <h3 class="font-semibold mb-1">Official Recognition</h3>
               <p class="text-sm text-muted">Our certificates are recognized by industry partners and employers.</p>
             </div>
             <div class="text-center">
-              <div class="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                <UIcon name="i-lucide-qr-code" class="size-7 text-primary" />
+              <div class="mx-auto w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center mb-3">
+                <UIcon name="i-lucide-qr-code" class="size-7 text-warning" />
               </div>
               <h3 class="font-semibold mb-1">Digital Verification</h3>
               <p class="text-sm text-muted">Each certificate includes a unique ID for easy online verification.</p>
             </div>
             <div class="text-center">
-              <div class="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                <UIcon name="i-lucide-infinity" class="size-7 text-primary" />
+              <div class="mx-auto w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center mb-3">
+                <UIcon name="i-lucide-infinity" class="size-7 text-warning" />
               </div>
               <h3 class="font-semibold mb-1">Lifetime Validity</h3>
               <p class="text-sm text-muted">Your certificate never expires and remains valid indefinitely.</p>

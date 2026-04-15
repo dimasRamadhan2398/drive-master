@@ -90,8 +90,8 @@ const serviceAreas = [
       title="Our Services"
       description="Comprehensive driving courses designed for the electric future. From beginners to advanced drivers, we have the perfect program for you."
       :links="[
-        { label: 'View Packages', to: '/packages', icon: 'i-lucide-package' },
-        { label: 'Book Consultation', to: 'https://wa.me/6281234567890', color: 'neutral', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
+        { label: 'View Packages', to: '/packages', color: 'warning', icon: 'i-lucide-package' },
+        { label: 'Book Consultation', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
       ]"
       class="py-12 lg:py-20"
     />
@@ -101,13 +101,14 @@ const serviceAreas = [
       headline="Training Programs"
       title="Choose Your Learning Path"
       description="We offer a variety of courses tailored to different skill levels and learning objectives."
+      :ui="{ headline: 'text-warning' }"
     >
       <div class="grid md:grid-cols-2 gap-6">
         <UCard v-for="service in services" :key="service.title">
           <template #header>
             <div class="flex items-start gap-4">
-              <div class="p-3 rounded-xl bg-primary/10">
-                <UIcon :name="service.icon" class="size-8 text-primary" />
+              <div class="p-3 rounded-xl bg-warning/10">
+                <UIcon :name="service.icon" class="size-8 text-warning" />
               </div>
               <div>
                 <h3 class="text-xl font-bold">{{ service.title }}</h3>
@@ -118,7 +119,7 @@ const serviceAreas = [
 
           <ul class="space-y-2">
             <li v-for="feature in service.features" :key="feature" class="flex items-center gap-2">
-              <UIcon name="i-lucide-check-circle" class="size-4 text-primary shrink-0" />
+              <UIcon name="i-lucide-check-circle" class="size-4 text-warning shrink-0" />
               <span class="text-sm">{{ feature }}</span>
             </li>
           </ul>
@@ -137,15 +138,16 @@ const serviceAreas = [
       headline="How We Teach"
       title="Our Training Methodology"
       description="A structured approach that combines theory, simulation, and practical experience."
+      :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div v-for="(method, index) in methodologies" :key="method.title" class="text-center">
           <div class="relative mb-4">
-            <div class="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <UIcon :name="method.icon" class="size-8 text-primary" />
+            <div class="mx-auto w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center">
+              <UIcon :name="method.icon" class="size-8 text-warning" />
             </div>
-            <div class="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+            <div class="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-warning text-white flex items-center justify-center text-sm font-bold">
               {{ index + 1 }}
             </div>
           </div>
@@ -160,6 +162,7 @@ const serviceAreas = [
       headline="Premium Fleet"
       title="Learn in the Best Electric Vehicles"
       description="Our fleet consists of premium electric vehicles equipped with dual-control systems for safe learning."
+      :ui="{ headline: 'text-warning' }"
     >
       <div class="grid md:grid-cols-2 gap-8">
         <UCard class="overflow-hidden">
@@ -171,9 +174,9 @@ const serviceAreas = [
           <h3 class="text-xl font-bold mb-2">Tesla Model 3</h3>
           <p class="text-muted mb-4">Experience the future of driving with Tesla&apos;s revolutionary autopilot features and instant torque delivery.</p>
           <div class="flex flex-wrap gap-2">
-            <UBadge label="Autopilot" variant="subtle" />
-            <UBadge label="Dual Motor" variant="subtle" />
-            <UBadge label="Dual Control" variant="subtle" />
+            <UBadge label="Autopilot" variant="subtle" color="warning" />
+            <UBadge label="Dual Motor" variant="subtle" color="warning" />
+            <UBadge label="Dual Control" variant="subtle" color="warning" />
           </div>
         </UCard>
 
@@ -186,9 +189,9 @@ const serviceAreas = [
           <h3 class="text-xl font-bold mb-2">BYD Atto 3</h3>
           <p class="text-muted mb-4">A compact SUV perfect for urban driving lessons with excellent visibility and responsive handling.</p>
           <div class="flex flex-wrap gap-2">
-            <UBadge label="SUV" variant="subtle" />
-            <UBadge label="Urban Friendly" variant="subtle" />
-            <UBadge label="Dual Control" variant="subtle" />
+            <UBadge label="SUV" variant="subtle" color="warning" />
+            <UBadge label="Urban Friendly" variant="subtle" color="warning" />
+            <UBadge label="Dual Control" variant="subtle" color="warning" />
           </div>
         </UCard>
       </div>
@@ -199,13 +202,14 @@ const serviceAreas = [
       headline="Coverage"
       title="Service Areas"
       description="Our training routes cover major areas around Alam Sutera and Tangerang."
+      :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
       <div class="max-w-3xl mx-auto">
         <UCard>
           <div class="grid sm:grid-cols-2 gap-4">
             <div v-for="area in serviceAreas" :key="area" class="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-              <UIcon name="i-lucide-map-pin" class="size-5 text-primary" />
+              <UIcon name="i-lucide-map-pin" class="size-5 text-warning" />
               <span>{{ area }}</span>
             </div>
           </div>
@@ -222,8 +226,8 @@ const serviceAreas = [
       title="Ready to Start?"
       description="Book a free consultation or view our package options to begin your EV driving journey."
       :links="[
-        { label: 'View Packages', to: '/packages', icon: 'i-lucide-package' },
-        { label: 'WhatsApp Consultation', to: 'https://wa.me/6281234567890', color: 'neutral', variant: 'ghost', icon: 'i-simple-icons-whatsapp', external: true }
+        { label: 'View Packages', to: '/packages', color: 'warning', icon: 'i-lucide-package' },
+        { label: 'WhatsApp Consultation', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
       ]"
     />
   </div>

@@ -34,7 +34,7 @@ const packages = [
       { text: 'Night driving', included: false }
     ],
     highlight: true,
-    color: 'primary' as const
+    color: 'warning' as const
   },
   {
     title: 'Pro',
@@ -101,35 +101,34 @@ const addOns = [
       title="Course Packages"
       description="Transparent pricing with no hidden fees. Choose the package that best fits your learning goals and schedule."
       :links="[
-        { label: 'Register Now', to: '/register', icon: 'i-lucide-user-plus' },
-        { label: 'Compare Packages', to: '#comparison', color: 'neutral', variant: 'outline', icon: 'i-lucide-scale' }
+        { label: 'Register Now', to: '/register', color: 'warning', icon: 'i-lucide-user-plus' },
+        { label: 'Compare Packages', to: '#comparison', color: 'neutral', variant: 'outline' }
       ]"
-      class="py-12 lg:py-20"
     />
 
     <!-- Package Cards -->
-    <UPageSection>
+    <UPageSection :ui="{ headline: 'text-warning' }">
       <div class="grid md:grid-cols-3 gap-6 lg:gap-8">
         <UCard
           v-for="pkg in packages"
           :key="pkg.title"
           :class="[
             'flex flex-col relative',
-            pkg.highlight ? 'ring-2 ring-primary shadow-xl' : ''
+            pkg.highlight ? 'ring-2 ring-warning shadow-xl' : ''
           ]"
         >
           <UBadge 
             v-if="pkg.highlight" 
             label="Most Popular" 
-            color="primary" 
-            class="absolute -top-3 left-1/2 -translate-x-1/2"
+            color="warning" 
+            class="absolute -top-0.5 left-1/2 -translate-x-1/2"
           />
 
           <template #header>
             <div class="text-center pt-2">
               <h3 class="text-2xl font-bold">{{ pkg.title }}</h3>
               <div class="mt-4">
-                <span class="text-4xl font-bold text-primary">{{ pkg.price }}</span>
+                <span class="text-4xl font-bold text-warning">{{ pkg.price }}</span>
               </div>
               <p class="text-sm text-muted mt-1">{{ pkg.priceNote }}</p>
               <p class="text-muted mt-4">{{ pkg.description }}</p>
@@ -145,7 +144,7 @@ const addOns = [
             >
               <UIcon 
                 :name="feature.included ? 'i-lucide-check' : 'i-lucide-x'" 
-                :class="feature.included ? 'text-primary' : 'text-muted'" 
+                :class="feature.included ? 'text-warning' : 'text-muted'" 
                 class="size-5 shrink-0" 
               />
               <span class="text-sm">{{ feature.text }}</span>
@@ -176,6 +175,7 @@ const addOns = [
       headline="Detailed Comparison"
       title="Compare All Features"
       description="A side-by-side comparison of all package features to help you decide."
+      :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
       <UCard class="overflow-x-auto">
@@ -187,7 +187,7 @@ const addOns = [
               <th class="text-center py-4 px-4 font-semibold">
                 <div class="flex items-center justify-center gap-2">
                   Standard
-                  <UBadge label="Popular" size="xs" color="primary" />
+                  <UBadge label="Popular" size="xs" color="warning" />
                 </div>
               </th>
               <th class="text-center py-4 px-4 font-semibold">Pro</th>
@@ -204,7 +204,7 @@ const addOns = [
                 <template v-if="typeof feature.starter === 'boolean'">
                   <UIcon 
                     :name="feature.starter ? 'i-lucide-check' : 'i-lucide-minus'" 
-                    :class="feature.starter ? 'text-primary' : 'text-muted'" 
+                    :class="feature.starter ? 'text-warning' : 'text-muted'" 
                     class="size-5"
                   />
                 </template>
@@ -212,11 +212,11 @@ const addOns = [
                   <span class="text-sm">{{ feature.starter }}</span>
                 </template>
               </td>
-              <td class="py-3 px-4 text-center bg-primary/5">
+              <td class="py-3 px-4 text-center bg-warning/5">
                 <template v-if="typeof feature.standard === 'boolean'">
                   <UIcon 
                     :name="feature.standard ? 'i-lucide-check' : 'i-lucide-minus'" 
-                    :class="feature.standard ? 'text-primary' : 'text-muted'" 
+                    :class="feature.standard ? 'text-warning' : 'text-muted'" 
                     class="size-5"
                   />
                 </template>
@@ -228,7 +228,7 @@ const addOns = [
                 <template v-if="typeof feature.pro === 'boolean'">
                   <UIcon 
                     :name="feature.pro ? 'i-lucide-check' : 'i-lucide-minus'" 
-                    :class="feature.pro ? 'text-primary' : 'text-muted'" 
+                    :class="feature.pro ? 'text-warning' : 'text-muted'" 
                     class="size-5"
                   />
                 </template>
@@ -242,7 +242,7 @@ const addOns = [
             <tr class="bg-muted/50">
               <td class="py-4 px-4 font-semibold">Price</td>
               <td class="py-4 px-4 text-center font-semibold">Rp 1.500.000</td>
-              <td class="py-4 px-4 text-center font-semibold text-primary bg-primary/10">Rp 2.800.000</td>
+              <td class="py-4 px-4 text-center font-semibold text-warning bg-warning/10">Rp 2.800.000</td>
               <td class="py-4 px-4 text-center font-semibold">Rp 4.500.000</td>
             </tr>
           </tfoot>
@@ -255,16 +255,17 @@ const addOns = [
       headline="Extras"
       title="Optional Add-ons"
       description="Enhance your learning experience with these additional services."
+      :ui="{ headline: 'text-warning' }"
     >
       <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         <UCard v-for="addon in addOns" :key="addon.title">
           <div class="flex items-start gap-4">
-            <div class="p-3 rounded-lg bg-primary/10">
-              <UIcon :name="addon.icon" class="size-6 text-primary" />
+            <div class="p-3 rounded-lg bg-warning/10">
+              <UIcon :name="addon.icon" class="size-6 text-warning" />
             </div>
             <div>
               <h3 class="font-semibold">{{ addon.title }}</h3>
-              <p class="text-primary font-bold">{{ addon.price }}</p>
+              <p class="text-warning font-bold">{{ addon.price }}</p>
               <p class="text-sm text-muted mt-1">{{ addon.description }}</p>
             </div>
           </div>
@@ -272,12 +273,12 @@ const addOns = [
       </div>
     </UPageSection>
 
-    <!-- Payment Info -->
-    <UPageSection class="bg-muted/30">
+    <!-- Payment Info
+    <UPageSection class="bg-muted/30" :ui="{ headline: 'text-warning' }">
       <UCard class="max-w-3xl mx-auto">
         <template #header>
           <div class="flex items-center gap-3">
-            <UIcon name="i-lucide-credit-card" class="size-6 text-primary" />
+            <UIcon name="i-lucide-credit-card" class="size-6 text-warning" />
             <h3 class="text-xl font-semibold">Payment Options</h3>
           </div>
         </template>
@@ -308,15 +309,15 @@ const addOns = [
             <h4 class="font-medium mb-3">Payment Terms</h4>
             <ul class="space-y-2 text-sm text-muted">
               <li class="flex items-center gap-2">
-                <UIcon name="i-lucide-check" class="size-4 text-primary" />
+                <UIcon name="i-lucide-check" class="size-4 text-warning" />
                 Full payment before first session
               </li>
               <li class="flex items-center gap-2">
-                <UIcon name="i-lucide-check" class="size-4 text-primary" />
+                <UIcon name="i-lucide-check" class="size-4 text-warning" />
                 Installment available (contact us)
               </li>
               <li class="flex items-center gap-2">
-                <UIcon name="i-lucide-check" class="size-4 text-primary" />
+                <UIcon name="i-lucide-check" class="size-4 text-warning" />
                 Invoice provided for all transactions
               </li>
             </ul>
@@ -335,14 +336,15 @@ const addOns = [
         </template>
       </UCard>
     </UPageSection>
+    -->
 
     <!-- CTA -->
     <UPageCTA
       title="Questions About Packages?"
       description="Our team is ready to help you choose the right package for your needs."
       :links="[
-        { label: 'Register Now', to: '/register', icon: 'i-lucide-user-plus' },
-        { label: 'Contact Us', to: 'https://wa.me/6281234567890', color: 'neutral', variant: 'ghost', icon: 'i-simple-icons-whatsapp', external: true }
+        { label: 'Register Now', to: '/register', color: 'warning', icon: 'i-lucide-user-plus' },
+        { label: 'Contact Us', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
       ]"
     />
   </div>

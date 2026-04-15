@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { reactive, ref } from 'vue'
+import { navigateTo } from 'nuxt/app'
 
 const currentStep = ref(1)
 const totalSteps = 3
@@ -88,7 +90,7 @@ const stepItems = [
       <!-- Header -->
       <div class="text-center mb-8">
         <div class="flex items-center justify-center gap-2 mb-4">
-          <UIcon name="i-lucide-zap" class="size-8 text-primary" />
+          <UIcon name="i-lucide-zap" class="size-8 text-warning" />
           <span class="text-xl font-bold">EV Drive Academy</span>
         </div>
         <h1 class="text-2xl font-bold">Create Your Account</h1>
@@ -99,6 +101,7 @@ const stepItems = [
       <UStepper 
         :items="stepItems" 
         :model-value="currentStep" 
+        color="warning"
         class="mb-8"
       />
 
@@ -148,7 +151,7 @@ const stepItems = [
           </UFormField>
 
           <div class="flex justify-end pt-4">
-            <UButton type="submit" label="Continue" trailingIcon="i-lucide-arrow-right" size="lg" />
+            <UButton type="submit" label="Continue" color="warning" trailingIcon="i-lucide-arrow-right" size="lg" />
           </div>
         </UForm>
 
@@ -165,6 +168,7 @@ const stepItems = [
               v-model="formData.package"
               :items="packageOptions"
               orientation="vertical"
+              color="warning"
             />
           </UFormField>
 
@@ -172,7 +176,7 @@ const stepItems = [
           <UAlert 
             v-if="formData.package"
             :icon="formData.package === 'standard' ? 'i-lucide-star' : 'i-lucide-info'"
-            :color="formData.package === 'standard' ? 'primary' : 'neutral'"
+            :color="formData.package === 'standard' ? 'warning' : 'neutral'"
           >
             <template #title>
               {{ formData.package === 'starter' ? 'Starter Package' : formData.package === 'standard' ? 'Standard Package (Recommended)' : 'Pro Package' }}
@@ -208,7 +212,7 @@ const stepItems = [
 
           <div class="flex justify-between pt-4">
             <UButton label="Back" variant="ghost" color="neutral" icon="i-lucide-arrow-left" @click="prevStep" />
-            <UButton type="submit" label="Continue" trailingIcon="i-lucide-arrow-right" size="lg" />
+            <UButton type="submit" label="Continue" color="warning" trailingIcon="i-lucide-arrow-right" size="lg" />
           </div>
         </UForm>
 
@@ -220,7 +224,7 @@ const stepItems = [
           class="space-y-4"
           @submit="onSubmit"
         >
-          <UAlert icon="i-lucide-user-check" color="primary">
+          <UAlert icon="i-lucide-user-check" color="warning">
             <template #title>Almost there, {{ formData.fullName.split(' ')[0] }}!</template>
             <template #description>
               Create your password to secure your account.
@@ -248,13 +252,13 @@ const stepItems = [
           </UFormField>
 
           <UFormField name="terms">
-            <UCheckbox v-model="formData.terms">
+            <UCheckbox v-model="formData.terms" color="warning">
               <template #label>
                 <span class="text-sm">
                   I agree to the 
-                  <NuxtLink to="/terms" class="text-primary hover:underline">Terms of Service</NuxtLink>
+                  <NuxtLink to="/terms" class="text-warning hover:underline">Terms of Service</NuxtLink>
                   and
-                  <NuxtLink to="/privacy" class="text-primary hover:underline">Privacy Policy</NuxtLink>
+                  <NuxtLink to="/privacy" class="text-warning hover:underline">Privacy Policy</NuxtLink>
                 </span>
               </template>
             </UCheckbox>
@@ -265,6 +269,7 @@ const stepItems = [
             <UButton 
               type="submit" 
               label="Create Account" 
+              color="warning"
               :loading="loading"
               icon="i-lucide-check"
               size="lg"
@@ -276,7 +281,7 @@ const stepItems = [
           <div class="text-center">
             <p class="text-sm text-muted">
               Already have an account?
-              <NuxtLink to="/login" class="text-primary font-medium hover:underline">
+              <NuxtLink to="/login" class="text-warning font-medium hover:underline">
                 Sign in
               </NuxtLink>
             </p>

@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { icons } from '@iconify-json/lucide/index.js'
+import { ref } from 'vue'
+
 // EV Advantages
 const evAdvantages = [
   {
     title: 'One-Pedal Driving',
     description: 'Master the intuitive one-pedal driving experience. Brake and accelerate with a single pedal for smoother control.',
-    icon: 'i-lucide-disc'
+    icon:'i-lucide-disc'
   },
   {
     title: 'No Engine Stalling',
@@ -52,7 +55,7 @@ const packages = [
       'Official EV Certificate'
     ],
     highlight: true,
-    button: { label: 'Most Popular', color: 'primary' as const }
+    button: { label: 'Most Popular', color: 'warning' as const }
   },
   {
     title: 'Pro',
@@ -179,10 +182,9 @@ const calendarDays = [
       description="The first premium driving academy in Alam Sutera using 100% Electric Vehicles. Experience smooth, silent, and sustainable learning."
       orientation="horizontal"
       :links="[
-        { label: 'Book Your First Session', to: '/register', icon: 'i-lucide-calendar-check', size: 'lg' },
+        { label: 'Book Your First Session', to: '/register', color: 'warning', icon: 'i-lucide-calendar-check', size: 'lg' },
         { label: 'View Packages', to: '/packages', color: 'neutral', variant: 'outline', trailingIcon: 'i-lucide-arrow-right', size: 'lg' }
       ]"
-      class="py-16 lg:py-24"
     >
       <div class="relative w-full aspect-video lg:aspect-[4/3] rounded-2xl overflow-hidden bg-elevated shadow-2xl ring ring-default">
         <img 
@@ -193,11 +195,11 @@ const calendarDays = [
         <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between">
           <div class="flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 text-white text-sm">
-            <UIcon name="i-lucide-battery-charging" class="size-5 text-primary" />
+            <UIcon name="i-lucide-battery-charging" class="size-5 text-warning" />
             <span>100% Electric</span>
           </div>
           <div class="flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 text-white text-sm">
-            <UIcon name="i-lucide-shield-check" class="size-5 text-primary" />
+            <UIcon name="i-lucide-shield-check" class="size-5 text-warning" />
             <span>Dual Controls</span>
           </div>
         </div>
@@ -210,6 +212,7 @@ const calendarDays = [
       headline="Why Learn in an EV?"
       title="The Electric Advantage"
       description="Discover why learning to drive in an electric vehicle gives you a head start over traditional driving schools."
+      :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
       <UPageGrid>
@@ -219,8 +222,49 @@ const calendarDays = [
           :icon="advantage.icon"
           :title="advantage.title"
           :description="advantage.description"
+          :ui="{ leadingIcon: 'text-warning text-3xl' }"
         />
       </UPageGrid>
+    </UPageSection>
+
+    <!-- Premium Fleet Section -->
+    <UPageSection
+      headline="Premium Fleet"
+      title="Learn in the Best Electric Vehicles"
+      description="Our fleet consists of premium electric vehicles equipped with dual-control systems for safe learning."
+      :ui="{ headline: 'text-warning' }"
+    >
+      <div class="grid md:grid-cols-2 gap-8">
+        <UCard class="overflow-hidden">
+          <img 
+            src="https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=600&auto=format&fit=crop&q=80" 
+            alt="Tesla Model 3"
+            class="w-full h-48 object-cover -m-4 mb-4"
+          />
+          <h3 class="text-xl font-bold mb-2">Tesla Model 3</h3>
+          <p class="text-muted mb-4">Experience the future of driving with Tesla&apos;s revolutionary autopilot features and instant torque delivery.</p>
+          <div class="flex flex-wrap gap-2">
+            <UBadge label="Autopilot" variant="subtle" color="warning" />
+            <UBadge label="Dual Motor" variant="subtle" color="warning" />
+            <UBadge label="Dual Control" variant="subtle" color="warning" />
+          </div>
+        </UCard>
+
+        <UCard class="overflow-hidden">
+          <img 
+            src="https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=600&auto=format&fit=crop&q=80" 
+            alt="BYD Atto 3"
+            class="w-full h-48 object-cover -m-4 mb-4"
+          />
+          <h3 class="text-xl font-bold mb-2">BYD Atto 3</h3>
+          <p class="text-muted mb-4">A compact SUV perfect for urban driving lessons with excellent visibility and responsive handling.</p>
+          <div class="flex flex-wrap gap-2">
+            <UBadge label="SUV" variant="subtle" color="warning" />
+            <UBadge label="Urban Friendly" variant="subtle" color="warning" />
+            <UBadge label="Dual Control" variant="subtle" color="warning" />
+          </div>
+        </UCard>
+      </div>
     </UPageSection>
 
     <!-- Pricing Section -->
@@ -229,6 +273,7 @@ const calendarDays = [
       headline="Pricing"
       title="Choose Your Learning Path"
       description="Flexible packages designed to match your goals and schedule."
+      :ui="{ headline: 'text-warning' }"
     >
       <div class="grid md:grid-cols-3 gap-6 lg:gap-8">
         <UCard
@@ -236,15 +281,15 @@ const calendarDays = [
           :key="pkg.title"
           :class="[
             'flex flex-col',
-            pkg.highlight ? 'ring-2 ring-primary shadow-xl scale-[1.02]' : ''
+            pkg.highlight ? 'ring-2 ring-warning shadow-xl scale-[1.02]' : ''
           ]"
         >
           <template #header>
             <div class="text-center">
-              <UBadge v-if="pkg.highlight" label="Most Popular" color="primary" class="mb-2" />
+              <UBadge v-if="pkg.highlight" label="Most Popular" color="warning" class="mb-2" />
               <h3 class="text-xl font-bold">{{ pkg.title }}</h3>
               <div class="mt-2">
-                <span class="text-3xl font-bold text-primary">{{ pkg.price }}</span>
+                <span class="text-3xl font-bold text-warning">{{ pkg.price }}</span>
               </div>
               <p class="text-muted text-sm mt-2">{{ pkg.description }}</p>
             </div>
@@ -252,7 +297,7 @@ const calendarDays = [
           
           <ul class="space-y-3 flex-1">
             <li v-for="feature in pkg.features" :key="feature" class="flex items-start gap-2">
-              <UIcon name="i-lucide-check" class="size-5 text-primary shrink-0 mt-0.5" />
+              <UIcon name="i-lucide-check" class="size-5 text-warning shrink-0 mt-0.5" />
               <span class="text-sm">{{ feature }}</span>
             </li>
           </ul>
@@ -271,6 +316,7 @@ const calendarDays = [
       headline="Easy Booking"
       title="Book Your Sessions with Ease"
       description="Our intuitive booking system shows real-time availability for our electric vehicles."
+      :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
       <div class="grid lg:grid-cols-2 gap-8 items-start">
@@ -279,7 +325,7 @@ const calendarDays = [
           <template #header>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <UIcon name="i-lucide-calendar" class="size-5 text-primary" />
+                <UIcon name="i-lucide-calendar" class="size-5 text-warning" />
                 <h3 class="font-semibold">Select Date</h3>
               </div>
               <div class="flex items-center gap-2">
@@ -306,9 +352,9 @@ const calendarDays = [
                 :class="[
                   'w-full aspect-square rounded-lg text-sm font-medium transition-all',
                   selectedDate === item.day 
-                    ? 'bg-primary text-white' 
+                    ? 'bg-warning text-white' 
                     : item.available && item.day >= 7
-                      ? 'hover:bg-primary/10 cursor-pointer'
+                      ? 'hover:bg-warning/10 cursor-pointer'
                       : 'text-muted/50 cursor-not-allowed'
                 ]"
                 @click="item.available && item.day >= 7 && (selectedDate = item.day)"
@@ -320,11 +366,11 @@ const calendarDays = [
           
           <div class="mt-4 flex items-center gap-4 text-xs">
             <div class="flex items-center gap-2">
-              <div class="size-3 rounded bg-primary/10 border border-primary/30"></div>
+              <div class="size-3 rounded bg-warning/10 border border-warning/30"></div>
               <span class="text-muted">Available</span>
             </div>
             <div class="flex items-center gap-2">
-              <div class="size-3 rounded bg-primary"></div>
+              <div class="size-3 rounded bg-warning"></div>
               <span class="text-muted">Selected</span>
             </div>
           </div>
@@ -335,7 +381,7 @@ const calendarDays = [
           <template #header>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <UIcon name="i-lucide-clock" class="size-5 text-primary" />
+                <UIcon name="i-lucide-clock" class="size-5 text-warning" />
                 <h3 class="font-semibold">Available Slots</h3>
               </div>
               <UBadge :label="`Apr ${selectedDate}`" variant="subtle" />
@@ -351,8 +397,8 @@ const calendarDays = [
                 'w-full p-4 rounded-lg border transition-all text-left',
                 slot.available 
                   ? selectedSlot === slot.time 
-                    ? 'border-primary bg-primary/10' 
-                    : 'border-default hover:border-primary cursor-pointer'
+                    ? 'border-warning bg-warning/10' 
+                    : 'border-default hover:border-warning cursor-pointer'
                   : 'border-default bg-muted/50 opacity-50 cursor-not-allowed'
               ]"
               @click="slot.available && (selectedSlot = slot.time)"
@@ -375,7 +421,8 @@ const calendarDays = [
             <NuxtLink to="/register" class="w-full">
               <UButton 
                 label="Continue to Registration" 
-                icon="i-lucide-arrow-right" 
+                icon="i-lucide-arrow-right"
+                color="warning"
                 trailing
                 :disabled="!selectedSlot"
                 block
@@ -392,13 +439,14 @@ const calendarDays = [
       headline="Location"
       title="Conveniently Located in Alam Sutera"
       description="Our training center is strategically located in Alam Sutera, easily accessible from Tangerang and Jakarta."
+      :ui="{ headline: 'text-warning' }"
     >
       <div class="grid lg:grid-cols-2 gap-8">
         <div class="space-y-6">
           <UCard>
             <div class="flex items-start gap-4">
-              <div class="p-3 rounded-lg bg-primary/10">
-                <UIcon name="i-lucide-map-pin" class="size-6 text-primary" />
+              <div class="p-3 rounded-lg bg-warning/10">
+                <UIcon name="i-lucide-map-pin" class="size-6 text-warning" />
               </div>
               <div>
                 <h3 class="font-semibold mb-1">Training Center</h3>
@@ -413,8 +461,8 @@ const calendarDays = [
 
           <UCard>
             <div class="flex items-start gap-4">
-              <div class="p-3 rounded-lg bg-primary/10">
-                <UIcon name="i-lucide-clock" class="size-6 text-primary" />
+              <div class="p-3 rounded-lg bg-warning/10">
+                <UIcon name="i-lucide-clock" class="size-6 text-warning" />
               </div>
               <div>
                 <h3 class="font-semibold mb-1">Operating Hours</h3>
@@ -428,8 +476,8 @@ const calendarDays = [
 
           <UCard>
             <div class="flex items-start gap-4">
-              <div class="p-3 rounded-lg bg-primary/10">
-                <UIcon name="i-lucide-phone" class="size-6 text-primary" />
+              <div class="p-3 rounded-lg bg-warning/10">
+                <UIcon name="i-lucide-phone" class="size-6 text-warning" />
               </div>
               <div>
                 <h3 class="font-semibold mb-1">Contact Us</h3>
@@ -442,7 +490,7 @@ const calendarDays = [
           </UCard>
 
           <div class="flex gap-3">
-            <NuxtLink to="https://wa.me/6281234567890" target="_blank" class="flex-1">
+            <NuxtLink to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi" target="_blank" class="flex-1">
               <UButton 
                 icon="i-simple-icons-whatsapp" 
                 label="Chat on WhatsApp"
@@ -450,7 +498,7 @@ const calendarDays = [
                 block
               />
             </NuxtLink>
-            <NuxtLink to="https://maps.google.com" target="_blank" class="flex-1">
+            <NuxtLink to="https://maps.app.goo.gl/RpSdkpjs4RZg2ZY77" target="_blank" class="flex-1">
               <UButton 
                 icon="i-lucide-navigation" 
                 label="Get Directions"
@@ -464,16 +512,7 @@ const calendarDays = [
 
         <!-- Map Placeholder -->
         <div class="h-[400px] lg:h-full min-h-[400px] rounded-2xl overflow-hidden bg-elevated border border-default">
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.1234567890!2d106.1234567890!3d-6.1234567890!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNsKwMDcnMzQuNCJTIDEwNsKwMzknMzQuNCJF!5e0!3m2!1sen!2sid!4v1234567890"
-            width="100%"
-            height="100%"
-            style="border:0;"
-            allowfullscreen
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
-            title="EV Drive Academy Location"
-          />
+          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.1806061048765!2d106.65588507475077!3d-6.2399118937483635!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69fbc070b4d71d%3A0x8b1a633faf5dbd46!2sALAM%20SUTERA!5e0!3m2!1sen!2sid!4v1776223155011!5m2!1sen!2sid" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
         </div>
       </div>
     </UPageSection>
@@ -483,6 +522,7 @@ const calendarDays = [
       headline="Testimonials"
       title="What Our Students Say"
       description="Join hundreds of satisfied students who have learned to drive with us."
+      :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
       <div class="grid md:grid-cols-3 gap-6">
@@ -508,6 +548,7 @@ const calendarDays = [
       headline="FAQ"
       title="Frequently Asked Questions"
       description="Find answers to common questions about our EV driving courses."
+      :ui="{ headline: 'text-warning' }"
     >
       <div class="max-w-3xl mx-auto">
         <UAccordion :items="faqItems" />
@@ -519,10 +560,10 @@ const calendarDays = [
       title="Ready to Drive the Future?"
       description="Book your first session today and experience the joy of learning in a premium electric vehicle."
       :links="[
-        { label: 'Start Your Journey', to: '/register', icon: 'i-lucide-rocket', size: 'lg' },
+        { label: 'Start Your Journey', to: '/register', color: 'warning', icon: 'i-lucide-rocket', size: 'lg' },
         { label: 'View All Packages', to: '/packages', color: 'neutral', variant: 'ghost', trailingIcon: 'i-lucide-arrow-right' }
       ]"
-      class="bg-primary/5"
+      class="bg-warning/5"
     />
 
     <!-- Member Dashboard Preview -->
@@ -530,6 +571,7 @@ const calendarDays = [
       headline="Member Area"
       title="Track Your Progress"
       description="Get access to your personalized dashboard where you can view sessions, track progress, and download certificates."
+      :ui="{ headline: 'text-warning' }"
     >
       <UCard class="max-w-3xl mx-auto overflow-hidden">
         <template #header>
@@ -551,20 +593,20 @@ const calendarDays = [
             <p class="text-sm text-muted">Sessions Completed</p>
           </div>
           <div class="text-center p-4 rounded-lg bg-muted/50">
-            <p class="text-3xl font-bold text-primary">6</p>
+            <p class="text-3xl font-bold text-warning">6</p>
             <p class="text-sm text-muted">Sessions Remaining</p>
           </div>
           <div class="text-center p-4 rounded-lg bg-muted/50">
-            <p class="text-3xl font-bold text-primary">40%</p>
+            <p class="text-3xl font-bold text-info">40%</p>
             <p class="text-sm text-muted">Course Progress</p>
           </div>
         </div>
 
-        <UProgress :value="40" class="mb-6" />
+        <UProgress :value="40" color="warning" class="mb-6" />
 
         <div class="flex flex-wrap gap-3">
           <NuxtLink to="/dashboard">
-            <UButton label="Go to Dashboard" icon="i-lucide-layout-dashboard" />
+            <UButton label="Go to Dashboard" color="warning" icon="i-lucide-layout-dashboard" />
           </NuxtLink>
           <UButton label="Book Next Session" icon="i-lucide-calendar-plus" variant="outline" color="neutral" />
           <UButton label="Download Certificate" icon="i-lucide-download" variant="ghost" color="neutral" disabled />

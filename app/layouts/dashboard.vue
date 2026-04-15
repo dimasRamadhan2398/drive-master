@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useRoute } from 'nuxt/app'
+import { computed } from 'vue'
 
 const route = useRoute()
 
@@ -54,8 +56,7 @@ const user = {
     <UDashboardSidebar collapsible resizable>
       <template #header="{ collapsed }">
         <NuxtLink to="/" class="flex items-center gap-2 px-2">
-          <UIcon name="i-lucide-zap" class="size-7 text-primary shrink-0" />
-          <span v-if="!collapsed" class="font-bold text-lg">EV Drive</span>
+          <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
         </NuxtLink>
       </template>
 
@@ -63,7 +64,8 @@ const user = {
         <UNavigationMenu
           :items="navItems"
           orientation="vertical"
-          :ui="{ link: collapsed ? 'justify-center' : undefined }"
+          color="warning"
+          :ui="{ link: collapsed ? 'justify-center' : undefined, }"
         />
       </template>
 
