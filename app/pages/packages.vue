@@ -1,6 +1,20 @@
 <script setup lang="ts">
 const packages = [
   {
+    title: 'Free',
+    price: 'Rp 0',
+    priceNote: 'Only Registration',
+    description: 'Perfect for user who want to try our service.',
+    features: [
+      { text: '1 training sessions', included: true },
+      { text: '60 minutes per session', included: true },
+      { text: 'Basic driving fundamentals', included: true },
+      { text: 'Theory materials included', included: true },
+    ],
+    highlight: false,
+    color: 'neutral' as const
+  },
+  {
     title: 'Starter',
     price: 'Rp 1.500.000',
     priceNote: 'One-time payment',
@@ -57,19 +71,19 @@ const packages = [
 ]
 
 const comparisonFeatures = [
-  { name: 'Training Sessions', starter: '5', standard: '10', pro: '15' },
-  { name: 'Session Duration', starter: '45 min', standard: '60 min', pro: '90 min' },
-  { name: 'Total Training Hours', starter: '3.75 hrs', standard: '10 hrs', pro: '22.5 hrs' },
-  { name: 'Theory Materials', starter: true, standard: true, pro: true },
-  { name: 'Basic Driving', starter: true, standard: true, pro: true },
-  { name: 'Advanced Techniques', starter: false, standard: true, pro: true },
-  { name: 'Highway Driving', starter: false, standard: true, pro: true },
-  { name: 'Night Driving', starter: false, standard: false, pro: true },
-  { name: 'Weather Driving', starter: false, standard: false, pro: true },
-  { name: 'EV-Specific Training', starter: false, standard: true, pro: true },
-  { name: 'EV Maintenance Basics', starter: false, standard: false, pro: true },
-  { name: 'Certificate Type', starter: 'Basic', standard: 'EV Cert', pro: 'Premium' },
-  { name: 'Refresher Access', starter: '30 days', standard: '6 months', pro: 'Lifetime' }
+  { name: 'Training Sessions', free: '1', starter: '5', standard: '10', pro: '15' },
+  { name: 'Session Duration', free: '60 min', starter: '45 min', standard: '60 min', pro: '90 min' },
+  { name: 'Total Training Hours', free: '1 hrs', starter: '3.75 hrs', standard: '10 hrs', pro: '22.5 hrs' },
+  { name: 'Theory Materials', free: true, starter: true, standard: true, pro: true },
+  { name: 'Basic Driving', free: true, starter: true, standard: true, pro: true },
+  { name: 'Advanced Techniques', free: false, starter: false, standard: true, pro: true },
+  { name: 'Highway Driving', free: false, tarter: false, standard: true, pro: true },
+  { name: 'Night Driving', free: false, starter: false, standard: false, pro: true },
+  { name: 'Weather Driving', free: false, starter: false, standard: false, pro: true },
+  { name: 'EV-Specific Training', free: false, starter: false, standard: true, pro: true },
+  { name: 'EV Maintenance Basics', free: false, starter: false, standard: false, pro: true },
+  { name: 'Certificate Type', free: false, starter: 'Basic', standard: 'EV Cert', pro: 'Premium' },
+  { name: 'Refresher Access', free: '7 days', starter: '30 days', standard: '6 months', pro: 'Lifetime' }
 ]
 
 const addOns = [
@@ -108,7 +122,7 @@ const addOns = [
 
     <!-- Package Cards -->
     <UPageSection :ui="{ headline: 'text-warning' }">
-      <div class="grid md:grid-cols-3 gap-6 lg:gap-8">
+      <div class="grid md:grid-cols-4 gap-6 lg:gap-8">
         <UCard
           v-for="pkg in packages"
           :key="pkg.title"
@@ -183,6 +197,7 @@ const addOns = [
           <thead>
             <tr class="border-b border-default">
               <th class="text-left py-4 px-4 font-semibold">Feature</th>
+              <th class="text-center py-4 px-4 font-semibold">Free</th>
               <th class="text-center py-4 px-4 font-semibold">Starter</th>
               <th class="text-center py-4 px-4 font-semibold">
                 <div class="flex items-center justify-center gap-2">
@@ -200,6 +215,18 @@ const addOns = [
               class="border-b border-default last:border-0"
             >
               <td class="py-3 px-4 text-sm">{{ feature.name }}</td>
+              <td class="py-3 px-4 text-center">
+                <template v-if="typeof feature.free === 'boolean'">
+                  <UIcon 
+                    :name="feature.free ? 'i-lucide-check' : 'i-lucide-minus'" 
+                    :class="feature.free ? 'text-warning' : 'text-muted'" 
+                    class="size-5"
+                  />
+                </template>
+                <template v-else>
+                  <span class="text-sm">{{ feature.free }}</span>
+                </template>
+              </td>
               <td class="py-3 px-4 text-center">
                 <template v-if="typeof feature.starter === 'boolean'">
                   <UIcon 
@@ -241,6 +268,7 @@ const addOns = [
           <tfoot>
             <tr class="bg-muted/50">
               <td class="py-4 px-4 font-semibold">Price</td>
+              <td class="py-4 px-4 text-center font-semibold">Rp 0</td>
               <td class="py-4 px-4 text-center font-semibold">Rp 1.500.000</td>
               <td class="py-4 px-4 text-center font-semibold text-warning bg-warning/10">Rp 2.800.000</td>
               <td class="py-4 px-4 text-center font-semibold">Rp 4.500.000</td>

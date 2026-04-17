@@ -37,8 +37,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       <template #header>
         <div class="text-center">
           <div class="flex items-center justify-center gap-2 mb-4">
-            <UIcon name="i-lucide-zap" class="size-8 text-warning" />
-            <span class="text-xl font-bold">EV Drive Academy</span>
+            <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
           </div>
           <h1 class="text-2xl font-bold">Welcome Back</h1>
           <p class="text-muted mt-2">Sign in to access your member dashboard</p>

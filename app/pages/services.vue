@@ -93,7 +93,6 @@ const serviceAreas = [
         { label: 'View Packages', to: '/packages', color: 'warning', icon: 'i-lucide-package' },
         { label: 'Book Consultation', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
       ]"
-      class="py-12 lg:py-20"
     />
 
     <!-- Service Types -->

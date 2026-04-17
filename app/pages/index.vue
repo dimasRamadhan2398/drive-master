@@ -29,6 +29,19 @@ const evAdvantages = [
 // Course packages
 const packages = [
   {
+    title: 'Free Trial',
+    price: 'Rp 0',
+    description: 'Perfect for user who want to try our service',
+    features: [
+      '1 training sessions',
+      '60 minutes per session',
+      'Basic driving fundamentals',
+      'Theory materials included',
+    ],
+    highlight: false,
+    button: { label: 'Try Now', color: 'neutral' as const, variant: 'outline' as const }
+  },
+  {
     title: 'Starter',
     price: 'Rp 1.500.000',
     description: 'Perfect for beginners looking to get started',
@@ -275,7 +288,7 @@ const calendarDays = [
       description="Flexible packages designed to match your goals and schedule."
       :ui="{ headline: 'text-warning' }"
     >
-      <div class="grid md:grid-cols-3 gap-6 lg:gap-8">
+      <div class="grid md:grid-cols-4 gap-6 lg:gap-8">
         <UCard
           v-for="pkg in packages"
           :key="pkg.title"
