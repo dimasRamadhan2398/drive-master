@@ -371,11 +371,8 @@ function handleHeaderAction() {
           <UButton 
             :icon="activeTab === 'pages' ? 'i-lucide-file-plus' : activeTab === 'blog' ? 'i-lucide-pen-square' : 'i-lucide-plus-circle'"
             :label="activeTab === 'pages' ? 'New Page' : activeTab === 'blog' ? 'New Post' : 'Add FAQ'"
-<<<<<<< HEAD
             color="warning"
-=======
             @click="handleHeaderAction"
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
           />
           <UColorModeButton />
         </template>
@@ -421,16 +418,9 @@ function handleHeaderAction() {
                   :color="page.status === 'published' ? 'success' : 'neutral'"
                   variant="subtle"
                 />
-<<<<<<< HEAD
-                <div class="flex gap-1">
-                  <UButton icon="i-lucide-eye" color="neutral" variant="ghost" size="md" />
-                  <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="md" />
-                </div>
-=======
                 <UDropdownMenu :items="getPageActions(page)">
-                  <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" size="xs" />
+                  <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" size="sm" />
                 </UDropdownMenu>
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
               </div>
             </div>
           </div>
@@ -465,23 +455,8 @@ function handleHeaderAction() {
                   :color="post.status === 'published' ? 'success' : 'neutral'"
                   variant="subtle"
                 />
-<<<<<<< HEAD
-                <UDropdownMenu
-                  :items="[
-                    [
-                      { label: 'Edit', icon: 'i-lucide-pencil' },
-                      { label: 'Preview', icon: 'i-lucide-eye' }
-                    ],
-                    [
-                      { label: 'Delete', icon: 'i-lucide-trash', color: 'error' }
-                    ]
-                  ]"
-                >
-                  <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" size="md" />
-=======
                 <UDropdownMenu :items="getPostActions(post)">
-                  <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" size="xs" />
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
+                  <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" size="sm" />
                 </UDropdownMenu>
               </div>
             </div>
@@ -517,15 +492,9 @@ function handleHeaderAction() {
                 </div>
                 <p class="text-md text-muted line-clamp-2">{{ faq.answer }}</p>
               </div>
-<<<<<<< HEAD
-              <div class="flex gap-1">
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="md" />
-                <UButton icon="i-lucide-trash" color="error" variant="ghost" size="md" />
-=======
               <div class="flex gap-1 shrink-0">
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="xs" @click="openEditFaq(faq)" />
-                <UButton icon="i-lucide-trash" color="error" variant="ghost" size="xs" @click="deleteFaq(faq)" />
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
+                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="sm" @click="openEditFaq(faq)" />
+                <UButton icon="i-lucide-trash" color="error" variant="ghost" size="sm" @click="deleteFaq(faq)" />
               </div>
             </div>
           </div>

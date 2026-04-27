@@ -76,7 +76,7 @@ async function onSubmit() {
   loading.value = false
   
   // Redirect to payment page
-  navigateTo(`/payment?method=${formData.paymentMethod}&plan=${selectedPlan}&email=${formData.email}&phone=${formData.phone}`)
+  navigateTo(`/payment?method=${formData.paymentMethod}&plan=${selectedPlan.value}&email=${formData.email}&phone=${formData.phone}`)
 }
 
 const packagePrices = {
@@ -238,11 +238,7 @@ const packageNames = {
           </div>
         </UForm>
 
-        <!-- <template #footer>
-          <div class="text-center text-sm text-muted">
-            <p>Payment secured by Midtrans</p>
-          </div>
-        </template> -->
+        <!-- Footer removed -->
       </UCard>
     </div>
   </div>

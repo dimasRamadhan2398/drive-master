@@ -17,21 +17,12 @@ const generalSettings = reactive({
 
 const operatingHours = reactive({
   mondayStart: '08:00',
-<<<<<<< HEAD
-  mondayEnd: '17:00',
-  weekendStart: '08:00',
-  weekendEnd: '17:00',
-  nightStart: '18:00',
-  nightEnd: '20:00',
-  // saturdayStart: '08:00',
-  // saturdayEnd: '16:00',
-  // sundayClosed: true
-=======
   mondayEnd: '18:00',
   weekendStart: '08:00',
   weekendEnd: '16:00',
+  nightStart: '18:00',
+  nightEnd: '20:00',
   sundayClosed: true
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
 })
 
 const notificationSettings = reactive({
@@ -44,12 +35,8 @@ const notificationSettings = reactive({
 })
 
 const vehicles = ref([
-<<<<<<< HEAD
-  { id: 1, name: 'BYD Atto 1', plate: 'B 5678 EV', status: 'active' }
-=======
   { id: 1, name: 'Tesla Model 3', plate: 'B 1234 EV', status: 'active', photoUrl: '' },
   { id: 2, name: 'BYD Atto 3', plate: 'B 5678 EV', status: 'active', photoUrl: '' }
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
 ])
 
 // Vehicle CRUD State
@@ -91,15 +78,9 @@ function deleteVehicle() {
 }
 
 const instructors = ref([
-<<<<<<< HEAD
-  { id: 1, name: 'Mr. Ahmad', phone: '081234567001', status: 'active' },
-  { id: 2, name: 'Ms. Sari', phone: '081234567002', status: 'active' },
-  { id: 3, name: 'Mr. Budi', phone: '081234567003', status: 'active' }
-=======
   { id: 1, name: 'Pak Ahmad', phone: '081234567001', bnsp: 'BNSP-101-2023', sim: 'SIM A', photoUrl: '', experience: 5, bio: 'Expert in defensive driving techniques.', status: 'active' },
   { id: 2, name: 'Bu Sari', phone: '081234567002', bnsp: 'BNSP-102-2022', sim: 'SIM A', photoUrl: '', experience: 8, bio: 'Patient and friendly, great for beginners.', status: 'active' },
   { id: 3, name: 'Pak Budi', phone: '081234567003', bnsp: 'BNSP-105-2024', sim: 'SIM A', photoUrl: '', experience: 3, bio: 'Specialist in night driving and bad weather conditions.', status: 'active' }
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
 ])
 
 // Instructor CRUD State
@@ -236,17 +217,10 @@ function saveSettings() {
               <UInput v-model="operatingHours.mondayEnd" type="time" class="w-full" color="warning" />
             </div>
             <div class="flex items-center gap-4">
-<<<<<<< HEAD
-              <span class="w-32 text-md font-medium">Saturday</span>
+              <span class="w-32 text-md font-medium">Weekend</span>
               <UInput v-model="operatingHours.weekendStart" type="time" class="w-full" color="warning" />
               <span class="text-muted">to</span>
               <UInput v-model="operatingHours.weekendEnd" type="time" class="w-full" color="warning" />
-=======
-              <span class="w-32 text-sm font-medium">Weekend</span>
-              <UInput v-model="operatingHours.weekendStart" type="time" class="w-32" />
-              <span class="text-muted">to</span>
-              <UInput v-model="operatingHours.weekendEnd" type="time" class="w-32" />
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
             </div>
             <div class="flex items-center gap-4">
               <span class="w-32 text-md font-medium">Night Shift</span>
@@ -254,10 +228,10 @@ function saveSettings() {
               <span class="text-muted">to</span>
               <UInput v-model="operatingHours.nightEnd" type="time" class="w-full" color="warning" />
             </div>
-            <!-- <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4">
               <span class="w-32 text-md font-medium">Sunday</span>
-              <USwitch v-model="operatingHours.sundayClosed" label="Closed" />
-            </div> -->
+              <USwitch v-model="operatingHours.sundayClosed" :label="operatingHours.sundayClosed ? 'Closed' : 'Open'" />
+            </div>
           </div>
         </UCard>
 
@@ -269,11 +243,7 @@ function saveSettings() {
                 <UIcon name="i-lucide-car" class="size-5 text-warning" />
                 <h2 class="font-semibold">Vehicles</h2>
               </div>
-<<<<<<< HEAD
-              <UButton label="Add Vehicle" icon="i-lucide-plus" size="md" variant="outline" color="warning" />
-=======
-              <UButton label="Add Vehicle" icon="i-lucide-plus" size="sm" variant="outline" color="neutral" @click="openNewVehicle" />
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
+              <UButton label="Add Vehicle" icon="i-lucide-plus" size="sm" variant="outline" color="warning" @click="openNewVehicle" />
             </div>
           </template>
 
@@ -298,11 +268,7 @@ function saveSettings() {
                   :color="vehicle.status === 'active' ? 'info' : 'error'"
                   variant="subtle"
                 />
-<<<<<<< HEAD
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="md" />
-=======
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="xs" @click="openEditVehicle(vehicle)" />
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
+                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="sm" @click="openEditVehicle(vehicle)" />
               </div>
             </div>
           </div>
@@ -316,11 +282,7 @@ function saveSettings() {
                 <UIcon name="i-lucide-users" class="size-5 text-warning" />
                 <h2 class="font-semibold">Instructors</h2>
               </div>
-<<<<<<< HEAD
-              <UButton label="Add Instructor" icon="i-lucide-user-plus" size="md" variant="outline" color="warning" />
-=======
-              <UButton label="Add Instructor" icon="i-lucide-user-plus" size="sm" variant="outline" color="neutral" @click="openNewInstructor" />
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
+              <UButton label="Add Instructor" icon="i-lucide-user-plus" size="sm" variant="outline" color="warning" @click="openNewInstructor" />
             </div>
           </template>
 
@@ -331,11 +293,7 @@ function saveSettings() {
               class="flex items-center justify-between p-4 rounded-lg border border-default"
             >
               <div class="flex items-center gap-4">
-<<<<<<< HEAD
-                <UAvatar :text="instructor.name.split(' ').map((n: string) => n[0]).join('')" size="md" />
-=======
-                <UAvatar :src="instructor.photoUrl || undefined" :text="!instructor.photoUrl ? instructor.name.split(' ').map((n: string) => n[0]).join('') : undefined" size="sm" />
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
+                <UAvatar :src="instructor.photoUrl || undefined" :text="!instructor.photoUrl ? instructor.name.split(' ').map((n: string) => n[0]).join('') : undefined" size="md" />
                 <div>
                   <p class="font-medium">{{ instructor.name }}</p>
                   <p class="text-md text-muted">{{ instructor.phone }}</p>
@@ -347,11 +305,7 @@ function saveSettings() {
                   :color="instructor.status === 'active' ? 'info' : 'neutral'"
                   variant="subtle"
                 />
-<<<<<<< HEAD
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="md" />
-=======
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="xs" @click="openEditInstructor(instructor)" />
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
+                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="sm" @click="openEditInstructor(instructor)" />
               </div>
             </div>
           </div>
@@ -396,16 +350,6 @@ function saveSettings() {
               </div>
               <UButton label="Export" icon="i-lucide-download" color="neutral" variant="outline" />
             </div>
-<<<<<<< HEAD
-            <div class="flex items-center justify-between p-4 rounded-lg border border-red-200 dark:border-red-900">
-              <div>
-                <p class="font-medium">Clear Training History</p>
-                <p class="text-md text-muted">Remove all completed training session records.</p>
-              </div>
-              <UButton label="Clear History" icon="i-lucide-trash" color="error" variant="outline" />
-            </div>
-=======
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
           </div>
         </UCard>
       </div>

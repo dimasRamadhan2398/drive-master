@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 // Course Material
 const courseMaterial = [
@@ -157,27 +157,16 @@ const faqItems = [
   }
 ]
 
-<<<<<<< HEAD
-// Available time slots (sample data for booking UI mockup)
-const timeSlots = ref([
-  { time: '08:00', available: true, car: 'BYD Atto 1', instructor: 'Mr. Budi' },
-  { time: '09:30', available: false, car: 'BYD Atto 1', instructor: 'Mrs. Sari' },
-  { time: '11:00', available: true, car: 'BYD Atto 1', instructor: 'Mrs. Sari' },
-  { time: '13:00', available: true, car: 'BYD Atto 1', instructor: 'Mr. Budi' },
-  { time: '14:30', available: false, car: 'BYD Atto 1', instructor: 'Mrs. Sari' },
-  { time: '16:00', available: true, car: 'BYD Atto 1', instructor: 'Mr. Ahmad' }
-])
-=======
 const { slots: globalSlots } = useSchedules()
 
 const timeSlots = computed(() => {
   return globalSlots.value.map(slot => ({
     time: slot.time,
     car: slot.car,
+    instructor: slot.instructor,
     available: slot.status === 'available'
   }))
 })
->>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
 
 const selectedDate = ref(15)
 const selectedSlot = ref<string | null>(null)
@@ -577,54 +566,5 @@ const calendarDays = [
       ]"
       class="bg-warning/5"
     />
-
-    <!-- Member Dashboard Preview 
-    <UPageSection
-      headline="Member Area"
-      title="Track Your Progress"
-      description="Get access to your personalized dashboard where you can view sessions, track progress, and download certificates."
-      :ui="{ headline: 'text-warning' }"
-    >
-      <UCard class="max-w-3xl mx-auto overflow-hidden">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <UAvatar text="JD" />
-              <div>
-                <p class="font-semibold">Welcome back, John!</p>
-                <p class="text-md text-muted">Standard Package</p>
-              </div>
-            </div>
-            <UBadge label="Active" color="success" />
-          </div>
-        </template>
-
-        <div class="grid md:grid-cols-3 gap-4 mb-6">
-          <div class="text-center p-4 rounded-lg bg-muted/50">
-            <p class="text-3xl font-bold text-primary">4</p>
-            <p class="text-md text-muted">Sessions Completed</p>
-          </div>
-          <div class="text-center p-4 rounded-lg bg-muted/50">
-            <p class="text-3xl font-bold text-warning">6</p>
-            <p class="text-md text-muted">Sessions Remaining</p>
-          </div>
-          <div class="text-center p-4 rounded-lg bg-muted/50">
-            <p class="text-3xl font-bold text-info">40%</p>
-            <p class="text-md text-muted">Course Progress</p>
-          </div>
-        </div>
-
-        <UProgress :value="40" color="warning" class="mb-6" />
-
-        <div class="flex flex-wrap gap-3">
-          <NuxtLink to="/dashboard">
-            <UButton label="Go to Dashboard" color="warning" icon="i-lucide-layout-dashboard" />
-          </NuxtLink>
-          <UButton label="Book Next Session" icon="i-lucide-calendar-plus" variant="outline" color="neutral" />
-          <UButton label="Download Certificate" icon="i-lucide-download" variant="ghost" color="neutral" disabled />
-        </div>
-      </UCard>
-    </UPageSection>
-  -->
   </div>
 </template>

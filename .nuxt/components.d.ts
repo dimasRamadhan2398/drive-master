@@ -14,6 +14,8 @@ type HydrationStrategies = {
 type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {}, {}, { hydrated: () => void }> & T
 
 
+export const OnboardingModal: typeof import("../app/components/OnboardingModal.vue")['default']
+export const AdminPageEditor: typeof import("../app/components/admin/PageEditor.vue")['default']
 export const UColorModeAvatar: typeof import("../node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeAvatar.vue")['default']
 export const UColorModeButton: typeof import("../node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeButton.vue")['default']
 export const UColorModeImage: typeof import("../node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeImage.vue")['default']
@@ -166,6 +168,8 @@ export const Body: typeof import("../node_modules/nuxt/dist/head/runtime/compone
 export const Icon: typeof import("../node_modules/@nuxt/icon/dist/runtime/components/index")['default']
 export const ColorScheme: typeof import("../node_modules/@nuxtjs/color-mode/dist/runtime/component.vue3.vue")['default']
 export const NuxtIsland: typeof import("../node_modules/nuxt/dist/app/components/nuxt-island")['default']
+export const LazyOnboardingModal: LazyComponent<typeof import("../app/components/OnboardingModal.vue")['default']>
+export const LazyAdminPageEditor: LazyComponent<typeof import("../app/components/admin/PageEditor.vue")['default']>
 export const LazyUColorModeAvatar: LazyComponent<typeof import("../node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeAvatar.vue")['default']>
 export const LazyUColorModeButton: LazyComponent<typeof import("../node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeButton.vue")['default']>
 export const LazyUColorModeImage: LazyComponent<typeof import("../node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeImage.vue")['default']>

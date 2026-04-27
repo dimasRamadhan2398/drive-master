@@ -92,8 +92,8 @@ async function onSubmit(event: FormSubmitEvent<any>) {
 
 const stepItems = [
   { label: 'Personal Info', icon: 'i-lucide-user' },
-  { label: 'Select Package', icon: 'i-lucide-package' },
-  { label: 'Create Account', icon: 'i-lucide-shield-check' }
+  { label: 'Create Account', icon: 'i-lucide-shield-check' },
+  { label: 'Select Package', icon: 'i-lucide-package' }
 ]
 </script>
 

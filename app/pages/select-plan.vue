@@ -135,34 +135,7 @@ const freeTrialInfo = [
         </p>
       </div>
 
-      <!-- Promo Banner
-      <Transition
-        enter-active-class="transition duration-300"
-        enter-from-class="opacity-0 scale-95"
-        enter-to-class="opacity-100 scale-100"
-      >
-        <UCard 
-          v-if="isPromoActive"
-          class="mb-8 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20"
-        >
-          <div class="flex items-center gap-4">
-            <div class="p-3 rounded-lg bg-amber-500/10 shrink-0">
-              <UIcon name="i-lucide-zap" class="size-6 text-amber-600" />
-            </div>
-            <div class="flex-1">
-              <h3 class="font-bold text-amber-900">Limited Time Offer!</h3>
-              <p class="text-sm text-amber-800">
-                Get up to {{ discount }}% discount on all packages. Offer ends in {{ promoDuration }} days.
-              </p>
-            </div>
-            <div class="text-right shrink-0">
-              <p class="text-2xl font-bold text-amber-600">{{ discount }}%</p>
-              <p class="text-xs text-amber-700">OFF</p>
-            </div>
-          </div>
-        </UCard>
-      </Transition>
-    -->
+      <!-- Promo Banner Section (Hidden) -->
 
       <!-- Plan Cards -->
       <div class="grid md:grid-cols-4 gap-6 mb-12">
@@ -209,22 +182,6 @@ const freeTrialInfo = [
                       Rp {{ plan.originalPrice.toLocaleString('id-ID') }}
                     </p>
                   </div>
-                  <!-- <div v-if="isPromoActive && plan.promoPrice < plan.originalPrice" class="space-y-2">
-                    <p class="text-sm text-muted line-through">
-                      Rp {{ plan.originalPrice.toLocaleString('id-ID') }}
-                    </p>
-                    <p class="text-4xl font-bold text-warning">
-                      Rp {{ plan.promoPrice.toLocaleString('id-ID') }}
-                    </p>
-                    <p class="text-xs text-green-600 font-medium">
-                      Save Rp {{ (plan.originalPrice - plan.promoPrice).toLocaleString('id-ID') }}
-                    </p>
-                  </div>
-                  <div v-else>
-                    <p class="text-4xl font-bold">
-                      Rp {{ plan.originalPrice.toLocaleString('id-ID') }}
-                    </p>
-                  </div> -->
                 </div>
 
                 <!-- Sessions Badge -->
@@ -293,9 +250,7 @@ const freeTrialInfo = [
             <p class="text-muted">
               Selected package: <span class="font-bold">{{ currentPlan?.name }} - Rp {{ currentPlan?.originalPrice?.toLocaleString('id-ID') }}</span>
             </p>
-            <!-- <p class="text-muted">
-              Selected package: <span class="font-bold">{{ currentPlan?.name }} - Rp {{ (isPromoActive ? currentPlan?.promoPrice : currentPlan?.originalPrice)?.toLocaleString('id-ID') }}</span>
-            </p> -->
+            <!-- Promo pricing hidden -->
 
             <div class="flex gap-3 pt-2">
               <UButton 
@@ -315,16 +270,7 @@ const freeTrialInfo = [
         </UCard>
       </div>
 
-      <!-- Additional Info
-      <div class="mt-8 text-center">
-        <p class="text-sm text-muted">
-          Have questions?
-          <NuxtLink to="/packages" class="text-warning hover:underline">
-            View detailed package comparison
-          </NuxtLink>
-        </p>
-      </div>
-    -->
+      <!-- Additional Info Section (Hidden) -->
     </div>
   </div>
 </template>

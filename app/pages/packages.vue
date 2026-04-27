@@ -259,70 +259,7 @@ const addOns = [
       </div>
     </UPageSection>
 
-    <!-- Payment Info
-    <UPageSection class="bg-muted/30" :ui="{ headline: 'text-warning' }">
-      <UCard class="max-w-3xl mx-auto">
-        <template #header>
-          <div class="flex items-center gap-3">
-            <UIcon name="i-lucide-credit-card" class="size-6 text-warning" />
-            <h3 class="text-xl font-semibold">Payment Options</h3>
-          </div>
-        </template>
-
-        <div class="grid sm:grid-cols-2 gap-6">
-          <div>
-            <h4 class="font-medium mb-3">Accepted Payment Methods</h4>
-            <ul class="space-y-2 text-sm text-muted">
-              <li class="flex items-center gap-2">
-                <UIcon name="i-lucide-building" class="size-4" />
-                Bank Transfer (BCA, Mandiri, BNI, BRI)
-              </li>
-              <li class="flex items-center gap-2">
-                <UIcon name="i-lucide-smartphone" class="size-4" />
-                Virtual Account (VA)
-              </li>
-              <li class="flex items-center gap-2">
-                <UIcon name="i-lucide-wallet" class="size-4" />
-                E-Wallet (GoPay, OVO, DANA)
-              </li>
-              <li class="flex items-center gap-2">
-                <UIcon name="i-lucide-qr-code" class="size-4" />
-                QRIS
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 class="font-medium mb-3">Payment Terms</h4>
-            <ul class="space-y-2 text-sm text-muted">
-              <li class="flex items-center gap-2">
-                <UIcon name="i-lucide-check" class="size-4 text-warning" />
-                Full payment before first session
-              </li>
-              <li class="flex items-center gap-2">
-                <UIcon name="i-lucide-check" class="size-4 text-warning" />
-                Installment available (contact us)
-              </li>
-              <li class="flex items-center gap-2">
-                <UIcon name="i-lucide-check" class="size-4 text-warning" />
-                Invoice provided for all transactions
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <template #footer>
-          <div class="flex flex-wrap gap-3">
-            <NuxtLink to="/register">
-              <UButton label="Register & Pay" icon="i-lucide-arrow-right" />
-            </NuxtLink>
-            <NuxtLink to="https://wa.me/6281234567890" target="_blank">
-              <UButton label="Ask About Installments" icon="i-simple-icons-whatsapp" variant="outline" color="neutral" />
-            </NuxtLink>
-          </div>
-        </template>
-      </UCard>
-    </UPageSection>
-    -->
+    <!-- Payment Info Section (Hidden) -->
 
     <!-- CTA -->
     <UPageCTA

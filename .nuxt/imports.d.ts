@@ -32,6 +32,7 @@ export { setInterval } from '#app/compat/interval';
 export { definePageMeta, PageMeta } from '#app/composables/pages';
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
 export { useApi } from '../app/composables/useApi';
+export { useSchedules, TimeSlot } from '../app/composables/useSchedules';
 export { defineLocale, extendLocale } from '../node_modules/@nuxt/ui/dist/runtime/composables/defineLocale';
 export { defineShortcuts, extractShortcuts } from '../node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts';
 export { useContentSearch } from '../node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch';
