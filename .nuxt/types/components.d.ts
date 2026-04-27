@@ -93,6 +93,7 @@ interface _GlobalComponents {
   UKbd: typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Kbd.vue")['default']
   ULink: typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Link.vue")['default']
   ULinkBase: typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/LinkBase.vue")['default']
+  UListbox: typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Listbox.vue")['default']
   UMain: typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Main.vue")['default']
   UMarquee: typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Marquee.vue")['default']
   UModal: typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Modal.vue")['default']
@@ -247,6 +248,7 @@ interface _GlobalComponents {
   LazyUKbd: LazyComponent<typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Kbd.vue")['default']>
   LazyULink: LazyComponent<typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Link.vue")['default']>
   LazyULinkBase: LazyComponent<typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/LinkBase.vue")['default']>
+  LazyUListbox: LazyComponent<typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Listbox.vue")['default']>
   LazyUMain: LazyComponent<typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Main.vue")['default']>
   LazyUMarquee: LazyComponent<typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Marquee.vue")['default']>
   LazyUModal: LazyComponent<typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/Modal.vue")['default']>
