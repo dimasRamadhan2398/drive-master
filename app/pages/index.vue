@@ -157,6 +157,7 @@ const faqItems = [
   }
 ]
 
+<<<<<<< HEAD
 // Available time slots (sample data for booking UI mockup)
 const timeSlots = ref([
   { time: '08:00', available: true, car: 'BYD Atto 1', instructor: 'Mr. Budi' },
@@ -166,6 +167,17 @@ const timeSlots = ref([
   { time: '14:30', available: false, car: 'BYD Atto 1', instructor: 'Mrs. Sari' },
   { time: '16:00', available: true, car: 'BYD Atto 1', instructor: 'Mr. Ahmad' }
 ])
+=======
+const { slots: globalSlots } = useSchedules()
+
+const timeSlots = computed(() => {
+  return globalSlots.value.map(slot => ({
+    time: slot.time,
+    car: slot.car,
+    available: slot.status === 'available'
+  }))
+})
+>>>>>>> 9e0209d0057376fb1faa4e5d070cc514f07a8815
 
 const selectedDate = ref(15)
 const selectedSlot = ref<string | null>(null)
