@@ -13,15 +13,14 @@ const calendarDays = Array.from({ length: 30 }, (_, i) => ({
   available: ![1, 2, 3, 6, 10, 13, 17, 20, 24, 27].includes(i + 1)
 }))
 
-// Mock available slots
-const availableSlots = ref([
-  { id: '1', time: '08:00', car: 'Tesla Model 3', instructor: 'Pak Ahmad', available: true },
-  { id: '2', time: '09:30', car: 'BYD Atto 3', instructor: 'Bu Sari', available: false },
-  { id: '3', time: '11:00', car: 'Tesla Model 3', instructor: 'Pak Budi', available: true },
-  { id: '4', time: '13:00', car: 'BYD Atto 3', instructor: 'Pak Ahmad', available: true },
-  { id: '5', time: '14:30', car: 'Tesla Model 3', instructor: 'Bu Sari', available: false },
-  { id: '6', time: '16:00', car: 'BYD Atto 3', instructor: 'Pak Budi', available: true }
-])
+const { slots: globalSlots, bookSlot } = useSchedules()
+
+const availableSlots = computed(() => {
+  return globalSlots.value.map(slot => ({
+    ...slot,
+    available: slot.status === 'available'
+  }))
+})
 
 // Mock upcoming sessions
 const upcomingSessions = ref([
@@ -57,6 +56,9 @@ function selectSlot(slotId: string) {
 }
 
 function confirmBooking() {
+  if (selectedSlot.value) {
+    bookSlot(selectedSlot.value, 'John Doe')
+  }
   showBookingModal.value = false
   toast.add({
     title: 'Session Booked!',
