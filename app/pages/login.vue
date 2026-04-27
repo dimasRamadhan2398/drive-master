@@ -2,7 +2,10 @@
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { reactive, ref } from 'vue'
-import { navigateTo } from 'nuxt/app'
+
+definePageMeta({
+  layout: 'blank'
+})
 
 const schema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -52,6 +55,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             placeholder="you@example.com"
             icon="i-lucide-mail"
             size="lg"
+            class="w-full"
           />
         </UFormField>
 
@@ -62,6 +66,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             placeholder="Enter your password"
             icon="i-lucide-lock"
             size="lg"
+            class="w-full"
           />
         </UFormField>
 
@@ -86,11 +91,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           
           <USeparator label="or" />
 
-          <NuxtLink to="https://wa.me/6281234567890" target="_blank" class="block">
+          <NuxtLink to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi" target="_blank" class="block">
             <UButton 
               label="Contact Support" 
               icon="i-simple-icons-whatsapp" 
-              color="neutral" 
+              color="primary" 
               variant="outline"
               block
             />

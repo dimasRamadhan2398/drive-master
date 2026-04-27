@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
+import { ref } from 'vue'
+
 definePageMeta({ layout: 'admin' })
 
 const toast = useToast()
@@ -42,6 +45,7 @@ const tabs = [
           <UButton 
             :icon="activeTab === 'pages' ? 'i-lucide-file-plus' : activeTab === 'blog' ? 'i-lucide-pen-square' : 'i-lucide-plus-circle'"
             :label="activeTab === 'pages' ? 'New Page' : activeTab === 'blog' ? 'New Post' : 'Add FAQ'"
+            color="warning"
           />
           <UColorModeButton />
         </template>
@@ -52,6 +56,8 @@ const tabs = [
           <UTabs 
             v-model="activeTab"
             :items="tabs"
+            class="py-4"
+            color="warning"
           />
         </template>
       </UDashboardToolbar>
@@ -75,19 +81,19 @@ const tabs = [
                 <UIcon name="i-lucide-file-text" class="size-5 text-muted" />
                 <div>
                   <p class="font-medium">{{ page.title }}</p>
-                  <code class="text-xs bg-muted px-2 py-0.5 rounded">{{ page.slug }}</code>
+                  <code class="text-md bg-muted px-2 py-0.5 rounded">{{ page.slug }}</code>
                 </div>
               </div>
               <div class="flex items-center gap-4">
-                <span class="text-sm text-muted">{{ page.lastUpdated }}</span>
+                <span class="text-md text-muted">{{ page.lastUpdated }}</span>
                 <UBadge 
                   :label="page.status"
-                  :color="page.status === 'published' ? 'success' : 'warning'"
+                  :color="page.status === 'published' ? 'success' : 'neutral'"
                   variant="subtle"
                 />
                 <div class="flex gap-1">
-                  <UButton icon="i-lucide-eye" color="neutral" variant="ghost" size="xs" />
-                  <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="xs" />
+                  <UButton icon="i-lucide-eye" color="neutral" variant="ghost" size="md" />
+                  <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="md" />
                 </div>
               </div>
             </div>
@@ -108,7 +114,7 @@ const tabs = [
             >
               <div class="flex-1">
                 <p class="font-medium">{{ post.title }}</p>
-                <div class="flex items-center gap-4 mt-1 text-sm text-muted">
+                <div class="flex items-center gap-4 mt-1 text-md text-muted">
                   <span>By {{ post.author }}</span>
                   <span>{{ post.date }}</span>
                   <span class="flex items-center gap-1">
@@ -120,7 +126,7 @@ const tabs = [
               <div class="flex items-center gap-4">
                 <UBadge 
                   :label="post.status"
-                  :color="post.status === 'published' ? 'success' : 'warning'"
+                  :color="post.status === 'published' ? 'success' : 'neutral'"
                   variant="subtle"
                 />
                 <UDropdownMenu
@@ -134,7 +140,7 @@ const tabs = [
                     ]
                   ]"
                 >
-                  <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" size="xs" />
+                  <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" size="md" />
                 </UDropdownMenu>
               </div>
             </div>
@@ -146,7 +152,7 @@ const tabs = [
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="font-semibold">Frequently Asked Questions</h2>
-              <p class="text-sm text-muted">Drag to reorder</p>
+              <p class="text-md text-muted">Drag to reorder</p>
             </div>
           </template>
 
@@ -159,14 +165,14 @@ const tabs = [
               <UIcon name="i-lucide-grip-vertical" class="size-5 text-muted cursor-move mt-0.5" />
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-1">
-                  <UBadge :label="`#${faq.order}`" variant="subtle" size="xs" />
+                  <UBadge :label="`#${faq.order}`" variant="subtle" size="md" />
                   <h3 class="font-medium">{{ faq.question }}</h3>
                 </div>
-                <p class="text-sm text-muted line-clamp-2">{{ faq.answer }}</p>
+                <p class="text-md text-muted line-clamp-2">{{ faq.answer }}</p>
               </div>
               <div class="flex gap-1">
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="xs" />
-                <UButton icon="i-lucide-trash" color="error" variant="ghost" size="xs" />
+                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="md" />
+                <UButton icon="i-lucide-trash" color="error" variant="ghost" size="md" />
               </div>
             </div>
           </div>

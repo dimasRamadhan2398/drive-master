@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { h, resolveComponent } from 'vue'
+import { h, ref, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({ layout: 'admin' })
@@ -12,9 +12,9 @@ const UDropdownMenu = resolveComponent('UDropdownMenu')
 // Mock stats
 const stats = [
   { label: 'Total Students', value: '156', change: '+12%', icon: 'i-lucide-users', color: 'primary' },
-  { label: 'Active Sessions', value: '24', change: '+5%', icon: 'i-lucide-calendar-check', color: 'success' },
+  { label: 'Active Sessions', value: '24', change: '+5%', icon: 'i-lucide-calendar-check', color: 'blue' },
   { label: 'Revenue (MTD)', value: 'Rp 42.5M', change: '+18%', icon: 'i-lucide-banknote', color: 'amber' },
-  { label: 'Certificates Issued', value: '89', change: '+8%', icon: 'i-lucide-award', color: 'blue' }
+  { label: 'Certificates Issued', value: '89', change: '+8%', icon: 'i-lucide-award', color: 'primary' }
 ]
 
 // Mock today's sessions
@@ -28,10 +28,10 @@ type Session = {
 }
 
 const todaySessions = ref<Session[]>([
-  { id: 1, time: '08:00', student: 'John Doe', car: 'Tesla Model 3', instructor: 'Pak Ahmad', status: 'completed' },
-  { id: 2, time: '09:30', student: 'Jane Smith', car: 'BYD Atto 3', instructor: 'Bu Sari', status: 'in-progress' },
-  { id: 3, time: '11:00', student: 'Alex Johnson', car: 'Tesla Model 3', instructor: 'Pak Budi', status: 'upcoming' },
-  { id: 4, time: '13:00', student: 'Maria Garcia', car: 'BYD Atto 3', instructor: 'Pak Ahmad', status: 'upcoming' }
+  { id: 1, time: '08:00', student: 'John Doe', car: 'BYD Atto 1', instructor: 'Pak Ahmad', status: 'completed' },
+  { id: 2, time: '09:30', student: 'Jane Smith', car: 'BYD Atto 1', instructor: 'Bu Sari', status: 'in-progress' },
+  { id: 3, time: '11:00', student: 'Alex Johnson', car: 'BYD Atto 1', instructor: 'Pak Budi', status: 'upcoming' },
+  { id: 4, time: '13:00', student: 'Maria Garcia', car: 'BYD Atto 1', instructor: 'Pak Ahmad', status: 'upcoming' }
 ])
 
 const sessionColumns: TableColumn<Session>[] = [
@@ -44,9 +44,9 @@ const sessionColumns: TableColumn<Session>[] = [
     header: 'Status',
     cell: ({ row }) => {
       const status = row.getValue('status') as string
-      const color = status === 'completed' ? 'success' : status === 'in-progress' ? 'primary' : 'neutral'
+      const color = status === 'completed' ? 'success' : status === 'in-progress' ? 'info' : 'neutral'
       const label = status === 'completed' ? 'Completed' : status === 'in-progress' ? 'In Progress' : 'Upcoming'
-      return h(UBadge, { label, color, variant: 'subtle', size: 'xs' })
+      return h(UBadge, { label, color, variant: 'subtle', size: 'md' })
     }
   }
 ]
@@ -62,10 +62,10 @@ type Registration = {
 }
 
 const recentRegistrations = ref<Registration[]>([
-  { id: 1, name: 'Sarah Putri', email: 'sarah@example.com', package: 'Standard', date: 'Today', status: 'pending' },
-  { id: 2, name: 'Budi Santoso', email: 'budi@example.com', package: 'Pro', date: 'Yesterday', status: 'active' },
-  { id: 3, name: 'Amanda Chen', email: 'amanda@example.com', package: 'Starter', date: 'Mar 25', status: 'active' },
-  { id: 4, name: 'Ricky Wijaya', email: 'ricky@example.com', package: 'Standard', date: 'Mar 24', status: 'active' }
+  { id: 1, name: 'Sarah Putri', email: 'sarah@example.com', package: '8x', date: 'Today', status: 'pending' },
+  { id: 2, name: 'Budi Santoso', email: 'budi@example.com', package: '12x', date: 'Yesterday', status: 'active' },
+  { id: 3, name: 'Amanda Chen', email: 'amanda@example.com', package: '6x', date: 'Mar 25', status: 'active' },
+  { id: 4, name: 'Ricky Wijaya', email: 'ricky@example.com', package: '10x', date: 'Mar 24', status: 'active' }
 ])
 
 const registrationColumns: TableColumn<Registration>[] = [
@@ -76,7 +76,7 @@ const registrationColumns: TableColumn<Registration>[] = [
       const name = row.getValue('name') as string
       const initials = name.split(' ').map((n: string) => n[0]).join('')
       return h('div', { class: 'flex items-center gap-3' }, [
-        h(UAvatar, { text: initials, size: 'sm' }),
+        h(UAvatar, { text: initials, size: 'md' }),
         h('span', { class: 'font-medium' }, name)
       ])
     }
@@ -87,8 +87,8 @@ const registrationColumns: TableColumn<Registration>[] = [
     header: 'Package',
     cell: ({ row }) => {
       const pkg = row.getValue('package') as string
-      const color = pkg === 'Pro' ? 'primary' : 'neutral'
-      return h(UBadge, { label: pkg, color, variant: 'subtle', size: 'xs' })
+      const color = pkg === 'Pro' ? 'neutral' : 'neutral'
+      return h(UBadge, { label: pkg, color, variant: 'subtle', size: 'md' })
     }
   },
   { accessorKey: 'date', header: 'Registration Date' },
@@ -97,9 +97,9 @@ const registrationColumns: TableColumn<Registration>[] = [
     header: 'Status',
     cell: ({ row }) => {
       const status = row.getValue('status') as string
-      const color = status === 'active' ? 'success' : 'warning'
+      const color = status === 'active' ? 'info' : 'warning'
       const label = status === 'active' ? 'Active' : 'Pending'
-      return h(UBadge, { label, color, variant: 'subtle', size: 'xs' })
+      return h(UBadge, { label, color, variant: 'subtle', size: 'md' })
     }
   },
   {
@@ -119,7 +119,7 @@ const registrationColumns: TableColumn<Registration>[] = [
         icon: 'i-lucide-ellipsis-vertical',
         color: 'neutral',
         variant: 'ghost',
-        size: 'xs'
+        size: 'md'
       }))
     }
   }
@@ -138,9 +138,9 @@ const quickActions = [
     <template #header>
       <UDashboardNavbar title="Admin Dashboard">
         <template #right>
-          <UInput placeholder="Search..." icon="i-lucide-search" class="w-64 hidden md:flex" />
+          <UInput placeholder="Search..." icon="i-lucide-search" color="warning" class="w-64 hidden md:flex" />
           <UButton icon="i-lucide-bell" color="neutral" variant="ghost">
-            <UChip color="error" size="sm">3</UChip>
+            <UChip color="error" size="md">3</UChip>
           </UButton>
           <UColorModeButton />
         </template>
@@ -150,13 +150,13 @@ const quickActions = [
     <template #body>
       <div class="p-6 space-y-6">
         <!-- Stats Grid -->
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           <UCard v-for="stat in stats" :key="stat.label">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-muted">{{ stat.label }}</p>
+                <p class="text-md text-muted">{{ stat.label }}</p>
                 <p class="text-2xl font-bold mt-1">{{ stat.value }}</p>
-                <p class="text-xs text-green-500 mt-1">{{ stat.change }} from last month</p>
+                <p class="text-md text-green-500 mt-1">{{ stat.change }} from last month</p>
               </div>
               <div 
                 class="p-3 rounded-xl"
@@ -189,7 +189,7 @@ const quickActions = [
               <div class="flex items-center justify-between">
                 <h2 class="font-semibold">Today&apos;s Sessions</h2>
                 <NuxtLink to="/admin/schedules">
-                  <UButton label="View All" variant="ghost" size="sm" trailing-icon="i-lucide-arrow-right" />
+                  <UButton label="View All" color="neutral" variant="ghost" size="md" trailing-icon="i-lucide-arrow-right" />
                 </NuxtLink>
               </div>
             </template>
@@ -203,30 +203,28 @@ const quickActions = [
               <h2 class="font-semibold">Quick Actions</h2>
             </template>
 
-            <div class="space-y-3">
+            <div class="grid grid-cols-1 space-y-3">
               <NuxtLink v-for="action in quickActions" :key="action.label" :to="action.to">
                 <UButton 
                   :label="action.label" 
                   :icon="action.icon"
-                  color="neutral"
+                  color="warning"
                   variant="outline"
                   block
                 />
               </NuxtLink>
             </div>
 
-            <USeparator class="my-4" />
-
             <template #footer>
               <div class="space-y-2">
-                <h3 class="font-medium text-sm">Vehicle Status</h3>
+                <h3 class="font-medium text-md">Vehicle Status</h3>
+                <!-- <div class="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                  <span class="text-md">Tesla Model 3</span>
+                  <UBadge label="In Use" color="error" variant="subtle" size="md" />
+                </div> -->
                 <div class="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                  <span class="text-sm">Tesla Model 3</span>
-                  <UBadge label="In Use" color="primary" variant="subtle" size="xs" />
-                </div>
-                <div class="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                  <span class="text-sm">BYD Atto 3</span>
-                  <UBadge label="Available" color="success" variant="subtle" size="xs" />
+                  <span class="text-md">BYD Atto 1</span>
+                  <UBadge label="Available" color="primary" variant="subtle" size="md" />
                 </div>
               </div>
             </template>
@@ -239,7 +237,7 @@ const quickActions = [
             <div class="flex items-center justify-between">
               <h2 class="font-semibold">Recent Registrations</h2>
               <NuxtLink to="/admin/students">
-                <UButton label="Manage Students" variant="ghost" size="sm" trailing-icon="i-lucide-arrow-right" />
+                <UButton label="Manage Students" color="neutral" variant="ghost" size="md" trailing-icon="i-lucide-arrow-right" />
               </NuxtLink>
             </div>
           </template>

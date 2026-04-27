@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
+import { reactive, ref } from 'vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -39,7 +41,7 @@ const passwordData = reactive({
 
 const memberInfo = {
   memberId: 'EVDA-MEM-2026-0042',
-  package: 'Standard Package',
+  package: '8x Session',
   joinDate: 'March 10, 2026',
   expiryDate: 'September 10, 2026'
 }
@@ -89,12 +91,12 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
       <div class="p-6 space-y-6 max-w-4xl">
         <!-- Member Card -->
         <UCard class="bg-gradient-to-r from-warning/10 to-warning/5">
-          <div class="flex flex-col sm:flex-row items-center gap-6">
+          <div class="flex flex-col md:flex-row items-center gap-6">
             <UAvatar text="JD" size="3xl" class="ring-4 ring-warning/20" />
-            <div class="text-center sm:text-left">
+            <div class="text-center md:text-left">
               <h2 class="text-2xl font-bold">{{ profileData.fullName }}</h2>
               <p class="text-muted">{{ profileData.email }}</p>
-              <div class="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
+              <div class="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
                 <UBadge :label="memberInfo.package" color="warning" />
                 <UBadge :label="`ID: ${memberInfo.memberId}`" variant="subtle" />
               </div>
@@ -108,21 +110,21 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
             <h2 class="font-semibold">Membership Information</h2>
           </template>
 
-          <div class="grid sm:grid-cols-2 gap-4">
+          <div class="grid md:grid-cols-2 gap-4">
             <div class="p-4 rounded-lg bg-muted/50">
-              <p class="text-sm text-muted">Member ID</p>
+              <p class="text-md text-muted">Member ID</p>
               <p class="font-medium font-mono">{{ memberInfo.memberId }}</p>
             </div>
             <div class="p-4 rounded-lg bg-muted/50">
-              <p class="text-sm text-muted">Package</p>
+              <p class="text-md text-muted">Package</p>
               <p class="font-medium">{{ memberInfo.package }}</p>
             </div>
             <div class="p-4 rounded-lg bg-muted/50">
-              <p class="text-sm text-muted">Join Date</p>
+              <p class="text-md text-muted">Join Date</p>
               <p class="font-medium">{{ memberInfo.joinDate }}</p>
             </div>
             <div class="p-4 rounded-lg bg-muted/50">
-              <p class="text-sm text-muted">Package Valid Until</p>
+              <p class="text-md text-muted">Package Valid Until</p>
               <p class="font-medium">{{ memberInfo.expiryDate }}</p>
             </div>
           </div>
@@ -135,7 +137,7 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
           </template>
 
           <UForm :schema="profileSchema" :state="profileData" class="space-y-4" @submit="updateProfile">
-            <div class="grid sm:grid-cols-2 gap-4">
+            <div class="grid md:grid-cols-2 gap-4">
               <UFormField name="fullName" label="Full Name">
                 <UInput v-model="profileData.fullName" icon="i-lucide-user" />
               </UFormField>
@@ -170,7 +172,7 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
               <UInput v-model="passwordData.currentPassword" type="password" icon="i-lucide-lock" />
             </UFormField>
 
-            <div class="grid sm:grid-cols-2 gap-4">
+            <div class="grid md:grid-cols-2 gap-4">
               <UFormField name="newPassword" label="New Password">
                 <UInput v-model="passwordData.newPassword" type="password" icon="i-lucide-key" />
               </UFormField>
@@ -212,7 +214,7 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
           <div class="flex items-center justify-between">
             <div>
               <p class="font-medium">Delete Account</p>
-              <p class="text-sm text-muted">Permanently delete your account and all associated data.</p>
+              <p class="text-md text-muted">Permanently delete your account and all associated data.</p>
             </div>
             <UButton label="Delete Account" color="error" variant="outline" icon="i-lucide-trash-2" />
           </div>

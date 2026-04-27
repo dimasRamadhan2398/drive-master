@@ -1,75 +1,186 @@
 <script setup lang="ts">
 const services = [
   {
-    title: 'Basic Driving Course',
+    title: '6x Sessions',
     description: 'Foundation course for complete beginners. Learn the fundamentals of driving in our premium electric vehicles.',
     icon: 'i-lucide-car',
     features: [
-      'Vehicle controls and safety features',
-      'Basic maneuvering and parking',
-      'Traffic rules and regulations',
-      'Road signs recognition',
-      'EV-specific controls introduction'
+      'Free Trial',
+      '6x Sessions',
+      '60 minutes per session',
+      'Night driving session',
+      'Weekend driving session',
+      'Matic transmission',
+      'Free shuttle (Alam Sutra, BSD, Gading Serpong)',
+      'Driving license administration',
+      'Theory materials included',
+      'Certificate of completion',
     ]
   },
   {
-    title: 'Advanced Driving Course',
+    title: '8x Sessions',
     description: 'Take your skills to the next level with advanced techniques and real-world scenarios.',
-    icon: 'i-lucide-gauge',
+    icon: 'i-lucide-car',
     features: [
-      'Highway and expressway driving',
-      'Defensive driving techniques',
-      'Night driving mastery',
-      'Weather condition driving',
-      'Emergency handling procedures'
+      'Free Trial',
+      '8x Sessions',
+      '60 minutes per session',
+      'Night driving session',
+      'Weekend driving session',
+      'Matic transmission',
+      'Free shuttle (Alam Sutra, BSD, Gading Serpong)',
+      'Driving license administration',
+      'Theory materials included',
+      'Certificate of completion',
     ]
   },
   {
-    title: 'EV Specialist Course',
-    description: 'Comprehensive training focused on electric vehicle specific features and best practices.',
-    icon: 'i-lucide-battery-charging',
+    title: '10x Sessions',
+    description: 'Comprehensive Session focused on electric vehicle specific features and best practices.',
+    icon: 'i-lucide-car',
     features: [
-      'Regenerative braking mastery',
-      'One-pedal driving technique',
-      'Battery management basics',
-      'Charging station protocols',
-      'EV maintenance awareness'
+      'Free Trial',
+      '10x Sessions',
+      '60 minutes per session',
+      'Night driving session',
+      'Weekend driving session',
+      'Matic transmission',
+      'Free shuttle (Alam Sutra, BSD, Gading Serpong)',
+      'Driving license administration',
+      'Theory materials included',
+      'Certificate of completion',
     ]
   },
   {
-    title: 'Refresher Course',
+    title: '12x Sessions',
     description: 'Perfect for licensed drivers who want to brush up their skills or transition to EV driving.',
-    icon: 'i-lucide-refresh-cw',
+    icon: 'i-lucide-car',
     features: [
-      'Skills assessment',
-      'Personalized training plan',
-      'Updated traffic regulations',
-      'EV adaptation for manual drivers',
-      'Confidence building sessions'
+      'Free Trial',
+      '12x Sessions',
+      '60 minutes per session',
+      'Night driving session',
+      'Weekend driving session',
+      'Matic transmission',
+      'Free shuttle (Alam Sutra, BSD, Gading Serpong)',
+      'Driving license administration',
+      'Theory materials included',
+      'Certificate of completion',
     ]
   }
 ]
 
-const methodologies = [
+const specifications = [
   {
-    title: 'Theory Learning',
-    description: 'Comprehensive digital materials covering traffic regulations, road safety, and EV-specific knowledge.',
-    icon: 'i-lucide-book-open'
+    title: 'Special Services',
+    subtitle: 'The Advantage of choosing Us',
+    description: [
+      'SIM',
+      'Free shuttle (Alam Sutra, BSD, Gading Serpong)',
+      'Theory materials included',
+      'Certificate of completion',
+    ],
+    icon: 'i-lucide-star'
   },
   {
-    title: 'Simulator Training',
-    description: 'Practice in our advanced driving simulators before hitting the real road.',
-    icon: 'i-lucide-monitor'
-  },
-  {
-    title: 'Practical Sessions',
-    description: 'Hands-on training in our premium electric vehicles with experienced instructors.',
+    title: 'Session Time',
+    subtitle: 'Our original session time',
+    description: [
+      'Session in weekdays(days) open from 08:00 to 17:00',
+      '60 minutes per session',
+      'Night driving session',
+      'Weekend driving session',
+    ],
     icon: 'i-lucide-car'
   },
   {
-    title: 'Assessment & Certification',
-    description: 'Comprehensive evaluation and digital certificate upon successful completion.',
-    icon: 'i-lucide-award'
+    title: 'Car Transmission',
+    subtitle: 'Our car using matic transmission',
+    description: [
+      'Matic Transmission',
+    ],
+    icon: 'i-lucide-car'
+  },
+  {
+    title: 'Night Session',
+    subtitle: 'Additional price for night session',
+    description: [
+      'Session at night open from 18:00 to 20:00',
+      'Base price 6x sessions + Rp.100,000 for night session',
+      'Base price 8x sessions + Rp.150,000 for night session',
+      'Base price 10x sessions + Rp.200,000 for night session',
+      'Base price 12x sessions + Rp.250,000 for night session',
+    ],
+    icon: 'i-lucide-moon'
+  },
+  {
+    title: 'Weekend Session',
+    subtitle: 'Additional price for weekend session',
+    description: [
+      'Session in weekend(days) open from 08:00 to 17:00',
+      'Base price 6x sessions + Rp.100,000 for session in weekend',
+      'Base price 8x sessions + Rp.150,000 for session in weekend',
+      'Base price 10x sessions + Rp.200,000 for session in weekend',
+      'Base price 12x sessions + Rp.250,000 for session in weekend',
+    ],
+    icon: 'i-lucide-clock'
+  }
+]
+
+// Course Material
+const courseMaterial = [
+  {
+    title: 'Material Theory',
+    description: [
+      'Vehicle Introduction and Basic Controls',
+      'Cockpit training (ergonomic seating position, center and side mirror adjustment, and seat belt use)',
+      'Introduction to instruments (gas pedal, brake, transmission lever, handbrake, indicator lights in the dashboard)',
+      'Safety check (check the condition of tires, oil and radiator water before driving)'
+    ],
+    icon:'i-lucide-book-open'
+  },
+  {
+    title: 'Initial Control',
+    description: [
+      'Starting & stopping the engine (standard procedure for starting the engine safely)',
+      'Accelerator pedal technique safely (balanced and smooth)',
+      'Braking and stopping techniques (smooth braking and how to stop at a certain point precisely)',
+    ],
+    icon: 'i-lucide-shield-check'
+  },
+  {
+    title: 'Basic Maneuvering Techniques',
+    description: [
+      'Steering control (steering wheel turning technique when turning quickly)',
+      'Reverse (controlling the car to reverse using only the rearview mirror)',
+      'Turning at an intersection (technique for taking the correct turning angle to the left or right)',
+    ],
+    icon: 'i-lucide-radar'
+  },
+  {
+    title: 'Driving Techniques on Uphill & Downhill Roads',
+    description: [
+      'Start-stop technique on an incline',
+      'Start-stop technique on a downhill',
+    ],
+    icon: 'i-lucide-car'
+  },
+  {
+    title: 'Parking Technic',
+    description: [
+      'Reverse parking at an angle or straight (enter the parking slot with the car in reverse)',
+      'Parallel parking (a technique of inserting a car between two other vehicles parallel to each other)',
+    ],
+    icon: 'i-lucide-car'
+  },
+  {
+    title: 'Driving on the Highway',
+    description: [
+      'Road signs and markings (obey traffic signs, no parking signs and road markings)',
+      'Driving ethics (using turn signals, maintaining a safe distance, and how to overtake other vehicles correctly)',
+      'Blind spot (a technique for checking areas that are not visible in the rearview mirror before changing lanes)',
+    ],
+    icon: 'i-lucide-car'
   }
 ]
 
@@ -95,9 +206,9 @@ const serviceAreas = [
       ]"
     />
 
-    <!-- Service Types -->
+    <!-- Service Types
     <UPageSection
-      headline="Training Programs"
+      headline="Programs"
       title="Choose Your Learning Path"
       description="We offer a variety of courses tailored to different skill levels and learning objectives."
       :ui="{ headline: 'text-warning' }"
@@ -131,32 +242,67 @@ const serviceAreas = [
         </UCard>
       </div>
     </UPageSection>
+    -->
 
-    <!-- Training Methodology -->
+    <!-- Our Services -->
     <UPageSection
-      headline="How We Teach"
-      title="Our Training Methodology"
-      description="A structured approach that combines theory, simulation, and practical experience."
       :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div v-for="(method, index) in methodologies" :key="method.title" class="text-center">
-          <div class="relative mb-4">
-            <div class="mx-auto w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center">
-              <UIcon :name="method.icon" class="size-8 text-warning" />
+      <div class="grid md:grid-cols-1 gap-6">
+        <UCard v-for="specification in specifications" :key="specification.title">
+          <template #header>
+            <div class="flex items-start gap-4">
+              <div class="p-3 rounded-xl bg-warning/10">
+                <UIcon :name="specification.icon" class="size-8 text-warning" />
+              </div>
+              <div>
+                <h3 class="text-xl font-bold">{{ specification.title }}</h3>
+                <p class="text-muted mt-1">{{ specification.subtitle }}</p>
+              </div>
             </div>
-            <div class="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-warning text-white flex items-center justify-center text-sm font-bold">
-              {{ index + 1 }}
-            </div>
-          </div>
-          <h3 class="font-semibold mb-2">{{ method.title }}</h3>
-          <p class="text-sm text-muted">{{ method.description }}</p>
-        </div>
+          </template>
+
+          <ul class="space-y-2">
+            <li v-for="spec in specification.description" :key="spec" class="flex items-center gap-2 font-bold">
+              <span class="text-sm">{{ spec }}</span>
+            </li>
+          </ul>
+
+        </UCard>
       </div>
     </UPageSection>
 
-    <!-- Facilities -->
+    <!-- Course Material -->
+    <UPageSection
+      id="material"
+      headline="Course material you will study"
+      title="Course Material"
+      description="Course material that you learn will make you more confident in driving."
+      :ui="{ headline: 'text-warning' }"
+      class="bg-muted/30"
+    >
+      <UPageGrid>
+        <UPageCard
+          v-for="material in courseMaterial"
+          :key="material.title"
+          :icon="material.icon"
+          :title="material.title"
+          :ui="{ leadingIcon: 'text-warning text-3xl' }"
+        >
+          <template #description>
+            <ul class="space-y-2 mt-2">
+              <li v-for="item in material.description" :key="item" class="flex items-start gap-2 text-muted">
+                <UIcon name="i-lucide-check-circle" class="size-4 text-warning shrink-0 mt-1" />
+                <span class="text-sm">{{ item }}</span>
+              </li>
+            </ul>
+          </template>
+        </UPageCard>
+      </UPageGrid>
+    </UPageSection>
+
+    <!-- Facilities
     <UPageSection
       headline="Premium Fleet"
       title="Learn in the Best Electric Vehicles"
@@ -173,9 +319,7 @@ const serviceAreas = [
           <h3 class="text-xl font-bold mb-2">Tesla Model 3</h3>
           <p class="text-muted mb-4">Experience the future of driving with Tesla&apos;s revolutionary autopilot features and instant torque delivery.</p>
           <div class="flex flex-wrap gap-2">
-            <UBadge label="Autopilot" variant="subtle" color="warning" />
-            <UBadge label="Dual Motor" variant="subtle" color="warning" />
-            <UBadge label="Dual Control" variant="subtle" color="warning" />
+            <UBadge label="Matic" variant="subtle" color="warning" />
           </div>
         </UCard>
 
@@ -189,12 +333,13 @@ const serviceAreas = [
           <p class="text-muted mb-4">A compact SUV perfect for urban driving lessons with excellent visibility and responsive handling.</p>
           <div class="flex flex-wrap gap-2">
             <UBadge label="SUV" variant="subtle" color="warning" />
-            <UBadge label="Urban Friendly" variant="subtle" color="warning" />
-            <UBadge label="Dual Control" variant="subtle" color="warning" />
+            <UBadge label="Matic" variant="subtle" color="warning" />
+          
           </div>
         </UCard>
       </div>
     </UPageSection>
+  -->
 
     <!-- Service Areas -->
     <UPageSection
@@ -215,7 +360,7 @@ const serviceAreas = [
         </UCard>
         
         <p class="text-center text-muted mt-6">
-          Training sessions depart from our Alam Sutera center. Contact us for specific route availability.
+          Sessions depart from our Alam Sutera center. Contact us for specific route availability.
         </p>
       </div>
     </UPageSection>

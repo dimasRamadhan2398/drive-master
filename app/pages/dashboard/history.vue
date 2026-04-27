@@ -14,7 +14,7 @@ const trainingHistory = ref([
     date: 'Mar 25, 2026',
     time: '09:30 AM - 10:30 AM',
     duration: '60 min',
-    car: 'Tesla Model 3',
+    car: 'BYD Atto 1',
     instructor: 'Pak Ahmad',
     topic: 'Highway Driving Basics',
     status: 'completed',
@@ -27,7 +27,7 @@ const trainingHistory = ref([
     date: 'Mar 22, 2026',
     time: '11:00 AM - 12:00 PM',
     duration: '60 min',
-    car: 'BYD Atto 3',
+    car: 'BYD Atto 1',
     instructor: 'Bu Sari',
     topic: 'Parking & Maneuvering',
     status: 'completed',
@@ -40,7 +40,7 @@ const trainingHistory = ref([
     date: 'Mar 18, 2026',
     time: '14:30 PM - 15:30 PM',
     duration: '60 min',
-    car: 'Tesla Model 3',
+    car: 'BYD Atto 1',
     instructor: 'Pak Budi',
     topic: 'City Driving',
     status: 'completed',
@@ -53,7 +53,7 @@ const trainingHistory = ref([
     date: 'Mar 15, 2026',
     time: '08:00 AM - 09:00 AM',
     duration: '60 min',
-    car: 'BYD Atto 3',
+    car: 'BYD Atto 1',
     instructor: 'Pak Ahmad',
     topic: 'Introduction & Basic Controls',
     status: 'completed',
@@ -112,7 +112,7 @@ const totalHours = computed(() => {
     <template #body>
       <div class="p-6 space-y-6">
         <!-- Summary Stats -->
-        <div class="grid sm:grid-cols-3 gap-4">
+        <div class="grid md:grid-cols-3 gap-4">
           <UCard>
             <div class="flex items-center gap-4">
               <div class="p-3 rounded-xl bg-primary/10">
@@ -120,7 +120,7 @@ const totalHours = computed(() => {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ trainingHistory.filter(s => s.status === 'completed').length }}</p>
-                <p class="text-sm text-muted">Sessions Completed</p>
+                <p class="text-md text-muted">Sessions Completed</p>
               </div>
             </div>
           </UCard>
@@ -132,7 +132,7 @@ const totalHours = computed(() => {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ totalHours }} hrs</p>
-                <p class="text-sm text-muted">Total Training Time</p>
+                <p class="text-md text-muted">Total Training Time</p>
               </div>
             </div>
           </UCard>
@@ -144,7 +144,7 @@ const totalHours = computed(() => {
               </div>
               <div>
                 <p class="text-2xl font-bold">4.5</p>
-                <p class="text-sm text-muted">Average Rating</p>
+                <p class="text-md text-muted">Average Rating</p>
               </div>
             </div>
           </UCard>
@@ -174,11 +174,11 @@ const totalHours = computed(() => {
                         :label="session.status === 'completed' ? 'Completed' : 'Cancelled'"
                         :color="session.status === 'completed' ? 'success' : 'error'"
                         variant="subtle"
-                        size="xs"
+                        size="md"
                       />
                     </div>
-                    <p class="text-sm text-muted mt-1">{{ session.date }} | {{ session.time }}</p>
-                    <div class="flex items-center gap-4 mt-2 text-sm text-muted">
+                    <p class="text-md text-muted mt-1">{{ session.date }} | {{ session.time }}</p>
+                    <div class="flex items-center gap-4 mt-2 text-md text-muted">
                       <span class="flex items-center gap-1">
                         <UIcon name="i-lucide-car" class="size-4" />
                         {{ session.car }}
@@ -205,13 +205,13 @@ const totalHours = computed(() => {
                       class="size-4"
                     />
                   </div>
-                  <UButton label="View Details" variant="ghost" size="xs" icon="i-lucide-eye" />
+                  <UButton label="View Details" variant="ghost" size="md" icon="i-lucide-eye" />
                 </div>
               </div>
 
               <div v-if="session.notes" class="mt-4 p-3 rounded-lg bg-muted/50">
-                <p class="text-xs text-muted mb-1">Instructor Notes:</p>
-                <p class="text-sm">{{ session.notes }}</p>
+                <p class="text-md text-muted mb-1">Instructor Notes:</p>
+                <p class="text-md">{{ session.notes }}</p>
               </div>
             </div>
 

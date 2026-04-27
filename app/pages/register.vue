@@ -4,31 +4,36 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { reactive, ref } from 'vue'
 import { navigateTo } from 'nuxt/app'
 
-const currentStep = ref(1)
+definePageMeta({
+  layout: 'blank'
+})
+
+const currentStep = ref(0)
 const totalSteps = 3
 
 const packageOptions = [
-  { label: 'Starter - Rp 1.500.000', value: 'starter' },
-  { label: 'Standard - Rp 2.800.000 (Popular)', value: 'standard' },
-  { label: 'Pro - Rp 4.500.000', value: 'pro' }
+  { label: '6x Session - Rp 1.750.000', value: '6x' },
+  { label: '8x Session - Rp 1.950.000 (Popular)', value: '8x' },
+  { label: '10x Session - Rp 2.250.000', value: '10x' },
+  { label: '12x Session - Rp 2.650.000', value: '12x' }
 ]
 
-// Step 1: Personal Info
-const step1Schema = z.object({
+// Step 0: Personal Info
+const step0Schema = z.object({
   fullName: z.string().min(3, 'Name must be at least 3 characters'),
   email: z.string().email('Please enter a valid email'),
   phone: z.string().min(10, 'Please enter a valid phone number'),
   birthDate: z.string().min(1, 'Please enter your birth date')
 })
 
-// Step 2: Package Selection
-const step2Schema = z.object({
+// Step 1: Package Selection
+const step1Schema = z.object({
   package: z.string().min(1, 'Please select a package'),
   startDate: z.string().optional()
 })
 
-// Step 3: Account
-const step3Schema = z.object({
+// Step 2: Account
+const step2Schema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
   terms: z.boolean().refine(val => val === true, 'You must accept the terms')
@@ -38,15 +43,15 @@ const step3Schema = z.object({
 })
 
 const formData = reactive({
-  // Step 1
+  // Step 0
   fullName: '',
   email: '',
   phone: '',
   birthDate: '',
-  // Step 2
-  package: 'standard',
+  // Step 1
+  package: '8x',
   startDate: '',
-  // Step 3
+  // Step 2
   password: '',
   confirmPassword: '',
   terms: false
@@ -54,7 +59,7 @@ const formData = reactive({
 
 const loading = ref(false)
 
-const stepSchemas = [step1Schema, step2Schema, step3Schema]
+const stepSchemas = [step0Schema, step1Schema, step2Schema]
 
 async function nextStep() {
   currentStep.value++
@@ -65,7 +70,7 @@ async function prevStep() {
 }
 
 async function onSubmit(event: FormSubmitEvent<any>) {
-  if (currentStep.value < totalSteps) {
+  if (currentStep.value < totalSteps - 1) {
     nextStep()
     return
   }
@@ -73,8 +78,16 @@ async function onSubmit(event: FormSubmitEvent<any>) {
   loading.value = true
   await new Promise(resolve => setTimeout(resolve, 1500))
   loading.value = false
+
+  // Simpan data kontak ke sessionStorage agar bisa digunakan di halaman payment
+  if (import.meta.client) {
+    sessionStorage.setItem('dm_reg_email', formData.email)
+    sessionStorage.setItem('dm_reg_phone', formData.phone)
+  }
+
+  console.log('[v0] Registration submitted, redirecting to verify:', formData.email)
   
-  navigateTo('/dashboard')
+  navigateTo(`/verify?email=${encodeURIComponent(formData.email)}`)
 }
 
 const stepItems = [
@@ -93,7 +106,7 @@ const stepItems = [
           <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
         </div>
         <h1 class="text-2xl font-bold">Create Your Account</h1>
-        <p class="text-muted mt-2">Join our premium EV driving academy</p>
+        <p class="text-muted mt-2">Join our Drive Master course</p>
       </div>
 
       <!-- Stepper -->
@@ -105,10 +118,10 @@ const stepItems = [
       />
 
       <UCard>
-        <!-- Step 1: Personal Info -->
+        <!-- Step 0: Personal Info -->
         <UForm 
-          v-if="currentStep === 1"
-          :schema="step1Schema" 
+          v-if="currentStep === 0"
+          :schema="step0Schema" 
           :state="formData" 
           class="space-y-4"
           @submit="onSubmit"
@@ -119,6 +132,8 @@ const stepItems = [
               placeholder="Enter your full name"
               icon="i-lucide-user"
               size="lg"
+              class="w-full"
+              color="warning"
             />
           </UFormField>
 
@@ -129,6 +144,8 @@ const stepItems = [
               placeholder="you@example.com"
               icon="i-lucide-mail"
               size="lg"
+              class="w-full"
+              color="warning"
             />
           </UFormField>
 
@@ -138,6 +155,8 @@ const stepItems = [
               placeholder="08123456789"
               icon="i-lucide-phone"
               size="lg"
+              class="w-full"
+              color="warning"
             />
           </UFormField>
 
@@ -146,6 +165,8 @@ const stepItems = [
               v-model="formData.birthDate"
               type="date"
               size="lg"
+              class="w-full"
+              color="warning"
             />
           </UFormField>
 
@@ -154,71 +175,10 @@ const stepItems = [
           </div>
         </UForm>
 
-        <!-- Step 2: Package Selection -->
+        <!-- Step 1: Account Creation -->
         <UForm 
-          v-if="currentStep === 2"
-          :schema="step2Schema" 
-          :state="formData" 
-          class="space-y-4"
-          @submit="onSubmit"
-        >
-          <UFormField name="package" label="Select Package" required>
-            <URadioGroup 
-              v-model="formData.package"
-              :items="packageOptions"
-              orientation="vertical"
-              color="warning"
-            />
-          </UFormField>
-
-          <!-- Package Summary -->
-          <UAlert 
-            v-if="formData.package"
-            :icon="formData.package === 'standard' ? 'i-lucide-star' : 'i-lucide-info'"
-            :color="formData.package === 'standard' ? 'warning' : 'neutral'"
-          >
-            <template #title>
-              {{ formData.package === 'starter' ? 'Starter Package' : formData.package === 'standard' ? 'Standard Package (Recommended)' : 'Pro Package' }}
-            </template>
-            <template #description>
-              <ul class="mt-2 space-y-1 text-sm">
-                <template v-if="formData.package === 'starter'">
-                  <li>5 sessions x 45 minutes</li>
-                  <li>Basic driving fundamentals</li>
-                  <li>Certificate of completion</li>
-                </template>
-                <template v-else-if="formData.package === 'standard'">
-                  <li>10 sessions x 60 minutes</li>
-                  <li>Highway & city driving</li>
-                  <li>EV-specific training + Official Certificate</li>
-                </template>
-                <template v-else>
-                  <li>15 sessions x 90 minutes</li>
-                  <li>Complete mastery program</li>
-                  <li>Premium Certificate + Lifetime refresher</li>
-                </template>
-              </ul>
-            </template>
-          </UAlert>
-
-          <UFormField name="startDate" label="Preferred Start Date (Optional)">
-            <UInput 
-              v-model="formData.startDate"
-              type="date"
-              size="lg"
-            />
-          </UFormField>
-
-          <div class="flex justify-between pt-4">
-            <UButton label="Back" variant="ghost" color="neutral" icon="i-lucide-arrow-left" @click="prevStep" />
-            <UButton type="submit" label="Continue" color="warning" trailingIcon="i-lucide-arrow-right" size="lg" />
-          </div>
-        </UForm>
-
-        <!-- Step 3: Account Creation -->
-        <UForm 
-          v-if="currentStep === 3"
-          :schema="step3Schema" 
+          v-if="currentStep === 1"
+          :schema="step1Schema" 
           :state="formData" 
           class="space-y-4"
           @submit="onSubmit"
@@ -237,6 +197,8 @@ const stepItems = [
               placeholder="Create a strong password"
               icon="i-lucide-lock"
               size="lg"
+              class="w-full"
+              color="warning"
             />
           </UFormField>
 
@@ -247,6 +209,8 @@ const stepItems = [
               placeholder="Confirm your password"
               icon="i-lucide-lock"
               size="lg"
+              class="w-full"
+              color="warning"
             />
           </UFormField>
 
@@ -273,6 +237,79 @@ const stepItems = [
               icon="i-lucide-check"
               size="lg"
             />
+          </div>
+        </UForm>
+
+        <!-- Step 2: Package Selection -->
+        <UForm 
+          v-if="currentStep === 2"
+          :schema="step2Schema" 
+          :state="formData" 
+          class="space-y-4"
+          @submit="onSubmit"
+        >
+          <UFormField name="package" label="Select Package" required>
+            <URadioGroup 
+              v-model="formData.package"
+              :items="packageOptions"
+              orientation="vertical"
+              color="warning"
+            />
+          </UFormField>
+
+          <!-- Package Summary -->
+          <UAlert 
+            v-if="formData.package"
+            :icon="formData.package === '8x' ? 'i-lucide-star' : 'i-lucide-info'"
+            :color="formData.package === '8x' ? 'warning' : 'neutral'"
+          >
+            <template #title>
+              {{ formData.package === '6x' ? '6x Session' : formData.package === '8x' ? '8x Session (Recommended)' : formData.package === '10x' ? '10x Session' : '12x Session' }}
+            </template>
+            <template #description>
+              <ul class="mt-2 space-y-1 text-sm">
+                <template v-if="formData.package === '6x'">
+                  <li>Free Trial</li>
+                  <li>6x Sessions</li>
+                </template>
+                <template v-else-if="formData.package === '8x'">
+                  <li>Free Trial</li>
+                  <li>8x Sessions</li>
+                </template>
+                <template v-else-if="formData.package === '10x'">
+                  <li>Free Trial</li>
+                  <li>10x Sessions</li>
+                </template>
+                <template v-else-if="formData.package === '12x'">
+                  <li>Free Trial</li>
+                  <li>12x Sessions</li>
+                </template>
+              </ul>
+            </template>
+          </UAlert>
+
+          <div class="text-center">
+            <p class="text-sm text-muted">
+              Let me decide later
+              <NuxtLink to="/onboarding" class="text-warning font-medium hover:underline">
+                Go to Onboarding page
+              </NuxtLink>
+            </p>
+          </div>
+
+          <!-- <UFormField name="startDate" label="Preferred Start Date (Optional)">
+            <UInput 
+              v-model="formData.startDate"
+              type="date"
+              size="lg"
+              class="w-full"
+              color="warning"
+            />
+          </UFormField> -->
+
+          <div class="flex justify-between pt-4">
+            <UButton label="Back" variant="ghost" color="neutral" icon="i-lucide-arrow-left" @click="prevStep" />
+            <UButton type="submit" label="Proceed to Payment" color="warning" trailingIcon="i-lucide-arrow-right" size="lg" />
           </div>
         </UForm>
 

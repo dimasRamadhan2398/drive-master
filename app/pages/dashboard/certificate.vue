@@ -19,7 +19,8 @@ const certificateStatus = ref({
 const issuedCertificates = ref([
   {
     id: 'EVDA-2026-001234',
-    type: 'EV Driving Proficiency',
+    title: 'Drive Master Sessions Course',
+    recipientName: 'John Doe',
     issuedDate: 'Apr 15, 2026',
     status: 'issued',
     downloadUrl: '#'
@@ -66,13 +67,13 @@ function downloadCertificate(certId: string) {
               Complete all your training sessions to receive your official EV Driving Certificate.
             </p>
 
-            <div class="max-w-sm mx-auto mt-8 space-y-4">
-              <div class="flex justify-between text-sm">
+            <div class="max-w-md mx-auto mt-8 space-y-4">
+              <div class="flex justify-between text-md">
                 <span class="text-muted">Progress</span>
                 <span class="font-medium">{{ certificateStatus.completedSessions }}/{{ certificateStatus.totalSessions }} sessions</span>
               </div>
               <UProgress :value="certificateStatus.progress" />
-              <p class="text-sm text-muted">
+              <p class="text-md text-muted">
                 {{ certificateStatus.remainingSessions }} more sessions to complete
               </p>
             </div>
@@ -102,20 +103,20 @@ function downloadCertificate(certId: string) {
                 <h2 class="font-semibold">Certificate Preview</h2>
               </template>
 
-              <div class="aspect-[1.414/1] bg-gradient-to-br from-warning/5 to-warning/10 rounded-lg border-2 border-dashed border-warning/30 flex flex-col items-center justify-center p-8 text-center">
+              <div v-for="certificate in issuedCertificates" :key="certificate.id" class="aspect-[1.414/1] bg-gradient-to-br from-warning/5 to-warning/10 rounded-lg border-2 border-dashed border-warning/30 flex flex-col items-center justify-center p-8 text-center">
                 <div class="flex items-center gap-2 mb-4">
                   <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
                 </div>
                 
-                <p class="text-sm text-muted mb-2">This is to certify that</p>
-                <p class="text-2xl font-bold mb-2">John Doe</p>
-                <p class="text-sm text-muted mb-4">has successfully completed the</p>
-                <p class="text-lg font-semibold text-warning mb-4">EV Driving Proficiency Course</p>
+                <p class="text-md text-muted mb-2">This is to certify that</p>
+                <p class="text-2xl font-bold mb-2">{{ certificate.recipientName }}</p>
+                <p class="text-md text-muted mb-4">has successfully completed the</p>
+                <p class="text-lg font-semibold text-warning mb-4">{{ certificate.title }}</p>
                 
                 <div class="mt-4 pt-4 border-t border-dashed border-muted w-full">
-                  <div class="flex justify-between text-sm text-muted">
-                    <span>Certificate ID: EVDA-2026-001234</span>
-                    <span>Issued: Apr 15, 2026</span>
+                  <div class="flex justify-between text-md text-muted">
+                    <span>Certificate ID: {{ certificate.id }}</span>
+                    <span>Issued: {{ certificate.issuedDate }}</span>
                   </div>
                 </div>
               </div>
@@ -137,26 +138,22 @@ function downloadCertificate(certId: string) {
                   <h2 class="font-semibold">Certificate Details</h2>
                 </template>
 
-                <div class="space-y-4">
+                <div v-for="certificate in issuedCertificates" :key="certificate.id" class="space-y-4">
                   <div class="flex justify-between py-2 border-b border-default">
                     <span class="text-muted">Certificate ID</span>
-                    <span class="font-medium font-mono">EVDA-2026-001234</span>
+                    <span class="font-medium font-mono">{{ certificate.id }}</span>
                   </div>
                   <div class="flex justify-between py-2 border-b border-default">
-                    <span class="text-muted">Type</span>
-                    <span class="font-medium">EV Driving Proficiency</span>
+                    <span class="text-muted">Title</span>
+                    <span class="font-medium">{{ certificate.title }}</span>
                   </div>
                   <div class="flex justify-between py-2 border-b border-default">
                     <span class="text-muted">Recipient</span>
-                    <span class="font-medium">John Doe</span>
+                    <span class="font-medium">{{ certificate.recipientName }}</span>
                   </div>
                   <div class="flex justify-between py-2 border-b border-default">
                     <span class="text-muted">Issue Date</span>
-                    <span class="font-medium">April 15, 2026</span>
-                  </div>
-                  <div class="flex justify-between py-2 border-b border-default">
-                    <span class="text-muted">Package</span>
-                    <span class="font-medium">Standard Package</span>
+                    <span class="font-medium">{{ certificate.issuedDate }}</span>
                   </div>
                   <div class="flex justify-between py-2">
                     <span class="text-muted">Status</span>
@@ -173,13 +170,13 @@ function downloadCertificate(certId: string) {
                   </div>
                 </template>
 
-                <p class="text-sm text-muted mb-4">
+                <p class="text-md text-muted mb-4">
                   This certificate can be verified using the certificate ID. Share your achievement on social media or with potential employers.
                 </p>
 
                 <div class="flex gap-2">
-                  <UButton label="Copy Link" icon="i-lucide-copy" variant="outline" color="neutral" size="sm" />
-                  <UButton label="Share" icon="i-lucide-share-2" variant="outline" color="neutral" size="sm" />
+                  <UButton label="Copy Link" icon="i-lucide-copy" variant="outline" color="neutral" size="md" />
+                  <UButton label="Share" icon="i-lucide-share-2" variant="outline" color="neutral" size="md" />
                 </div>
               </UCard>
             </div>
@@ -198,21 +195,21 @@ function downloadCertificate(certId: string) {
                 <UIcon name="i-lucide-file-badge" class="size-7 text-warning" />
               </div>
               <h3 class="font-semibold mb-1">Official Recognition</h3>
-              <p class="text-sm text-muted">Our certificates are recognized by industry partners and employers.</p>
+              <p class="text-md text-muted">Our certificates are recognized by industry partners and employers.</p>
             </div>
             <div class="text-center">
               <div class="mx-auto w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center mb-3">
                 <UIcon name="i-lucide-qr-code" class="size-7 text-warning" />
               </div>
               <h3 class="font-semibold mb-1">Digital Verification</h3>
-              <p class="text-sm text-muted">Each certificate includes a unique ID for easy online verification.</p>
+              <p class="text-md text-muted">Each certificate includes a unique ID for easy online verification.</p>
             </div>
             <div class="text-center">
               <div class="mx-auto w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center mb-3">
                 <UIcon name="i-lucide-infinity" class="size-7 text-warning" />
               </div>
               <h3 class="font-semibold mb-1">Lifetime Validity</h3>
-              <p class="text-sm text-muted">Your certificate never expires and remains valid indefinitely.</p>
+              <p class="text-md text-muted">Your certificate never expires and remains valid indefinitely.</p>
             </div>
           </div>
         </UCard>
