@@ -1,7 +1,7 @@
 import { defineNuxtConfig } from "nuxt/config";
 
 export default defineNuxtConfig({
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   modules: ['@nuxt/ui'],
   css: ['~/assets/css/main.css'],
   colorMode: {
@@ -23,6 +23,13 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/drive-master-icon.svg' }
       ]
+    }
+  },
+  vite: {
+    server: {
+      watch: {
+        usePolling: true
+      }
     }
   },
   compatibilityDate: '2026-04-07'
