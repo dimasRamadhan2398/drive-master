@@ -1,69 +1,49 @@
 <script setup lang="ts">
 const packages = [
   {
-    title: 'Free',
-    price: 'Rp 0',
-    priceNote: 'Only Registration',
-    description: 'Perfect for user who want to try our service.',
-    features: [
-      { text: '1 training sessions', included: true },
-      { text: '60 minutes per session', included: true },
-      { text: 'Basic driving fundamentals', included: true },
-      { text: 'Theory materials included', included: true },
-    ],
-    highlight: false,
-    color: 'neutral' as const
-  },
-  {
-    title: 'Starter',
+    title: '6x',
     price: 'Rp 1.500.000',
-    priceNote: 'One-time payment',
+    // priceNote: 'One-time payment',
     description: 'Perfect for beginners looking to get started with driving basics.',
     features: [
-      { text: '5 training sessions', included: true },
-      { text: '45 minutes per session', included: true },
-      { text: 'Basic driving fundamentals', included: true },
-      { text: 'Theory materials included', included: true },
-      { text: 'Certificate of completion', included: true },
-      { text: 'Highway driving', included: false },
-      { text: 'EV-specific training', included: false },
-      { text: 'Night driving', included: false }
+      { text: 'Free Trial', included: true },
+      { text: '6x Sessions', included: true },
     ],
     highlight: false,
     color: 'neutral' as const
   },
   {
-    title: 'Standard',
-    price: 'Rp 2.800.000',
-    priceNote: 'One-time payment',
+    title: '8x',
+    price: 'Rp 1.950.000',
+    // priceNote: 'One-time payment',
     description: 'Our most popular package for comprehensive learning.',
     features: [
-      { text: '10 training sessions', included: true },
-      { text: '60 minutes per session', included: true },
-      { text: 'Basic & advanced techniques', included: true },
-      { text: 'Theory materials included', included: true },
-      { text: 'Highway & city driving', included: true },
-      { text: 'EV-specific training', included: true },
-      { text: 'Official EV Certificate', included: true },
-      { text: 'Night driving', included: false }
+      { text: 'Free Trial', included: true },
+      { text: '8x Sessions', included: true },
     ],
     highlight: true,
     color: 'warning' as const
   },
   {
-    title: 'Pro',
-    price: 'Rp 4.500.000',
-    priceNote: 'One-time payment',
+    title: '10x',
+    price: 'Rp 2.250.000',
+    // priceNote: 'One-time payment',
     description: 'Complete mastery with unlimited support and premium perks.',
     features: [
-      { text: '15 training sessions', included: true },
-      { text: '90 minutes per session', included: true },
-      { text: 'Full driving mastery program', included: true },
-      { text: 'Theory materials included', included: true },
-      { text: 'Highway & city driving', included: true },
-      { text: 'EV-specific training', included: true },
-      { text: 'Night & weather driving', included: true },
-      { text: 'Premium EV Certificate', included: true }
+      { text: 'Free Trial', included: true },
+      { text: '10x Sessions', included: true },
+    ],
+    highlight: false,
+    color: 'neutral' as const
+  },
+  {
+    title: '12x',
+    price: 'Rp 2.650.000',
+    // priceNote: 'One-time payment',
+    description: 'Complete mastery with unlimited support and premium perks.',
+    features: [
+      { text: 'Free Trial', included: true },
+      { text: '12x Sessions', included: true },
     ],
     highlight: false,
     color: 'neutral' as const
@@ -71,19 +51,9 @@ const packages = [
 ]
 
 const comparisonFeatures = [
-  { name: 'Training Sessions', free: '1', starter: '5', standard: '10', pro: '15' },
-  { name: 'Session Duration', free: '60 min', starter: '45 min', standard: '60 min', pro: '90 min' },
-  { name: 'Total Training Hours', free: '1 hrs', starter: '3.75 hrs', standard: '10 hrs', pro: '22.5 hrs' },
-  { name: 'Theory Materials', free: true, starter: true, standard: true, pro: true },
-  { name: 'Basic Driving', free: true, starter: true, standard: true, pro: true },
-  { name: 'Advanced Techniques', free: false, starter: false, standard: true, pro: true },
-  { name: 'Highway Driving', free: false, tarter: false, standard: true, pro: true },
-  { name: 'Night Driving', free: false, starter: false, standard: false, pro: true },
-  { name: 'Weather Driving', free: false, starter: false, standard: false, pro: true },
-  { name: 'EV-Specific Training', free: false, starter: false, standard: true, pro: true },
-  { name: 'EV Maintenance Basics', free: false, starter: false, standard: false, pro: true },
-  { name: 'Certificate Type', free: false, starter: 'Basic', standard: 'EV Cert', pro: 'Premium' },
-  { name: 'Refresher Access', free: '7 days', starter: '30 days', standard: '6 months', pro: 'Lifetime' }
+  { name: 'Free Trial', pkg6x: true, pkg8x: true, pkg10x: true, pkg12x: true },
+  { name: 'Sessions', pkg6x: '6', pkg8x: '8', pkg10x: '10', pkg12x: '12' },
+  { name: 'Total Hours', pkg6x: '6 hrs', pkg8x: '8 hrs', pkg10x: '10 hrs', pkg12x: '12 hrs' },
 ]
 
 const addOns = [
@@ -93,18 +63,6 @@ const addOns = [
     description: 'Add more practice time to any package',
     icon: 'i-lucide-plus-circle'
   },
-  {
-    title: 'Simulator Session',
-    price: 'Rp 150.000',
-    description: 'Practice in our advanced driving simulator',
-    icon: 'i-lucide-monitor'
-  },
-  {
-    title: 'SIM Exam Prep',
-    price: 'Rp 500.000',
-    description: 'Dedicated preparation for official license test',
-    icon: 'i-lucide-graduation-cap'
-  }
 ]
 </script>
 
@@ -144,7 +102,7 @@ const addOns = [
               <div class="mt-4">
                 <span class="text-4xl font-bold text-warning">{{ pkg.price }}</span>
               </div>
-              <p class="text-sm text-muted mt-1">{{ pkg.priceNote }}</p>
+              <!-- <p class="text-sm text-muted mt-1">{{ pkg.priceNote }}</p> -->
               <p class="text-muted mt-4">{{ pkg.description }}</p>
             </div>
           </template>
@@ -197,15 +155,15 @@ const addOns = [
           <thead>
             <tr class="border-b border-default">
               <th class="text-left py-4 px-4 font-semibold">Feature</th>
-              <th class="text-center py-4 px-4 font-semibold">Free</th>
-              <th class="text-center py-4 px-4 font-semibold">Starter</th>
+              <th class="text-center py-4 px-4 font-semibold">6x</th>
               <th class="text-center py-4 px-4 font-semibold">
                 <div class="flex items-center justify-center gap-2">
-                  Standard
+                  8x
                   <UBadge label="Popular" size="xs" color="warning" />
                 </div>
               </th>
-              <th class="text-center py-4 px-4 font-semibold">Pro</th>
+              <th class="text-center py-4 px-4 font-semibold">10x</th>
+              <th class="text-center py-4 px-4 font-semibold">12x</th>
             </tr>
           </thead>
           <tbody>
@@ -216,51 +174,51 @@ const addOns = [
             >
               <td class="py-3 px-4 text-sm">{{ feature.name }}</td>
               <td class="py-3 px-4 text-center">
-                <template v-if="typeof feature.free === 'boolean'">
+                <template v-if="typeof feature.pkg6x === 'boolean'">
                   <UIcon 
-                    :name="feature.free ? 'i-lucide-check' : 'i-lucide-minus'" 
-                    :class="feature.free ? 'text-warning' : 'text-muted'" 
+                    :name="feature.pkg6x ? 'i-lucide-check' : 'i-lucide-minus'" 
+                    :class="feature.pkg6x ? 'text-warning' : 'text-muted'" 
                     class="size-5"
                   />
                 </template>
                 <template v-else>
-                  <span class="text-sm">{{ feature.free }}</span>
-                </template>
-              </td>
-              <td class="py-3 px-4 text-center">
-                <template v-if="typeof feature.starter === 'boolean'">
-                  <UIcon 
-                    :name="feature.starter ? 'i-lucide-check' : 'i-lucide-minus'" 
-                    :class="feature.starter ? 'text-warning' : 'text-muted'" 
-                    class="size-5"
-                  />
-                </template>
-                <template v-else>
-                  <span class="text-sm">{{ feature.starter }}</span>
+                  <span class="text-sm">{{ feature.pkg6x }}</span>
                 </template>
               </td>
               <td class="py-3 px-4 text-center bg-warning/5">
-                <template v-if="typeof feature.standard === 'boolean'">
+                <template v-if="typeof feature.pkg8x === 'boolean'">
                   <UIcon 
-                    :name="feature.standard ? 'i-lucide-check' : 'i-lucide-minus'" 
-                    :class="feature.standard ? 'text-warning' : 'text-muted'" 
+                    :name="feature.pkg8x ? 'i-lucide-check' : 'i-lucide-minus'" 
+                    :class="feature.pkg8x ? 'text-warning' : 'text-muted'" 
                     class="size-5"
                   />
                 </template>
                 <template v-else>
-                  <span class="text-sm font-medium">{{ feature.standard }}</span>
+                  <span class="text-sm font-medium">{{ feature.pkg8x }}</span>
                 </template>
               </td>
               <td class="py-3 px-4 text-center">
-                <template v-if="typeof feature.pro === 'boolean'">
+                <template v-if="typeof feature.pkg10x === 'boolean'">
                   <UIcon 
-                    :name="feature.pro ? 'i-lucide-check' : 'i-lucide-minus'" 
-                    :class="feature.pro ? 'text-warning' : 'text-muted'" 
+                    :name="feature.pkg10x ? 'i-lucide-check' : 'i-lucide-minus'" 
+                    :class="feature.pkg10x ? 'text-warning' : 'text-muted'" 
                     class="size-5"
                   />
                 </template>
                 <template v-else>
-                  <span class="text-sm">{{ feature.pro }}</span>
+                  <span class="text-sm">{{ feature.pkg10x }}</span>
+                </template>
+              </td>
+              <td class="py-3 px-4 text-center">
+                <template v-if="typeof feature.pkg12x === 'boolean'">
+                  <UIcon 
+                    :name="feature.pkg12x ? 'i-lucide-check' : 'i-lucide-minus'" 
+                    :class="feature.pkg12x ? 'text-warning' : 'text-muted'" 
+                    class="size-5"
+                  />
+                </template>
+                <template v-else>
+                  <span class="text-sm">{{ feature.pkg12x }}</span>
                 </template>
               </td>
             </tr>
@@ -268,10 +226,10 @@ const addOns = [
           <tfoot>
             <tr class="bg-muted/50">
               <td class="py-4 px-4 font-semibold">Price</td>
-              <td class="py-4 px-4 text-center font-semibold">Rp 0</td>
-              <td class="py-4 px-4 text-center font-semibold">Rp 1.500.000</td>
-              <td class="py-4 px-4 text-center font-semibold text-warning bg-warning/10">Rp 2.800.000</td>
-              <td class="py-4 px-4 text-center font-semibold">Rp 4.500.000</td>
+              <td class="py-4 px-4 text-center font-semibold">Rp 1.750.000</td>
+              <td class="py-4 px-4 text-center font-semibold text-warning bg-warning/10">Rp 1.950.000</td>
+              <td class="py-4 px-4 text-center font-semibold">Rp 2.250.000</td>
+              <td class="py-4 px-4 text-center font-semibold">Rp 2.650.000</td>
             </tr>
           </tfoot>
         </table>
@@ -285,7 +243,7 @@ const addOns = [
       description="Enhance your learning experience with these additional services."
       :ui="{ headline: 'text-warning' }"
     >
-      <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+      <div class="grid md:grid-cols-1 gap-6 max-w-4xl mx-auto">
         <UCard v-for="addon in addOns" :key="addon.title">
           <div class="flex items-start gap-4">
             <div class="p-3 rounded-lg bg-warning/10">

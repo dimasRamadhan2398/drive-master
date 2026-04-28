@@ -6,8 +6,10 @@ const navItems = computed<NavigationMenuItem[]>(() => [
   { label: 'Home', to: '/' },
   { label: 'Services', to: '/services' },
   { label: 'Packages', to: '/packages' },
-  { label: 'About Us', to: '/about' },
-  { label: 'Contact Us', to: '/contact' }
+  { to: '/select-plan' },
+  { to: '/onborading' },
+  // { label: 'About Us', to: '/about' },
+  // { label: 'Contact Us', to: '/contact' }
 ])
 </script>
 

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
+import { computed, ref } from 'vue'
+
 definePageMeta({ layout: 'dashboard' })
 
 const toast = useToast()
@@ -85,7 +88,7 @@ const upcomingSessions = ref([
     sessionNumber: 5,
     date: 'Mar 28, 2026', 
     time: '09:30 AM',
-    car: 'Tesla Model 3',
+    car: 'BYD Atto 1',
     instructor: 'Pak Ahmad',
     topic: 'Highway Driving - Advanced'
   },
@@ -94,7 +97,7 @@ const upcomingSessions = ref([
     sessionNumber: 6,
     date: 'Apr 2, 2026', 
     time: '11:00 AM',
-    car: 'BYD Atto 3',
+    car: 'BYD Atto 1',
     instructor: 'Bu Sari',
     topic: 'Night Driving Introduction'
   }
@@ -148,36 +151,36 @@ function confirmBooking() {
             <UCard v-for="session in upcomingSessions" :key="session.id">
               <div class="flex items-start justify-between">
                 <div class="flex items-center gap-4">
-                  <div class="p-3 rounded-xl bg-primary/10">
-                    <UIcon name="i-lucide-car" class="size-6 text-primary" />
+                  <div class="p-3 rounded-xl bg-warning/10">
+                    <UIcon name="i-lucide-car" class="size-6 text-warning" />
                   </div>
                   <div>
                     <div class="flex items-center gap-2">
                       <h3 class="font-semibold">Session #{{ session.sessionNumber }}</h3>
-                      <UBadge label="Confirmed" color="success" variant="subtle" size="xs" />
+                      <UBadge label="Confirmed" color="success" variant="subtle" size="md" />
                     </div>
-                    <p class="text-sm text-muted">{{ session.topic }}</p>
+                    <p class="text-md text-muted">{{ session.topic }}</p>
                   </div>
                 </div>
               </div>
 
               <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-default">
                 <div>
-                  <p class="text-xs text-muted">Date & Time</p>
-                  <p class="text-sm font-medium">{{ session.date }}</p>
-                  <p class="text-sm">{{ session.time }}</p>
+                  <p class="text-md text-muted">Date & Time</p>
+                  <p class="text-md font-medium">{{ session.date }}</p>
+                  <p class="text-md">{{ session.time }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-muted">Vehicle</p>
-                  <p class="text-sm font-medium">{{ session.car }}</p>
-                  <p class="text-sm text-muted">{{ session.instructor }}</p>
+                  <p class="text-md text-muted">Instructor</p>
+                  <p class="text-md font-medium ">{{ session.instructor }}</p>
+                  <p class="text-md text-muted">{{ session.car }}</p>
                 </div>
               </div>
 
               <template #footer>
                 <div class="flex gap-2">
-                  <UButton label="Reschedule" variant="outline" color="neutral" size="sm" icon="i-lucide-calendar-days" />
-                  <UButton label="Cancel" variant="ghost" color="error" size="sm" icon="i-lucide-x" />
+                  <UButton label="Reschedule" variant="outline" color="warning" size="md" icon="i-lucide-calendar-days" />
+                  <UButton label="Cancel" variant="ghost" color="error" size="md" icon="i-lucide-x" />
                 </div>
               </template>
             </UCard>
@@ -196,26 +199,38 @@ function confirmBooking() {
             <!-- Calendar -->
             <div>
               <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-medium">Select Date</h3>
+                <h3 class="text-md font-medium">Select Date</h3>
                 <div class="flex items-center gap-2">
-                  <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" size="xs" @click="changeMonth(-1)" />
-                  <span class="text-sm font-medium">{{ currentMonthStr }}</span>
-                  <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" size="xs" @click="changeMonth(1)" />
+                  <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" size="md" />
+                  <span class="text-md font-medium">{{ currentMonth }}</span>
+                  <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" size="md" />
                 </div>
               </div>
               
               <!-- Custom Calendar Grid -->
               <div class="border border-default rounded-lg p-4">
                 <div class="grid grid-cols-7 gap-1 mb-2">
-                  <div v-for="day in weekDays" :key="day" class="text-center text-xs font-medium text-muted py-2">
+                  <div v-for="day in weekDays" :key="day" class="text-center text-md font-medium text-muted py-2">
                     {{ day }}
                   </div>
                 </div>
                 <div class="grid grid-cols-7 gap-1">
-                  <!-- Kalender dinamis -->
-                  <div 
-                    v-for="(item, index) in calendarDays" 
-                    :key="index"
+                  <!-- Empty cells for days before month starts (April 2026 starts on Wednesday) -->
+                  <div></div>
+                  <div></div>
+                  <button 
+                    v-for="item in calendarDays" 
+                    :key="item.day"
+                    :disabled="!item.available || item.day < 7"
+                    :class="[
+                      'w-full aspect-square rounded-lg text-md font-medium transition-all',
+                      selectedDate === item.day 
+                        ? 'bg-primary text-white' 
+                        : item.available && item.day >= 7
+                          ? 'hover:bg-primary/10 cursor-pointer'
+                          : 'text-muted/50 cursor-not-allowed'
+                    ]"
+                    @click="item.available && item.day >= 7 && (selectedDate = item.day)"
                   >
                     <button 
                       v-if="item.day !== null"
@@ -235,7 +250,7 @@ function confirmBooking() {
                   </div>
                 </div>
                 
-                <div class="mt-4 flex items-center gap-4 text-xs">
+                <div class="mt-4 flex items-center gap-4 text-md">
                   <div class="flex items-center gap-2">
                     <div class="size-3 rounded bg-primary/10 border border-primary/30"></div>
                     <span class="text-muted">Available</span>
@@ -251,9 +266,8 @@ function confirmBooking() {
             <!-- Time Slots -->
             <div>
               <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-medium">Available Time Slots</h3>
-                <!-- PERUBAHAN: Memperbaiki teks bulan statis -->
-                <UBadge :label="`${currentMonthShortStr} ${selectedDate}`" variant="subtle" />
+                <h3 class="text-md font-medium">Available Time Slots</h3>
+                <UBadge :label="`Apr ${selectedDate}`" color="primary" variant="subtle" />
               </div>
 
               <div class="space-y-3">
@@ -274,20 +288,20 @@ function confirmBooking() {
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
                       <UIcon 
-                        :name="selectedSlot === slot.id ? 'i-lucide-check-circle' : 'i-lucide-clock'" 
+                        :name="selectedSlot === slot.id ? 'i-lucide-check-circle' : 'i-lucide-circle'" 
                         :class="selectedSlot === slot.id ? 'text-primary' : 'text-muted'"
                         class="size-5"
                       />
                       <div>
                         <span class="font-semibold">{{ slot.time }}</span>
-                        <p class="text-sm text-muted">{{ slot.car }} - {{ slot.instructor }}</p>
+                        <p class="text-md text-muted">{{ slot.instructor }} - {{ slot.car }}</p>
                       </div>
                     </div>
                     <UBadge 
                       :label="slot.available ? 'Available' : 'Booked'" 
                       :color="slot.available ? 'success' : 'error'"
                       variant="subtle"
-                      size="xs"
+                      size="md"
                     />
                   </div>
                 </button>
@@ -297,50 +311,50 @@ function confirmBooking() {
 
           <template #footer>
             <div class="flex items-center justify-between">
-              <p v-if="selectedSlot" class="text-sm text-muted">
+              <p v-if="selectedSlot" class="text-md text-muted">
                 Selected: Apr {{ selectedDate }}, 2026 at {{ selectedSlotDetails?.time }} with {{ selectedSlotDetails?.instructor }}
               </p>
-              <p v-else class="text-sm text-muted">
+              <p v-else class="text-md text-muted">
                 Select a date and time slot to continue
               </p>
               <UButton 
                 label="Book Session" 
                 :disabled="!selectedSlot"
                 icon="i-lucide-check"
+                color="warning"
                 @click="showBookingModal = true"
               />
+              <!-- Booking Confirmation Modal -->
+              <UModal v-model:open="showBookingModal" title="Confirm Booking">
+                <template #body>
+                  <div class="space-y-4">
+                    <UAlert icon="i-lucide-info" color="warning" title="Session Details">
+                      <template #description>
+                        <ul class="mt-2 space-y-1 text-md">
+                          <li><strong>Date:</strong> April {{ selectedDate }}, 2026</li>
+                          <li><strong>Time:</strong> {{ selectedSlotDetails?.time }}</li>
+                          <li><strong>Vehicle:</strong> {{ selectedSlotDetails?.car }}</li>
+                          <li><strong>Instructor:</strong> {{ selectedSlotDetails?.instructor }}</li>
+                        </ul>
+                      </template>
+                    </UAlert>
+
+                    <p class="text-md text-muted">
+                      By confirming, you agree to attend this session. Cancellations must be made at least 24 hours in advance.
+                    </p>
+                  </div>
+                </template>
+                <template #footer>
+                  <div class="flex justify-end gap-3">
+                    <UButton label="Cancel" variant="ghost" color="neutral" @click="showBookingModal = false" />
+                    <UButton label="Confirm Booking" color="warning" icon="i-lucide-check" @click="confirmBooking" />
+                  </div>
+                </template>
+              </UModal>
             </div>
           </template>
         </UCard>
       </div>
     </template>
-
-    <!-- Booking Confirmation Modal -->
-    <UModal v-model:open="showBookingModal" title="Confirm Booking">
-      <template #body>
-        <div class="space-y-4">
-          <UAlert icon="i-lucide-info" title="Session Details">
-            <template #description>
-              <ul class="mt-2 space-y-1 text-sm">
-                <li><strong>Date:</strong> April {{ selectedDate }}, 2026</li>
-                <li><strong>Time:</strong> {{ selectedSlotDetails?.time }}</li>
-                <li><strong>Vehicle:</strong> {{ selectedSlotDetails?.car }}</li>
-                <li><strong>Instructor:</strong> {{ selectedSlotDetails?.instructor }}</li>
-              </ul>
-            </template>
-          </UAlert>
-
-          <p class="text-sm text-muted">
-            By confirming, you agree to attend this session. Cancellations must be made at least 24 hours in advance.
-          </p>
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <UButton label="Cancel" variant="ghost" color="neutral" @click="showBookingModal = false" />
-          <UButton label="Confirm Booking" icon="i-lucide-check" @click="confirmBooking" />
-        </div>
-      </template>
-    </UModal>
   </UDashboardPanel>
 </template>

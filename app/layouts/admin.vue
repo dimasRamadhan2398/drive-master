@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { computed } from 'vue';
 
 const navItems = computed<NavigationMenuItem[]>(() => [
   {
@@ -66,11 +67,9 @@ onMounted(() => {
   <UDashboardGroup>
     <UDashboardSidebar collapsible resizable>
       <template #header="{ collapsed }">
-        <NuxtLink to="/admin" class="flex items-center gap-2 px-2">
-          <div class="p-1.5 rounded-lg bg-primary">
-            <UIcon name="i-lucide-zap" class="size-5 text-primary-foreground" />
-          </div>
-          <span v-if="!collapsed" class="font-bold">Admin Panel</span>
+        <NuxtLink to="/admin" class="flex items-center gap-4 py-8">
+          <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-10" />
+          <span v-if="!collapsed" class="font-bold py-16">Admin Panel</span>
         </NuxtLink>
       </template>
 
@@ -78,6 +77,7 @@ onMounted(() => {
         <UNavigationMenu
           :items="navItems"
           orientation="vertical"
+          color="warning"
           :ui="{ link: collapsed ? 'justify-center' : undefined }"
         />
       </template>
@@ -90,7 +90,7 @@ onMounted(() => {
             class="w-full"
             :class="collapsed ? 'justify-center px-0' : ''"
           >
-            <UAvatar text="AD" size="sm" class="bg-primary text-primary-foreground" />
+            <UAvatar text="AD" size="sm" class="bg-warning text-warning-foreground" />
             <template v-if="!collapsed">
               <div class="flex-1 text-left ml-2">
                 <p class="text-sm font-medium truncate">{{ admin.name }}</p>

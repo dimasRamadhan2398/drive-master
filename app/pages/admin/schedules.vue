@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
+import { ref } from 'vue'
+
 definePageMeta({ layout: 'admin' })
 
 const toast = useToast()
@@ -8,40 +11,10 @@ const selectedDate = ref(new Date('2026-04-10T00:00:00'))
 const filterInstructor = ref('All Instructors')
 const filterVehicle = ref('All Vehicles')
 
-// FIX: Menggunakan waktu lokal untuk menghindari bug timezone
-const localDateStr = computed(() => {
-  const year = selectedDate.value.getFullYear()
-  const month = String(selectedDate.value.getMonth() + 1).padStart(2, '0')
-  const day = String(selectedDate.value.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-})
-
-// FIX: Kalender merender hari secara dinamis berdasarkan bulan yang sedang dipilih
-const calendarDays = computed(() => {
-  const year = selectedDate.value.getFullYear()
-  const month = selectedDate.value.getMonth()
-  
-  // Cari tahu tanggal 1 jatuh di hari apa (0=Minggu, 1=Senin)
-  const firstDay = new Date(year, month, 1).getDay()
-  // Konversi ke format Senin=0, Minggu=6
-  const emptyDays = firstDay === 0 ? 6 : firstDay - 1
-  
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  
-  const days = []
-  for (let i = 0; i < emptyDays; i++) {
-    days.push(null)
-  }
-  for (let i = 1; i <= daysInMonth; i++) {
-    days.push(i)
-  }
-  return days
-})
-
-const { slots: timeSlots, toggleSlotStatus: _toggleSlotStatus, addSlot, editSlot, deleteSlot: _deleteSlot, updateSlotStatus } = useSchedules()
+const { slots: timeSlots, toggleSlotStatus: _toggleSlotStatus, deleteSlot: _deleteSlot } = useSchedules()
 
 const instructors = ['Pak Ahmad', 'Bu Sari', 'Pak Budi']
-const vehicles = ['Tesla Model 3', 'BYD Atto 3']
+const vehicles = ['BYD Atto 1']
 
 // FITUR BARU: Sinkronisasi jam operasional dari settings
 const { operatingHours } = useSettings()
@@ -225,8 +198,43 @@ function saveEditSlot() {
     <template #header>
       <UDashboardNavbar title="Schedule Management">
         <template #right>
-          <UButton icon="i-lucide-plus" label="Add Time Slot" @click="showAddSlotModal = true" />
-          <AdminNotificationBell />
+          <UButton icon="i-lucide-plus" color="warning" label="Add Time Slot" @click="showAddSlotModal = true" />
+          <!-- Add Slot Modal -->
+          <UModal v-model:open="showAddSlotModal" title="Add Time Slot">
+            <template #body>
+              <div class="space-y-4">
+                <UFormField label="Date" required>
+                  <UInput type="date" color="warning" class="w-full" :model-value="selectedDate.toISOString().split('T')[0]" />
+                </UFormField>
+                <div class="grid grid-cols-2 gap-4">
+                  <UFormField label="Start Time" required>
+                    <UInput type="time" color="warning" class="w-full" placeholder="08:00" />
+                  </UFormField>
+                  <UFormField label="Duration" required>
+                    <UInput disabled placeholder="60 minutes" 
+                      :items="[
+                        { label: '60 minutes', value: '60' }
+                      ]"
+                      class="w-full"
+                      color="warning"
+                    />
+                  </UFormField>
+                </div>
+                <UFormField label="Vehicle" required>
+                  <USelect :items="vehicles" placeholder="Select vehicle" color="warning" class="w-full" />
+                </UFormField>
+                <UFormField label="Instructor" required>
+                  <USelect :items="instructors" placeholder="Select instructor" color="warning" class="w-full" />
+                </UFormField>
+              </div>
+            </template>
+            <template #footer>
+              <div class="flex justify-end gap-3">
+                <UButton label="Cancel" variant="ghost" color="neutral" @click="showAddSlotModal = false" />
+                <UButton label="Add Slot" color="warning" icon="i-lucide-plus" @click="showAddSlotModal = false" />
+              </div>
+            </template>
+          </UModal>
           <UColorModeButton />
         </template>
       </UDashboardNavbar>
@@ -254,12 +262,14 @@ function saveEditSlot() {
             :items="['All Instructors', ...instructors]"
             placeholder="Filter by instructor"
             class="w-48"
+            color="warning"
           />
           <USelect 
             v-model="filterVehicle"
             :items="['All Vehicles', ...vehicles]"
             placeholder="Filter by vehicle"
             class="w-44"
+            color="warning"
           />
         </template>
       </UDashboardToolbar>
@@ -276,18 +286,18 @@ function saveEditSlot() {
               </div>
               <div>
                 <p class="text-xl font-bold">{{ timeSlots.filter(s => s.status === 'available').length }}</p>
-                <p class="text-sm text-muted">Available</p>
+                <p class="text-md text-muted">Available</p>
               </div>
             </div>
           </UCard>
           <UCard>
             <div class="flex items-center gap-3">
-              <div class="p-2 rounded-lg bg-primary/10">
-                <UIcon name="i-lucide-calendar-check" class="size-5 text-primary" />
+              <div class="p-2 rounded-lg bg-info/10">
+                <UIcon name="i-lucide-calendar-check" class="size-5 text-info" />
               </div>
               <div>
                 <p class="text-xl font-bold">{{ timeSlots.filter(s => s.status === 'booked').length }}</p>
-                <p class="text-sm text-muted">Booked</p>
+                <p class="text-md text-muted">Booked</p>
               </div>
             </div>
           </UCard>
@@ -298,7 +308,7 @@ function saveEditSlot() {
               </div>
               <div>
                 <p class="text-xl font-bold">{{ timeSlots.filter(s => s.status === 'in-progress').length }}</p>
-                <p class="text-sm text-muted">In Progress</p>
+                <p class="text-md text-muted">In Progress</p>
               </div>
             </div>
           </UCard>
@@ -320,7 +330,7 @@ function saveEditSlot() {
               </div>
               <div>
                 <p class="text-xl font-bold">{{ timeSlots.filter(s => s.status === 'blocked').length }}</p>
-                <p class="text-sm text-muted">Blocked</p>
+                <p class="text-md text-muted">Blocked</p>
               </div>
             </div>
           </UCard>
@@ -345,17 +355,9 @@ function saveEditSlot() {
               <div v-for="day in ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']" :key="day" class="text-center text-xs font-bold text-muted py-2">{{ day }}</div>
             </div>
             <div class="grid grid-cols-7 gap-1">
-              <!-- PERUBAHAN: Kalender dinamis -->
-              <div v-for="(day, idx) in calendarDays" :key="idx">
-                <button 
-                  v-if="day !== null"
-                  :class="['w-full aspect-square rounded-full text-sm font-medium transition-all flex items-center justify-center', selectedDate.getDate() === day && selectedDate.getMonth() === selectedDate.getMonth() ? 'bg-primary text-white shadow-md' : 'hover:bg-muted/50 cursor-pointer']" 
-                  @click="selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day)"
-                >
-                  {{ day }}
-                </button>
-                <div v-else class="w-full aspect-square"></div>
-              </div>
+              <div></div><div></div>
+              <button v-for="d in 30" :key="d" :class="['w-full aspect-square rounded-full text-sm font-medium transition-all flex items-center justify-center', selectedDate.getDate() === d ? 'bg-primary text-white shadow-md' : 'hover:bg-muted/50 cursor-pointer']" @click="selectedDate = new Date(2026, selectedDate.getMonth(), d)">{{ d }}</button>
+
             </div>
           </UCard>
 
@@ -400,7 +402,7 @@ function saveEditSlot() {
                     <div class="space-y-1">
                       <div class="flex items-center gap-2 font-medium">
                         <UIcon name="i-lucide-car" class="size-4 text-muted" />
-                        <span class="text-sm">{{ slot.car }}</span>
+                        <span class="text-md">{{ slot.car }}</span>
                       </div>
                       <div class="flex items-center gap-2 mt-1">
                         <UIcon name="i-lucide-contact" class="size-4 text-muted" />
@@ -461,6 +463,7 @@ function saveEditSlot() {
                     >
                       <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" />
                     </UDropdownMenu>
+                    
                   </div>
                 </div>
               </div>
@@ -473,7 +476,9 @@ function saveEditSlot() {
           </UCard>
         </div>
       </div>
-          <!-- Add Slot Modal -->
+    </template>
+
+    <!-- Add Slot Modal -->
     <UModal v-model:open="showAddSlotModal" title="Add New Time Slot">
       <template #body>
         <div class="space-y-5">
@@ -555,8 +560,6 @@ function saveEditSlot() {
         </div>
       </template>
     </UModal>
-    </template>
-
 
   </UDashboardPanel>
 </template>

@@ -1,90 +1,108 @@
 <script setup lang="ts">
-import { icons } from '@iconify-json/lucide/index.js'
 import { ref } from 'vue'
 
-// EV Advantages
-const evAdvantages = [
+// Course Material
+const courseMaterial = [
   {
-    title: 'One-Pedal Driving',
-    description: 'Master the intuitive one-pedal driving experience. Brake and accelerate with a single pedal for smoother control.',
-    icon:'i-lucide-disc'
+    title: 'Material Theory',
+    description: [
+      'Vehicle Introduction and Basic Controls',
+      'Cockpit training (ergonomic seating position, center and side mirror adjustment, and seat belt use)',
+      'Introduction to instruments (gas pedal, brake, transmission lever, handbrake, indicator lights in the dashboard)',
+      'Safety check (check the condition of tires, oil and radiator water before driving)'
+    ],
+    icon:'i-lucide-book-open'
   },
   {
-    title: 'No Engine Stalling',
-    description: 'Say goodbye to stalling anxiety. Electric motors provide instant torque with zero risk of stalling.',
+    title: 'Initial Control',
+    description: [
+      'Starting & stopping the engine (standard procedure for starting the engine safely)',
+      'Accelerator pedal technique safely (balanced and smooth)',
+      'Braking and stopping techniques (smooth braking and how to stop at a certain point precisely)',
+    ],
     icon: 'i-lucide-shield-check'
   },
   {
-    title: 'High-Tech Safety',
-    description: 'Learn in vehicles equipped with advanced safety features including collision avoidance and lane assist.',
+    title: 'Basic Maneuvering Techniques',
+    description: [
+      'Steering control (steering wheel turning technique when turning quickly)',
+      'Reverse (controlling the car to reverse using only the rearview mirror)',
+      'Turning at an intersection (technique for taking the correct turning angle to the left or right)',
+    ],
     icon: 'i-lucide-radar'
   },
   {
-    title: 'Eco-Friendly Learning',
-    description: 'Start your driving journey with zero emissions. Learn to drive while contributing to a sustainable future.',
-    icon: 'i-lucide-leaf'
+    title: 'Driving Techniques on Uphill & Downhill Roads',
+    description: [
+      'Start-stop technique on an incline',
+      'Start-stop technique on a downhill',
+    ],
+    icon: 'i-lucide-car'
+  },
+  {
+    title: 'Parking Technic',
+    description: [
+      'Reverse parking at an angle or straight (enter the parking slot with the car in reverse)',
+      'Parallel parking (a technique of inserting a car between two other vehicles parallel to each other)',
+    ],
+    icon: 'i-lucide-car'
+  },
+  {
+    title: 'Driving on the Highway',
+    description: [
+      'Road signs and markings (obey traffic signs, no parking signs and road markings)',
+      'Driving ethics (using turn signals, maintaining a safe distance, and how to overtake other vehicles correctly)',
+      'Blind spot (a technique for checking areas that are not visible in the rearview mirror before changing lanes)',
+    ],
+    icon: 'i-lucide-car'
   }
 ]
 
 // Course packages
 const packages = [
   {
-    title: 'Free Trial',
-    price: 'Rp 0',
-    description: 'Perfect for user who want to try our service',
-    features: [
-      '1 training sessions',
-      '60 minutes per session',
-      'Basic driving fundamentals',
-      'Theory materials included',
-    ],
-    highlight: false,
-    button: { label: 'Try Now', color: 'neutral' as const, variant: 'outline' as const }
-  },
-  {
-    title: 'Starter',
-    price: 'Rp 1.500.000',
+    title: '6x',
+    price: 'Rp 1.750.000',
     description: 'Perfect for beginners looking to get started',
     features: [
-      '5 training sessions',
-      '45 minutes per session',
-      'Basic driving fundamentals',
-      'Theory materials included',
-      'Certificate of completion'
+      'Free Trial',
+      '6x training sessions',
     ],
     highlight: false,
     button: { label: 'Get Started', color: 'neutral' as const, variant: 'outline' as const }
   },
   {
-    title: 'Standard',
-    price: 'Rp 2.800.000',
+    title: '8x',
+    price: 'Rp 1.950.000',
     description: 'Our most popular package for comprehensive learning',
     features: [
-      '10 training sessions',
-      '60 minutes per session',
-      'Advanced driving techniques',
-      'Highway & city driving',
-      'EV-specific training',
-      'Official EV Certificate'
+      'Free Trial',
+      '8x training sessions',
     ],
     highlight: true,
     button: { label: 'Most Popular', color: 'warning' as const }
   },
   {
-    title: 'Pro',
-    price: 'Rp 4.500.000',
+    title: '10x',
+    price: 'Rp 2.250.000',
     description: 'Complete mastery with unlimited support',
     features: [
-      '15 training sessions',
-      '90 minutes per session',
-      'Full driving mastery program',
-      'Night & weather driving',
-      'EV maintenance basics',
-      'Premium EV Certificate',
-      'Lifetime refresher access'
+      'Free Trial',
+      '10x training sessions',
     ],
     highlight: false,
-    button: { label: 'Go Pro', color: 'neutral' as const, variant: 'outline' as const }
+    button: { label: 'Get Started', color: 'neutral' as const, variant: 'outline' as const }
+  },
+  {
+    title: '12x',
+    price: 'Rp 2.650.000',
+    description: 'Perfect drivers looking to master driving',
+    features: [
+      'Free Trial',
+      '12x training sessions',
+    ],
+    highlight: false,
+    button: { label: 'Get Started', color: 'neutral' as const, variant: 'outline' as const }
   }
 ]
 
@@ -141,8 +159,14 @@ const faqItems = [
 
 const { slots: globalSlots } = useSchedules()
 
-// FITUR BARU: Logika Kalender Dinamis
-const currentDate = ref(new Date('2026-04-10T00:00:00'))
+const timeSlots = computed(() => {
+  return globalSlots.value.map(slot => ({
+    time: slot.time,
+    car: slot.car,
+    available: slot.status === 'available'
+  }))
+})
+
 const selectedDate = ref(15)
 const selectedSlot = ref<string | null>(null)
 const currentMonthStr = computed(() => {
@@ -215,11 +239,11 @@ const timeSlots = computed(() => {
         />
         <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-          <div class="flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 text-white text-sm">
+          <div class="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-4 py-2 text-white text-md">
             <UIcon name="i-lucide-battery-charging" class="size-5 text-warning" />
             <span>100% Electric</span>
           </div>
-          <div class="flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 text-white text-sm">
+          <div class="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-4 py-2 text-white text-md">
             <UIcon name="i-lucide-shield-check" class="size-5 text-warning" />
             <span>Dual Controls</span>
           </div>
@@ -227,65 +251,33 @@ const timeSlots = computed(() => {
       </div>
     </UPageHero>
 
-    <!-- EV Advantages Section -->
+    <!-- Course Material -->
     <UPageSection
-      id="about"
-      headline="Why Learn in an EV?"
-      title="The Electric Advantage"
-      description="Discover why learning to drive in an electric vehicle gives you a head start over traditional driving schools."
+      id="material"
+      headline="Course material you will study"
+      title="Course Material"
+      description="Course material that you learn will make you more confident in driving."
       :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
       <UPageGrid>
         <UPageCard
-          v-for="advantage in evAdvantages"
-          :key="advantage.title"
-          :icon="advantage.icon"
-          :title="advantage.title"
-          :description="advantage.description"
+          v-for="material in courseMaterial"
+          :key="material.title"
+          :icon="material.icon"
+          :title="material.title"
           :ui="{ leadingIcon: 'text-warning text-3xl' }"
-        />
+        >
+          <template #description>
+            <ul class="space-y-2 mt-2">
+              <li v-for="item in material.description" :key="item" class="flex items-start gap-2 text-muted">
+                <UIcon name="i-lucide-check-circle" class="size-4 text-warning shrink-0 mt-1" />
+                <span class="text-sm">{{ item }}</span>
+              </li>
+            </ul>
+          </template>
+        </UPageCard>
       </UPageGrid>
-    </UPageSection>
-
-    <!-- Premium Fleet Section -->
-    <UPageSection
-      headline="Premium Fleet"
-      title="Learn in the Best Electric Vehicles"
-      description="Our fleet consists of premium electric vehicles equipped with dual-control systems for safe learning."
-      :ui="{ headline: 'text-warning' }"
-    >
-      <div class="grid md:grid-cols-2 gap-8">
-        <UCard class="overflow-hidden">
-          <img 
-            src="https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=600&auto=format&fit=crop&q=80" 
-            alt="Tesla Model 3"
-            class="w-full h-48 object-cover -m-4 mb-4"
-          />
-          <h3 class="text-xl font-bold mb-2">Tesla Model 3</h3>
-          <p class="text-muted mb-4">Experience the future of driving with Tesla&apos;s revolutionary autopilot features and instant torque delivery.</p>
-          <div class="flex flex-wrap gap-2">
-            <UBadge label="Autopilot" variant="subtle" color="warning" />
-            <UBadge label="Dual Motor" variant="subtle" color="warning" />
-            <UBadge label="Dual Control" variant="subtle" color="warning" />
-          </div>
-        </UCard>
-
-        <UCard class="overflow-hidden">
-          <img 
-            src="https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=600&auto=format&fit=crop&q=80" 
-            alt="BYD Atto 3"
-            class="w-full h-48 object-cover -m-4 mb-4"
-          />
-          <h3 class="text-xl font-bold mb-2">BYD Atto 3</h3>
-          <p class="text-muted mb-4">A compact SUV perfect for urban driving lessons with excellent visibility and responsive handling.</p>
-          <div class="flex flex-wrap gap-2">
-            <UBadge label="SUV" variant="subtle" color="warning" />
-            <UBadge label="Urban Friendly" variant="subtle" color="warning" />
-            <UBadge label="Dual Control" variant="subtle" color="warning" />
-          </div>
-        </UCard>
-      </div>
     </UPageSection>
 
     <!-- Pricing Section -->
@@ -312,14 +304,14 @@ const timeSlots = computed(() => {
               <div class="mt-2">
                 <span class="text-3xl font-bold text-warning">{{ pkg.price }}</span>
               </div>
-              <p class="text-muted text-sm mt-2">{{ pkg.description }}</p>
+              <p class="text-muted text-md mt-2">{{ pkg.description }}</p>
             </div>
           </template>
           
           <ul class="space-y-3 flex-1">
             <li v-for="feature in pkg.features" :key="feature" class="flex items-start gap-2">
               <UIcon name="i-lucide-check" class="size-5 text-warning shrink-0 mt-0.5" />
-              <span class="text-sm">{{ feature }}</span>
+              <span class="text-md">{{ feature }}</span>
             </li>
           </ul>
 
@@ -350,16 +342,16 @@ const timeSlots = computed(() => {
                 <h3 class="font-semibold">Select Date</h3>
               </div>
               <div class="flex items-center gap-2">
-                <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" size="xs" @click="changeMonth(-1)" />
-                <span class="text-sm font-medium">{{ currentMonthStr }}</span>
-                <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" size="xs" @click="changeMonth(1)" />
+                <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" size="md" />
+                <span class="text-md font-medium">{{ currentMonth }}</span>
+                <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" size="md" />
               </div>
             </div>
           </template>
           
           <!-- Custom Calendar Grid -->
           <div class="grid grid-cols-7 gap-1 mb-2">
-            <div v-for="day in weekDays" :key="day" class="text-center text-xs font-medium text-muted py-2">
+            <div v-for="day in weekDays" :key="day" class="text-center text-md font-medium text-muted py-2">
               {{ day }}
             </div>
           </div>
@@ -370,11 +362,11 @@ const timeSlots = computed(() => {
                 v-if="item.day !== null"
                 :disabled="!item.available"
                 :class="[
-                  'w-full aspect-square rounded-lg text-sm font-medium transition-all',
+                  'w-full aspect-square rounded-lg text-md font-medium transition-all',
                   selectedDate === item.day 
-                    ? 'bg-warning text-white' 
-                    : item.available 
-                      ? 'hover:bg-warning/10 cursor-pointer'
+                    ? 'bg-primary text-white' 
+                    : item.available && item.day >= 7
+                      ? 'hover:bg-primary/10 cursor-pointer'
                       : 'text-muted/50 cursor-not-allowed'
                 ]"
                 @click="item.available && (selectedDate = item.day)"
@@ -384,13 +376,13 @@ const timeSlots = computed(() => {
             </div>
           </div>
           
-          <div class="mt-4 flex items-center gap-4 text-xs">
+          <div class="mt-4 flex items-center gap-4 text-md">
             <div class="flex items-center gap-2">
-              <div class="size-3 rounded bg-warning/10 border border-warning/30"></div>
+              <div class="size-3 rounded bg-primary/10 border border-primary/30"></div>
               <span class="text-muted">Available</span>
             </div>
             <div class="flex items-center gap-2">
-              <div class="size-3 rounded bg-warning"></div>
+              <div class="size-3 rounded bg-primary"></div>
               <span class="text-muted">Selected</span>
             </div>
           </div>
@@ -418,8 +410,8 @@ const timeSlots = computed(() => {
                 'w-full p-4 rounded-lg border transition-all text-left',
                 slot.available 
                   ? selectedSlot === slot.time 
-                    ? 'border-warning bg-warning/10' 
-                    : 'border-default hover:border-warning cursor-pointer'
+                    ? 'border-primary bg-primary/10' 
+                    : 'border-default hover:border-primary cursor-pointer'
                   : 'border-default bg-muted/50 opacity-50 cursor-not-allowed'
               ]"
               @click="slot.available && (selectedSlot = slot.time)"
@@ -427,7 +419,7 @@ const timeSlots = computed(() => {
               <div class="flex items-center justify-between">
                 <div>
                   <span class="font-semibold">{{ slot.time }}</span>
-                  <p class="text-sm text-muted">{{ slot.car }}</p>
+                  <p class="text-md text-muted">{{ slot.instructor }} - {{ slot.car }}</p>
                 </div>
                 <UBadge 
                   :label="slot.available ? 'Available' : 'Booked'" 
@@ -471,7 +463,7 @@ const timeSlots = computed(() => {
               </div>
               <div>
                 <h3 class="font-semibold mb-1">Training Center</h3>
-                <p class="text-muted text-sm">
+                <p class="text-muted text-md">
                   Jl. Alam Sutera Boulevard No. 123<br />
                   Alam Sutera, Tangerang 15143<br />
                   Banten, Indonesia
@@ -487,9 +479,10 @@ const timeSlots = computed(() => {
               </div>
               <div>
                 <h3 class="font-semibold mb-1">Operating Hours</h3>
-                <p class="text-muted text-sm">
-                  Monday - Saturday: 08:00 - 18:00<br />
-                  Sunday: Closed
+                <p class="text-muted text-md">
+                  Monday - Friday: 08:00 - 17:00<br />
+                  Saturday - Sunday: 08:00 - 17:00<br />
+                  Night Shift: 18:00 - 20:00
                 </p>
               </div>
             </div>
@@ -502,7 +495,7 @@ const timeSlots = computed(() => {
               </div>
               <div>
                 <h3 class="font-semibold mb-1">Contact Us</h3>
-                <p class="text-muted text-sm">
+                <p class="text-muted text-md">
                   Phone: +62 812-3456-7890<br />
                   Email: info@evdriveacademy.id
                 </p>
@@ -552,7 +545,7 @@ const timeSlots = computed(() => {
             <UAvatar :text="testimonial.avatar" size="lg" />
             <div>
               <p class="font-semibold">{{ testimonial.name }}</p>
-              <p class="text-sm text-muted">{{ testimonial.role }}</p>
+              <p class="text-md text-muted">{{ testimonial.role }}</p>
             </div>
           </div>
           <div class="flex gap-0.5 mb-3">
@@ -587,7 +580,7 @@ const timeSlots = computed(() => {
       class="bg-warning/5"
     />
 
-    <!-- Member Dashboard Preview -->
+    <!-- Member Dashboard Preview 
     <UPageSection
       headline="Member Area"
       title="Track Your Progress"
@@ -601,25 +594,25 @@ const timeSlots = computed(() => {
               <UAvatar text="JD" />
               <div>
                 <p class="font-semibold">Welcome back, John!</p>
-                <p class="text-sm text-muted">Standard Package</p>
+                <p class="text-md text-muted">Standard Package</p>
               </div>
             </div>
             <UBadge label="Active" color="success" />
           </div>
         </template>
 
-        <div class="grid sm:grid-cols-3 gap-4 mb-6">
+        <div class="grid md:grid-cols-3 gap-4 mb-6">
           <div class="text-center p-4 rounded-lg bg-muted/50">
             <p class="text-3xl font-bold text-primary">4</p>
-            <p class="text-sm text-muted">Sessions Completed</p>
+            <p class="text-md text-muted">Sessions Completed</p>
           </div>
           <div class="text-center p-4 rounded-lg bg-muted/50">
             <p class="text-3xl font-bold text-warning">6</p>
-            <p class="text-sm text-muted">Sessions Remaining</p>
+            <p class="text-md text-muted">Sessions Remaining</p>
           </div>
           <div class="text-center p-4 rounded-lg bg-muted/50">
             <p class="text-3xl font-bold text-info">40%</p>
-            <p class="text-sm text-muted">Course Progress</p>
+            <p class="text-md text-muted">Course Progress</p>
           </div>
         </div>
 
@@ -634,5 +627,6 @@ const timeSlots = computed(() => {
         </div>
       </UCard>
     </UPageSection>
+  -->
   </div>
 </template>

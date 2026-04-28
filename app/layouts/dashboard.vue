@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
-import { useRoute } from 'nuxt/app'
 import { computed } from 'vue'
-
-const route = useRoute()
 
 const navItems = computed<NavigationMenuItem[]>(() => [
   {
@@ -12,7 +9,7 @@ const navItems = computed<NavigationMenuItem[]>(() => [
     to: '/dashboard'
   },
   {
-    label: 'My Schedule',
+    label: 'Schedule',
     icon: 'i-lucide-calendar',
     to: '/dashboard/schedule'
   },
@@ -25,6 +22,11 @@ const navItems = computed<NavigationMenuItem[]>(() => [
     label: 'Certificate',
     icon: 'i-lucide-award',
     to: '/dashboard/certificate'
+  },
+  {
+    label: 'Billing',
+    icon: 'i-lucide-credit-card',
+    to: '/dashboard/billing'
   },
   {
     label: 'Profile',
@@ -53,11 +55,20 @@ const user = {
 
 <template>
   <UDashboardGroup>
-    <UDashboardSidebar collapsible resizable>
+    <UDashboardSidebar 
+      collapsible 
+      resizable
+      :min-size="20"
+      :default-size="25"
+      :max-size="30"
+      :collapsed-size="0"
+    >
       <template #header="{ collapsed }">
-        <NuxtLink to="/" class="flex items-center gap-2 px-2">
+        <NuxtLink v-if="!collapsed" to="/" class="flex items-center gap-2 px-2">
           <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
         </NuxtLink>
+        <UIcon v-else name="i-simple-icons-nuxtdotjs" class="size-5 text-primary mx-auto" />
+        <UDashboardSidebarCollapse variant="subtle" />
       </template>
 
       <template #default="{ collapsed }">
@@ -90,6 +101,8 @@ const user = {
       </template>
     </UDashboardSidebar>
 
-    <slot />
+    <UDashboardPanel>
+      <slot />
+    </UDashboardPanel>
   </UDashboardGroup>
 </template>
