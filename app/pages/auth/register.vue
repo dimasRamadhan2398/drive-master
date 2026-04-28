@@ -87,7 +87,7 @@ async function onSubmit(event: FormSubmitEvent<any>) {
 
   console.log('[v0] Registration submitted, redirecting to verify:', formData.email)
   
-  navigateTo(`/verify?email=${encodeURIComponent(formData.email)}`)
+  navigateTo(`/auth/verify?email=${encodeURIComponent(formData.email)}`)
 }
 
 const stepItems = [
@@ -291,7 +291,7 @@ const stepItems = [
           <div class="text-center">
             <p class="text-sm text-muted">
               Let me decide later
-              <NuxtLink to="/onboarding" class="text-warning font-medium hover:underline">
+              <NuxtLink to="/auth/onboarding" class="text-warning font-medium hover:underline">
                 Go to Onboarding page
               </NuxtLink>
             </p>
@@ -317,7 +317,7 @@ const stepItems = [
           <div class="text-center">
             <p class="text-sm text-muted">
               Already have an account?
-              <NuxtLink to="/login" class="text-warning font-medium hover:underline">
+              <NuxtLink to="/auth/login" class="text-warning font-medium hover:underline">
                 Sign in
               </NuxtLink>
             </p>

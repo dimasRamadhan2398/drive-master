@@ -177,7 +177,7 @@ function deleteSlot(slotId: string) {
                 <div class="flex gap-2">
                   <UBadge label="Available" color="success" variant="subtle" />
                   <UBadge label="Booked" color="primary" variant="subtle" />
-                  <UBadge label="Completed" color="blue" variant="subtle" />
+                  <UBadge label="Completed" color="info" variant="subtle" />
                 </div>
               </div>
             </template>
@@ -228,7 +228,7 @@ function deleteSlot(slotId: string) {
                     <UBadge 
                       class="hidden sm:flex"
                       :label="slot.status === 'available' ? 'Available' : slot.status === 'booked' ? 'Booked' : slot.status === 'in-progress' ? 'In Progress' : slot.status === 'completed' ? 'Completed' : 'Blocked'"
-                      :color="slot.status === 'available' ? 'success' : slot.status === 'booked' ? 'primary' : slot.status === 'in-progress' ? 'warning' : slot.status === 'completed' ? 'blue' : 'error'"
+                      :color="slot.status === 'available' ? 'success' : slot.status === 'booked' ? 'primary' : slot.status === 'in-progress' ? 'warning' : slot.status === 'completed' ? 'info' : 'error'"
                       variant="subtle"
                     />
                     <UDropdownMenu
@@ -257,9 +257,7 @@ function deleteSlot(slotId: string) {
           </UCard>
         </div>
       </div>
-    </template>
-
-    <!-- Add Slot Modal -->
+      <!-- Add Slot Modal -->
     <UModal v-model:open="showAddSlotModal" title="Add New Time Slot">
       <template #body>
         <div class="space-y-5">
@@ -296,5 +294,8 @@ function deleteSlot(slotId: string) {
         </div>
       </template>
     </UModal>
+    </template>
+
+    
   </UDashboardPanel>
 </template>

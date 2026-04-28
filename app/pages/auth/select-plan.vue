@@ -90,7 +90,7 @@ async function selectPlan() {
     console.log('Plan selected:', selectedPlan.value)
 
     // Redirect to payment method
-    navigateTo(`/payment-method?plan=${selectedPlan.value}`)
+    navigateTo(`/auth/payment-method?plan=${selectedPlan.value}`)
   } finally {
     loading.value = false
   }
@@ -164,7 +164,7 @@ const freeTrialInfo = [
               ]"
             >
               <div v-if="plan.highlight" class="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                <UBadge label="Most Popular" color="warning" />
+                <UBadge label="Most Popular" color="primary" />
               </div>
 
               <template #header>

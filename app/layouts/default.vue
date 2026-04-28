@@ -2,15 +2,22 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { computed } from 'vue';
 
-const navItems = computed<NavigationMenuItem[]>(() => [
-  { label: 'Home', to: '/' },
-  { label: 'Services', to: '/services' },
-  { label: 'Packages', to: '/packages' },
-  { to: '/select-plan' },
-  { to: '/onborading' },
-  // { label: 'About Us', to: '/about' },
-  // { label: 'Contact Us', to: '/contact' }
-])
+const { pages } = useContent()
+
+const navItems = computed<NavigationMenuItem[]>(() => {
+  const baseItems = [
+    { label: 'Home', to: '/' },
+    { label: 'Services', to: '/services' },
+    { label: 'Packages', to: '/packages' },
+    { label: 'Article', to: '/blog' },
+  ]
+
+  const dynamicItems = pages.value
+    .filter(p => p.status === 'published' && p.slug !== '/' && p.slug !== '/services' && p.slug !== '/packages')
+    .map(p => ({ label: p.title, to: p.slug }))
+
+  return [...baseItems, ...dynamicItems]
+})
 </script>
 
 <template>
@@ -26,10 +33,10 @@ const navItems = computed<NavigationMenuItem[]>(() => [
 
       <template #right>
         <UColorModeButton />
-        <NuxtLink to="/login">
+        <NuxtLink to="/auth/login">
           <UButton label="Login" color="warning" variant="ghost" class="hidden sm:flex" />
         </NuxtLink>
-        <NuxtLink to="/register">
+        <NuxtLink to="/auth/register">
           <UButton label="Register" color="warning" />
         </NuxtLink>
       </template>
@@ -37,10 +44,10 @@ const navItems = computed<NavigationMenuItem[]>(() => [
       <template #body>
         <UNavigationMenu :items="navItems" orientation="vertical" class="-mx-2.5" />
         <div class="flex flex-col gap-2 mt-4 pt-4 border-t border-default">
-          <NuxtLink to="/login">
+          <NuxtLink to="/auth/login">
             <UButton label="Login" color="warning" variant="ghost" block />
           </NuxtLink>
-          <NuxtLink to="/register">
+          <NuxtLink to="/auth/register">
             <UButton label="Register" color="warning" block />
           </NuxtLink>
         </div>

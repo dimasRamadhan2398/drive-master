@@ -1,10 +1,9 @@
 package main
 
 import (
+	"api-gateway/services"
 	"log"
 	"os"
-
-	"api-gateway/services"
 
 	"github.com/gin-gonic/gin"
 )

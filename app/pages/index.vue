@@ -128,34 +128,19 @@ const testimonials = [
   }
 ]
 
+// Dynamic content from admin
+const { faqs, pages } = useContent()
+
+const homePage = computed(() => pages.value.find(p => p.slug === '/' && p.status === 'published'))
+
 // FAQ items
-const faqItems = [
-  {
-    label: 'Do I need prior driving experience?',
-    content: 'No, our courses are designed for complete beginners as well as those looking to improve their skills. EVs are actually easier to learn in!',
-    defaultOpen: true
-  },
-  {
-    label: 'What type of electric vehicles do you use?',
-    content: 'We use premium electric vehicles including Tesla Model 3 and BYD Atto 3, both equipped with dual-control systems for safe learning.'
-  },
-  {
-    label: 'How do I book my training sessions?',
-    content: 'After registering and purchasing a package, you can book your sessions through our online calendar system. Choose from available time slots based on instructor and car availability.'
-  },
-  {
-    label: 'What is the EV Certificate?',
-    content: 'Our EV Certificate is a digital certification that validates your proficiency in driving electric vehicles. It covers unique EV aspects like regenerative braking and charging protocols.'
-  },
-  {
-    label: 'Can I reschedule my sessions?',
-    content: 'Yes, you can reschedule up to 24 hours before your scheduled session through your member dashboard or by contacting us via WhatsApp.'
-  },
-  {
-    label: 'Do you provide pick-up services?',
-    content: 'Training sessions start from our Alam Sutera location. We recommend arranging your own transportation to the training center.'
-  }
-]
+const faqItems = computed(() => {
+  return faqs.value.map((faq, index) => ({
+    label: faq.question,
+    content: faq.answer,
+    defaultOpen: index === 0
+  }))
+})
 
 const { slots: globalSlots } = useSchedules()
 
@@ -208,13 +193,22 @@ const calendarDays = [
 
 <template>
   <div>
+    <!-- Dynamic Admin Sections for Home Page -->
+    <template v-if="homePage && homePage.sections.length > 0">
+      <ContentSectionRenderer 
+        v-for="section in homePage.sections" 
+        :key="section.id" 
+        :section="section" 
+      />
+    </template>
+
     <!-- Hero Section -->
     <UPageHero
       title="Master the Road, Drive the Future"
       description="The first premium driving academy in Alam Sutera using 100% Electric Vehicles. Experience smooth, silent, and sustainable learning."
       orientation="horizontal"
       :links="[
-        { label: 'Book Your First Session', to: '/register', color: 'warning', icon: 'i-lucide-calendar-check', size: 'lg' },
+        { label: 'Book Your First Session', to: '/auth/register', color: 'warning', icon: 'i-lucide-calendar-check', size: 'lg' },
         { label: 'View Packages', to: '/packages', color: 'neutral', variant: 'outline', trailingIcon: 'i-lucide-arrow-right', size: 'lg' }
       ]"
     >
@@ -303,7 +297,7 @@ const calendarDays = [
           </ul>
 
           <template #footer>
-            <NuxtLink to="/register" class="w-full">
+            <NuxtLink to="/auth/register" class="w-full">
               <UButton v-bind="pkg.button" block />
             </NuxtLink>
           </template>
@@ -418,7 +412,7 @@ const calendarDays = [
           </div>
 
           <template #footer>
-            <NuxtLink to="/register" class="w-full">
+            <NuxtLink to="/auth/register" class="w-full">
               <UButton 
                 label="Continue to Registration" 
                 icon="i-lucide-arrow-right"
@@ -561,7 +555,7 @@ const calendarDays = [
       title="Ready to Drive the Future?"
       description="Book your first session today and experience the joy of learning in a premium electric vehicle."
       :links="[
-        { label: 'Start Your Journey', to: '/register', color: 'warning', icon: 'i-lucide-rocket', size: 'lg' },
+        { label: 'Start Your Journey', to: '/auth/register', color: 'warning', icon: 'i-lucide-rocket', size: 'lg' },
         { label: 'View All Packages', to: '/packages', color: 'neutral', variant: 'ghost', trailingIcon: 'i-lucide-arrow-right' }
       ]"
       class="bg-warning/5"

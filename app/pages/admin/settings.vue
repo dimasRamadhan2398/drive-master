@@ -8,8 +8,8 @@ const toast = useToast()
 
 // Mock settings
 const generalSettings = reactive({
-  businessName: 'EV Drive Academy',
-  email: 'info@evdriveacademy.id',
+  businessName: 'Drive Master Academy',
+  email: 'info@drivemasteracademy.id',
   phone: '+62 812-3456-7890',
   address: 'Jl. Alam Sutera Boulevard No. 123, Tangerang 15143',
   whatsappNumber: '6281234567890'
@@ -35,8 +35,7 @@ const notificationSettings = reactive({
 })
 
 const vehicles = ref([
-  { id: 1, name: 'Tesla Model 3', plate: 'B 1234 EV', status: 'active', photoUrl: '' },
-  { id: 2, name: 'BYD Atto 3', plate: 'B 5678 EV', status: 'active', photoUrl: '' }
+  { id: 1, name: 'BYD Atto 1', plate: 'B 1234 EV', status: 'active', photoUrl: '' },
 ])
 
 // Vehicle CRUD State
@@ -78,9 +77,9 @@ function deleteVehicle() {
 }
 
 const instructors = ref([
-  { id: 1, name: 'Pak Ahmad', phone: '081234567001', bnsp: 'BNSP-101-2023', sim: 'SIM A', photoUrl: '', experience: 5, bio: 'Expert in defensive driving techniques.', status: 'active' },
-  { id: 2, name: 'Bu Sari', phone: '081234567002', bnsp: 'BNSP-102-2022', sim: 'SIM A', photoUrl: '', experience: 8, bio: 'Patient and friendly, great for beginners.', status: 'active' },
-  { id: 3, name: 'Pak Budi', phone: '081234567003', bnsp: 'BNSP-105-2024', sim: 'SIM A', photoUrl: '', experience: 3, bio: 'Specialist in night driving and bad weather conditions.', status: 'active' }
+  { id: 1, name: 'Mr. Ahmad', phone: '081234567001', bnsp: 'BNSP-101-2023', sim: 'SIM A', photoUrl: '', experience: 5, bio: 'Expert in defensive driving techniques.', status: 'active' },
+  { id: 2, name: 'Ms. Sari', phone: '081234567002', bnsp: 'BNSP-102-2022', sim: 'SIM A', photoUrl: '', experience: 8, bio: 'Patient and friendly, great for beginners.', status: 'active' },
+  { id: 3, name: 'Mr. Budi', phone: '081234567003', bnsp: 'BNSP-105-2024', sim: 'SIM A', photoUrl: '', experience: 3, bio: 'Specialist in night driving and bad weather conditions.', status: 'active' }
 ])
 
 // Instructor CRUD State
@@ -217,7 +216,7 @@ function saveSettings() {
               <UInput v-model="operatingHours.mondayEnd" type="time" class="w-full" color="warning" />
             </div>
             <div class="flex items-center gap-4">
-              <span class="w-32 text-md font-medium">Weekend</span>
+              <span class="w-32 text-md font-medium">Saturday & Sunday</span>
               <UInput v-model="operatingHours.weekendStart" type="time" class="w-full" color="warning" />
               <span class="text-muted">to</span>
               <UInput v-model="operatingHours.weekendEnd" type="time" class="w-full" color="warning" />
@@ -227,10 +226,6 @@ function saveSettings() {
               <UInput v-model="operatingHours.nightStart" type="time" class="w-full" color="warning" />
               <span class="text-muted">to</span>
               <UInput v-model="operatingHours.nightEnd" type="time" class="w-full" color="warning" />
-            </div>
-            <div class="flex items-center gap-4">
-              <span class="w-32 text-md font-medium">Sunday</span>
-              <USwitch v-model="operatingHours.sundayClosed" :label="operatingHours.sundayClosed ? 'Closed' : 'Open'" />
             </div>
           </div>
         </UCard>
@@ -254,9 +249,7 @@ function saveSettings() {
               class="flex items-center justify-between p-4 rounded-lg border border-default"
             >
               <div class="flex items-center gap-4">
-                <div class="p-2 rounded-lg bg-warning/10">
-                  <UIcon name="i-lucide-car" class="size-5 text-warning" />
-                </div>
+                <UAvatar :src="vehicle.photoUrl || undefined" :text="!vehicle.photoUrl ? vehicle.name.split(' ').map((n: string) => n[0]).join('') : undefined" size="md" />
                 <div>
                   <p class="font-medium">{{ vehicle.name }}</p>
                   <p class="text-md text-muted">{{ vehicle.plate }}</p>

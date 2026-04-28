@@ -18,26 +18,7 @@ const pageForm = ref({ id: 0, title: '', slug: '', status: 'draft' })
 const postForm = ref({ id: 0, title: '', author: 'Admin', content: '', status: 'draft', media: [] as { name: string, type: string, size: string, url: string, fileType: 'image' | 'video' }[] })
 const faqForm = ref({ id: 0, question: '', answer: '', order: 0 })
 
-// ==================== MOCK DATA ====================
-const pages = ref([
-  { id: 1, title: 'Home Page', slug: '/', lastUpdated: 'Mar 25, 2026', status: 'published', sections: [] },
-  { id: 2, title: 'Services', slug: '/services', lastUpdated: 'Mar 20, 2026', status: 'published', sections: [] },
-  { id: 3, title: 'Packages', slug: '/packages', lastUpdated: 'Mar 18, 2026', status: 'published', sections: [] },
-  { id: 4, title: 'About Us', slug: '/about', lastUpdated: 'Mar 15, 2026', status: 'draft', sections: [] }
-])
-
-const blogPosts = ref([
-  { id: 1, title: '5 Tips for Learning to Drive in an EV', author: 'Admin', date: 'Mar 25, 2026', status: 'published', views: 234, content: 'Learning to drive an electric vehicle can be a unique experience. Here are our top 5 tips to get you started on the road with confidence...', media: [] as any[] },
-  { id: 2, title: 'The Benefits of Electric Vehicle Driving', author: 'Admin', date: 'Mar 20, 2026', status: 'published', views: 189, content: 'Electric vehicles offer numerous advantages over traditional combustion engines. From lower running costs to environmental benefits...', media: [] as any[] },
-  { id: 3, title: 'Understanding One-Pedal Driving', author: 'Admin', date: 'Mar 15, 2026', status: 'draft', views: 0, content: 'One-pedal driving is a revolutionary feature available in most modern electric vehicles. It uses regenerative braking to slow the car...', media: [] as any[] }
-])
-
-const faqs = ref([
-  { id: 1, question: 'Do I need prior driving experience?', answer: 'No, our courses are designed for complete beginners...', order: 1 },
-  { id: 2, question: 'What type of electric vehicles do you use?', answer: 'We use premium electric vehicles including Tesla Model 3...', order: 2 },
-  { id: 3, question: 'How do I book my training sessions?', answer: 'After registering and purchasing a package...', order: 3 }
-])
-
+const { pages, blogPosts, faqs } = useContent()
 const tabs = [
   { label: 'Pages', value: 'pages', icon: 'i-lucide-file-text' },
   { label: 'Blog Posts', value: 'blog', icon: 'i-lucide-newspaper' },
@@ -80,33 +61,59 @@ function openEditPage(page: any) {
   showPageModal.value = true
 }
 
-function savePage() {
+async function savePage() {
   if (!pageForm.value.title.trim()) {
     toast.add({ title: 'Error', description: 'Page title is required.', color: 'error' })
     return
   }
-  if (isEditing.value) {
-    const idx = pages.value.findIndex(p => p.id === pageForm.value.id)
-    if (idx !== -1) {
-      pages.value[idx] = { ...pages.value[idx], title: pageForm.value.title, slug: pageForm.value.slug, status: pageForm.value.status, lastUpdated: todayFormatted() }
-      toast.add({ title: 'Page Updated', description: `"${pageForm.value.title}" has been updated.`, color: 'success' })
-    }
-  } else {
-    const newId = Math.max(...pages.value.map(p => p.id), 0) + 1
-    pages.value.push({
-      id: newId,
+
+  const isEditingMode = isEditing.value
+  // Konsep: endpoint API akan berbeda untuk membuat (POST) dan mengedit (PUT)
+  const endpoint = isEditingMode ? `/api/pages/${pageForm.value.id}` : '/api/pages'
+  const method = isEditingMode ? 'PUT' : 'POST'
+
+  try {
+    // Konsep: data ini akan dikirim ke backend
+    const pageData = {
       title: pageForm.value.title,
       slug: pageForm.value.slug || generateSlug(pageForm.value.title),
-      lastUpdated: todayFormatted(),
-      status: pageForm.value.status
-    })
-    toast.add({ title: 'Page Created', description: `"${pageForm.value.title}" has been created.`, color: 'success' })
+      status: pageForm.value.status,
+    }
+
+    // Konsep: ganti bagian ini dengan panggilan API sesungguhnya, contohnya:
+    // const savedPage = await $fetch(endpoint, { method, body: pageData })
+    
+    // Untuk demonstrasi, kita akan simulasikan respons dari backend
+    const savedPage = { ...pageData, id: isEditingMode ? pageForm.value.id : Math.max(...pages.value.map(p => p.id), 0) + 1 }
+
+    // Setelah berhasil, perbarui state lokal
+    if (isEditingMode) {
+      const idx = pages.value.findIndex(p => p.id === savedPage.id)
+      if (idx !== -1) pages.value[idx] = { ...pages.value[idx], ...savedPage, lastUpdated: todayFormatted() }
+    } else {
+      // Menambahkan properti `sections` agar sesuai dengan struktur data yang ada
+      pages.value.push({ ...savedPage, lastUpdated: todayFormatted(), sections: [] })
+    }
+
+    toast.add({ title: isEditingMode ? 'Page Updated' : 'Page Created', description: `"${savedPage.title}" has been saved.`, color: 'success' })
+    showPageModal.value = false
+  } catch (error) {
+    console.error('Failed to save page:', error)
+    toast.add({ title: 'Save Failed', description: 'Could not save the page. Please try again.', color: 'error' })
   }
-  showPageModal.value = false
 }
 
 function previewPage(page: any) {
   toast.add({ title: 'Preview', description: `Opening preview for "${page.title}" (${page.slug})...`, color: 'info' })
+  if (!page.slug || page.slug === '/') {
+    return window.open('/', 'noopener,noreferrer');
+  }
+
+  const targetUrl = page.slug.startsWith('/')
+    ? page.slug
+    : `/${page.slug}`;
+
+  window.open(targetUrl, '_blank', 'noopener,noreferrer');
 }
 
 function deletePage(page: any) {
@@ -241,6 +248,15 @@ function removeMedia(index: number) {
 
 function previewPost(post: any) {
   toast.add({ title: 'Preview', description: `Opening preview for "${post.title}"...`, color: 'info' })
+  if (!post.slug || post.slug === '/') {
+    return window.open('/', 'noopener,noreferrer');
+  }
+
+  const targetUrl = post.slug.startsWith('/')
+    ? post.slug
+    : `/${post.slug}`;
+
+  window.open(targetUrl, '_blank', 'noopener,noreferrer');
 }
 
 function deletePost(post: any) {
@@ -499,9 +515,6 @@ function handleHeaderAction() {
             </div>
           </div>
 
-          <template #footer>
-            <UButton label="Add FAQ" icon="i-lucide-plus" variant="outline" color="neutral" @click="openNewFaq" />
-          </template>
         </UCard>
       </div>
     </template>
@@ -532,7 +545,6 @@ function handleHeaderAction() {
             </div>
           </div>
           <div class="px-6 py-4 border-t border-default flex justify-end gap-3">
-            <UButton label="Cancel" color="neutral" variant="outline" @click="showPageModal = false" />
             <UButton :label="isEditing ? 'Save Changes' : 'Create Page'" icon="i-lucide-check" @click="savePage" />
           </div>
         </div>
@@ -626,7 +638,6 @@ function handleHeaderAction() {
             </div>
           </div>
           <div class="px-6 py-4 border-t border-default flex justify-end gap-3">
-            <UButton label="Cancel" color="neutral" variant="outline" @click="showPostModal = false" />
             <UButton :label="isEditing ? 'Save Changes' : 'Create Post'" icon="i-lucide-check" @click="savePost" />
           </div>
         </div>
@@ -654,7 +665,6 @@ function handleHeaderAction() {
             </div>
           </div>
           <div class="px-6 py-4 border-t border-default flex justify-end gap-3">
-            <UButton label="Cancel" color="neutral" variant="outline" @click="showFaqModal = false" />
             <UButton :label="isEditing ? 'Save Changes' : 'Add FAQ'" icon="i-lucide-check" @click="saveFaq" />
           </div>
         </div>

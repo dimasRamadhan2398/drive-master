@@ -31,7 +31,7 @@ async function onSubmit(event: FormSubmitEvent<any>) {
     console.log('[v0] Onboarding completed:', formData)
     
     // Redirect to plan selection
-    navigateTo('/select-plan')
+    navigateTo('/auth/select-plan')
   } finally {
     loading.value = false
   }
@@ -150,7 +150,7 @@ const features = [
 
           <!-- Actions -->
           <div class="flex gap-3 pt-4 border-t">
-            <NuxtLink to="/register" class="flex-1">
+            <NuxtLink to="/auth/register" class="flex-1">
               <UButton 
                 label="Back" 
                 color="neutral"

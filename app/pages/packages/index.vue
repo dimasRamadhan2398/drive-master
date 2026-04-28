@@ -73,7 +73,7 @@ const addOns = [
       title="Course Packages"
       description="Transparent pricing with no hidden fees. Choose the package that best fits your learning goals and schedule."
       :links="[
-        { label: 'Register Now', to: '/register', color: 'warning', icon: 'i-lucide-user-plus' },
+        { label: 'Register Now', to: '/auth/register', color: 'warning', icon: 'i-lucide-user-plus' },
         { label: 'Compare Packages', to: '#comparison', color: 'neutral', variant: 'outline' }
       ]"
     />
@@ -124,7 +124,7 @@ const addOns = [
           </ul>
 
           <template #footer>
-            <NuxtLink to="/register" class="w-full">
+            <NuxtLink to="/auth/register" class="w-full">
               <UButton 
                 :label="pkg.highlight ? 'Get Started' : 'Choose Plan'"
                 :color="pkg.color"
@@ -266,7 +266,7 @@ const addOns = [
       title="Questions About Packages?"
       description="Our team is ready to help you choose the right package for your needs."
       :links="[
-        { label: 'Register Now', to: '/register', color: 'warning', icon: 'i-lucide-user-plus' },
+        { label: 'Register Now', to: '/auth/register', color: 'warning', icon: 'i-lucide-user-plus' },
         { label: 'Contact Us', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
       ]"
     />

@@ -46,7 +46,7 @@ const adminMenuItems = [
     { label: 'View Website', icon: 'i-lucide-external-link', to: '/', external: true }
   ],
   [
-    { label: 'Sign Out', icon: 'i-lucide-log-out', to: '/login' }
+    { label: 'Sign Out', icon: 'i-lucide-log-out', to: '/auth/login' }
   ]
 ]
 

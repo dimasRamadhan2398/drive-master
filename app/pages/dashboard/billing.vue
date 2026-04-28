@@ -183,7 +183,7 @@ function getBillingStatusLabel() {
                <div class="font-medium">{{ billingData.amount }}</div>
              </div>
            </div>
-           <NuxtLink to="/select-plan">
+           <NuxtLink to="/auth/select-plan">
             <UButton label="Upgrade Package" color="warning" icon="i-lucide-credit-card" />
            </NuxtLink>
          </div>

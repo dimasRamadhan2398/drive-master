@@ -41,7 +41,7 @@ const userMenuItems = [
     { label: 'Help & Support', icon: 'i-lucide-help-circle', to: 'https://wa.me/6281234567890', external: true }
   ],
   [
-    { label: 'Sign Out', icon: 'i-lucide-log-out', to: '/login' }
+    { label: 'Sign Out', icon: 'i-lucide-log-out', to: '/auth/login' }
   ]
 ]
 

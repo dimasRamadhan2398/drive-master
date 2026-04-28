@@ -81,7 +81,7 @@ async function verifyOTP() {
     // For demo, accept "123456" as valid
     if (otp.value === '123456' || true) { // Allow any code for demo
       console.log('[v0] OTP verified successfully:', otp.value)
-      navigateTo('/onboarding')
+      navigateTo('/auth/onboarding')
     } else {
       errorMessage.value = 'Invalid OTP. Please try again.'
     }
@@ -222,7 +222,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
           <div class="text-center text-sm text-muted">
             <p class="mb-2">
               Wrong email? 
-              <NuxtLink to="/register" class="text-warning hover:underline">
+              <NuxtLink to="/auth/register" class="text-warning hover:underline">
                 Go back to registration
               </NuxtLink>
             </p>

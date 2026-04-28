@@ -84,7 +84,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         <div class="text-center space-y-4">
           <p class="text-sm text-muted">
             Don&apos;t have an account?
-            <NuxtLink to="/register" class="text-warning font-medium hover:underline">
+            <NuxtLink to="/auth/register" class="text-warning font-medium hover:underline">
               Register here
             </NuxtLink>
           </p>

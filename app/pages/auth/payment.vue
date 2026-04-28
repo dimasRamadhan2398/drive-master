@@ -111,7 +111,7 @@ async function completePayment() {
   loading.value = false
   
   // Redirect to payment status with success
-  navigateTo(`/payment-status?status=success&plan=${selectedPlan}&email=${email}`)
+  navigateTo(`/auth/payment-status?status=success&plan=${selectedPlan}&email=${email}`)
 }
 
 onMounted(() => {
@@ -159,8 +159,8 @@ onMounted(() => {
 
             <div class="mt-6 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
               <div class="flex gap-2">
-                <UIcon name="i-lucide-alert-circle" class="text-amber-500 shrink-0 mt-0.5" />
-                <p class="text-sm text-amber-900">{{ currentMethod.note }}</p>
+                <UIcon name="i-lucide-alert-circle" class="text-warning font-bold shrink-0 mt-0.5" />
+                <p class="text-sm text-warning font-bold">{{ currentMethod.note }}</p>
               </div>
             </div>
           </UCard>
@@ -268,6 +268,7 @@ onMounted(() => {
             <UButton 
               label="Open Payment Link"
               icon="i-lucide-external-link"
+              color="warning"
               block
             />
           </UCard>
@@ -298,7 +299,7 @@ onMounted(() => {
 
               <div>
                 <p class="text-sm text-muted">Sessions</p>
-                <p class="font-medium">{{ pkg.sessions }} sessions</p>
+                <p class="font-medium">{{ pkg.sessions }}</p>
               </div>
 
               <div class="pt-4 border-t space-y-3">
@@ -328,7 +329,7 @@ onMounted(() => {
                   @click="completePayment"
                   block
                 />
-                <NuxtLink to="/payment-method">
+                <NuxtLink to="/auth/payment-method">
                   <UButton 
                     label="Change Method"
                     color="neutral"

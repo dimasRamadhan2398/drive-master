@@ -76,7 +76,7 @@ async function onSubmit() {
   loading.value = false
   
   // Redirect to payment page
-  navigateTo(`/payment?method=${formData.paymentMethod}&plan=${selectedPlan.value}&email=${formData.email}&phone=${formData.phone}`)
+  navigateTo(`/auth/payment?method=${formData.paymentMethod}&plan=${selectedPlan.value}&email=${formData.email}&phone=${formData.phone}`)
 }
 
 const packagePrices = {
@@ -218,7 +218,7 @@ const packageNames = {
 
           <!-- Actions -->
           <div class="flex gap-3 pt-4 border-t">
-            <NuxtLink to="/select-plan" class="flex-1">
+            <NuxtLink to="/auth/select-plan" class="flex-1">
               <UButton 
                 label="Back to Packages" 
                 color="neutral"

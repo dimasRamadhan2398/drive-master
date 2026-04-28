@@ -102,12 +102,12 @@ const nextSteps = {
         <UCard class="bg-amber-500/10 border-amber-500/20">
           <template #header>
             <div class="flex items-center gap-2">
-              <UIcon name="i-lucide-gift" class="size-5 text-amber-600" />
-              <h3 class="font-semibold text-amber-900">Free Trial Session</h3>
+              <UIcon name="i-lucide-gift" class="size-5 text-warning" />
+              <h3 class="font-semibold text-warning">Free Trial Session</h3>
             </div>
           </template>
 
-          <p class="text-sm text-amber-900">
+          <p class="text-sm text-warning">
             You have access to a <span class="font-bold">free 15-minute trial session</span>. This is a one-time complimentary session available for registered users to experience our services at no cost. Use it wisely!
           </p>
 
@@ -115,7 +115,7 @@ const nextSteps = {
             <NuxtLink to="/dashboard/free-trial">
               <UButton 
                 label="View Free Trial Details"
-                color="amber"
+                color="warning"
                 variant="soft"
                 block
                 icon="i-lucide-arrow-right"
@@ -179,7 +179,7 @@ const nextSteps = {
 
         <!-- Action Buttons -->
         <div class="space-y-3 pt-4">
-          <NuxtLink :to="`/payment-method?plan=${plan}`">
+          <NuxtLink :to="`/auth/payment-method?plan=${plan}`">
             <UButton 
               label="Try Again"
               icon="i-lucide-rotate-cw"
@@ -198,7 +198,7 @@ const nextSteps = {
         </div>
 
         <!-- Support -->
-        <UAlert icon="i-lucide-help-circle" color="amber" variant="subtle">
+        <UAlert icon="i-lucide-help-circle" color="primary" variant="subtle">
           <template #description>
             Still having issues? Contact our support team via WhatsApp
           </template>
