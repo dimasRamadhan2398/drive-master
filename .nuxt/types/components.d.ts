@@ -14,7 +14,9 @@ type HydrationStrategies = {
 type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {}, {}, { hydrated: () => void }> & T
 
 interface _GlobalComponents {
+  ContentSectionRenderer: typeof import("../../app/components/ContentSectionRenderer.vue")['default']
   OnboardingModal: typeof import("../../app/components/OnboardingModal.vue")['default']
+  AdminNotificationBell: typeof import("../../app/components/admin/NotificationBell.vue")['default']
   AdminPageEditor: typeof import("../../app/components/admin/PageEditor.vue")['default']
   UColorModeAvatar: typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeAvatar.vue")['default']
   UColorModeButton: typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeButton.vue")['default']
@@ -169,7 +171,9 @@ interface _GlobalComponents {
   Icon: typeof import("../../node_modules/@nuxt/icon/dist/runtime/components/index")['default']
   ColorScheme: typeof import("../../node_modules/@nuxtjs/color-mode/dist/runtime/component.vue3.vue")['default']
   NuxtIsland: typeof import("../../node_modules/nuxt/dist/app/components/nuxt-island")['default']
+  LazyContentSectionRenderer: LazyComponent<typeof import("../../app/components/ContentSectionRenderer.vue")['default']>
   LazyOnboardingModal: LazyComponent<typeof import("../../app/components/OnboardingModal.vue")['default']>
+  LazyAdminNotificationBell: LazyComponent<typeof import("../../app/components/admin/NotificationBell.vue")['default']>
   LazyAdminPageEditor: LazyComponent<typeof import("../../app/components/admin/PageEditor.vue")['default']>
   LazyUColorModeAvatar: LazyComponent<typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeAvatar.vue")['default']>
   LazyUColorModeButton: LazyComponent<typeof import("../../node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeButton.vue")['default']>

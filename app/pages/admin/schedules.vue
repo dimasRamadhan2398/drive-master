@@ -321,10 +321,7 @@ function saveEditSlot() {
             <div class="grid grid-cols-7 gap-1">
               <div></div><div></div>
               <button v-for="d in 30" :key="d" :class="['w-full aspect-square rounded-full text-sm font-medium transition-all flex items-center justify-center', selectedDate.getDate() === d ? 'bg-primary text-white shadow-md' : 'hover:bg-muted/50 cursor-pointer']" @click="selectedDate = new Date(2026, selectedDate.getMonth(), d)">{{ d }}</button>
-<<<<<<< HEAD
-=======
 
->>>>>>> 90dab0db79bb75f1e4f3233b586b17c116955a34
             </div>
           </UCard>
 
