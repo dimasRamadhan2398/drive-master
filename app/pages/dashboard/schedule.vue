@@ -2,24 +2,80 @@
 definePageMeta({ layout: 'dashboard' })
 
 const toast = useToast()
+
+// FITUR BARU: Logika Kalender Dinamis
+const currentDate = ref(new Date('2026-04-10T00:00:00')) // Default start di April 2026
 const selectedDate = ref(15)
-const currentMonth = 'April 2026'
 const selectedSlot = ref<string | null>(null)
 const showBookingModal = ref(false)
 
 const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const calendarDays = Array.from({ length: 30 }, (_, i) => ({
-  day: i + 1,
-  available: ![1, 2, 3, 6, 10, 13, 17, 20, 24, 27].includes(i + 1)
-}))
+
+const currentMonthStr = computed(() => {
+  return currentDate.value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+})
+
+// PERUBAHAN: Memperbaiki teks bulan statis
+const currentMonthShortStr = computed(() => {
+  return currentDate.value.toLocaleDateString('en-US', { month: 'short' })
+})
 
 const { slots: globalSlots, bookSlot } = useSchedules()
 
+// FITUR BARU: Kalender merender hari secara dinamis berdasarkan bulan yang sedang dipilih
+const calendarDays = computed(() => {
+  const year = currentDate.value.getFullYear()
+  const month = currentDate.value.getMonth() // 0-11
+  
+  // Cari tahu tanggal 1 bulan ini jatuh di hari apa (0 = Sun, 1 = Mon)
+  const firstDay = new Date(year, month, 1).getDay()
+  // Konversi ke format Senin=0, Minggu=6
+  const emptyDays = firstDay === 0 ? 6 : firstDay - 1
+  
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  
+  const days = []
+  
+  // Selipkan hari kosong sebelum tanggal 1
+  for (let i = 0; i < emptyDays; i++) {
+    days.push({ day: null, available: false })
+  }
+  
+  // Generate tanggal 1 sampai akhir bulan
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
+    // Periksa apakah ada slot available di tanggal ini dari global state
+    const isAvailable = globalSlots.value.some(s => s.date === dateStr && s.status === 'available')
+    
+    days.push({
+      day: i,
+      available: isAvailable
+    })
+  }
+  
+  return days
+})
+
+// FITUR BARU: Fungsi untuk navigasi bulan di kalender
+function changeMonth(offset: number) {
+  const newDate = new Date(currentDate.value)
+  newDate.setMonth(newDate.getMonth() + offset)
+  currentDate.value = newDate
+}
+
+// FITUR BARU: Hanya tampilkan slot yang sesuai dengan tanggal yang dipilih di kalender
 const availableSlots = computed(() => {
-  return globalSlots.value.map(slot => ({
-    ...slot,
-    available: slot.status === 'available'
-  }))
+  const year = currentDate.value.getFullYear()
+  const month = String(currentDate.value.getMonth() + 1).padStart(2, '0')
+  const day = String(selectedDate.value).padStart(2, '0')
+  const dateStr = `${year}-${month}-${day}`
+  
+  return globalSlots.value
+    .filter(slot => slot.date === dateStr)
+    .map(slot => ({
+      ...slot,
+      available: slot.status === 'available'
+    }))
 })
 
 // Mock upcoming sessions
@@ -55,6 +111,7 @@ function selectSlot(slotId: string) {
   }
 }
 
+// PERUBAHAN: Memperbaiki teks bulan statis
 function confirmBooking() {
   if (selectedSlot.value) {
     bookSlot(selectedSlot.value, 'John Doe')
@@ -62,7 +119,7 @@ function confirmBooking() {
   showBookingModal.value = false
   toast.add({
     title: 'Session Booked!',
-    description: `Your session on Apr ${selectedDate.value}, 2026 at ${selectedSlotDetails.value?.time} has been confirmed.`,
+    description: `Your session on ${currentMonthStr.value.split(' ')[0]} ${selectedDate.value}, ${currentDate.value.getFullYear()} at ${selectedSlotDetails.value?.time} has been confirmed.`,
     icon: 'i-lucide-check-circle',
     color: 'success'
   })
@@ -141,9 +198,9 @@ function confirmBooking() {
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-sm font-medium">Select Date</h3>
                 <div class="flex items-center gap-2">
-                  <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" size="xs" />
-                  <span class="text-sm font-medium">{{ currentMonth }}</span>
-                  <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" size="xs" />
+                  <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" size="xs" @click="changeMonth(-1)" />
+                  <span class="text-sm font-medium">{{ currentMonthStr }}</span>
+                  <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" size="xs" @click="changeMonth(1)" />
                 </div>
               </div>
               
@@ -155,25 +212,27 @@ function confirmBooking() {
                   </div>
                 </div>
                 <div class="grid grid-cols-7 gap-1">
-                  <!-- Empty cells for days before month starts (April 2026 starts on Wednesday) -->
-                  <div></div>
-                  <div></div>
-                  <button 
-                    v-for="item in calendarDays" 
-                    :key="item.day"
-                    :disabled="!item.available || item.day < 7"
-                    :class="[
-                      'w-full aspect-square rounded-lg text-sm font-medium transition-all',
-                      selectedDate === item.day 
-                        ? 'bg-primary text-white' 
-                        : item.available && item.day >= 7
-                          ? 'hover:bg-primary/10 cursor-pointer'
-                          : 'text-muted/50 cursor-not-allowed'
-                    ]"
-                    @click="item.available && item.day >= 7 && (selectedDate = item.day)"
+                  <!-- Kalender dinamis -->
+                  <div 
+                    v-for="(item, index) in calendarDays" 
+                    :key="index"
                   >
-                    {{ item.day }}
-                  </button>
+                    <button 
+                      v-if="item.day !== null"
+                      :disabled="!item.available"
+                      :class="[
+                        'w-full aspect-square rounded-lg text-sm font-medium transition-all',
+                        selectedDate === item.day 
+                          ? 'bg-primary text-white' 
+                          : item.available 
+                            ? 'hover:bg-primary/10 cursor-pointer'
+                            : 'text-muted/50 cursor-not-allowed'
+                      ]"
+                      @click="item.available && (selectedDate = item.day)"
+                    >
+                      {{ item.day }}
+                    </button>
+                  </div>
                 </div>
                 
                 <div class="mt-4 flex items-center gap-4 text-xs">
@@ -193,7 +252,8 @@ function confirmBooking() {
             <div>
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-sm font-medium">Available Time Slots</h3>
-                <UBadge :label="`Apr ${selectedDate}`" variant="subtle" />
+                <!-- PERUBAHAN: Memperbaiki teks bulan statis -->
+                <UBadge :label="`${currentMonthShortStr} ${selectedDate}`" variant="subtle" />
               </div>
 
               <div class="space-y-3">

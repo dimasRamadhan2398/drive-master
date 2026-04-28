@@ -12,13 +12,8 @@ const generalSettings = reactive({
   whatsappNumber: '6281234567890'
 })
 
-const operatingHours = reactive({
-  mondayStart: '08:00',
-  mondayEnd: '18:00',
-  weekendStart: '08:00',
-  weekendEnd: '16:00',
-  sundayClosed: true
-})
+// PERUBAHAN: Menggunakan useSettings global untuk jam operasional
+const { operatingHours } = useSettings()
 
 const notificationSettings = reactive({
   emailNotifications: true,
@@ -160,6 +155,7 @@ function saveSettings() {
       <UDashboardNavbar title="Settings">
         <template #right>
           <UButton label="Save All Changes" icon="i-lucide-save" @click="saveSettings" />
+          <AdminNotificationBell />
           <UColorModeButton />
         </template>
       </UDashboardNavbar>

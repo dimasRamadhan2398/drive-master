@@ -139,9 +139,7 @@ const quickActions = [
       <UDashboardNavbar title="Admin Dashboard">
         <template #right>
           <UInput placeholder="Search..." icon="i-lucide-search" class="w-64 hidden md:flex" />
-          <UButton icon="i-lucide-bell" color="neutral" variant="ghost">
-            <UChip color="error" size="sm">3</UChip>
-          </UButton>
+          <AdminNotificationBell />
           <UColorModeButton />
         </template>
       </UDashboardNavbar>

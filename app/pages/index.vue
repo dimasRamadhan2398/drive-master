@@ -141,50 +141,58 @@ const faqItems = [
 
 const { slots: globalSlots } = useSchedules()
 
-const timeSlots = computed(() => {
-  return globalSlots.value.map(slot => ({
-    time: slot.time,
-    car: slot.car,
-    available: slot.status === 'available'
-  }))
-})
-
+// FITUR BARU: Logika Kalender Dinamis
+const currentDate = ref(new Date('2026-04-10T00:00:00'))
 const selectedDate = ref(15)
 const selectedSlot = ref<string | null>(null)
-const currentMonth = 'April 2026'
+const currentMonthStr = computed(() => {
+  return currentDate.value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+})
+const currentMonthShortStr = computed(() => {
+  return currentDate.value.toLocaleDateString('en-US', { month: 'short' })
+})
 const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const calendarDays = [
-  { day: 1, available: false },
-  { day: 2, available: false },
-  { day: 3, available: false },
-  { day: 4, available: true },
-  { day: 5, available: true },
-  { day: 6, available: false },
-  { day: 7, available: true },
-  { day: 8, available: true },
-  { day: 9, available: true },
-  { day: 10, available: false },
-  { day: 11, available: true },
-  { day: 12, available: true },
-  { day: 13, available: false },
-  { day: 14, available: true },
-  { day: 15, available: true },
-  { day: 16, available: true },
-  { day: 17, available: false },
-  { day: 18, available: true },
-  { day: 19, available: true },
-  { day: 20, available: false },
-  { day: 21, available: true },
-  { day: 22, available: true },
-  { day: 23, available: true },
-  { day: 24, available: false },
-  { day: 25, available: true },
-  { day: 26, available: true },
-  { day: 27, available: false },
-  { day: 28, available: true },
-  { day: 29, available: true },
-  { day: 30, available: true }
-]
+
+// FITUR BARU: Kalender dinamis untuk halaman Home
+const calendarDays = computed(() => {
+  const year = currentDate.value.getFullYear()
+  const month = currentDate.value.getMonth()
+  const firstDay = new Date(year, month, 1).getDay()
+  const emptyDays = firstDay === 0 ? 6 : firstDay - 1
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  
+  const days = []
+  for (let i = 0; i < emptyDays; i++) {
+    days.push({ day: null, available: false })
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
+    const isAvailable = globalSlots.value.some(s => s.date === dateStr && s.status === 'available')
+    days.push({ day: i, available: isAvailable })
+  }
+  return days
+})
+
+function changeMonth(offset: number) {
+  const newDate = new Date(currentDate.value)
+  newDate.setMonth(newDate.getMonth() + offset)
+  currentDate.value = newDate
+}
+
+const timeSlots = computed(() => {
+  const year = currentDate.value.getFullYear()
+  const month = String(currentDate.value.getMonth() + 1).padStart(2, '0')
+  const day = String(selectedDate.value).padStart(2, '0')
+  const dateStr = `${year}-${month}-${day}`
+  
+  return globalSlots.value
+    .filter(slot => slot.date === dateStr)
+    .map(slot => ({
+      time: slot.time,
+      car: slot.car,
+      available: slot.status === 'available'
+    }))
+})
 </script>
 
 <template>
@@ -342,9 +350,9 @@ const calendarDays = [
                 <h3 class="font-semibold">Select Date</h3>
               </div>
               <div class="flex items-center gap-2">
-                <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" size="xs" />
-                <span class="text-sm font-medium">{{ currentMonth }}</span>
-                <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" size="xs" />
+                <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" size="xs" @click="changeMonth(-1)" />
+                <span class="text-sm font-medium">{{ currentMonthStr }}</span>
+                <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" size="xs" @click="changeMonth(1)" />
               </div>
             </div>
           </template>
@@ -356,21 +364,20 @@ const calendarDays = [
             </div>
           </div>
           <div class="grid grid-cols-7 gap-1">
-            <!-- Empty cells for days before month starts (April 2026 starts on Wednesday) -->
-            <div></div>
-            <div></div>
-            <div v-for="item in calendarDays" :key="item.day">
+            <!-- PERUBAHAN: Kalender dinamis untuk Home Page -->
+            <div v-for="(item, index) in calendarDays" :key="index">
               <button
-                :disabled="!item.available || item.day < 7"
+                v-if="item.day !== null"
+                :disabled="!item.available"
                 :class="[
                   'w-full aspect-square rounded-lg text-sm font-medium transition-all',
                   selectedDate === item.day 
                     ? 'bg-warning text-white' 
-                    : item.available && item.day >= 7
+                    : item.available 
                       ? 'hover:bg-warning/10 cursor-pointer'
                       : 'text-muted/50 cursor-not-allowed'
                 ]"
-                @click="item.available && item.day >= 7 && (selectedDate = item.day)"
+                @click="item.available && (selectedDate = item.day)"
               >
                 {{ item.day }}
               </button>
@@ -397,7 +404,8 @@ const calendarDays = [
                 <UIcon name="i-lucide-clock" class="size-5 text-warning" />
                 <h3 class="font-semibold">Available Slots</h3>
               </div>
-              <UBadge :label="`Apr ${selectedDate}`" variant="subtle" />
+              <!-- PERUBAHAN: Memperbaiki teks bulan statis -->
+              <UBadge :label="`${currentMonthShortStr} ${selectedDate}`" variant="subtle" />
             </div>
           </template>
           
