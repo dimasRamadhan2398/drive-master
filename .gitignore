@@ -7,3 +7,5 @@ database.db-journal
 .DS_STORE
 .vscode
 
+.output/
+.nuxt/
