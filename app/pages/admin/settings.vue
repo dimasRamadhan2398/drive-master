@@ -35,7 +35,8 @@ const notificationSettings = reactive({
 })
 
 const vehicles = ref([
-  { id: 1, name: 'BYD Atto 1', plate: 'B 1234 EV', status: 'active', photoUrl: '' },
+  { id: 1, name: 'Tesla Model 3', plate: 'B 1234 EV', status: 'active', photoUrl: '' },
+  { id: 2, name: 'BYD Atto 3', plate: 'B 5678 EV', status: 'active', photoUrl: '' }
 ])
 
 // Vehicle CRUD State
@@ -77,9 +78,9 @@ function deleteVehicle() {
 }
 
 const instructors = ref([
-  { id: 1, name: 'Mr. Ahmad', phone: '081234567001', bnsp: 'BNSP-101-2023', sim: 'SIM A', photoUrl: '', experience: 5, bio: 'Expert in defensive driving techniques.', status: 'active' },
-  { id: 2, name: 'Ms. Sari', phone: '081234567002', bnsp: 'BNSP-102-2022', sim: 'SIM A', photoUrl: '', experience: 8, bio: 'Patient and friendly, great for beginners.', status: 'active' },
-  { id: 3, name: 'Mr. Budi', phone: '081234567003', bnsp: 'BNSP-105-2024', sim: 'SIM A', photoUrl: '', experience: 3, bio: 'Specialist in night driving and bad weather conditions.', status: 'active' }
+  { id: 1, name: 'Pak Ahmad', phone: '081234567001', bnsp: 'BNSP-101-2023', sim: 'SIM A', photoUrl: '', experience: 5, bio: 'Expert in defensive driving techniques.', status: 'active' },
+  { id: 2, name: 'Bu Sari', phone: '081234567002', bnsp: 'BNSP-102-2022', sim: 'SIM A', photoUrl: '', experience: 8, bio: 'Patient and friendly, great for beginners.', status: 'active' },
+  { id: 3, name: 'Pak Budi', phone: '081234567003', bnsp: 'BNSP-105-2024', sim: 'SIM A', photoUrl: '', experience: 3, bio: 'Specialist in night driving and bad weather conditions.', status: 'active' }
 ])
 
 // Instructor CRUD State
@@ -216,10 +217,10 @@ function saveSettings() {
               <UInput v-model="operatingHours.mondayEnd" type="time" class="w-full" color="warning" />
             </div>
             <div class="flex items-center gap-4">
-              <span class="w-32 text-md font-medium">Saturday & Sunday</span>
-              <UInput v-model="operatingHours.weekendStart" type="time" class="w-full" color="warning" />
+              <span class="w-32 text-sm font-medium">Weekend</span>
+              <UInput v-model="operatingHours.weekendStart" type="time" class="w-32" />
               <span class="text-muted">to</span>
-              <UInput v-model="operatingHours.weekendEnd" type="time" class="w-full" color="warning" />
+              <UInput v-model="operatingHours.weekendEnd" type="time" class="w-32" />
             </div>
             <div class="flex items-center gap-4">
               <span class="w-32 text-md font-medium">Night Shift</span>
@@ -238,7 +239,7 @@ function saveSettings() {
                 <UIcon name="i-lucide-car" class="size-5 text-warning" />
                 <h2 class="font-semibold">Vehicles</h2>
               </div>
-              <UButton label="Add Vehicle" icon="i-lucide-plus" size="sm" variant="outline" color="warning" @click="openNewVehicle" />
+              <UButton label="Add Vehicle" icon="i-lucide-plus" size="sm" variant="outline" color="neutral" @click="openNewVehicle" />
             </div>
           </template>
 
@@ -261,7 +262,7 @@ function saveSettings() {
                   :color="vehicle.status === 'active' ? 'info' : 'error'"
                   variant="subtle"
                 />
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="sm" @click="openEditVehicle(vehicle)" />
+                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="xs" @click="openEditVehicle(vehicle)" />
               </div>
             </div>
           </div>
@@ -275,7 +276,7 @@ function saveSettings() {
                 <UIcon name="i-lucide-users" class="size-5 text-warning" />
                 <h2 class="font-semibold">Instructors</h2>
               </div>
-              <UButton label="Add Instructor" icon="i-lucide-user-plus" size="sm" variant="outline" color="warning" @click="openNewInstructor" />
+              <UButton label="Add Instructor" icon="i-lucide-user-plus" size="sm" variant="outline" color="neutral" @click="openNewInstructor" />
             </div>
           </template>
 
@@ -286,7 +287,7 @@ function saveSettings() {
               class="flex items-center justify-between p-4 rounded-lg border border-default"
             >
               <div class="flex items-center gap-4">
-                <UAvatar :src="instructor.photoUrl || undefined" :text="!instructor.photoUrl ? instructor.name.split(' ').map((n: string) => n[0]).join('') : undefined" size="md" />
+                <UAvatar :src="instructor.photoUrl || undefined" :text="!instructor.photoUrl ? instructor.name.split(' ').map((n: string) => n[0]).join('') : undefined" size="sm" />
                 <div>
                   <p class="font-medium">{{ instructor.name }}</p>
                   <p class="text-md text-muted">{{ instructor.phone }}</p>
@@ -298,7 +299,7 @@ function saveSettings() {
                   :color="instructor.status === 'active' ? 'info' : 'neutral'"
                   variant="subtle"
                 />
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="sm" @click="openEditInstructor(instructor)" />
+                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="xs" @click="openEditInstructor(instructor)" />
               </div>
             </div>
           </div>

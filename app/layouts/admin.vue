@@ -55,6 +55,12 @@ const admin = {
   email: 'admin@evdriveacademy.id',
   role: 'Administrator'
 }
+
+// FITUR BARU: Mengaktifkan monitor Smart Alert untuk seluruh halaman Admin
+const { startMonitor } = useSmartAlerts()
+onMounted(() => {
+  startMonitor()
+})
 </script>
 
 <template>
