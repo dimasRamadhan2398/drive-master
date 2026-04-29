@@ -1,0 +1,136 @@
+package repositories
+
+import (
+	"user-service/models"
+	"user-service/pkg/base"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+type IUserRepository interface {
+	Create(user *models.User) error
+	FindByID(id uuid.UUID) (*models.User, error)
+	FindByEmail(email string) (*models.User, error)
+	FindByUsername(username string) (*models.User, error)
+	FindByPhoneNumber(phoneNumber string) (*models.User, error)
+	ExistsByEmail(email string) (bool, error)
+	ExistsByUsername(username string) (bool, error)
+	ExistsByPhoneNumber(phoneNumber string) (bool, error)
+	FindByRoleID(roleID uint) ([]models.User, error)
+	FindAll() ([]models.User, error)
+	Update(user *models.User) error
+	Delete(user *models.User) error
+	GetAllWithProfiles() ([]models.User, error)
+	FindByIDWithProfiles(id uuid.UUID) (*models.User, error)
+}
+
+type UserRepository struct {
+	*base.BaseRepository
+	db *gorm.DB
+}
+
+func NewUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{BaseRepository: base.NewBaseRepository(db)}
+}
+
+func (r *UserRepository) Create(user *models.User) error {
+	return r.BaseRepository.Create(user)
+}
+
+
+func (r *UserRepository) FindByID(id uuid.UUID) (*models.User, error) {
+	var user models.User
+	if err := r.BaseRepository.FindByID(&user, id); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
+	var user models.User
+	if err := r.BaseRepository.FindOne(&user, "email = ?", email); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// FindByUsername finds a user by username
+func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
+	var user models.User
+	if err := r.BaseRepository.FindOne(&user, "username = ?", username); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// FindByPhoneNumber finds a user by phone number
+func (r *UserRepository) FindByPhoneNumber(phoneNumber string) (*models.User, error) {
+	var user models.User
+	if err := r.BaseRepository.FindOne(&user, "phone_number = ?", phoneNumber); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *UserRepository) GetAllWithProfiles() ([]models.User, error) {
+	var users []models.User
+	opts := base.NewQueryOptions().
+		WithPreloads("Role", "MemberProfile", "InstructorProfile")
+	if err := r.BaseRepository.FindMany(&models.User{}, &users, opts); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// FindByIDWithProfiles finds a user by UUID with their Role, MemberProfile, and InstructorProfile
+func (r *UserRepository) FindByIDWithProfiles(id uuid.UUID) (*models.User, error) {
+	var user models.User
+	if err := r.BaseRepository.FindByIDWithPreload(&user, id, "Role", "MemberProfile", "InstructorProfile"); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+func (r *UserRepository) ExistsByEmail(email string) (bool, error) {
+	return r.BaseRepository.Exists(&models.User{}, "email = ?", email)
+}
+
+// ExistsByUsername checks if a user exists with the given username
+func (r *UserRepository) ExistsByUsername(username string) (bool, error) {
+	return r.BaseRepository.Exists(&models.User{}, "username = ?", username)
+}
+
+// ExistsByPhoneNumber checks if a user exists with the given phone number
+func (r *UserRepository) ExistsByPhoneNumber(phoneNumber string) (bool, error) {
+	return r.BaseRepository.Exists(&models.User{}, "phone_number = ?", phoneNumber)
+}
+
+func (r *UserRepository) FindByRoleID(roleID uint) ([]models.User, error) {
+	var users []models.User
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"role_id": roleID})
+	if err := r.BaseRepository.FindMany(&models.User{}, &users, opts); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// FindAll retrieves all users
+func (r *UserRepository) FindAll() ([]models.User, error) {
+	var users []models.User
+	opts := base.NewQueryOptions()
+	if err := r.BaseRepository.FindMany(&models.User{}, &users, opts); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// Update saves changes to an existing user
+func (r *UserRepository) Update(user *models.User) error {
+	return r.BaseRepository.Update(user)
+}
+
+// Delete soft-deletes a user
+func (r *UserRepository) Delete(user *models.User) error {
+	return r.BaseRepository.Delete(user)
+}

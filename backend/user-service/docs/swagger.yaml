@@ -1,0 +1,919 @@
+basePath: /api/v1
+definitions:
+  user-service_models_dto.AddCoverageAreaInput:
+    properties:
+      areaName:
+        minLength: 2
+        type: string
+    required:
+    - areaName
+    type: object
+  user-service_models_dto.ChangePasswordInput:
+    properties:
+      currentPassword:
+        type: string
+      newPassword:
+        minLength: 8
+        type: string
+    required:
+    - currentPassword
+    - newPassword
+    type: object
+  user-service_models_dto.CreateUserRequest:
+    properties:
+      address:
+        type: string
+      dateOfBirth:
+        type: string
+      emailAddress:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      phoneNumber:
+        minLength: 10
+        type: string
+      roleId:
+        type: integer
+      username:
+        minLength: 2
+        type: string
+    required:
+    - dateOfBirth
+    - emailAddress
+    - image
+    - password
+    - phoneNumber
+    - roleId
+    - username
+    type: object
+  user-service_models_dto.CreateWorkExperienceRequest:
+    properties:
+      companyName:
+        type: string
+      description:
+        type: string
+      endDate:
+        type: string
+      role:
+        type: string
+      startDate:
+        type: string
+    required:
+    - companyName
+    - role
+    - startDate
+    type: object
+  user-service_models_dto.ForgotPasswordInput:
+    properties:
+      emailAddress:
+        type: string
+    required:
+    - emailAddress
+    type: object
+  user-service_models_dto.LoginInput:
+    properties:
+      identifier:
+        description: accepts either email or username
+        type: string
+      password:
+        type: string
+    required:
+    - identifier
+    - password
+    type: object
+  user-service_models_dto.ResetPasswordInput:
+    properties:
+      newPassword:
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - newPassword
+    - token
+    type: object
+  user-service_models_dto.UpdateInstructorProfileInput:
+    properties:
+      bnspCertificateNumber:
+        minLength: 10
+        type: string
+      description:
+        type: string
+      licenseExpiry:
+        type: string
+      licenseNumber:
+        minLength: 5
+        type: string
+      yearsOfExperience:
+        minimum: 0
+        type: integer
+    type: object
+  user-service_models_dto.UpdateUserRequest:
+    properties:
+      address:
+        type: string
+      dateOfBirth:
+        type: string
+      emailAddress:
+        type: string
+      image:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      phoneNumber:
+        minLength: 10
+        type: string
+      roleId:
+        type: integer
+      username:
+        minLength: 2
+        type: string
+    type: object
+  user-service_models_dto.UploadBase64MediaRequest:
+    properties:
+      base64Data:
+        type: string
+      fileName:
+        type: string
+      folder:
+        type: string
+    required:
+    - base64Data
+    type: object
+  user-service_pkg_response.ErrorDetail:
+    properties:
+      code:
+        type: string
+      details:
+        type: string
+      message:
+        type: string
+    type: object
+  user-service_pkg_response.Response:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/user-service_pkg_response.ErrorDetail'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+host: localhost:8081
+info:
+  contact: {}
+  description: API documentation for User Service
+  title: User Service API
+  version: "1.0"
+paths:
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Request a password reset link
+      parameters:
+      - description: Email address
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.ForgotPasswordInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Forgot Password
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email/username and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.LoginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Login
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Register
+      tags:
+      - Auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Reset password using a token
+      parameters:
+      - description: Reset password data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.ResetPasswordInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Reset Password
+      tags:
+      - Auth
+  /instructors:
+    get:
+      description: Get all instructors with their profiles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Get All Instructors
+      tags:
+      - Instructors
+  /instructors/{id}/coverage-areas:
+    post:
+      consumes:
+      - application/json
+      description: Add coverage area for an instructor
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Coverage area data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.AddCoverageAreaInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Add Coverage Area
+      tags:
+      - Instructors
+  /instructors/{id}/coverage-areas/{areaId}:
+    delete:
+      description: Remove coverage area for an instructor
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Coverage Area ID
+        in: path
+        name: areaId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Remove Coverage Area
+      tags:
+      - Instructors
+  /instructors/{id}/profile:
+    get:
+      description: Get instructor profile by user ID with work experiences
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Get Instructor Profile
+      tags:
+      - Instructors
+    put:
+      consumes:
+      - application/json
+      description: Update instructor profile
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update profile data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.UpdateInstructorProfileInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Update Instructor Profile
+      tags:
+      - Instructors
+  /instructors/{id}/work-experiences:
+    post:
+      consumes:
+      - application/json
+      description: Add work experience for an instructor
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Work experience data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.CreateWorkExperienceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Create Work Experience
+      tags:
+      - Instructors
+  /media/{fileId}:
+    delete:
+      description: Delete a media file by ID
+      parameters:
+      - description: File ID
+        in: path
+        name: fileId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Delete Media
+      tags:
+      - Media
+  /media/{fileId}/metadata:
+    get:
+      description: Get metadata for a media file
+      parameters:
+      - description: File ID
+        in: path
+        name: fileId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Get Media Metadata
+      tags:
+      - Media
+  /media/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a file
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: File name
+        in: formData
+        name: fileName
+        type: string
+      - description: Folder path
+        in: formData
+        name: folder
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Upload Media
+      tags:
+      - Media
+  /media/upload-base64:
+    post:
+      consumes:
+      - application/json
+      description: Upload a file from base64 encoded data
+      parameters:
+      - description: Base64 encoded file data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.UploadBase64MediaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Upload Base64 Media
+      tags:
+      - Media
+  /members/{userId}/profile:
+    get:
+      description: Get member profile by user ID
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Get Member Profile
+      tags:
+      - Members
+    put:
+      consumes:
+      - application/json
+      description: Update member profile
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: Update profile data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Update Member Profile
+      tags:
+      - Members
+  /roles:
+    get:
+      description: Get all available roles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Get All Roles
+      tags:
+      - Roles
+  /roles/{id}:
+    get:
+      description: Get a role by ID
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Get Role by ID
+      tags:
+      - Roles
+  /users:
+    get:
+      description: Get all users with their profiles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Get All Users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user (admin only)
+      parameters:
+      - description: User data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Create User
+      tags:
+      - Users
+  /users/{id}:
+    delete:
+      description: Delete a user by ID
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Delete User
+      tags:
+      - Users
+    get:
+      description: Get a user by their ID with profiles
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Get User by ID
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update user information
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update user data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Update User
+      tags:
+      - Users
+  /users/{id}/password:
+    patch:
+      consumes:
+      - application/json
+      description: Change user password
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Password change data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.ChangePasswordInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Change Password
+      tags:
+      - Users
+  /work-experiences/{expId}:
+    delete:
+      description: Delete a work experience
+      parameters:
+      - description: Work Experience ID
+        in: path
+        name: expId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Delete Work Experience
+      tags:
+      - Instructors
+    put:
+      consumes:
+      - application/json
+      description: Update a work experience
+      parameters:
+      - description: Work Experience ID
+        in: path
+        name: expId
+        required: true
+        type: integer
+      - description: Update work experience data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user-service_models_dto.CreateWorkExperienceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/user-service_pkg_response.Response'
+      summary: Update Work Experience
+      tags:
+      - Instructors
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

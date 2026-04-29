@@ -1,0 +1,115 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: app-postgres
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: app-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: app-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: app-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      PORT: 8081
+      POSTGRES_DSN: host=postgres user=app password=app dbname=app port=5432 sslmode=disable
+      KAFKA_BROKER: kafka:29092
+      KAFKA_TOPIC_USER_CREATED: user.created
+    ports:
+      - "8081:8081"
+
+  core-service:
+    build:
+      context: ./backend/core-service
+      dockerfile: Dockerfile
+    container_name: core-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      PORT: 8082
+      POSTGRES_DSN: host=postgres user=app password=app dbname=app port=5432 sslmode=disable
+      REDIS_ADDR: redis:6379
+      KAFKA_BROKER: kafka:29092
+      KAFKA_TOPIC_USER_CREATED: user.created
+      KAFKA_GROUP_ID: core-service-group
+    ports:
+      - "8082:8082"
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    depends_on:
+      - user-service
+      - core-service
+    environment:
+      PORT: 8080
+      USER_SERVICE_URL: http://user-service:8081
+      CORE_SERVICE_URL: http://core-service:8082
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:

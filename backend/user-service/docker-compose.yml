@@ -1,0 +1,31 @@
+services:
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: drive_master_user_service
+    environment:
+      - KAFKA_BROKERS=drive_master_kafka:29092
+      - REDIS_HOST=drive_master_redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-drivemaster123}
+      - POSTGRES_HOST=drive_master_postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-admin_drive}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-drivemaster123}
+      - POSTGRES_DB=${POSTGRES_DB:-drivemaster_user_service}
+      - CONFIG_PATH=./pkg/config/config.yaml
+      - RUN_MIGRATIONS=true
+      - RUN_SEEDERS=false
+    ports:
+      - "8081:8081"
+    networks:
+      - drive_master_network
+      - user_service_network
+
+networks:
+  user_service_network:
+    name: user_service_network
+    driver: bridge
+  drive_master_network:
+    external: true

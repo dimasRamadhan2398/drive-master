@@ -1,0 +1,53 @@
+server:
+  port: 8001
+  mode: release # debug, release
+  read_timeout: 60
+
+database:
+  host: drive_master_postgres
+  port: 5432
+  username: admin_drive
+  password: drivemaster123
+  name: drivemaster_user_service
+  sslmode: disable
+  maxOpenConnections: 10
+  maxLifeTimeConnection: 10
+  maxIdleConnections: 10
+  maxIdleTime: 10
+
+redis:
+  host: redis
+  port: 6379
+  password: "drivemaster123"
+  db: 0
+
+imagekit:
+  id: oy4rsvid5
+
+jwt:
+  secret: fec20f8c86f9c2657ef2423d6859c9b1355472e995d512753a710575fd4c3cd5
+  expiry_hour: 24
+
+log:
+  level: info # debug, info, warn, error
+  format: json # json, console
+
+kafka:
+  enabled: true
+  brokers:
+    - "kafka:29092"
+  topic: "service-logs"
+  service_name: "user-service"
+
+app:
+  app_name: user_service
+  app_env: development
+  signature_key: 7161a0c1cbde456b38aceef4bdfd7124b5b8c41533220bdae815fdec698ed341bdd6a31c80df9daf8013deaf62bcf8fcfe6029709dce25cba071aa21a319df12
+  rate_limiter_max: 100
+  rate_limiter_time: 1
+
+email:
+  api_key: re_HhxUfk1S_32urxpbqaA1KrimBdH3Pa65w
+  from_email: "Admin Drive Master Indonesia"
+  app_name: user_service
+  enabled: true

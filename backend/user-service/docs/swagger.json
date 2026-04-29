@@ -1,0 +1,1384 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API documentation for User Service",
+        "title": "User Service API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8081",
+    "basePath": "/api/v1",
+    "paths": {
+        "/auth/forgot-password": {
+            "post": {
+                "description": "Request a password reset link",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Forgot Password",
+                "parameters": [
+                    {
+                        "description": "Email address",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.ForgotPasswordInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "description": "Authenticate user with email/username and password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.LoginInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Create a new user account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register",
+                "parameters": [
+                    {
+                        "description": "User registration data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.CreateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset-password": {
+            "post": {
+                "description": "Reset password using a token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Reset Password",
+                "parameters": [
+                    {
+                        "description": "Reset password data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.ResetPasswordInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/instructors": {
+            "get": {
+                "description": "Get all instructors with their profiles",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Instructors"
+                ],
+                "summary": "Get All Instructors",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/instructors/{id}/coverage-areas": {
+            "post": {
+                "description": "Add coverage area for an instructor",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Instructors"
+                ],
+                "summary": "Add Coverage Area",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Coverage area data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.AddCoverageAreaInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/instructors/{id}/coverage-areas/{areaId}": {
+            "delete": {
+                "description": "Remove coverage area for an instructor",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Instructors"
+                ],
+                "summary": "Remove Coverage Area",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Coverage Area ID",
+                        "name": "areaId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/instructors/{id}/profile": {
+            "get": {
+                "description": "Get instructor profile by user ID with work experiences",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Instructors"
+                ],
+                "summary": "Get Instructor Profile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update instructor profile",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Instructors"
+                ],
+                "summary": "Update Instructor Profile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update profile data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.UpdateInstructorProfileInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/instructors/{id}/work-experiences": {
+            "post": {
+                "description": "Add work experience for an instructor",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Instructors"
+                ],
+                "summary": "Create Work Experience",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Work experience data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.CreateWorkExperienceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/media/upload": {
+            "post": {
+                "description": "Upload a file",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Upload Media",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "File name",
+                        "name": "fileName",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Folder path",
+                        "name": "folder",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/media/upload-base64": {
+            "post": {
+                "description": "Upload a file from base64 encoded data",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Upload Base64 Media",
+                "parameters": [
+                    {
+                        "description": "Base64 encoded file data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.UploadBase64MediaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/media/{fileId}": {
+            "delete": {
+                "description": "Delete a media file by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Delete Media",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "File ID",
+                        "name": "fileId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/media/{fileId}/metadata": {
+            "get": {
+                "description": "Get metadata for a media file",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Get Media Metadata",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "File ID",
+                        "name": "fileId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/members/{userId}/profile": {
+            "get": {
+                "description": "Get member profile by user ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Members"
+                ],
+                "summary": "Get Member Profile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update member profile",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Members"
+                ],
+                "summary": "Update Member Profile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update profile data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles": {
+            "get": {
+                "description": "Get all available roles",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Get All Roles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/{id}": {
+            "get": {
+                "description": "Get a role by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Get Role by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "description": "Get all users with their profiles",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get All Users",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new user (admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Create User",
+                "parameters": [
+                    {
+                        "description": "User data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.CreateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "description": "Get a user by their ID with profiles",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get User by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update user information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update user data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a user by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/password": {
+            "patch": {
+                "description": "Change user password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Change Password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Password change data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.ChangePasswordInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/work-experiences/{expId}": {
+            "put": {
+                "description": "Update a work experience",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Instructors"
+                ],
+                "summary": "Update Work Experience",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Work Experience ID",
+                        "name": "expId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update work experience data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user-service_models_dto.CreateWorkExperienceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a work experience",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Instructors"
+                ],
+                "summary": "Delete Work Experience",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Work Experience ID",
+                        "name": "expId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/user-service_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "user-service_models_dto.AddCoverageAreaInput": {
+            "type": "object",
+            "required": [
+                "areaName"
+            ],
+            "properties": {
+                "areaName": {
+                    "type": "string",
+                    "minLength": 2
+                }
+            }
+        },
+        "user-service_models_dto.ChangePasswordInput": {
+            "type": "object",
+            "required": [
+                "currentPassword",
+                "newPassword"
+            ],
+            "properties": {
+                "currentPassword": {
+                    "type": "string"
+                },
+                "newPassword": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "user-service_models_dto.CreateUserRequest": {
+            "type": "object",
+            "required": [
+                "dateOfBirth",
+                "emailAddress",
+                "image",
+                "password",
+                "phoneNumber",
+                "roleId",
+                "username"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "dateOfBirth": {
+                    "type": "string"
+                },
+                "emailAddress": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "phoneNumber": {
+                    "type": "string",
+                    "minLength": 10
+                },
+                "roleId": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string",
+                    "minLength": 2
+                }
+            }
+        },
+        "user-service_models_dto.CreateWorkExperienceRequest": {
+            "type": "object",
+            "required": [
+                "companyName",
+                "role",
+                "startDate"
+            ],
+            "properties": {
+                "companyName": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "endDate": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "startDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "user-service_models_dto.ForgotPasswordInput": {
+            "type": "object",
+            "required": [
+                "emailAddress"
+            ],
+            "properties": {
+                "emailAddress": {
+                    "type": "string"
+                }
+            }
+        },
+        "user-service_models_dto.LoginInput": {
+            "type": "object",
+            "required": [
+                "identifier",
+                "password"
+            ],
+            "properties": {
+                "identifier": {
+                    "description": "accepts either email or username",
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "user-service_models_dto.ResetPasswordInput": {
+            "type": "object",
+            "required": [
+                "newPassword",
+                "token"
+            ],
+            "properties": {
+                "newPassword": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "user-service_models_dto.UpdateInstructorProfileInput": {
+            "type": "object",
+            "properties": {
+                "bnspCertificateNumber": {
+                    "type": "string",
+                    "minLength": 10
+                },
+                "description": {
+                    "type": "string"
+                },
+                "licenseExpiry": {
+                    "type": "string"
+                },
+                "licenseNumber": {
+                    "type": "string",
+                    "minLength": 5
+                },
+                "yearsOfExperience": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "user-service_models_dto.UpdateUserRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "dateOfBirth": {
+                    "type": "string"
+                },
+                "emailAddress": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "phoneNumber": {
+                    "type": "string",
+                    "minLength": 10
+                },
+                "roleId": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string",
+                    "minLength": 2
+                }
+            }
+        },
+        "user-service_models_dto.UploadBase64MediaRequest": {
+            "type": "object",
+            "required": [
+                "base64Data"
+            ],
+            "properties": {
+                "base64Data": {
+                    "type": "string"
+                },
+                "fileName": {
+                    "type": "string"
+                },
+                "folder": {
+                    "type": "string"
+                }
+            }
+        },
+        "user-service_pkg_response.ErrorDetail": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "user-service_pkg_response.Response": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error": {
+                    "$ref": "#/definitions/user-service_pkg_response.ErrorDetail"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
