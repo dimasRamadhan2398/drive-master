@@ -18,6 +18,7 @@ type IUserService interface {
 	UpdateUser(user *models.User) error
 	DeleteUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
+	GetInstructorsWithPagination(page, limit int) (*dto.InstructorListResponse, error)
 }
 
 type UserService struct {
@@ -25,7 +26,7 @@ type UserService struct {
 	repo repositories.IUserRepository
 }
 
-func NewUserService(repo repositories.IUserRepository) *UserService {
+func NewUserService(repo repositories.IUserRepository) IUserService {
 	return &UserService{repo: repo, BaseService: base.NewBaseService()}
 }
 
@@ -112,6 +113,57 @@ func (s *UserService) DeleteUser(user *models.User) error {
 
 func (s *UserService) GetUserByEmail(email string) (*models.User, error) {
 	return s.repo.FindByEmail(email)
+}
+
+// GetInstructorsWithPagination returns paginated list of instructors with their profiles
+func (s *UserService) GetInstructorsWithPagination(page, limit int) (*dto.InstructorListResponse, error) {
+	// Get role ID for instructor (assuming role with name "instructor" exists)
+	// For now, we'll use a default role ID of 3 (instructor)
+	instructorRoleID := uint(3)
+
+	// Get total count
+	total, err := s.repo.CountByRoleID(instructorRoleID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate pagination
+	offset := (page - 1) * limit
+	totalPages := int(total) / limit
+	if int(total)%limit > 0 {
+		totalPages++
+	}
+
+	// Get paginated users
+	users, err := s.repo.FindByRoleIDWithPagination(instructorRoleID, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to response DTOs
+	data := make([]dto.UserWithProfileResponse, len(users))
+	for i, user := range users {
+		data[i] = dto.UserWithProfileResponse{
+			GetUserResponse: dto.GetUserResponse{
+				UserID:      user.ID,
+				Email:       user.Email,
+				Username:    user.Username,
+				PhoneNumber: user.PhoneNumber,
+				Image:       user.Image,
+				DateOfBirth: user.DateOfBirth,
+				Address:     user.Address,
+				RoleID:      user.RoleID,
+			},
+		}
+	}
+
+	return &dto.InstructorListResponse{
+		Data:       data,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	}, nil
 }
 
 // Error definitions

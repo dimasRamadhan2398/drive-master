@@ -7,6 +7,7 @@ import (
 
 	"user-service/controllers"
 	"user-service/database/seeders"
+	docs "user-service/docs"
 	"user-service/models"
 	"user-service/pkg/config"
 	pkgKafka "user-service/pkg/kafka"
@@ -150,6 +151,13 @@ func runServe(cmd *cobra.Command, args []string) {
 	)
 
 	router := gin.Default()
+
+	// Initialize Swagger docs
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Title = "User Service API"
+	docs.SwaggerInfo.Description = "API documentation for User Service"
+	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%s", servePort)
+	docs.SwaggerInfo.BasePath = "/"
 
 	// Setup routes
 	routes.SetupRoutes(router, userController)

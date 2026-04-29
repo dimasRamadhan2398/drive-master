@@ -10,6 +10,7 @@ import (
 
 type IWorkExperienceRepository interface {
 	Create(workExp *models.WorkExperience) error
+	CreateBatch(workExps []models.WorkExperience) error
 	Update(workExp *models.WorkExperience) error
 	Delete(id uint) error
 	FindByInstructorID(instructorID uuid.UUID) ([]models.WorkExperience, error)
@@ -17,6 +18,16 @@ type IWorkExperienceRepository interface {
 
 type WorkExperienceRepository struct {
 	*base.BaseRepository
+}
+
+// CreateBatch implements [IWorkExperienceRepository].
+func (r *WorkExperienceRepository) CreateBatch(workExps []models.WorkExperience) error {
+	// Convert []models.WorkExperience to []interface{} for CreateInBatches
+	interfaceSlice := make([]interface{}, len(workExps))
+	for i, v := range workExps {
+		interfaceSlice[i] = v
+	}
+	return r.BaseRepository.CreateInBatches(interfaceSlice)
 }
 
 func NewWorkExperienceRepository(db *gorm.DB) IWorkExperienceRepository {
@@ -47,6 +58,3 @@ func (r *WorkExperienceRepository) FindByInstructorID(instructorID uuid.UUID) ([
 	}
 	return workExps, nil
 }
-
-
-

@@ -2,7 +2,7 @@ package dto
 
 type LoginInput struct {
 	// accepts either email or username
-	Identifier string `json:"identifier" binding:"required"`
+	Email string `json:"email" binding:"required"`
 	Password   string `json:"password"   binding:"required"`
 }
 

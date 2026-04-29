@@ -16,7 +16,7 @@ type IInstructorService interface {
 	DeleteInstructorProfile(userID uuid.UUID) error
 
 	// Work Experience
-	CreateWorkExperience(instructorID uuid.UUID, input dto.CreateWorkExperienceRequest) (*models.WorkExperience, error)
+	CreateWorkExperience(instructorID uuid.UUID, input dto.CreateWorkExperienceRequest) ([]models.WorkExperience, error)
 	UpdateWorkExperience(workExp *models.WorkExperience) error
 	DeleteWorkExperience(id uint) error
 	GetWorkExperiences(instructorID uuid.UUID) ([]models.WorkExperience, error)
@@ -126,21 +126,28 @@ func (s *InstructorService) UpdateInstructorProfile(profile *models.InstructorPr
 }
 
 // CreateWorkExperience creates a new work experience for an instructor
-func (s *InstructorService) CreateWorkExperience(instructorID uuid.UUID, input dto.CreateWorkExperienceRequest) (*models.WorkExperience, error) {
-	workExp := &models.WorkExperience{
-		InstructorID: instructorID,
+func (s *InstructorService) CreateWorkExperience(instructorID uuid.UUID, input dto.CreateWorkExperienceRequest) ([]models.WorkExperience, error) {
+	profile, err := s.instructorRepo.FindInstructorProfileByUserID(instructorID)
+	if err != nil {
+		return nil, err
+	}
+
+	workExp := models.WorkExperience{
+		InstructorID: profile.UserID,
 		CompanyName:  input.CompanyName,
 		Role:         input.Role,
 		StartDate:    input.StartDate,
 		EndDate:      input.EndDate,
 		Description:  input.Description,
+		IsVerified:   false, // always system-set
 	}
 
-	if err := s.workExpRepo.Create(workExp); err != nil {
+	// Create single work experience
+	if err := s.workExpRepo.Create(&workExp); err != nil {
 		return nil, err
 	}
 
-	return workExp, nil
+	return []models.WorkExperience{workExp}, nil
 }
 
 // UpdateWorkExperience updates an existing work experience

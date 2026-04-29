@@ -10,6 +10,21 @@ type CreateWorkExperienceRequest struct {
 	Description string    `json:"description"`
 }
 
+type UpdateWorkExperienceRequest struct {
+    CompanyName    *string    `json:"companyName"    binding:"omitempty,min=2"`
+    Role           *string    `json:"role"           binding:"omitempty,min=2"`
+    StartDate      *time.Time `json:"startDate"      binding:"omitempty"`
+    Description    *string    `json:"description"    binding:"omitempty"`
+
+    // EndDate uses explicit flag pattern
+    EndDate        *time.Time `json:"endDate"`        // the value
+    ClearEndDate   *bool      `json:"clearEndDate"` 
+}
+
+type CreateWorkExperiencesRequest struct {
+	WorkExperiences []CreateWorkExperienceRequest `json:"workExperiences" binding:"required,min=1,dive"`
+}
+
 type WorkExperienceResponse struct {
 	ID           uint       `json:"id"`
 	InstructorID uint       `json:"instructorId"`

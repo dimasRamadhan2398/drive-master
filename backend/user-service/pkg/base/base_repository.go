@@ -268,6 +268,10 @@ func (r *BaseRepository) WithTx(fn func(tx *gorm.DB) error) error {
 	return r.DB.Transaction(fn)
 }
 
+func (r *BaseRepository) CreateInBatches(value []interface{}) error {
+	return r.DB.CreateInBatches(value, 100).Error
+}
+
 // GetDB returns the underlying DB instance
 func (r *BaseRepository) GetDB() *gorm.DB {
 	return r.DB

@@ -23,6 +23,8 @@ type IUserRepository interface {
 	Delete(user *models.User) error
 	GetAllWithProfiles() ([]models.User, error)
 	FindByIDWithProfiles(id uuid.UUID) (*models.User, error)
+	CountByRoleID(roleID uint) (int64, error)
+	FindByRoleIDWithPagination(roleID uint, offset, limit int) ([]models.User, error)
 }
 
 type UserRepository struct {
@@ -133,4 +135,26 @@ func (r *UserRepository) Update(user *models.User) error {
 // Delete soft-deletes a user
 func (r *UserRepository) Delete(user *models.User) error {
 	return r.BaseRepository.Delete(user)
+}
+
+// CountByRoleID counts the number of users with a specific role ID
+func (r *UserRepository) CountByRoleID(roleID uint) (int64, error) {
+	var count int64
+	if err := r.DB.Model(&models.User{}).Where("role_id = ?", roleID).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// FindByRoleIDWithPagination retrieves users with a specific role ID with pagination
+func (r *UserRepository) FindByRoleIDWithPagination(roleID uint, offset, limit int) ([]models.User, error) {
+	var users []models.User
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"role_id": roleID}).
+		WithPagination(offset, limit).
+		WithPreloads("Role", "MemberProfile", "InstructorProfile")
+	if err := r.BaseRepository.FindMany(&models.User{}, &users, opts); err != nil {
+		return nil, err
+	}
+	return users, nil
 }
