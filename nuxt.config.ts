@@ -2,9 +2,7 @@ import { defineNuxtConfig } from "nuxt/config";
 
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  modules: [
-    '@nuxt/ui'
-  ],
+  modules: ['@nuxt/ui'],
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
     public: {
@@ -22,6 +20,13 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/drive-master-icon.svg' }
       ]
+    }
+  },
+  vite: {
+    server: {
+      watch: {
+        usePolling: true
+      }
     }
   },
   compatibilityDate: '2026-04-07'

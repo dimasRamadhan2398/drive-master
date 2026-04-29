@@ -218,25 +218,16 @@ function confirmBooking() {
                   <!-- Empty cells for days before month starts (April 2026 starts on Wednesday) -->
                   <div></div>
                   <div></div>
-                  <button 
-                    v-for="item in calendarDays" 
-                    :key="item.day"
-                    :disabled="!item.available || item.day < 7"
-                    :class="[
-                      'w-full aspect-square rounded-lg text-md font-medium transition-all',
-                      selectedDate === item.day 
-                        ? 'bg-primary text-white' 
-                        : item.available && item.day >= 7
-                          ? 'hover:bg-primary/10 cursor-pointer'
-                          : 'text-muted/50 cursor-not-allowed'
-                    ]"
-                    @click="item.available && item.day >= 7 && (selectedDate = item.day)"
+                  <div
+                    v-for="(item, idx) in calendarDays"
+                    :key="idx"
+                    class="w-full aspect-square flex items-center justify-center"
                   >
                     <button 
                       v-if="item.day !== null"
                       :disabled="!item.available"
                       :class="[
-                        'w-full aspect-square rounded-lg text-sm font-medium transition-all',
+                        'w-full h-full rounded-lg text-sm font-medium transition-all',
                         selectedDate === item.day 
                           ? 'bg-primary text-white' 
                           : item.available 

@@ -144,17 +144,13 @@ const faqItems = computed(() => {
 
 const { slots: globalSlots } = useSchedules()
 
-const timeSlots = computed(() => {
-  return globalSlots.value.map(slot => ({
-    time: slot.time,
-    car: slot.car,
-    instructor: slot.instructor,
-    available: slot.status === 'available'
-  }))
-})
-
 const selectedDate = ref(15)
 const selectedSlot = ref<string | null>(null)
+const currentDate = ref(new Date('2026-04-10T00:00:00'))
+
+const currentMonth = computed(() => {
+  return currentDate.value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+})
 const currentMonthStr = computed(() => {
   return currentDate.value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 })
