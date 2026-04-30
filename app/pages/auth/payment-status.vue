@@ -131,9 +131,10 @@ const nextSteps = {
               label="Go to Dashboard"
               icon="i-lucide-arrow-right"
               block
+              color="warning"
             />
           </NuxtLink>
-          <p class="text-xs text-muted text-center">
+          <p class="text-xs text-muted text-center py-6">
             Redirecting in 5 seconds...
           </p>
         </div>

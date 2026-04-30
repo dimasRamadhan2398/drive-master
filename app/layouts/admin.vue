@@ -24,6 +24,11 @@ const navItems = computed<NavigationMenuItem[]>(() => [
     to: '/admin/packages'
   },
   {
+    label: 'Sales',
+    icon: 'i-lucide-shopping-cart',
+    to: '/admin/sales'
+  },
+  {
     label: 'Certificates',
     icon: 'i-lucide-award',
     to: '/admin/certificates'

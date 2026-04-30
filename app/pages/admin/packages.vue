@@ -6,9 +6,27 @@ definePageMeta({ layout: 'admin' })
 
 const toast = useToast()
 const showEditModal = ref(false)
+const showAddModal = ref(false)
+const showAddonModal = ref(false)
 const selectedPackage = ref<any>(null)
 
-// Mock packages data
+const newPackage = ref({
+  name: '',
+  price: 0,
+  sessions: 0,
+  duration: 60,
+  description: '',
+  features: '', // Akan menjadi string dari textarea, dipisah per baris saat disimpan
+  isPopular: false
+})
+
+const newAddon = ref({
+  name: '',
+  price: 0,
+  description: ''
+})
+
+// Mock data paket - Di aplikasi nyata, ini akan berasal dari API
 const packages = ref([
   {
     id: 1,
@@ -20,13 +38,58 @@ const packages = ref([
     features: [
       'Free Trial',
       '6x Sessions',
+      'SIM A'
     ],
     isActive: true,
-    isPopular: true,
     totalSold: 89
   },
   {
     id: 2,
+    name: '6x + Night Session',
+    price: 1850000,
+    sessions: 6,
+    duration: 60,
+    description: 'Our most popular package for comprehensive learning',
+    features: [
+      'Free Trial',
+      '6x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    totalSold: 89
+  },
+  {
+    id: 3,
+    name: '6x + Weekend Session',
+    price: 1850000,
+    sessions: 6,
+    duration: 60,
+    description: 'Our most popular package for comprehensive learning',
+    features: [
+      'Free Trial',
+      '6x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    totalSold: 89
+  },
+  {
+    id: 4,
+    name: '6x + Weekend & Night Session',
+    price: 1950000,
+    sessions: 6,
+    duration: 60,
+    description: 'Our most popular package for comprehensive learning',
+    features: [
+      'Free Trial',
+      '6x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    totalSold: 89
+  },
+  {
+    id: 5,
     name: '8x',
     price: 1950000,
     sessions: 8,
@@ -35,12 +98,62 @@ const packages = ref([
     features: [
       'Free Trial',
       '8x Sessions',
+      'SIM A'
     ],
     isActive: true,
+    isPopular: true,
     totalSold: 22
   },
   {
-    id: 3,
+    id: 6,
+    name: '8x + Night Session',
+    price: 2100000,
+    sessions: 8,
+    duration: 60,
+    description: 'Complete mastery with unlimited support',
+    features: [
+      'Free Trial',
+      '8x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    isPopular: true,
+    totalSold: 22
+  },
+  {
+    id: 7,
+    name: '8x + Weekend Session',
+    price: 2100000,
+    sessions: 8,
+    duration: 60,
+    description: 'Complete mastery with unlimited support',
+    features: [
+      'Free Trial',
+      '8x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    isPopular: true,
+    totalSold: 22
+  },
+  {
+    id: 8,
+    name: '8x + Weekend & Night Session',
+    price: 2250000,
+    sessions: 8,
+    duration: 60,
+    description: 'Complete mastery with unlimited support',
+    features: [
+      'Free Trial',
+      '8x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    isPopular: true,
+    totalSold: 22
+  },
+  {
+    id: 9,
     name: '10x',
     price: 2250000,
     sessions: 10,
@@ -49,12 +162,58 @@ const packages = ref([
     features: [
       'Free Trial',
       '10x Sessions',
+      'SIM A'
     ],
     isActive: true,
     totalSold: 22
   },
   {
-    id: 4,
+    id: 10,
+    name: '10x + Night Session',
+    price: 2450000,
+    sessions: 10,
+    duration: 60,
+    description: 'Complete mastery with unlimited support',
+    features: [
+      'Free Trial',
+      '10x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    totalSold: 22
+  },
+  {
+    id: 11,
+    name: '10x + Weekend Session',
+    price: 2450000,
+    sessions: 10,
+    duration: 60,
+    description: 'Complete mastery with unlimited support',
+    features: [
+      'Free Trial',
+      '10x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    totalSold: 22
+  },
+  {
+    id: 12,
+    name: '10x + Weekend & Night Session',
+    price: 2650000,
+    sessions: 10,
+    duration: 60,
+    description: 'Complete mastery with unlimited support',
+    features: [
+      'Free Trial',
+      '10x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    totalSold: 22
+  },
+  {
+    id: 13,
     name: '12x',
     price: 2650000,
     sessions: 12,
@@ -66,14 +225,57 @@ const packages = ref([
     ],
     isActive: true,
     totalSold: 22
+  },
+  {
+    id: 14,
+    name: '12x + Night Session',
+    price: 2900000,
+    sessions: 12,
+    duration: 60,
+    description: 'Complete mastery with unlimited support',
+    features: [
+      'Free Trial',
+      '12x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    totalSold: 22
+  },
+  {
+    id: 15,
+    name: '12x + Weekend Session',
+    price: 2900000,
+    sessions: 12,
+    duration: 60,
+    description: 'Complete mastery with unlimited support',
+    features: [
+      'Free Trial',
+      '12x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    totalSold: 22
+  },
+  {
+    id: 16,
+    name: '12x + Weekend & Night Session',
+    price: 3150000,
+    sessions: 12,
+    duration: 60,
+    description: 'Complete mastery with unlimited support',
+    features: [
+      'Free Trial',
+      '12x Sessions',
+      'SIM A'
+    ],
+    isActive: true,
+    totalSold: 22
   }
 ])
 
 // Mock add-ons data
 const addOns = ref([
   { id: 1, name: 'Extra Session', price: 350000, description: 'Additional training session', sold: 34 },
-  // { id: 2, name: 'Simulator Session', price: 150000, description: 'Practice in driving simulator', sold: 22 },
-  // { id: 3, name: 'SIM Exam Prep', price: 500000, description: 'License test preparation', sold: 18 }
 ])
 
 function formatPrice(price: number) {
@@ -81,7 +283,12 @@ function formatPrice(price: number) {
 }
 
 function editPackage(pkg: any) {
-  selectedPackage.value = { ...pkg }
+  // Buat salinan dan ubah array fitur menjadi string untuk textarea
+  selectedPackage.value = {
+    ...pkg,
+    // Pastikan fitur adalah array sebelum join, untuk menghindari error jika data tidak konsisten
+    features: Array.isArray(pkg.features) ? pkg.features.join('\n') : ''
+  }
   showEditModal.value = true
 }
 
@@ -96,6 +303,114 @@ function togglePackageStatus(pkgId: number) {
     })
   }
 }
+
+function saveNewPackage() {
+  if (!newPackage.value.name || newPackage.value.price <= 0) {
+    toast.add({ title: 'Error', description: 'Nama paket dan harga yang valid wajib diisi.', color: 'error' })
+    return
+  }
+
+  const newPkg = {
+    id: Math.max(...packages.value.map(p => p.id), 0) + 1,
+    name: newPackage.value.name,
+    price: newPackage.value.price,
+    sessions: newPackage.value.sessions,
+    duration: newPackage.value.duration,
+    description: newPackage.value.description,
+    features: newPackage.value.features.split('\n').filter(f => f.trim() !== ''),
+    isActive: true, // Paket baru aktif secara default
+    isPopular: newPackage.value.isPopular,
+    totalSold: 0
+  }
+
+  packages.value.push(newPkg)
+  toast.add({ title: 'Paket Ditambahkan', description: `"${newPkg.name}" telah dibuat.`, color: 'success' })
+
+  showAddModal.value = false
+  // Reset form untuk penggunaan berikutnya
+  newPackage.value = {
+    name: '',
+    price: 0,
+    sessions: 0,
+    duration: 60,
+    description: '',
+    features: '',
+    isPopular: false
+  }
+}
+
+function saveEditedPackage() {
+  if (!selectedPackage.value) return
+
+  const pkgIndex = packages.value.findIndex(p => p.id === selectedPackage.value.id)
+  if (pkgIndex === -1) {
+    toast.add({ title: 'Error', description: 'Package not found.', color: 'error' })
+    return
+  }
+
+  // Buat objek yang diperbarui, ubah string fitur kembali menjadi array
+  const updatedPackageData = {
+    ...selectedPackage.value,
+    features: selectedPackage.value.features.split('\n').filter((f: string) => f.trim() !== '')
+  }
+
+  // Perbarui paket dalam array
+  packages.value[pkgIndex] = updatedPackageData
+
+  toast.add({ title: 'Package Updated', description: `"${updatedPackageData.name}" has been saved.`, color: 'success' })
+  showEditModal.value = false
+  selectedPackage.value = null
+}
+
+function duplicatePackage(pkg: any) {
+  const newPkg = {
+    ...pkg,
+    id: Math.max(...packages.value.map(p => p.id), 0) + 1,
+    name: `${pkg.name} (Copy)`,
+    isPopular: false,
+    isActive: true, // Paket duplikat aktif secara default
+    totalSold: 0,
+  };
+
+  packages.value.push(newPkg);
+  toast.add({ title: 'Package Duplicated', description: `Salinan dari "${pkg.name}" telah dibuat.`, color: 'success' });
+}
+
+function deletePackage(pkgId: number) {
+  if (confirm(`Anda yakin ingin menghapus paket ini? Aksi ini tidak dapat dibatalkan.`)) {
+    const pkgIndex = packages.value.findIndex(p => p.id === pkgId);
+    if (pkgIndex > -1) {
+      packages.value.splice(pkgIndex, 1);
+      toast.add({ title: 'Package Deleted', description: `Paket telah dihapus.`, color: 'error', icon: 'i-lucide-trash' });
+    }
+  }
+}
+
+function viewPackageSales(pkg: any) {
+  navigateTo(`/admin/sales?packageId=${pkg.id}`);
+}
+
+function saveNewAddon() {
+  if (!newAddon.value.name || newAddon.value.price <= 0) {
+    toast.add({ title: 'Error', description: 'Nama dan harga add-on wajib diisi.', color: 'error' })
+    return
+  }
+
+  const newAddonData = {
+    id: Math.max(...addOns.value.map(a => a.id), 0) + 1,
+    name: newAddon.value.name,
+    price: newAddon.value.price,
+    description: newAddon.value.description,
+    sold: 0
+  }
+
+  addOns.value.push(newAddonData)
+  toast.add({ title: 'Add-on Ditambahkan', description: `"${newAddonData.name}" telah dibuat.`, color: 'success' })
+
+  showAddonModal.value = false
+  // Reset form
+  newAddon.value = { name: '', price: 0, description: '' }
+}
 </script>
 
 <template>
@@ -103,7 +418,7 @@ function togglePackageStatus(pkgId: number) {
     <template #header>
       <UDashboardNavbar title="Package Management">
         <template #right>
-          <UButton icon="i-lucide-plus" color="warning" label="Add Package" />
+          <UButton icon="i-lucide-plus" color="warning" label="Add Package" @click="showAddModal = true" />
           <UColorModeButton />
         </template>
       </UDashboardNavbar>
@@ -202,11 +517,11 @@ function togglePackageStatus(pkgId: number) {
                 <UDropdownMenu
                   :items="[
                     [
-                      { label: 'View Sales', icon: 'i-lucide-chart-bar' },
-                      { label: 'Duplicate', icon: 'i-lucide-copy' }
+                      { label: 'View Sales', icon: 'i-lucide-chart-bar', onSelect: () => viewPackageSales(pkg) },
+                      { label: 'Duplicate', icon: 'i-lucide-copy', onSelect: () => duplicatePackage(pkg) }
                     ],
                     [
-                      { label: 'Delete', icon: 'i-lucide-trash', color: 'error' }
+                      { label: 'Delete', icon: 'i-lucide-trash', color: 'error', onSelect: () => deletePackage(pkg.id) }
                     ]
                   ]"
                 >
@@ -217,45 +532,114 @@ function togglePackageStatus(pkgId: number) {
 
             </template>
           </UCard>
-          <!-- Edit Package Modal -->
-          <UModal v-model:open="showEditModal" title="Edit Package">
-            <template #body>
-              <div v-if="selectedPackage" class="space-y-4">
-                <UFormField label="Package Name" required>
-                  <UInput v-model="selectedPackage.name" class="w-full" color="warning"/>
-                </UFormField>
-                <UFormField label="Price (IDR)" required>
-                  <UInput v-model="selectedPackage.price" type="number" :step="100000" class="w-full" color="warning"/>
-                </UFormField>
-                <div class="grid grid-cols-2 gap-4">
-                  <UFormField label="Sessions" required>
-                    <UInput v-model="selectedPackage.sessions" type="number" class="w-full" color="warning" />
-                  </UFormField>
-                  <UFormField label="Duration (min)" required>
-                    <UInput v-model="selectedPackage.duration" type="number" :step="15" class="w-full" color="warning" />
-                  </UFormField>
-                </div>
-                <UFormField label="Description">
-                  <UTextarea v-model="selectedPackage.description" class="w-full" color="warning" />
-                </UFormField>
-                <USwitch v-model="selectedPackage.isPopular" label="Mark as Popular" class="w-full" color="warning" />
-              </div>
-            </template>
-            <template #footer>
-              <div class="flex justify-end gap-3">
-                <UButton label="Cancel" variant="ghost" color="neutral" @click="showEditModal = false" />
-                <UButton label="Save Changes" icon="i-lucide-save" color="warning" @click="showEditModal = false" />
-              </div>
-            </template>
-          </UModal>
         </div>
+
+        <!-- Modals -->
+        <!-- Edit Package Modal -->
+        <UModal v-model:open="showEditModal" title="Edit Package">
+          <template #body>
+            <div v-if="selectedPackage" class="space-y-4">
+              <UFormField label="Package Name" required>
+                <UInput v-model="selectedPackage.name" class="w-full" color="warning"/>
+              </UFormField>
+              <UFormField label="Price (IDR)" required>
+                <UInput v-model="selectedPackage.price" type="number" :step="100000" class="w-full" color="warning"/>
+              </UFormField>
+              <div class="grid grid-cols-2 gap-4">
+                <UFormField label="Sessions" required>
+                  <UInput v-model="selectedPackage.sessions" type="number" class="w-full" color="warning" />
+                </UFormField>
+                <UFormField label="Duration (min)" required>
+                  <UInput v-model="selectedPackage.duration" type="number" :step="15" class="w-full" color="warning" />
+                </UFormField>
+              </div>
+              <UFormField label="Description">
+                <UTextarea v-model="selectedPackage.description" class="w-full" color="warning" />
+              </UFormField>
+              <UFormField label="Features">
+                <template #hint>
+                  <span>Masukkan satu fitur per baris.</span>
+                </template>
+                <UTextarea v-model="selectedPackage.features" placeholder="Free Trial&#10;15x Sessions" class="w-full" color="warning" />
+              </UFormField>
+              <USwitch v-model="selectedPackage.isPopular" label="Mark as Popular" class="w-full" color="warning" />
+            </div>
+          </template>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton label="Cancel" variant="ghost" color="neutral" @click="showEditModal = false" />
+              <UButton label="Save Changes" icon="i-lucide-save" color="warning" @click="saveEditedPackage" />
+            </div>
+          </template>
+        </UModal>
+
+        <!-- Add Package Modal -->
+        <UModal v-model:open="showAddModal" title="Add New Package">
+          <template #body>
+            <div class="space-y-4">
+              <UFormField label="Package Name" required>
+                <UInput v-model="newPackage.name" placeholder="e.g. 15x Sessions" class="w-full" color="warning"/>
+              </UFormField>
+              <UFormField label="Price (IDR)" required>
+                <UInput v-model="newPackage.price" type="number" :step="100000" class="w-full" color="warning"/>
+              </UFormField>
+              <div class="grid grid-cols-2 gap-4">
+                <UFormField label="Sessions" required>
+                  <UInput v-model="newPackage.sessions" type="number" class="w-full" color="warning" />
+                </UFormField>
+                <UFormField label="Duration (min)" required>
+                  <UInput v-model="newPackage.duration" type="number" :step="15" class="w-full" color="warning" />
+                </UFormField>
+              </div>
+              <UFormField label="Description">
+                <UTextarea v-model="newPackage.description" class="w-full" color="warning" />
+              </UFormField>
+              <UFormField label="Features">
+                <template #hint>
+                  <span>Masukkan satu fitur per baris.</span>
+                </template>
+                <UTextarea v-model="newPackage.features" placeholder="Free Trial&#10;15x Sessions" class="w-full" color="warning" />
+              </UFormField>
+              <USwitch v-model="newPackage.isPopular" label="Mark as Popular" class="w-full" color="warning" />
+            </div>
+          </template>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton label="Cancel" variant="ghost" color="neutral" @click="showAddModal = false" />
+              <UButton label="Create Package" icon="i-lucide-plus" color="warning" @click="saveNewPackage" />
+            </div>
+          </template>
+        </UModal>
+
+        <!-- Add Add-on Modal -->
+        <UModal v-model:open="showAddonModal" title="Add New Add-on">
+          <template #body>
+            <div class="space-y-4">
+              <UFormField label="Add-on Name" required>
+                <UInput v-model="newAddon.name" placeholder="e.g. SIM A Assistance" class="w-full" color="warning"/>
+              </UFormField>
+              <UFormField label="Price (IDR)" required>
+                <UInput v-model="newAddon.price" type="number" :step="50000" class="w-full" color="warning"/>
+              </UFormField>
+              <UFormField label="Description">
+                <UTextarea v-model="newAddon.description" placeholder="Briefly describe what this add-on includes." class="w-full" color="warning" />
+              </UFormField>
+            </div>
+          </template>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton label="Cancel" variant="ghost" color="neutral" @click="showAddonModal = false" />
+              <UButton label="Create Add-on" icon="i-lucide-plus" color="warning" @click="saveNewAddon" />
+            </div>
+          </template>
+        </UModal>
 
         <!-- Add-ons Section -->
         <UCard>
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="font-semibold">Package Add-ons</h2>
-              <UButton label="Add Add-on" icon="i-lucide-plus" size="md" color="warning" variant="outline" />
+              <UButton label="Add Add-on" icon="i-lucide-plus" size="md" color="warning" variant="outline" @click="showAddonModal = true" />
             </div>
           </template>
 

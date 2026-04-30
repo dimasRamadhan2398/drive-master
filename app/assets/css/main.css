@@ -4,8 +4,6 @@
 @tailwind utilities;
 
 
-
-/* Tesla-inspired clean typography */
 html {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   scroll-behavior: smooth;

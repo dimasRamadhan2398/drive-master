@@ -8,16 +8,15 @@ definePageMeta({
 })
 
 const loading = ref(false)
+const showTermsModal = ref(false)
 
 const schema = z.object({
   fullName: z.string().min(3, 'Name must be at least 3 characters'),
-  ktpNumber: z.string().min(16, 'KTP number must be 16 digits').max(16, 'KTP number must be 16 digits'),
   agreedToTerms: z.boolean().refine(val => val === true, 'You must agree to terms')
 })
 
 const formData = reactive({
   fullName: '',
-  ktpNumber: '',
   agreedToTerms: false
 })
 
@@ -28,21 +27,24 @@ async function onSubmit(event: FormSubmitEvent<any>) {
     // Simulate API call to save profile
     await new Promise(resolve => setTimeout(resolve, 1500))
     
-    console.log('[v0] Onboarding completed:', formData)
+    console.log('Onboarding completed:', formData)
     
-    // Redirect to plan selection
-    navigateTo('/auth/select-plan')
+    let plan = null
+    if (import.meta.client) {
+      plan = sessionStorage.getItem('dm_selected_plan')
+    }
+    
+    if (plan) {
+      navigateTo(`/auth/payment-method?plan=${plan}`)
+    } else {
+      navigateTo('/auth/select-plan')
+    }
   } finally {
     loading.value = false
   }
 }
 
 const features = [
-  {
-    icon: 'i-lucide-check-circle',
-    title: 'Verified Identity',
-    description: 'Your KTP information will be used to issue your official certificate'
-  },
   {
     icon: 'i-lucide-gift',
     title: 'Free Trial Access',
@@ -77,7 +79,7 @@ const features = [
       </div>
 
       <!-- Features Grid -->
-      <div class="grid sm:grid-cols-2 gap-4 mb-8">
+      <div class="grid sm:grid-cols-3 gap-4 mb-8">
         <div 
           v-for="feature in features" 
           :key="feature.title"
@@ -113,21 +115,6 @@ const features = [
             </template>
           </UFormField>
 
-          <!-- KTP Number -->
-          <UFormField name="ktpNumber" label="KTP Number (16 Digits)" required>
-            <UInput 
-              v-model="formData.ktpNumber"
-              placeholder="e.g., 3520123456789012"
-              icon="i-lucide-credit-card"
-              size="lg"
-              class="w-full"
-              @input="formData.ktpNumber = formData.ktpNumber.replace(/\D/g, '').slice(0, 16)"
-            />
-            <template #hint>
-              Your KTP data will be verified and used for certificate issuance
-            </template>
-          </UFormField>
-
           <!-- Info Alert -->
           <UAlert icon="i-lucide-shield-check" color="primary">
             <template #title>Your Data is Secure</template>
@@ -141,8 +128,68 @@ const features = [
             <UCheckbox v-model="formData.agreedToTerms" color="warning">
               <template #label>
                 <span class="text-sm">
-                  I agree that my KTP information will be used to issue my official training certificate and follow 
-                  <NuxtLink to="/terms" class="text-warning hover:underline">Terms of Service</NuxtLink>
+                  I agree that my information will be used to issue my official training certificate and follow 
+                  <UButton label="Terms of Service" color="warning" variant="ghost" class="underline" @click="showTermsModal = true" />
+                  <UModal v-model:open="showTermsModal" title="Terms of Service">
+                    <template #body>
+                      <div class="prose dark:prose-invert max-w-none space-y-6">
+                        <p>
+                          Welcome to Drive Master Indonesia. These Terms of Service ("Terms") govern your access to and use of the website <NuxtLink to="/" class="text-warning hover:underline">www.drivemaster.id</NuxtLink> and our driving school services. By accessing or using our services, you agree to be bound by these Terms.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">1. Services Provided</h2>
+                        <p>Drive Master Indonesia provides professional driving instruction services, including theoretical training and practical on-road sessions. We reserve the right to modify, suspend, or discontinue any part of the services at any time without prior notice.</p>
+
+                        <h2 class="text-2xl font-bold">2. User Accounts</h2>
+                        <p>To access certain features of our platform, such as booking sessions, you must register for an account. You agree to:</p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>Provide accurate, current, and complete information during the registration process.</li>
+                          <li>Maintain the security of your password and accept all risks of unauthorized access to your account.</li>
+                          <li>Notify us immediately if you discover or suspect any security breaches related to our services.</li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">3. Fees and Payments</h2>
+                        <p>All prices for our driving packages are listed in Indonesian Rupiah (IDR). Payment obligations include:</p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li><strong>Payment Processing:</strong> Payments are processed securely via third-party gateways (e.g., Midtrans). We do not store your full financial credentials.</li>
+                          <li><strong>Refund Policy:</strong> Requests for refunds are subject to our internal review and are typically only granted if requested at least 48 hours before the start of the first session.</li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">4. Scheduling and Cancellations</h2>
+                        <p>Efficient scheduling is key to our service quality. Our policy includes:</p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li><strong>Booking:</strong> Sessions must be booked at least 24 hours in advance through the student dashboard.</li>
+                          <li><strong>Rescheduling:</strong> You may reschedule a session through our platform at no extra cost if done at least 24 hours before the scheduled time.</li>
+                          <li><strong>No-Show:</strong> Failure to attend a scheduled session without prior notice will result in the session being marked as completed and non-refundable.</li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">5. Student Obligations</h2>
+                        <p>As a student of Drive Master Indonesia, you agree to:</p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>Possess a valid temporary or permanent driver's permit as required by local law.</li>
+                          <li>Follow the instructions of the assigned instructor at all times during practical sessions.</li>
+                          <li>Maintain a zero-tolerance policy regarding alcohol or drug use before or during training sessions.</li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">6. Limitation of Liability</h2>
+                        <p>
+                          To the maximum extent permitted by law, Drive Master Indonesia shall not be liable for any indirect, incidental, or consequential damages resulting from your use of our services or any interaction with our instructors. While we strive for absolute safety, practical driving involves inherent risks.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">7. Changes to Terms</h2>
+                        <p>
+                          We reserve the right to change or modify these Terms at any time. If we make changes, we will notify you by revising the date at the top of the policy or by posting a notice on our homepage. Your continued use of the services confirms your acceptance of the revised Terms.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">8. Contact Us</h2>
+                        <p>If you have any questions or concerns regarding these Terms, please reach out to us:</p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>By email: <a href="mailto:info@drivemaster.id" class="text-warning hover:underline">info@drivemaster.id</a></li>
+                          <li>By phone: +62 812-3456-7890</li>
+                        </ul>
+                      </div>
+                    </template>
+                  </UModal>
                 </span>
               </template>
             </UCheckbox>
@@ -176,23 +223,6 @@ const features = [
           </div>
         </template>
       </UCard>
-
-      <!-- Help Section
-      <div class="mt-8 p-6 bg-muted/30 rounded-lg text-center">
-        <p class="text-sm text-muted mb-3">
-          Don't have your KTP number handy?
-        </p>
-        <NuxtLink to="https://wa.me/6281234567890" target="_blank">
-          <UButton 
-            label="Chat Support on WhatsApp"
-            icon="i-simple-icons-whatsapp"
-            color="neutral"
-            variant="outline"
-            size="sm"
-          />
-        </NuxtLink>
-      </div>
-    -->
     </div>
   </div>
 </template>

@@ -139,19 +139,19 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
           <UForm :schema="profileSchema" :state="profileData" class="space-y-4" @submit="updateProfile">
             <div class="grid md:grid-cols-2 gap-4">
               <UFormField name="fullName" label="Full Name">
-                <UInput v-model="profileData.fullName" icon="i-lucide-user" />
+                <UInput v-model="profileData.fullName" icon="i-lucide-user" class="w-full"/>
               </UFormField>
 
               <UFormField name="email" label="Email Address">
-                <UInput v-model="profileData.email" type="email" icon="i-lucide-mail" />
+                <UInput v-model="profileData.email" type="email" icon="i-lucide-mail" class="w-full"/>
               </UFormField>
 
               <UFormField name="phone" label="Phone Number">
-                <UInput v-model="profileData.phone" icon="i-lucide-phone" />
+                <UInput v-model="profileData.phone" icon="i-lucide-phone" class="w-full"/>
               </UFormField>
 
               <UFormField name="address" label="Address">
-                <UInput v-model="profileData.address" icon="i-lucide-map-pin" />
+                <UInput v-model="profileData.address" icon="i-lucide-map-pin" class="w-full"/>
               </UFormField>
             </div>
 
@@ -169,16 +169,16 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
 
           <UForm :schema="passwordSchema" :state="passwordData" class="space-y-4" @submit="updatePassword">
             <UFormField name="currentPassword" label="Current Password">
-              <UInput v-model="passwordData.currentPassword" type="password" icon="i-lucide-lock" />
+              <UInput v-model="passwordData.currentPassword" type="password" icon="i-lucide-lock" class="w-full"/>
             </UFormField>
 
             <div class="grid md:grid-cols-2 gap-4">
               <UFormField name="newPassword" label="New Password">
-                <UInput v-model="passwordData.newPassword" type="password" icon="i-lucide-key" />
+                <UInput v-model="passwordData.newPassword" type="password" icon="i-lucide-key" class="w-full"/>
               </UFormField>
 
               <UFormField name="confirmPassword" label="Confirm New Password">
-                <UInput v-model="passwordData.confirmPassword" type="password" icon="i-lucide-key" />
+                <UInput v-model="passwordData.confirmPassword" type="password" icon="i-lucide-key" class="w-full"/>
               </UFormField>
             </div>
 

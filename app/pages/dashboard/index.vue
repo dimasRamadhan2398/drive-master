@@ -4,7 +4,7 @@ definePageMeta({ layout: 'dashboard' })
 // Mock data
 const userData = {
   name: 'John Doe',
-  package: 'Standard Package',
+  package: '8x Sessions Package',
   totalSessions: 10,
   completedSessions: 4,
   remainingSessions: 6,
@@ -13,8 +13,13 @@ const userData = {
     date: 'Tomorrow',
     time: '09:30 AM',
     car: 'BYD Atto 1',
-    instructor: 'Pak Ahmad'
+    instructor: 'Mr. Ahmad'
   }
+}
+
+const showDetails = ref(false)
+const sessionDetails = {
+  pickup: 'Main Lobby of Green Bay Apartments, Pluit'
 }
 
 const recentActivity = [
@@ -78,7 +83,7 @@ const quickActions = [
         </UCard>
 
         <!-- Stats Cards -->
-        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <UCard>
             <div class="flex items-center gap-4">
               <div class="p-3 rounded-xl bg-primary/10">
@@ -86,7 +91,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ userData.completedSessions }}</p>
-                <p class="text-md text-muted">Sessions Completed</p>
+                <p class="text-sm text-muted">Sessions Completed</p>
               </div>
             </div>
           </UCard>
@@ -98,7 +103,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ userData.remainingSessions }}</p>
-                <p class="text-md text-muted">Sessions Remaining</p>
+                <p class="text-sm text-muted">Sessions Remaining</p>
               </div>
             </div>
           </UCard>
@@ -110,7 +115,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ userData.progress }}%</p>
-                <p class="text-md text-muted">Course Progress</p>
+                <p class="text-sm text-muted">Course Progress</p>
               </div>
             </div>
           </UCard>
@@ -122,7 +127,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">Pending</p>
-                <p class="text-md text-muted">Certificate Status</p>
+                <p class="text-sm text-muted">Certificate Status</p>
               </div>
             </div>
           </UCard>
@@ -138,14 +143,14 @@ const quickActions = [
               </div>
             </template>
 
-            <div class="flex flex-col md:flex-row gap-6">
+            <div class="flex flex-col sm:flex-row gap-6">
               <div class="flex-1 space-y-4">
                 <div class="flex items-center gap-3">
                   <div class="p-2 rounded-lg bg-muted">
                     <UIcon name="i-lucide-calendar" class="size-5 text-warning" />
                   </div>
                   <div>
-                    <p class="text-md text-muted">Date</p>
+                    <p class="text-sm text-muted">Date</p>
                     <p class="font-medium">{{ userData.nextSession.date }}</p>
                   </div>
                 </div>
@@ -155,7 +160,7 @@ const quickActions = [
                     <UIcon name="i-lucide-clock" class="size-5 text-warning" />
                   </div>
                   <div>
-                    <p class="text-md text-muted">Time</p>
+                    <p class="text-sm text-muted">Time</p>
                     <p class="font-medium">{{ userData.nextSession.time }}</p>
                   </div>
                 </div>
@@ -167,7 +172,7 @@ const quickActions = [
                     <UIcon name="i-lucide-car" class="size-5 text-warning" />
                   </div>
                   <div>
-                    <p class="text-md text-muted">Vehicle</p>
+                    <p class="text-sm text-muted">Vehicle</p>
                     <p class="font-medium">{{ userData.nextSession.car }}</p>
                   </div>
                 </div>
@@ -177,7 +182,7 @@ const quickActions = [
                     <UIcon name="i-lucide-user" class="size-5 text-warning" />
                   </div>
                   <div>
-                    <p class="text-md text-muted">Instructor</p>
+                    <p class="text-sm text-muted">Instructor</p>
                     <p class="font-medium">{{ userData.nextSession.instructor }}</p>
                   </div>
                 </div>
@@ -186,8 +191,8 @@ const quickActions = [
 
             <template #footer>
               <div class="flex gap-3">
-                <UButton label="View Details" variant="outline" color="neutral" />
-                <UButton label="Reschedule" variant="ghost" color="warning" icon="i-lucide-calendar-days" />
+                <UButton label="View Details" variant="outline" color="neutral" @click="showDetails = true" />
+                <UButton label="Reschedule" to="/dashboard/schedule" variant="ghost" color="neutral" icon="i-lucide-calendar-days" />
               </div>
             </template>
           </UCard>
@@ -229,7 +234,7 @@ const quickActions = [
               </div>
 
               <div class="space-y-2">
-                <div class="flex justify-between text-md">
+                <div class="flex justify-between text-sm">
                   <span class="text-muted">Completed</span>
                   <span class="font-medium">{{ userData.completedSessions }}/{{ userData.totalSessions }}</span>
                 </div>
@@ -238,7 +243,7 @@ const quickActions = [
             </div>
 
             <template #footer>
-              <p class="text-md text-muted text-center">
+              <p class="text-sm text-muted text-center">
                 {{ userData.remainingSessions }} more sessions to complete your course
               </p>
             </template>
@@ -252,7 +257,7 @@ const quickActions = [
               <div class="flex items-center justify-between">
                 <h2 class="font-semibold">Recent Activity</h2>
                 <NuxtLink to="/dashboard/history">
-                  <UButton label="View All" variant="ghost" color="neutral" size="md" trailingIcon="i-lucide-arrow-right" />
+                  <UButton label="View All" variant="ghost" color="warning" size="sm" trailingIcon="i-lucide-arrow-right" />
                 </NuxtLink>
               </div>
             </template>
@@ -275,9 +280,9 @@ const quickActions = [
                 </div>
                 <div class="flex-1 min-w-0">
                   <p class="font-medium">{{ activity.title }}</p>
-                  <p class="text-md text-muted truncate">{{ activity.description }}</p>
+                  <p class="text-sm text-muted truncate">{{ activity.description }}</p>
                 </div>
-                <span class="text-md text-muted whitespace-nowrap">{{ activity.date }}</span>
+                <span class="text-xs text-muted whitespace-nowrap">{{ activity.date }}</span>
               </div>
             </div>
           </UCard>
@@ -287,7 +292,7 @@ const quickActions = [
               <h2 class="font-semibold">Quick Actions</h2>
             </template>
 
-            <div class="grid grid-cols-1 gap-3">
+            <div class="grid grid-cols-1 space-y-3">
               <NuxtLink 
                 v-for="action in quickActions" 
                 :key="action.label"
@@ -316,4 +321,33 @@ const quickActions = [
       </div>
     </template>
   </UDashboardPanel>
+
+  <!-- Centered Modal -->
+  <UModal v-model:open="showDetails" title="Session Detail" :ui="{ content: 'm-auto sm:max-w-md' }">
+    <template #body>
+      <div class="space-y-4 py-2">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <p class="text-xs font-bold text-muted uppercase mb-1">Course Material</p>
+            <p class="font-bold">Driving on Highway</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-muted uppercase mb-1">Time</p>
+            <p class="text-sm font-medium text-primary">{{ userData.nextSession.time }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-muted uppercase mb-1">Instructor</p>
+            <p class="text-sm font-medium">{{ userData.nextSession.instructor }}</p>
+          </div>
+          <div class="col-span-2">
+            <p class="text-xs font-bold text-muted uppercase mb-1">Pickup Location</p>
+            <p class="text-sm font-medium">{{ sessionDetails.pickup }}</p>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <UButton label="Close" block color="neutral" variant="soft" @click="showDetails = false" />
+    </template>
+  </UModal>
 </template>

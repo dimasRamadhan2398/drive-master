@@ -35,8 +35,7 @@ const notificationSettings = reactive({
 })
 
 const vehicles = ref([
-  { id: 1, name: 'Tesla Model 3', plate: 'B 1234 EV', status: 'active', photoUrl: '' },
-  { id: 2, name: 'BYD Atto 3', plate: 'B 5678 EV', status: 'active', photoUrl: '' }
+  { id: 1, name: 'BYD Atto 1', plate: 'B 1234 EV', status: 'active', photoUrl: '' }
 ])
 
 // Vehicle CRUD State
@@ -78,9 +77,9 @@ function deleteVehicle() {
 }
 
 const instructors = ref([
-  { id: 1, name: 'Pak Ahmad', phone: '081234567001', bnsp: 'BNSP-101-2023', sim: 'SIM A', photoUrl: '', experience: 5, bio: 'Expert in defensive driving techniques.', status: 'active' },
-  { id: 2, name: 'Bu Sari', phone: '081234567002', bnsp: 'BNSP-102-2022', sim: 'SIM A', photoUrl: '', experience: 8, bio: 'Patient and friendly, great for beginners.', status: 'active' },
-  { id: 3, name: 'Pak Budi', phone: '081234567003', bnsp: 'BNSP-105-2024', sim: 'SIM A', photoUrl: '', experience: 3, bio: 'Specialist in night driving and bad weather conditions.', status: 'active' }
+  { id: 1, name: 'Mr. Ahmad', phone: '081234567001', bnsp: 'BNSP-101-2023', sim: 'SIM A', photoUrl: '', experience: 5, bio: 'Expert in defensive driving techniques.', status: 'active' },
+  { id: 2, name: 'Ms. Sari', phone: '081234567002', bnsp: 'BNSP-102-2022', sim: 'SIM A', photoUrl: '', experience: 8, bio: 'Patient and friendly, great for beginners.', status: 'active' },
+  { id: 3, name: 'Mr. Budi', phone: '081234567003', bnsp: 'BNSP-105-2024', sim: 'SIM A', photoUrl: '', experience: 3, bio: 'Specialist in night driving and bad weather conditions.', status: 'active' }
 ])
 
 // Instructor CRUD State
@@ -376,7 +375,7 @@ function saveSettings() {
             </div>
             <div>
               <label class="block text-sm font-medium mb-1.5">Vehicle Name</label>
-              <UInput v-model="vehicleForm.name" placeholder="e.g. Tesla Model 3" class="w-full" />
+              <UInput v-model="vehicleForm.name" placeholder="e.g. BYD Atto 1" class="w-full" />
             </div>
             <div>
               <label class="block text-sm font-medium mb-1.5">License Plate</label>

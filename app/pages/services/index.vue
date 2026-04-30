@@ -206,44 +206,6 @@ const serviceAreas = [
       ]"
     />
 
-    <!-- Service Types
-    <UPageSection
-      headline="Programs"
-      title="Choose Your Learning Path"
-      description="We offer a variety of courses tailored to different skill levels and learning objectives."
-      :ui="{ headline: 'text-warning' }"
-    >
-      <div class="grid md:grid-cols-2 gap-6">
-        <UCard v-for="service in services" :key="service.title">
-          <template #header>
-            <div class="flex items-start gap-4">
-              <div class="p-3 rounded-xl bg-warning/10">
-                <UIcon :name="service.icon" class="size-8 text-warning" />
-              </div>
-              <div>
-                <h3 class="text-xl font-bold">{{ service.title }}</h3>
-                <p class="text-muted mt-1">{{ service.description }}</p>
-              </div>
-            </div>
-          </template>
-
-          <ul class="space-y-2">
-            <li v-for="feature in service.features" :key="feature" class="flex items-center gap-2">
-              <UIcon name="i-lucide-check-circle" class="size-4 text-warning shrink-0" />
-              <span class="text-sm">{{ feature }}</span>
-            </li>
-          </ul>
-
-          <template #footer>
-            <NuxtLink to="/packages">
-              <UButton label="View Packages" variant="outline" color="neutral" trailingIcon="i-lucide-arrow-right" />
-            </NuxtLink>
-          </template>
-        </UCard>
-      </div>
-    </UPageSection>
-    -->
-
     <!-- Our Services -->
     <UPageSection
       :ui="{ headline: 'text-warning' }"
@@ -301,45 +263,6 @@ const serviceAreas = [
         </UPageCard>
       </UPageGrid>
     </UPageSection>
-
-    <!-- Facilities
-    <UPageSection
-      headline="Premium Fleet"
-      title="Learn in the Best Electric Vehicles"
-      description="Our fleet consists of premium electric vehicles equipped with dual-control systems for safe learning."
-      :ui="{ headline: 'text-warning' }"
-    >
-      <div class="grid md:grid-cols-2 gap-8">
-        <UCard class="overflow-hidden">
-          <img 
-            src="https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=600&auto=format&fit=crop&q=80" 
-            alt="Tesla Model 3"
-            class="w-full h-48 object-cover -m-4 mb-4"
-          />
-          <h3 class="text-xl font-bold mb-2">Tesla Model 3</h3>
-          <p class="text-muted mb-4">Experience the future of driving with Tesla&apos;s revolutionary autopilot features and instant torque delivery.</p>
-          <div class="flex flex-wrap gap-2">
-            <UBadge label="Matic" variant="subtle" color="warning" />
-          </div>
-        </UCard>
-
-        <UCard class="overflow-hidden">
-          <img 
-            src="https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=600&auto=format&fit=crop&q=80" 
-            alt="BYD Atto 3"
-            class="w-full h-48 object-cover -m-4 mb-4"
-          />
-          <h3 class="text-xl font-bold mb-2">BYD Atto 3</h3>
-          <p class="text-muted mb-4">A compact SUV perfect for urban driving lessons with excellent visibility and responsive handling.</p>
-          <div class="flex flex-wrap gap-2">
-            <UBadge label="SUV" variant="subtle" color="warning" />
-            <UBadge label="Matic" variant="subtle" color="warning" />
-          
-          </div>
-        </UCard>
-      </div>
-    </UPageSection>
-  -->
 
     <!-- Service Areas -->
     <UPageSection

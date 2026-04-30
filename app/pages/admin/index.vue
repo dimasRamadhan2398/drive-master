@@ -28,10 +28,10 @@ type Session = {
 }
 
 const todaySessions = ref<Session[]>([
-  { id: 1, time: '08:00', student: 'John Doe', car: 'BYD Atto 1', instructor: 'Pak Ahmad', status: 'completed' },
-  { id: 2, time: '09:30', student: 'Jane Smith', car: 'BYD Atto 1', instructor: 'Bu Sari', status: 'in-progress' },
-  { id: 3, time: '11:00', student: 'Alex Johnson', car: 'BYD Atto 1', instructor: 'Pak Budi', status: 'upcoming' },
-  { id: 4, time: '13:00', student: 'Maria Garcia', car: 'BYD Atto 1', instructor: 'Pak Ahmad', status: 'upcoming' }
+  { id: 1, time: '08:00', student: 'John Doe', car: 'BYD Atto 1', instructor: 'Mr. Ahmad', status: 'completed' },
+  { id: 2, time: '09:30', student: 'Jane Smith', car: 'BYD Atto 1', instructor: 'Ms. Sari', status: 'in-progress' },
+  { id: 3, time: '11:00', student: 'Alex Johnson', car: 'BYD Atto 1', instructor: 'Mr. Budi', status: 'upcoming' },
+  { id: 4, time: '13:00', student: 'Maria Garcia', car: 'BYD Atto 1', instructor: 'Mr. Ahmad', status: 'upcoming' }
 ])
 
 const sessionColumns: TableColumn<Session>[] = [
@@ -218,10 +218,6 @@ const quickActions = [
             <template #footer>
               <div class="space-y-2">
                 <h3 class="font-medium text-md">Vehicle Status</h3>
-                <!-- <div class="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                  <span class="text-md">Tesla Model 3</span>
-                  <UBadge label="In Use" color="error" variant="subtle" size="md" />
-                </div> -->
                 <div class="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                   <span class="text-md">BYD Atto 1</span>
                   <UBadge label="Available" color="primary" variant="subtle" size="md" />

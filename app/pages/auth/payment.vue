@@ -19,9 +19,21 @@ const snapToken = ref<string | null>(null)
 
 const packageInfo = {
   six_package: { name: '6x Session', price: 1750000, sessions: 6 },
+  six_package_night: { name: '6x Session + Night Session', price: 1850000, sessions: 6 },
+  six_package_weekend: { name: '6x Session + Weekend Session', price: 1850000, sessions: 6 },
+  six_package_weekend_night: { name: '6x Session + Weekend & Night Session', price: 1950000, sessions: 6 },
   eight_package: { name: '8x Session', price: 1950000, sessions: 8 },
+  eight_package_night: { name: '8x Session + Night Session', price: 2100000, sessions: 8 },
+  eight_package_weekend: { name: '8x Session + Weekend Session', price: 2100000, sessions: 8 },
+  eight_package_weekend_night: { name: '8x Session + Weekend & Night Session', price: 2250000, sessions: 8 },
   ten_package: { name: '10x Session', price: 2250000, sessions: 10 },
-  twelve_package: { name: '12x Session', price: 2650000, sessions: 12 }
+  ten_package_night: { name: '10x Session + Night Session', price: 2450000, sessions: 10 },
+  ten_package_weekend: { name: '10x Session + Weekend Session', price: 2450000, sessions: 10 },
+  ten_package_weekend_night: { name: '10x Session + Weekend & Night Session', price: 2650000, sessions: 10 },
+  twelve_package: { name: '12x Session', price: 2650000, sessions: 12 },
+  twelve_package_night: { name: '12x Session + Night Session', price: 2900000, sessions: 12 },
+  twelve_package_weekend: { name: '12x Session + Weekend Session', price: 2900000, sessions: 12 },
+  twelve_package_weekend_night: { name: '12x Session + Weekend & Night Session', price: 3150000, sessions: 12 }
 }
 
 const paymentMethodDetails = {
@@ -184,7 +196,7 @@ onMounted(() => {
                 </div>
                 <div>
                   <p class="text-xs text-muted uppercase tracking-wide mb-1">Amount</p>
-                  <p class="font-medium">Rp {{ (pkg.price).toLocaleString('id-ID') }}</p>
+                  <p class="font-medium">Rp {{ ((pkg.price * 1.1).toLocaleString('id-ID')) }}</p>
                 </div>
               </div>
 
@@ -243,7 +255,7 @@ onMounted(() => {
 
               <div>
                 <p class="text-xs text-muted uppercase tracking-wide mb-1">Amount to Transfer</p>
-                <p class="text-2xl font-bold text-warning">Rp {{ (pkg.price).toLocaleString('id-ID') }}</p>
+                <p class="text-2xl font-bold text-warning">Rp {{ ((pkg.price * 1.1).toLocaleString('id-ID')) }}</p>
               </div>
 
               <UButton 

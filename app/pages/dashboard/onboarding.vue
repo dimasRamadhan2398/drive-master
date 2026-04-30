@@ -34,8 +34,8 @@ const userData = {
   nextSession: {
     date: 'Tomorrow',
     time: '09:30 AM',
-    car: 'Tesla Model 3',
-    instructor: 'Pak Ahmad'
+    car: 'BYD Atto 1',
+    instructor: 'Mr. Ahmad'
   }
 }
 
