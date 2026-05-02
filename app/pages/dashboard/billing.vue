@@ -7,6 +7,7 @@ definePageMeta({ layout: 'dashboard' })
 // Billing data
 const userData = {
   name: 'John Doe',
+  email: 'john.doe@example.com',
   package: '10x Sessions Package',
   totalSessions: 10,
   completedSessions: 4,
@@ -24,10 +25,10 @@ const billingData = {
  status: 'payment-due',
  daysRemaining: 3,
  amount: 'Rp 2,250,000',
- dueDate: 'Apr 24, 2026',
+ dueDate: 'June 25, 2026',
  lastPaymentDate: 'Mar 25, 2026',
  package: '10x Session Package',
- nextRenewalDate: 'May 25, 2026'
+ nextRenewalDate: 'September 25, 2026'
 }
 
 const showBillingModal = ref(false)
@@ -82,6 +83,27 @@ function getBillingStatusLabel() {
  if (billingData.status === 'paid') return 'Paid'
  return 'Active'
 }
+
+const planMap: { [key: string]: string } = {
+  '6x Session Package': 'six_package',
+  '8x Session Package': 'eight_package',
+  '10x Session Package': 'ten_package',
+  '12x Session Package': 'twelve_package'
+}
+
+function makePayment() {
+  // Map the package name from billingData to the plan key used in payment.vue
+  const planKey = planMap[billingData.package] || 'ten_package';
+
+  navigateTo({
+    path: '/auth/payment',
+    query: {
+      method: selectedPaymentMethod.value,
+      plan: planKey,
+      email: userData.email
+    }
+  })
+}
 </script>
 
 <template>
@@ -111,8 +133,6 @@ function getBillingStatusLabel() {
              <p class="text-xs text-muted mt-2">{{ billingData.package }}</p>
              <div class="flex flex-wrap gap-3 mt-4">
                <UButton label="Proceed to Payment" size="sm" icon="i-lucide-credit-card" color="warning" @click="showBillingModal = true"/>
-               <!-- <UButton label="View Invoice" size="sm" variant="outline" color="neutral" /> -->
-               <!-- <UButton label="Download Receipt" size="sm" variant="ghost" icon="i-lucide-download" color="neutral" /> -->
              </div>
            </div>
            <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" />
@@ -183,8 +203,8 @@ function getBillingStatusLabel() {
                <div class="font-medium">{{ billingData.amount }}</div>
              </div>
            </div>
-           <NuxtLink to="/auth/select-plan">
-            <UButton label="Upgrade Package" color="warning" icon="i-lucide-credit-card" />
+           <NuxtLink :to="`/auth/select-plan?current_plan=${planMap[billingData.package]}`">
+            <UButton label="Change Package" color="warning" icon="i-lucide-credit-card" />
            </NuxtLink>
          </div>
        </UCard>
@@ -256,7 +276,7 @@ function getBillingStatusLabel() {
                :key="method.id"
                @click="selectedPaymentMethod = method.id"
                class="w-full p-3 rounded-lg border-2 transition-colors text-left"
-               :class="selectedPaymentMethod === method.id ? 'border-warning bg-warning/5' : 'border-default hover:border-warning/50 bg-background'"
+               :class="selectedPaymentMethod === method.id ? 'border-primary bg-primary/5' : 'border-default hover:border-primary/50 bg-background'"
              >
                <div class="flex items-center gap-3">
                  <div class="p-2 rounded" :class="`bg-${method.color}-500/10`">
@@ -266,7 +286,7 @@ function getBillingStatusLabel() {
                    <p class="font-medium">{{ method.name }}</p>
                    <p class="text-xs text-muted">{{ method.description }}</p>
                  </div>
-                 <UIcon v-if="selectedPaymentMethod === method.id" name="i-lucide-check" class="size-5 text-warning ml-auto" />
+                 <UIcon v-if="selectedPaymentMethod === method.id" name="i-lucide-check" class="size-5 text-primary ml-auto" />
                </div>
              </button>
            </div>
@@ -306,7 +326,7 @@ function getBillingStatusLabel() {
      </template>
      <template #footer>
        <div class="flex justify-end gap-3">
-         <UButton label="Make Payment" color="warning" icon="i-lucide-credit-card" @click="showBillingModal = false" />
+         <UButton label="Make Payment" color="warning" icon="i-lucide-credit-card" @click="makePayment" />
        </div>
      </template>
    </UModal>

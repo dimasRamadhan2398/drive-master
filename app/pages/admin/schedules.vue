@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { ref, computed } from 'vue'
+import { useRoute, navigateTo } from 'nuxt/app'
 
 definePageMeta({ layout: 'admin' })
 
+const route = useRoute()
 const toast = useToast()
+const studentNameToBook = computed(() => route.query.studentName as string | undefined)
 const showAddSlotModal = ref(false)
 const selectedDate = ref(new Date('2026-04-10T00:00:00'))
 
@@ -115,10 +118,28 @@ function completeSession(slotId: string) {
 }
 
 function handleManualBooking(slotId: string) {
-  const name = prompt('Masukkan nama siswa untuk booking manual:', 'Siswa Manual')
-  if (name) {
-    bookSlot(slotId, name)
-    toast.add({ title: 'Slot Booked', description: `Berhasil booking untuk ${name}`, color: 'success' })
+  const studentName = studentNameToBook.value ? decodeURIComponent(studentNameToBook.value) : null
+  if (studentName) {
+    bookSlot(slotId, studentName)
+    toast.add({ title: 'Slot Booked', description: `Berhasil booking untuk ${studentName}`, color: 'success' })
+    // Kembali ke halaman schedule tanpa query untuk membersihkan state
+    navigateTo('/admin/schedules')
+  } else {
+    const name = prompt('Masukkan nama siswa untuk booking manual:', 'Siswa Manual')
+    if (name) {
+      bookSlot(slotId, name)
+      toast.add({ title: 'Slot Booked', description: `Berhasil booking untuk ${name}`, color: 'success' })
+    }
+  }
+}
+
+function handleSlotClick(slot: any) {
+  if (studentNameToBook.value && slot.status === 'available') {
+    const studentName = decodeURIComponent(studentNameToBook.value as string)
+    bookSlot(slot.id, studentName)
+    toast.add({ title: 'Slot Booked', description: `Berhasil booking untuk ${studentName}`, color: 'success', icon: 'i-lucide-calendar-check' })
+    // Kembali ke halaman schedule tanpa query untuk membersihkan state
+    navigateTo('/admin/schedules')
   }
 }
 
@@ -241,6 +262,18 @@ function saveEditSlot() {
 <template>
   <UDashboardPanel>
     <template #header>
+      <UAlert
+        v-if="studentNameToBook"
+        icon="i-lucide-user-check"
+        color="info"
+        variant="subtle"
+        class="m-4"
+        title="Mode Booking"
+      >
+        <template #description>
+          <span>Pilih slot untuk <strong>{{ decodeURIComponent(studentNameToBook) }}</strong>. <UButton variant="link" :padded="false" @click="navigateTo('/admin/schedules')">Batalkan</UButton></span>
+        </template>
+      </UAlert>
       <UDashboardNavbar title="Schedule Management">
         <template #right>
           <UButton icon="i-lucide-plus" color="warning" label="Add Time Slot" @click="showAddSlotModal = true" />
@@ -437,12 +470,14 @@ function saveEditSlot() {
                 :key="slot.id"
                 class="p-4 rounded-lg border border-default hover:shadow-md transition-shadow"
                 :class="{
-                  'border-l-4 border-l-primary-500': slot.status === 'available',
+                  'border-l-4 border-l-primary': slot.status === 'available',
                   'border-l-4 border-l-info bg-info/5': slot.status === 'booked',
                   'border-l-4 border-l-amber-500': slot.status === 'in-progress',
                   'border-l-4 border-l-neutral-500 bg-neutral-500/5': slot.status === 'completed',
-                  'border-l-4 border-l-red-500 opacity-60': slot.status === 'blocked'
+                  'border-l-4 border-l-red-500 opacity-60': slot.status === 'blocked',
+                  'cursor-pointer hover:bg-primary/5': studentNameToBook && slot.status === 'available'
                 }"
+                @click="handleSlotClick(slot)"
               >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-5">

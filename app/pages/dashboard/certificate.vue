@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { useToast } from '@nuxt/ui/runtime/composables/index.js'
 import { ref } from 'vue'
+import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
 
 definePageMeta({ layout: 'dashboard' })
 
 const toast = useToast()
+const certificatePreview = ref<HTMLElement[] | null>(null)
+const isDownloading = ref(false)
 
 // Mock certificate data
 const certificateStatus = ref({
@@ -30,13 +34,87 @@ const issuedCertificates = ref([
 // For demo purposes, set certificate as available
 const hasCertificate = ref(true)
 
-function downloadCertificate(certId: string) {
-  toast.add({
-    title: 'Download Started',
-    description: 'Your certificate is being downloaded.',
-    icon: 'i-lucide-download',
-    color: 'success'
-  })
+async function downloadCertificate(certId: string) {
+  if (!certificatePreview.value || certificatePreview.value.length === 0) {
+    toast.add({ title: 'Error', description: 'Elemen pratinjau sertifikat tidak ditemukan.', color: 'error' })
+    return
+  }
+
+  isDownloading.value = true
+  // Menargetkan elemen pratinjau pertama dari v-for
+  const elementToCapture = certificatePreview.value?.[0]
+
+  if (!elementToCapture) {
+    isDownloading.value = false
+    return
+  }
+
+  try {
+    const canvas = await html2canvas(elementToCapture, {
+      scale: 2, // Meningkatkan skala untuk kualitas gambar yang lebih baik
+      useCORS: true,
+      backgroundColor: null // Menggunakan background dari elemen itu sendiri
+    })
+
+    const imgData = canvas.toDataURL('image/png')
+
+    // Membuat PDF dengan orientasi landscape (A4)
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = pdf.internal.pageSize.getHeight()
+
+    // Menambahkan gambar ke PDF
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+    pdf.save(`certificate-${certId}.pdf`)
+
+    toast.add({ title: 'Unduhan Dimulai', description: 'Sertifikat Anda sedang diunduh.', icon: 'i-lucide-download', color: 'success' })
+  } catch (error) {
+    console.error('Gagal membuat PDF:', error)
+    toast.add({ title: 'Gagal Mengunduh', description: 'Tidak dapat membuat file PDF.', color: 'error' })
+  } finally {
+    isDownloading.value = false
+  }
+}
+
+function copyVerificationLink(certId: string) {
+  if (import.meta.client) {
+    // Membangun URL verifikasi yang dinamis
+    const verificationUrl = `${window.location.origin}/verify-certificate?id=${certId}`
+    navigator.clipboard.writeText(verificationUrl)
+    toast.add({
+      title: 'Tautan Disalin',
+      description: 'Tautan verifikasi sertifikat telah disalin ke papan klip.',
+      icon: 'i-lucide-copy',
+      color: 'success'
+    })
+  }
+}
+
+async function shareCertificate(certId: string) {
+  if (import.meta.client) {
+    const verificationUrl = `${window.location.origin}/verify-certificate?id=${certId}`
+    const shareData = {
+      title: 'Sertifikat Mengemudi Saya',
+      text: 'Saya telah menyelesaikan kursus mengemudi di Drive Master! Lihat sertifikat saya.',
+      url: verificationUrl
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+      } catch (err: any) {
+        // Tidak melakukan apa-apa jika pengguna membatalkan dialog share (AbortError)
+        if (err.name !== 'AbortError') {
+          console.error('Share failed:', err)
+          toast.add({ title: 'Gagal Membagikan', description: 'Terjadi kesalahan saat mencoba membagikan.', color: 'error' })
+        }
+      }
+    } else {
+      // Fallback untuk desktop atau browser yang tidak mendukung
+      toast.add({ title: 'Fitur Share Tidak Didukung', description: 'Tautan verifikasi disalin ke clipboard.', color: 'info', icon: 'i-lucide-info' })
+      copyVerificationLink(certId)
+    }
+  }
 }
 </script>
 
@@ -103,7 +181,7 @@ function downloadCertificate(certId: string) {
                 <h2 class="font-semibold">Certificate Preview</h2>
               </template>
 
-              <div v-for="certificate in issuedCertificates" :key="certificate.id" class="aspect-[1.414/1] bg-gradient-to-br from-warning/5 to-warning/10 rounded-lg border-2 border-dashed border-warning/30 flex flex-col items-center justify-center p-8 text-center">
+              <div ref="certificatePreview" v-for="certificate in issuedCertificates" :key="certificate.id" class="aspect-[1.414/1] bg-gradient-to-br from-warning/5 to-warning/10 rounded-lg border-2 border-dashed border-warning/30 flex flex-col items-center justify-center p-8 text-center">
                 <div class="flex items-center gap-2 mb-4">
                   <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
                 </div>
@@ -126,7 +204,8 @@ function downloadCertificate(certId: string) {
                   label="Download Certificate (PDF)" 
                   icon="i-lucide-download" 
                   block
-                  @click="downloadCertificate('EVDA-2026-001234')"
+                  :loading="isDownloading"
+                  @click="issuedCertificates[0] && downloadCertificate(issuedCertificates[0].id)"
                 />
               </template>
             </UCard>
@@ -175,8 +254,8 @@ function downloadCertificate(certId: string) {
                 </p>
 
                 <div class="flex gap-2">
-                  <UButton label="Copy Link" icon="i-lucide-copy" variant="outline" color="neutral" size="md" />
-                  <UButton label="Share" icon="i-lucide-share-2" variant="outline" color="neutral" size="md" />
+                  <UButton label="Copy Link" icon="i-lucide-copy" variant="outline" color="neutral" size="md" @click="issuedCertificates[0] && copyVerificationLink(issuedCertificates[0].id)" />
+                  <UButton label="Share" icon="i-lucide-share-2" variant="outline" color="neutral" size="md" @click="issuedCertificates[0] && shareCertificate(issuedCertificates[0].id)" />
                 </div>
               </UCard>
             </div>
@@ -186,7 +265,7 @@ function downloadCertificate(certId: string) {
         <!-- Certificate Info -->
         <UCard>
           <template #header>
-            <h2 class="font-semibold">About EV Driving Certificates</h2>
+            <h2 class="font-semibold">About Drive Master Certificates</h2>
           </template>
 
           <div class="grid md:grid-cols-3 gap-6">

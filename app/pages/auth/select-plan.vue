@@ -5,6 +5,8 @@ definePageMeta({
   layout: 'blank'
 })
 
+const route = useRoute()
+
 const selectedPlan = ref<
 'six_package' | 
 'six_package_night' | 
@@ -284,6 +286,20 @@ const plans = [
   }
 ]
 
+const currentActivePlan = computed(() => route.query.current_plan as string | null)
+
+// Set initial selected plan, avoiding the current active one
+const getInitialPlan = () => {
+  const defaultPlanId = 'eight_package'
+  if (currentActivePlan.value && currentActivePlan.value === defaultPlanId) {
+    // If the default is the active one, find the first non-active plan
+    return plans.find(p => p.id !== currentActivePlan.value)?.id || defaultPlanId
+  }
+  return defaultPlanId
+}
+// Initialize with a valid, non-active plan
+selectedPlan.value = getInitialPlan() as typeof selectedPlan.value
+
 const currentPlan = computed(() => plans.find(p => p.id === selectedPlan.value))
 const discount = computed(() => {
   if (!currentPlan.value || !isPromoActive.value) return 0
@@ -410,17 +426,22 @@ const freeTrialInfo = [
             type="radio" 
             :value="plan.id"
             class="sr-only"
+            :disabled="plan.id === currentActivePlan"
           />
           <label 
             :for="`plan-${plan.id}`"
-            class="block h-full cursor-pointer"
+            :class="[
+              'block h-full',
+              plan.id === currentActivePlan ? 'cursor-not-allowed' : 'cursor-pointer'
+            ]"
           >
             <UCard
               :class="[
                 'h-full flex flex-col transition-all',
                 selectedPlan === plan.id 
                   ? 'ring-2 ring-warning shadow-xl' 
-                  : 'hover:shadow-lg'
+                  : 'hover:shadow-lg',
+                plan.id === currentActivePlan && 'opacity-60 bg-gray-50 dark:bg-gray-800/50'
               ]"
             >
               <div v-if="plan.highlight" class="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
@@ -431,6 +452,9 @@ const freeTrialInfo = [
                 <div class="text-center">
                   <h3 class="text-2xl font-bold">{{ plan.name }}</h3>
                   <p class="text-muted text-sm mt-2">Package Duration : {{ plan.duration }}</p>
+                  <div v-if="plan.id === currentActivePlan" class="mt-2">
+                    <UBadge label="Current Plan" color="neutral" variant="subtle" />
+                  </div>
                 </div>
               </template>
 

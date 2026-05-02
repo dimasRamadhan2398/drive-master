@@ -8,6 +8,7 @@ const toast = useToast()
 const showEditModal = ref(false)
 const showAddModal = ref(false)
 const showAddonModal = ref(false)
+const showEditAddonModal = ref(false)
 const selectedPackage = ref<any>(null)
 
 const newPackage = ref({
@@ -25,6 +26,8 @@ const newAddon = ref({
   price: 0,
   description: ''
 })
+
+const editingAddon = ref<any>(null)
 
 // Mock data paket - Di aplikasi nyata, ini akan berasal dari API
 const packages = ref([
@@ -411,6 +414,27 @@ function saveNewAddon() {
   // Reset form
   newAddon.value = { name: '', price: 0, description: '' }
 }
+
+function openEditAddonModal(addon: any) {
+  editingAddon.value = { ...addon } // Create a copy to avoid reactive changes before saving
+  showEditAddonModal.value = true
+}
+
+function saveEditedAddon() {
+  if (!editingAddon.value) return
+
+  const addonIndex = addOns.value.findIndex(a => a.id === editingAddon.value.id)
+  if (addonIndex !== -1) {
+    addOns.value[addonIndex] = editingAddon.value
+    toast.add({ title: 'Add-on Updated', description: `"${editingAddon.value.name}" has been saved.`, color: 'success' })
+  } else {
+    toast.add({ title: 'Error', description: 'Add-on not found.', color: 'error' })
+  }
+
+  showEditAddonModal.value = false
+  editingAddon.value = null
+}
+
 </script>
 
 <template>
@@ -634,6 +658,29 @@ function saveNewAddon() {
           </template>
         </UModal>
 
+        <!-- Edit Add-on Modal -->
+        <UModal v-model:open="showEditAddonModal" title="Edit Add-on">
+          <template #body>
+            <div v-if="editingAddon" class="space-y-4">
+              <UFormField label="Add-on Name" required>
+                <UInput v-model="editingAddon.name" class="w-full" color="warning"/>
+              </UFormField>
+              <UFormField label="Price (IDR)" required>
+                <UInput v-model="editingAddon.price" type="number" :step="50000" class="w-full" color="warning"/>
+              </UFormField>
+              <UFormField label="Description">
+                <UTextarea v-model="editingAddon.description" placeholder="Briefly describe what this add-on includes." class="w-full" color="warning" />
+              </UFormField>
+            </div>
+          </template>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton label="Cancel" variant="ghost" color="neutral" @click="showEditAddonModal = false" />
+              <UButton label="Save Changes" icon="i-lucide-save" color="warning" @click="saveEditedAddon" />
+            </div>
+          </template>
+        </UModal>
+
         <!-- Add-ons Section -->
         <UCard>
           <template #header>
@@ -661,7 +708,7 @@ function saveNewAddon() {
                   <p class="font-bold">{{ addon.sold }}</p>
                   <p class="text-md text-muted">Sold</p>
                 </div>
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="md" />
+                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="md" @click="openEditAddonModal(addon)" />
               </div>
             </div>
           </div>

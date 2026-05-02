@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed, h, ref, resolveComponent } from 'vue'
+import { computed, h, ref, resolveComponent, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
+import { useRoute, navigateTo } from 'nuxt/app'
 
 definePageMeta({ layout: 'admin' })
 
 const toast = useToast()
 const searchQuery = ref('')
 const showIssueModal = ref(false)
-
+const showViewModal = ref(false)
+const route = useRoute()
+const selectedCertificate = ref<Certificate | null>(null)
 type EligibleStudent = {
   id: number
   name: string
@@ -16,6 +19,8 @@ type EligibleStudent = {
   package: string
   completedDate: string
 }
+
+const selectedStudentIdToIssue = ref<EligibleStudent | undefined>(undefined)
 
 type Certificate = {
   id: string
@@ -27,7 +32,7 @@ type Certificate = {
 }
 
 const eligibleStudents = ref<EligibleStudent[]>([
-  { id: 1, name: 'Budi Santoso', email: 'budi@example.com', package: '6x', completedDate: 'Mar 28, 2026' },
+  { id: 3, name: 'Budi Santoso', email: 'budi@example.com', package: '6x', completedDate: 'Mar 28, 2026' },
   { id: 2, name: 'Maria Garcia', email: 'maria@example.com', package: '8x', completedDate: 'Mar 30, 2026' }
 ])
 
@@ -61,6 +66,21 @@ function issueCertificate(studentId: number) {
   }
 }
 
+function handleIssueFromModal() {
+  if (selectedStudentIdToIssue.value) {
+    issueCertificate(selectedStudentIdToIssue.value.id)
+    showIssueModal.value = false
+    selectedStudentIdToIssue.value = undefined // Reset for next time
+  } else {
+    toast.add({ title: 'No Student Selected', description: 'Please select a student to issue the certificate.', color: 'error' })
+  }
+}
+
+function viewCertificate(cert: Certificate) {
+  selectedCertificate.value = cert
+  showViewModal.value = true
+}
+
 function revokeCertificate(certId: string) {
   const cert = issuedCertificates.value.find(c => c.id === certId)
   if (cert) {
@@ -68,6 +88,22 @@ function revokeCertificate(certId: string) {
     toast.add({ title: 'Certificate Revoked', description: `Certificate ${certId} has been revoked.`, icon: 'i-lucide-x-circle', color: 'error' })
   }
 }
+
+onMounted(() => {
+  const studentIdToIssue = route.query.issueFor
+  if (studentIdToIssue && typeof studentIdToIssue === 'string') {
+    const studentId = parseInt(studentIdToIssue, 10)
+    const isEligible = eligibleStudents.value.some(s => s.id === studentId)
+
+    if (isEligible) {
+      issueCertificate(studentId)
+    } else {
+      toast.add({ title: 'Not Eligible', description: 'This student is not eligible for a certificate or has already been issued one.', color: 'warning', icon: 'i-lucide-info' })
+    }
+    // Clean the URL to prevent re-issuing on refresh
+    navigateTo('/admin/certificates', { replace: true })
+  }
+})
 
 const columns: TableColumn<Certificate>[] = [
   {
@@ -118,7 +154,7 @@ const columns: TableColumn<Certificate>[] = [
       const Button = resolveComponent('UButton')
       const certId = row.original.id
       const items = [
-        [{ label: 'View Certificate', icon: 'i-lucide-eye' }, { label: 'Download PDF', icon: 'i-lucide-download' }, { label: 'Resend Email', icon: 'i-lucide-mail' }],
+        [{ label: 'View Certificate', icon: 'i-lucide-eye', onSelect: () => viewCertificate(row.original) }, { label: 'Download PDF', icon: 'i-lucide-download' }, { label: 'Resend Email', icon: 'i-lucide-mail' }],
         [{ label: 'Revoke Certificate', icon: 'i-lucide-x-circle', color: 'error', onSelect: () => revokeCertificate(certId) }]
       ]
       return h(DropdownMenu, { items }, () => h(Button, { icon: 'i-lucide-ellipsis-vertical', color: 'neutral', variant: 'ghost' }))
@@ -138,10 +174,15 @@ const columns: TableColumn<Certificate>[] = [
             <template #body>
               <div class="space-y-4">
                 <UFormField label="Select Student" required>
-                  <USelectMenu :items="eligibleStudents.map(s => ({ label: s.name, value: s.id.toString() }))" placeholder="Search and select student..." searchable color="warning" class="w-full"/>
-                </UFormField>
-                <UFormField label="Certificate Type" required>
-                  <USelect :items="[{ label: 'Basic Completion Certificate', value: 'basic' }, { label: 'Premium Certificate', value: 'premium' }]" color="warning" class="w-full" />
+                  <USelectMenu
+                    v-model="selectedStudentIdToIssue"
+                    :items="eligibleStudents"
+                    option-attribute="name"
+                    placeholder="Search and select student..."
+                    searchable
+                    color="warning"
+                    class="w-full"
+                  />
                 </UFormField>
                 <UAlert icon="i-lucide-info" color="warning" variant="subtle">
                   <template #description>The certificate will be generated automatically and sent to the student&apos;s email.</template>
@@ -151,8 +192,33 @@ const columns: TableColumn<Certificate>[] = [
             <template #footer>
               <div class="flex justify-end gap-3">
                 <UButton label="Cancel" variant="ghost" color="neutral" @click="showIssueModal = false" />
-                <UButton label="Issue Certificate" color="warning" icon="i-lucide-award" @click="showIssueModal = false" />
+                <UButton label="Issue Certificate" color="warning" icon="i-lucide-award" @click="handleIssueFromModal" />
               </div>
+            </template>
+          </UModal>
+          <!-- View Certificate Modal -->
+          <UModal v-model:open="showViewModal" title="Certificate Preview">
+            <template #body>
+              <div v-if="selectedCertificate" class="aspect-[1.414/1] bg-gradient-to-br from-warning/5 to-warning/10 rounded-lg border-2 border-dashed border-warning/30 flex flex-col items-center justify-center p-8 text-center">
+                <div class="flex items-center gap-2 mb-4">
+                  <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
+                </div>
+                
+                <p class="text-md text-muted mb-2">This is to certify that</p>
+                <p class="text-2xl font-bold mb-2">{{ selectedCertificate.studentName }}</p>
+                <p class="text-md text-muted mb-4">has successfully completed the</p>
+                <p class="text-lg font-semibold text-warning mb-4">{{ selectedCertificate.package }} Sessions Course</p>
+                
+                <div class="mt-4 pt-4 border-t border-dashed border-muted w-full">
+                  <div class="flex justify-between text-md text-muted">
+                    <span>Certificate ID: {{ selectedCertificate.id }}</span>
+                    <span>Issued: {{ selectedCertificate.issueDate }}</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <template #footer>
+              <div class="flex justify-end"><UButton label="Close" variant="ghost" color="neutral" @click="showViewModal = false" /></div>
             </template>
           </UModal>
           <UColorModeButton />
@@ -162,9 +228,6 @@ const columns: TableColumn<Certificate>[] = [
       <UDashboardToolbar>
         <template #left>
           <UInput v-model="searchQuery" placeholder="Search certificates..." icon="i-lucide-search" class="w-64" color="warning"/>
-        </template>
-        <template #right>
-          <UButton icon="i-lucide-download" label="Export All" color="neutral" variant="outline" />
         </template>
       </UDashboardToolbar>
     </template>
