@@ -1,4 +1,9 @@
 <script setup lang="ts">
+useSeoMeta({
+  title: 'Packages | Drive Master Academy',
+  description: 'Transparent pricing with no hidden fees. Choose the package that best fits your learning goals and schedule.',
+})
+
 const selectedPlan = ref<
 'six_package' | 
 'six_package_night' | 

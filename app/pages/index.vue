@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+useSeoMeta({
+  title: 'Home | Drive Master Academy',
+  description: 'Drive Master Academy offers comprehensive EV and manual driving courses in Alam Sutera with expert instructors and certified programs.',
+})
+
 // Course Material
 const courseMaterial = [
   {
@@ -425,6 +430,27 @@ const timeSlots = computed(() => {
       available: slot.status === 'available'
     }))
 })
+
+const instructors = [
+  {
+    name: 'Mr. Ahmad',
+    role: 'Senior Instructor',
+    specialization: 'Defensive Driving',
+    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80'
+  },
+  {
+    name: 'Ms. Sari',
+    role: 'Professional Instructor',
+    specialization: 'Urban Driving',
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+  },
+  {
+    name: 'Mr. Budi',
+    role: 'Safety Specialist',
+    specialization: 'Highway Safety',
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80'
+  }
+]
 </script>
 
 <template>
@@ -773,6 +799,50 @@ const timeSlots = computed(() => {
       </div>
     </UPageSection>
 
+    <!-- Instructors Section -->
+    <UPageSection
+      headline="Our Instructor"
+      title="Meet Our Professional Instructors"
+      description="Learn from certified experts who are passionate about teaching and safety."
+      :ui="{ headline: 'text-warning' }"
+    >
+      <div class="grid md:grid-cols-3 gap-8">
+        <UCard 
+          v-for="instructor in instructors" 
+          :key="instructor.name"
+          class="overflow-hidden group text-center"
+          :ui="{ body: 'p-0' }"
+        >
+          <div class="relative h-64 overflow-hidden">
+            <img 
+              :src="instructor.image" 
+              :alt="instructor.name"
+              class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </div>
+          
+          <div class="p-6">
+            <h3 class="text-xl font-bold">{{ instructor.name }}</h3>
+            <p class="text-warning font-medium text-sm mb-4">{{ instructor.role }}</p>
+            <p class="text-muted text-sm">{{ instructor.specialization }}</p>
+          </div>
+        </UCard>
+      </div>
+
+      <div class="mt-12 text-center">
+        <NuxtLink to="/instructors">
+          <UButton 
+            label="View All Instructors" 
+            color="warning" 
+            variant="outline" 
+            size="lg" 
+            trailing-icon="i-lucide-arrow-right" 
+          />
+        </NuxtLink>
+      </div>
+    </UPageSection>
+
     <!-- Location Section -->
     <UPageSection
       id="contact"
@@ -780,6 +850,7 @@ const timeSlots = computed(() => {
       title="Conveniently Located in Alam Sutera"
       description="Our training center is strategically located in Alam Sutera, easily accessible from Tangerang and Jakarta."
       :ui="{ headline: 'text-warning' }"
+      class="bg-muted/30"
     >
       <div class="grid lg:grid-cols-2 gap-8">
         <div class="space-y-6">
@@ -852,8 +923,8 @@ const timeSlots = computed(() => {
         </div>
 
         <!-- Map Placeholder -->
-        <div class="h-[400px] lg:h-full min-h-[400px] rounded-2xl overflow-hidden bg-elevated border border-default">
-          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.1806061048765!2d106.65588507475077!3d-6.2399118937483635!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69fbc070b4d71d%3A0x8b1a633faf5dbd46!2sALAM%20SUTERA!5e0!3m2!1sen!2sid!4v1776223155011!5m2!1sen!2sid" width="600" height="450" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div class="h-auto lg:h-full min-h-auto rounded-2xl overflow-hidden bg-elevated border border-default">
+          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.1806061048765!2d106.65588507475077!3d-6.2399118937483635!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69fbc070b4d71d%3A0x8b1a633faf5dbd46!2sALAM%20SUTERA!5e0!3m2!1sen!2sid!4v1776223155011!5m2!1sen!2sid" width="600" height="550" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
         </div>
       </div>
     </UPageSection>
@@ -864,7 +935,6 @@ const timeSlots = computed(() => {
       title="What Our Students Say"
       description="Join hundreds of satisfied students who have learned to drive with us."
       :ui="{ headline: 'text-warning' }"
-      class="bg-muted/30"
     >
       <div class="grid md:grid-cols-3 gap-6">
         <UCard v-for="testimonial in testimonials" :key="testimonial.name">
@@ -890,6 +960,7 @@ const timeSlots = computed(() => {
       title="Frequently Asked Questions"
       description="Find answers to common questions about our EV driving courses."
       :ui="{ headline: 'text-warning' }"
+      class="bg-muted/30"
     >
       <div class="max-w-3xl mx-auto">
         <UAccordion :items="faqItems" />

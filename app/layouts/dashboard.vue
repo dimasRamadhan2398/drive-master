@@ -64,7 +64,7 @@ const user = {
       :collapsed-size="0"
     >
       <template #header="{ collapsed }">
-        <NuxtLink v-if="!collapsed" to="/" class="flex items-center gap-2 px-2">
+        <NuxtLink v-if="!collapsed" to="/dashboard" class="flex items-center gap-2 px-2">
           <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
         </NuxtLink>
         <UIcon v-else name="i-simple-icons-nuxtdotjs" class="size-5 text-primary mx-auto" />

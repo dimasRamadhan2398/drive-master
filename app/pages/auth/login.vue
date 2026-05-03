@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { reactive, ref } from 'vue'
+import { useAuth } from '~/composables/useAuth'
 
 definePageMeta({
   layout: 'blank'
@@ -23,10 +24,20 @@ const state = reactive({
 
 const loading = ref(false)
 
+const { login } = useAuth()
+
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   loading.value = true
   // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 1000))
+  
+  // Set mock user data
+  login({
+    name: 'John Doe',
+    email: state.email,
+    avatar: 'https://i.pravatar.cc/150?u=johndoe'
+  })
+  
   loading.value = false
   
   // Navigate to dashboard

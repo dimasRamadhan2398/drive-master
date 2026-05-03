@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { computed } from 'vue';
+import { useAuth } from '~/composables/useAuth';
+
+const { admin, isAdminLoggedIn, adminLogout } = useAuth()
+
+// Middleware check
+if (process.client && !isAdminLoggedIn.value) {
+  navigateTo('/admin/login')
+}
 
 const navItems = computed<NavigationMenuItem[]>(() => [
   {
@@ -45,21 +53,17 @@ const navItems = computed<NavigationMenuItem[]>(() => [
   }
 ])
 
-const adminMenuItems = [
+const adminMenuItems = computed(() => [
   [
     { label: 'Admin Settings', icon: 'i-lucide-settings', to: '/admin/settings' },
     { label: 'View Website', icon: 'i-lucide-external-link', to: '/', external: true }
   ],
   [
-    { label: 'Sign Out', icon: 'i-lucide-log-out', to: '/auth/login' }
+    { label: 'Sign Out', icon: 'i-lucide-log-out', click: () => adminLogout() }
   ]
-]
+])
 
-const admin = {
-  name: 'Admin User',
-  email: 'admin@evdriveacademy.id',
-  role: 'Administrator'
-}
+// Data admin taken from auth state
 
 // FITUR BARU: Mengaktifkan monitor Smart Alert untuk seluruh halaman Admin
 const { startMonitor } = useSmartAlerts()
@@ -69,7 +73,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <UDashboardGroup>
+  <UDashboardGroup v-if="isAdminLoggedIn">
     <UDashboardSidebar collapsible resizable>
       <template #header="{ collapsed }">
         <NuxtLink to="/admin" class="flex items-center gap-4 py-8">
@@ -98,8 +102,8 @@ onMounted(() => {
             <UAvatar text="AD" size="sm" class="bg-warning text-warning-foreground" />
             <template v-if="!collapsed">
               <div class="flex-1 text-left ml-2">
-                <p class="text-sm font-medium truncate">{{ admin.name }}</p>
-                <p class="text-xs text-muted truncate">{{ admin.role }}</p>
+                <p class="text-sm font-medium truncate">{{ admin?.name }}</p>
+                <p class="text-xs text-muted truncate">{{ admin?.role }}</p>
               </div>
               <UIcon name="i-lucide-chevrons-up-down" class="size-4 text-muted" />
             </template>

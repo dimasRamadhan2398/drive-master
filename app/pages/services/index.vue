@@ -1,4 +1,9 @@
 <script setup lang="ts">
+useSeoMeta({
+  title: 'Services | Drive Master Academy',
+  description: 'Comprehensive driving courses designed for the electric future. From beginners to advanced drivers, we have the perfect program for you.',
+})
+
 const services = [
   {
     title: '6x Sessions',

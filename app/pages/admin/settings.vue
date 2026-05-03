@@ -128,11 +128,11 @@ function handleImageUpload(event: Event, targetForm: any) {
   if (!input.files || input.files.length === 0) return
 
   const file = input.files[0]
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+  if (file && !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
     toast.add({ title: 'Invalid File', description: 'Please upload JPG, PNG, or WebP.', color: 'error' })
     return
   }
-  if (file.size > MAX_IMAGE_SIZE) {
+  if (file && file.size > MAX_IMAGE_SIZE) {
     toast.add({ title: 'File Too Large', description: 'Image exceeds 5MB limit.', color: 'error' })
     return
   }
@@ -141,7 +141,7 @@ function handleImageUpload(event: Event, targetForm: any) {
   reader.onload = (e) => {
     targetForm.photoUrl = e.target?.result as string
   }
-  reader.readAsDataURL(file)
+  if (file) reader.readAsDataURL(file)
   input.value = ''
 }
 
@@ -216,10 +216,10 @@ function saveSettings() {
               <UInput v-model="operatingHours.mondayEnd" type="time" class="w-full" color="warning" />
             </div>
             <div class="flex items-center gap-4">
-              <span class="w-32 text-sm font-medium">Weekend</span>
-              <UInput v-model="operatingHours.weekendStart" type="time" class="w-32" />
+              <span class="w-32 text-sm font-medium">Saturday & Sunday</span>
+              <UInput v-model="operatingHours.weekendStart" type="time" class="w-full" color="warning"/>
               <span class="text-muted">to</span>
-              <UInput v-model="operatingHours.weekendEnd" type="time" class="w-32" />
+              <UInput v-model="operatingHours.weekendEnd" type="time" class="w-full" color="warning"/>
             </div>
             <div class="flex items-center gap-4">
               <span class="w-32 text-md font-medium">Night Shift</span>
