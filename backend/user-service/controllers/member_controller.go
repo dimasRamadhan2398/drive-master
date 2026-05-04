@@ -47,9 +47,9 @@ type IMemberController interface {
 // @Tags Members
 // @Produce json
 // @Param userId path string true "User ID (UUID)"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /members/{userId}/profile [get]
 func (m *MemberController) GetMemberProfile(ctx *gin.Context) {
 	userID, err := getUserIDFromPath(ctx, "userId")
@@ -58,7 +58,7 @@ func (m *MemberController) GetMemberProfile(ctx *gin.Context) {
 		return
 	}
 
-	profile, err := m.memberService.GetMemberProfile(userID)
+	profile, err := m.memberService.GetMemberProfile(ctx, userID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -74,9 +74,9 @@ func (m *MemberController) GetMemberProfile(ctx *gin.Context) {
 // @Produce json
 // @Param userId path string true "User ID (UUID)"
 // @Param request body dto.UpdateUserRequest true "Update profile data"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /members/{userId}/profile [put]
 func (m *MemberController) UpdateMemberProfile(ctx *gin.Context) {
 	userID, err := getUserIDFromPath(ctx, "userId")
@@ -85,7 +85,7 @@ func (m *MemberController) UpdateMemberProfile(ctx *gin.Context) {
 		return
 	}
 
-	profile, err := m.memberService.GetMemberProfile(userID)
+	profile, err := m.memberService.GetMemberProfile(ctx, userID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -100,7 +100,7 @@ func (m *MemberController) UpdateMemberProfile(ctx *gin.Context) {
 		return
 	}
 
-	if err := m.memberService.UpdateMemberProfile(profile); err != nil {
+	if err := m.memberService.UpdateMemberProfile(ctx, profile); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}

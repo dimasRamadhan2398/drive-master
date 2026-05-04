@@ -58,9 +58,9 @@ type IUserController interface {
 // @Accept json
 // @Produce json
 // @Param request body dto.CreateUserRequest true "User data"
-// @Success 201 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 409 {object} responseRes.Response
+// @Success 201 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 409 {object} response.Response
 // @Router /users [post]
 func (c *UserController) CreateUser(cxt *gin.Context) {
 	var input dto.CreateUserRequest
@@ -82,8 +82,8 @@ func (c *UserController) CreateUser(cxt *gin.Context) {
 // @Description Get all users with their profiles
 // @Tags Users
 // @Produce json
-// @Success 200 {object} responseRes.Response
-// @Failure 500 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /users [get]
 func (c *UserController) GetAllUsers(cxt *gin.Context) {
 	users, err := c.userService.GetAllUsersWithProfiles(cxt.Request.Context())
@@ -100,9 +100,9 @@ func (c *UserController) GetAllUsers(cxt *gin.Context) {
 // @Tags Users
 // @Produce json
 // @Param id path string true "User ID (UUID)"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /users/{id} [get]
 func (c *UserController) GetUserByID(cxt *gin.Context) {
 	id, err := getUserIDFromPath(cxt, "id")
@@ -127,9 +127,9 @@ func (c *UserController) GetUserByID(cxt *gin.Context) {
 // @Produce json
 // @Param id path string true "User ID (UUID)"
 // @Param request body dto.UpdateUserRequest true "Update user data"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /users/{id} [put]
 func (c *UserController) UpdateUser(cxt *gin.Context) {
 	id, err := getUserIDFromPath(cxt, "id")
@@ -197,9 +197,9 @@ func (c *UserController) UpdateUser(cxt *gin.Context) {
 // @Tags Users
 // @Produce json
 // @Param id path string true "User ID (UUID)"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /users/{id} [delete]
 func (c *UserController) DeleteUser(cxt *gin.Context) {
 	id, err := getUserIDFromPath(cxt, "id")

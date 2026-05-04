@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"user-service/models"
 	"user-service/models/dto"
@@ -58,8 +59,8 @@ func NewInstructorController(
 // @Produce json
 // @Param page query int false "Page number (default: 1)"
 // @Param limit query int false "Items per page (default: 10, max: 100)"
-// @Success 200 {object} responseRes.Response
-// @Failure 500 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
 // @Router /instructors [get]
 func (c *InstructorController) GetInstructorLists(ctx *gin.Context) {
 	var query dto.PaginationQuery
@@ -93,9 +94,9 @@ func (c *InstructorController) GetInstructorLists(ctx *gin.Context) {
 // @Tags Instructors
 // @Produce json
 // @Param id path string true "User ID (UUID)"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /instructors/{id}/profile [get]
 func (c *InstructorController) GetInstructorProfile(ctx *gin.Context) {
 	userID, err := getUserIDFromPath(ctx, "id")
@@ -104,7 +105,7 @@ func (c *InstructorController) GetInstructorProfile(ctx *gin.Context) {
 		return
 	}
 
-	profile, err := c.instructorService.GetInstructorProfile(userID)
+	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -120,9 +121,9 @@ func (c *InstructorController) GetInstructorProfile(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "User ID (UUID)"
 // @Param request body dto.UpdateInstructorProfileInput true "Update profile data"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /instructors/{id}/profile [put]
 func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 	userID, err := getUserIDFromPath(ctx, "id")
@@ -137,7 +138,7 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 		return
 	}
 
-	profile, err := c.instructorService.GetInstructorProfile(userID)
+	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -167,8 +168,20 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 	if input.YearsOfExperience != nil {
 		profileModel.YearsOfExperience = *input.YearsOfExperience
 	}
+	if input.LicenseExpiry != nil {
+		// Parse the string date in DD/MM/YYYY format
+		parsedTime, err := time.Parse("02/01/2006", *input.LicenseExpiry)
+		if err != nil {
+			responseRes.Error(ctx, http.StatusBadRequest, http.StatusText(http.StatusBadRequest), "Invalid date format for license expiry. Use DD/MM/YYYY", "")
+			return
+		}
+		profileModel.LicenseExpiry = parsedTime
+	}
+	if input.BNSPCertificateNumber != nil {
+		profileModel.BNSPCertificateNumber = *input.BNSPCertificateNumber
+	}
 
-	if err := c.instructorService.UpdateInstructorProfile(profileModel); err != nil {
+	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
@@ -184,8 +197,8 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 // @Param file formData file true "File to upload"
 // @Param fileName formData string false "File name"
 // @Param folder formData string false "Folder path"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
 // @Router /media/upload [post]
 func (c *InstructorController) UploadProfilePic(ctx *gin.Context) {
 	file, _, err := ctx.Request.FormFile("file")
@@ -226,8 +239,8 @@ func (c *InstructorController) UploadProfilePic(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body dto.UploadBase64MediaRequest true "Base64 encoded file data"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
 // @Router /media/upload-base64 [post]
 func (c *InstructorController) UploadBase64Media(ctx *gin.Context) {
 	var input dto.UploadBase64MediaRequest
@@ -255,9 +268,9 @@ func (c *InstructorController) UploadBase64Media(ctx *gin.Context) {
 // @Tags Media
 // @Produce json
 // @Param fileId path string true "File ID"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /media/{fileId} [delete]
 func (c *InstructorController) DeleteProfilePic(ctx *gin.Context) {
 	fileID := ctx.Param("fileId")
@@ -279,9 +292,9 @@ func (c *InstructorController) DeleteProfilePic(ctx *gin.Context) {
 // @Tags Media
 // @Produce json
 // @Param fileId path string true "File ID"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /media/{fileId}/metadata [get]
 func (c *InstructorController) GetMediaMetadata(ctx *gin.Context) {
 	fileID := ctx.Param("fileId")

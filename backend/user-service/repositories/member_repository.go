@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"user-service/models"
 	"user-service/pkg/base"
 
@@ -10,11 +11,11 @@ import (
 
 type IMemberRepository interface {
 	// Member profile
-	FindByUserID(userID uuid.UUID) (*models.MemberProfile, error)
-	FindMany(opts *base.QueryOptions) ([]models.MemberProfile, error)
-	Create(profile *models.MemberProfile) error
-	Update(profile *models.MemberProfile) error
-	Delete(userID uuid.UUID) error
+	FindByUserID(ctx context.Context, userID uuid.UUID) (*models.MemberProfile, error)
+	FindMany(ctx context.Context, opts *base.QueryOptions) ([]models.MemberProfile, error)
+	Create(ctx context.Context, profile *models.MemberProfile) error
+	Update(ctx context.Context, profile *models.MemberProfile) error
+	Delete(ctx context.Context, userID uuid.UUID) error
 }
 
 type MemberRepository struct {
@@ -22,7 +23,7 @@ type MemberRepository struct {
 }
 
 // FindByUserID implements [IMemberRepository].
-func (m *MemberRepository) FindByUserID(userID uuid.UUID) (*models.MemberProfile, error) {
+func (m *MemberRepository) FindByUserID(ctx context.Context, userID uuid.UUID) (*models.MemberProfile, error) {
 	var profile models.MemberProfile
 	if err := m.BaseRepository.FindOne(&profile, "user_id = ?", userID); err != nil {
 		return nil, err
@@ -32,7 +33,7 @@ func (m *MemberRepository) FindByUserID(userID uuid.UUID) (*models.MemberProfile
 
 // FindMany implements [IMemberRepository].
 // Returns a slice of member profiles based on the provided query options.
-func (m *MemberRepository) FindMany(opts *base.QueryOptions) ([]models.MemberProfile, error) {
+func (m *MemberRepository) FindMany(ctx context.Context, opts *base.QueryOptions) ([]models.MemberProfile, error) {
 	var profiles []models.MemberProfile
 	if err := m.BaseRepository.FindMany(&models.MemberProfile{}, &profiles, opts); err != nil {
 		return nil, err
@@ -41,19 +42,19 @@ func (m *MemberRepository) FindMany(opts *base.QueryOptions) ([]models.MemberPro
 }
 
 // Create implements [IMemberRepository].
-func (m *MemberRepository) Create(profile *models.MemberProfile) error {
+func (m *MemberRepository) Create(ctx context.Context, profile *models.MemberProfile) error {
 	return m.BaseRepository.Create(profile)
 }
 
 // Update implements [IMemberRepository].
 // Subtle: this method shadows the method (*BaseRepository).Update of MemberRepository.BaseRepository.
-func (m *MemberRepository) Update(profile *models.MemberProfile) error {
+func (m *MemberRepository) Update(ctx context.Context, profile *models.MemberProfile) error {
 	return m.BaseRepository.Update(profile)
 }
 
 // Delete implements [IMemberRepository].
 // Deletes a member profile by user ID.
-func (m *MemberRepository) Delete(userID uuid.UUID) error {
+func (m *MemberRepository) Delete(ctx context.Context, userID uuid.UUID) error {
 	return m.BaseRepository.Delete(&models.MemberProfile{UserID: userID})
 }
 

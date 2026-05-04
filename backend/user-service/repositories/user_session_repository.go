@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"time"
 	"user-service/models"
 	"user-service/pkg/base"
@@ -11,18 +12,18 @@ import (
 )
 
 type IUserSessionRepository interface {
-	Create(userSession *models.UserSession) error
-	FindByID(id uuid.UUID) (*models.UserSession, error)
-	FindByRefreshToken(token string) (*models.UserSession, error)
-	FindActiveByUserID(userID uuid.UUID) ([]models.UserSession, error)
-	Update(userSession *models.UserSession) error
-	Delete(userSession *models.UserSession) error
-	DeleteByUserID(userID uuid.UUID) error
-	DeleteExpired() error
+	Create(ctx context.Context, userSession *models.UserSession) error
+	FindByID(ctx context.Context, id uuid.UUID) (*models.UserSession, error)
+	FindByRefreshToken(ctx context.Context, token string) (*models.UserSession, error)
+	FindActiveByUserID(ctx context.Context, userID uuid.UUID) ([]models.UserSession, error)
+	Update(ctx context.Context, userSession *models.UserSession) error
+	Delete(ctx context.Context, userSession *models.UserSession) error
+	DeleteByUserID(ctx context.Context, userID uuid.UUID) error
+	DeleteExpired(ctx context.Context) error
 }
 
 type UserSessionRepository struct {
-	*base.BaseRepository // ← no separate db field, use r.DB from BaseRepository
+	*base.BaseRepository // no separate db field, use r.DB from BaseRepository
 }
 
 func NewUserSessionRepository(db *gorm.DB) *UserSessionRepository {
@@ -32,21 +33,21 @@ func NewUserSessionRepository(db *gorm.DB) *UserSessionRepository {
 }
 
 // Create creates a new user session
-func (r *UserSessionRepository) Create(userSession *models.UserSession) error {
+func (r *UserSessionRepository) Create(ctx context.Context, userSession *models.UserSession) error {
 	return r.BaseRepository.Create(userSession)
 }
 
 // FindByID finds a session by UUID
-func (r *UserSessionRepository) FindByID(id uuid.UUID) (*models.UserSession, error) {
-	var userSession models.UserSession // ← fixed typo: UserSEssion → UserSession
+func (r *UserSessionRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.UserSession, error) {
+	var userSession models.UserSession
 	if err := r.BaseRepository.FindByID(&userSession, id); err != nil {
 		return nil, err
 	}
-	return &userSession, nil // ← fixed: was returning &user which doesn't exist
+	return &userSession, nil
 }
 
 // FindByRefreshToken finds a session by its refresh token
-func (r *UserSessionRepository) FindByRefreshToken(token string) (*models.UserSession, error) {
+func (r *UserSessionRepository) FindByRefreshToken(ctx context.Context, token string) (*models.UserSession, error) {
 	var userSession models.UserSession
 	if err := r.BaseRepository.FindOne(&userSession, "refresh_token = ?", token); err != nil {
 		return nil, err
@@ -55,7 +56,7 @@ func (r *UserSessionRepository) FindByRefreshToken(token string) (*models.UserSe
 }
 
 // FindActiveByUserID finds all non-expired sessions for a user
-func (r *UserSessionRepository) FindActiveByUserID(userID uuid.UUID) ([]models.UserSession, error) {
+func (r *UserSessionRepository) FindActiveByUserID(ctx context.Context, userID uuid.UUID) ([]models.UserSession, error) {
 	var sessions []models.UserSession
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"user_id": userID}).
@@ -76,32 +77,32 @@ func (r *UserSessionRepository) FindActiveByUserID(userID uuid.UUID) ([]models.U
 }
 
 // Update saves changes to an existing session
-func (r *UserSessionRepository) Update(userSession *models.UserSession) error {
-	return r.BaseRepository.Update(userSession) // ← fixed: was passing undefined `user`
+func (r *UserSessionRepository) Update(ctx context.Context, userSession *models.UserSession) error {
+	return r.BaseRepository.Update(userSession)
 }
 
 // Delete soft-deletes a specific session
-func (r *UserSessionRepository) Delete(userSession *models.UserSession) error {
-	return r.BaseRepository.Delete(userSession) // ← fixed: BaseRepository.Delete needs the entity
+func (r *UserSessionRepository) Delete(ctx context.Context, userSession *models.UserSession) error {
+	return r.BaseRepository.Delete(userSession)
 }
 
 // DeleteByUserID invalidates all sessions for a user (e.g. on logout all devices)
-func (r *UserSessionRepository) DeleteByUserID(userID uuid.UUID) error {
+func (r *UserSessionRepository) DeleteByUserID(ctx context.Context, userID uuid.UUID) error {
 	return r.BaseRepository.Exec(
 		"DELETE FROM user_sessions WHERE user_id = ?", userID,
 	)
 }
 
 // DeleteExpired removes all expired sessions (for cleanup jobs)
-func (r *UserSessionRepository) DeleteExpired() error {
+func (r *UserSessionRepository) DeleteExpired(ctx context.Context) error {
 	return r.BaseRepository.Exec(
 		"DELETE FROM user_sessions WHERE expires_at < ?", time.Now(),
 	)
 }
 
 // InvalidateByRefreshToken marks a specific refresh token session as expired
-func (r *UserSessionRepository) InvalidateByRefreshToken(token string) error {
-	session, err := r.FindByRefreshToken(token)
+func (r *UserSessionRepository) InvalidateByRefreshToken(ctx context.Context, token string) error {
+	session, err := r.FindByRefreshToken(ctx, token)
 	if err != nil {
 		return apperrors.ErrNotFound
 	}

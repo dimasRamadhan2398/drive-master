@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"user-service/models"
 	"user-service/pkg/base"
 
@@ -9,10 +10,10 @@ import (
 )
 
 type IInstructorRepository interface {
-	FindInstructorProfileByUserID(userID uuid.UUID) (*models.InstructorProfile, error)
-	UpdateInstructorProfile(profile *models.InstructorProfile) error
-	CreateInstructorProfile(profile *models.InstructorProfile) error
-	DeleteInstructorProfile(instructorID uuid.UUID) error
+	FindInstructorProfileByUserID(ctx context.Context, userID uuid.UUID) (*models.InstructorProfile, error)
+	UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error
+	CreateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error
+	DeleteInstructorProfile(ctx context.Context, instructorID uuid.UUID) error
 }
 
 type InstructorRepository struct {
@@ -20,17 +21,17 @@ type InstructorRepository struct {
 }
 
 // DeleteInstructorProfile implements [IInstructorRepository].
-func (i *InstructorRepository) DeleteInstructorProfile(instructorID uuid.UUID) error {
+func (i *InstructorRepository) DeleteInstructorProfile(ctx context.Context, instructorID uuid.UUID) error {
 	return i.BaseRepository.Delete(&models.InstructorProfile{UserID: instructorID})
 }
 
 // CreateInstructorProfile implements [IInstructorRepository].
-func (i *InstructorRepository) CreateInstructorProfile(profile *models.InstructorProfile) error {
+func (i *InstructorRepository) CreateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error {
 	return i.BaseRepository.Create(profile)
 }
 
 // FindInstructorProfileByUserID implements [IInstructorRepository].
-func (i *InstructorRepository) FindInstructorProfileByUserID(userID uuid.UUID) (*models.InstructorProfile, error) {
+func (i *InstructorRepository) FindInstructorProfileByUserID(ctx context.Context, userID uuid.UUID) (*models.InstructorProfile, error) {
 	var profile models.InstructorProfile
 	if err := i.BaseRepository.FindOne(&profile, "user_id = ?", userID); err != nil {
 		return nil, err
@@ -39,7 +40,7 @@ func (i *InstructorRepository) FindInstructorProfileByUserID(userID uuid.UUID) (
 }
 
 // UpdateInstructorProfile implements [IInstructorRepository].
-func (i *InstructorRepository) UpdateInstructorProfile(profile *models.InstructorProfile) error {
+func (i *InstructorRepository) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error {
 	return i.BaseRepository.Update(profile)
 }
 

@@ -20,12 +20,12 @@ func NewAuthRoute(controller controllers.IControllerRegistry, group *gin.RouterG
 }
 
 func (u *AuthRoute) Run() {
-	group := u.group.Group("/auth")
-	group.POST("/login", u.controller.GetAuthController().Login)
-	group.POST("/register", u.controller.GetAuthController().Register)
-	group.PUT("/reset-password",  u.controller.GetAuthController().ResetPassword)
-	group.PUT("/confirm-reset-password",  u.controller.GetAuthController().ConfirmForgotPassword)
-	group.POST("/verify-otp", u.controller.GetAuthController().VerifyOTP)
-	group.POST("/resend-otp", u.controller.GetAuthController().ResendOTP)
+	auth := u.group.Group("/auth")
+	auth.POST("/login", u.controller.GetAuthController().Login)
+	auth.POST("/register", u.controller.GetAuthController().Register)
+	auth.POST("/forgot-password", u.controller.GetAuthController().ResetPassword)
+	auth.POST("/confirm-reset-password", u.controller.GetAuthController().ConfirmResetPassword)
+	auth.POST("/verify-otp", u.controller.GetAuthController().VerifyOTP)
+	auth.POST("/resend-otp", u.controller.GetAuthController().ResendOTP)
 }
 

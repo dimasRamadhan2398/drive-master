@@ -24,7 +24,7 @@ type User struct {
 	EmailAddress  string    `json:"emailAddress" gorm:"size:190;not null;uniqueIndex"`
 	PhoneNumber   string    `json:"phoneNumber" gorm:"size:20"`
 	Image         string    `json:"image" gorm:"size:500"`
-	DateOfBirth   time.Time `json:"dateOfBirth"`
+	DateOfBirth   time.Time `json:"dateOfBirth" gorm:"type:date"`
 	Address       string    `json:"address" gorm:"size:255"`
 	IsActive      bool      `json:"isActive" gorm:"default:true"`
 	IsVerified    bool      `json:"isVerified" gorm:"default:false"`

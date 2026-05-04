@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"time"
 	"user-service/models"
 	"user-service/models/dto"
@@ -10,10 +11,10 @@ import (
 )
 
 type IInstructorService interface {
-	GetInstructorProfile(userID uuid.UUID) (*dto.InstructorProfileResponse, error)
-	CreateInstructorProfile(userID uuid.UUID) (*dto.InstructorProfileResponse, error)
-	UpdateInstructorProfile(profile *models.InstructorProfile) error
-	DeleteInstructorProfile(userID uuid.UUID) error
+	GetInstructorProfile(ctx context.Context, userID uuid.UUID) (*dto.InstructorProfileResponse, error)
+	CreateInstructorProfile(ctx context.Context, userID uuid.UUID) (*dto.InstructorProfileResponse, error)
+	UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error
+	DeleteInstructorProfile(ctx context.Context, userID uuid.UUID) error
 }
 
 type InstructorService struct {
@@ -29,8 +30,8 @@ func NewInstructorService(
 }
 
 // GetInstructorProfile retrieves an instructor profile by user ID
-func (s *InstructorService) GetInstructorProfile(userID uuid.UUID) (*dto.InstructorProfileResponse, error) {
-	result, err := s.instructorRepo.FindInstructorProfileByUserID(userID);
+func (s *InstructorService) GetInstructorProfile(ctx context.Context, userID uuid.UUID) (*dto.InstructorProfileResponse, error) {
+	result, err := s.instructorRepo.FindInstructorProfileByUserID(ctx, userID);
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +54,7 @@ func (s *InstructorService) GetInstructorProfile(userID uuid.UUID) (*dto.Instruc
 }
 
 // CreateInstructorProfile creates a new instructor profile for a user
-func (s *InstructorService) CreateInstructorProfile(userID uuid.UUID) (*dto.InstructorProfileResponse, error) {
+func (s *InstructorService) CreateInstructorProfile(ctx context.Context, userID uuid.UUID) (*dto.InstructorProfileResponse, error) {
 	profile := &models.InstructorProfile{
 		UserID:            userID,
 		LicenseNumber:     "",
@@ -69,7 +70,7 @@ func (s *InstructorService) CreateInstructorProfile(userID uuid.UUID) (*dto.Inst
 		CreatedAt:         time.Now(),
 	}
 
-	if err := s.instructorRepo.CreateInstructorProfile(profile); err != nil {
+	if err := s.instructorRepo.CreateInstructorProfile(ctx, profile); err != nil {
 		return nil, err
 	}
 	return &dto.InstructorProfileResponse{
@@ -89,11 +90,11 @@ func (s *InstructorService) CreateInstructorProfile(userID uuid.UUID) (*dto.Inst
 }
 
 // DeleteInstructorProfile deletes an instructor profile by user ID
-func (s *InstructorService) DeleteInstructorProfile(userID uuid.UUID) error {
-	return s.instructorRepo.DeleteInstructorProfile(userID)
+func (s *InstructorService) DeleteInstructorProfile(ctx context.Context, userID uuid.UUID) error {
+	return s.instructorRepo.DeleteInstructorProfile(ctx, userID)
 }
 
 // UpdateInstructorProfile updates an instructor profile
-func (s *InstructorService) UpdateInstructorProfile(profile *models.InstructorProfile) error {
-	return s.instructorRepo.UpdateInstructorProfile(profile)
+func (s *InstructorService) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error {
+	return s.instructorRepo.UpdateInstructorProfile(ctx, profile)
 }

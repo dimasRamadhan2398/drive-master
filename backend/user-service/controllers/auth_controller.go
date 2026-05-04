@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+
 	"user-service/models/dto"
 	apperrors "user-service/pkg/errors"
 	responseRes "user-service/pkg/response"
@@ -21,8 +22,8 @@ type AuthController struct {
 type IAuthController interface {
 	Login(ctx *gin.Context)
 	Register(ctx *gin.Context)
-	ConfirmForgotPassword(ctx *gin.Context)
 	ResetPassword(ctx *gin.Context)
+	ConfirmResetPassword(ctx *gin.Context)
 	VerifyOTP(ctx *gin.Context)
 	ResendOTP(ctx *gin.Context)
 }
@@ -41,59 +42,58 @@ func NewAuthController(
 	}
 }
 
-// @Summary Login
-// @Description Authenticate user with email/username and password
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param request body dto.LoginInput true "Login credentials"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 401 {object} responseRes.Response
-// @Router /auth/login [post]
+// Login authenticates user with credentials and returns JWT token
+//
+//	@Summary		Login
+//	@Description	Authenticate user with email/username and password
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.LoginInput			true	"Login credentials"
+//	@Success		200		{object}	response.Response		"Login successful"
+//	@Failure		400		{object}	response.Response		"Bad request"
+//	@Failure		401		{object}	response.Response		"Invalid credentials"
+//	@Router			/auth/login [post]
 func (a *AuthController) Login(ctx *gin.Context) {
-	input := &dto.LoginInput{}
+	var input dto.LoginInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
 		return
 	}
 
-	validate := validator.New()
-	err := validate.Struct(input)
-	if err != nil {
+	if err := validator.New().Struct(input); err != nil {
 		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
+		return
 	}
 
-	loginResp, err := a.authService.Login(ctx.Request.Context(), input)
+	loginResp, err := a.authService.Login(ctx.Request.Context(), &input)
 	if err != nil {
 		responseRes.Error(ctx, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized), "Invalid username or password", "")
 		return
 	}
 
-	// Get user role and add to response
-	role, err := a.roleService.GetRole(loginResp.User.RoleID)
+	role, err := a.roleService.GetRole(ctx, loginResp.User.RoleID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
-	loginResp.User.Role = dto.RoleResponse{
-		ID:   role.ID,
-		Name: role.Name,
-	}
+	loginResp.User.Role = dto.RoleResponse{ID: role.ID, Name: role.Name}
 
 	responseRes.Success(ctx, http.StatusOK, "Login successful", loginResp)
 }
 
-// @Summary Register
-// @Description Create a new user account
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param request body dto.RegisterRequest true "User registration data"
-// @Success 201 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 409 {object} responseRes.Response
-// @Router /auth/register [post]
+// Register creates new user account and sends OTP for email verification
+//
+//	@Summary		Register
+//	@Description	Create a new user account and send OTP for email verification
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.RegisterRequest	true	"User registration data"
+//	@Success		201		{object}	response.Response		"Registration successful"
+//	@Failure		400		{object}	response.Response		"Bad request"
+//	@Failure		409		{object}	response.Response		"Username or email already exists"
+//	@Router			/auth/register [post]
 func (a *AuthController) Register(ctx *gin.Context) {
 	var input dto.RegisterRequest
 	if err := ctx.ShouldBindJSON(&input); err != nil {
@@ -101,10 +101,9 @@ func (a *AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	validate := validator.New()
-	err := validate.Struct(input)
-	if err != nil {
+	if err := validator.New().Struct(input); err != nil {
 		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
+		return
 	}
 
 	registerResp, err := a.authService.Register(ctx.Request.Context(), &input)
@@ -113,47 +112,22 @@ func (a *AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	// Send welcome email asynchronously
 	go a.emailService.SendWelcomeEmail(ctx.Request.Context(), input.Email, input.Username)
 
-	responseRes.Success(ctx, http.StatusCreated, "User registered successfully", registerResp)
+	responseRes.Success(ctx, http.StatusCreated, "User registered successfully. Please check your email for OTP verification", registerResp)
 }
 
-// @Summary Confirm Forgot Password
-// @Description Confirm Forgot password using a token
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param request body dto.ForgotPasswordInput true "Confirm Forgot password data"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Router /auth/confirm-forgot-password [post]
-func (a *AuthController) ConfirmForgotPassword(ctx *gin.Context) {
-	var input dto.ResetPasswordInput
-	if err := ctx.ShouldBindJSON(&input); err != nil {
-		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
-		return
-	}
-
-	validate := validator.New()
-	err := validate.Struct(input)
-	if err != nil {
-		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
-	}
-
-	// TODO: Validate reset token and reset password
-	responseRes.Success(ctx, http.StatusOK, "Password has been reset successfully", nil)
-}
-
-// @Summary Forgot Password
-// @Description Request a password reset link
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param request body dto.ForgotPasswordInput true "Email address"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Router /auth/forgot-password [post]
+// ResetPassword sends password reset link to email
+//
+//	@Summary		Forgot Password
+//	@Description	Request password reset link sent to email
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.ForgotPasswordInput	true	"Email address"
+//	@Success		200		{object}	response.Response		"Reset link sent if email exists"
+//	@Failure		400		{object}	response.Response		"Bad request"
+//	@Router			/auth/forgot-password [post]
 func (a *AuthController) ResetPassword(ctx *gin.Context) {
 	var input dto.ForgotPasswordInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
@@ -161,37 +135,61 @@ func (a *AuthController) ResetPassword(ctx *gin.Context) {
 		return
 	}
 
-	validate := validator.New()
-	err := validate.Struct(input)
-	if err != nil {
+	if err := validator.New().Struct(input); err != nil {
 		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
+		return
 	}
 
 	user, err := a.userService.GetUserByEmail(ctx.Request.Context(), input.EmailAddress)
 	if err != nil {
-		// Don't reveal if user exists or not
 		responseRes.Success(ctx, http.StatusOK, "If the email exists, a reset link has been sent", nil)
 		return
 	}
 
-	// TODO: Generate reset token and store it
-
-	// Send password reset email asynchronously
 	go a.emailService.SendPasswordResetEmail(ctx.Request.Context(), user.Email, user.Username)
 
 	responseRes.Success(ctx, http.StatusOK, "If the email exists, a reset link has been sent", nil)
 }
 
-// @Summary Verify OTP
-// @Description Verify OTP sent to email and mark user as verified
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param request body dto.VerifyOTPInput true "OTP verification data"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 401 {object} responseRes.Response
-// @Router /auth/verify-otp [post]
+// ConfirmResetPassword resets password using valid token
+//
+//	@Summary		Confirm Reset Password
+//	@Description	Reset password using token from email
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.ResetPasswordInput	true	"Reset password data"
+//	@Success		200		{object}	response.Response		"Password reset successful"
+//	@Failure		400		{object}	response.Response		"Bad request"
+//	@Router			/auth/confirm-reset-password [post]
+func (a *AuthController) ConfirmResetPassword(ctx *gin.Context) {
+	var input dto.ResetPasswordInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	if err := validator.New().Struct(input); err != nil {
+		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
+		return
+	}
+
+	// TODO: Implement token validation and password reset
+	responseRes.Success(ctx, http.StatusOK, "Password has been reset successfully", nil)
+}
+
+// VerifyOTP verifies the OTP code and marks user email as verified
+//
+//	@Summary		Verify OTP
+//	@Description	Verify OTP sent to email and mark user as verified
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.VerifyOTPInput	true	"OTP verification data"
+//	@Success		200		{object}	response.Response		"Email verified successfully"
+//	@Failure		400		{object}	response.Response		"Bad request"
+//	@Failure		401		{object}	response.Response		"Invalid or expired OTP"
+//	@Router			/auth/verify-otp [post]
 func (a *AuthController) VerifyOTP(ctx *gin.Context) {
 	var input dto.VerifyOTPInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
@@ -199,10 +197,9 @@ func (a *AuthController) VerifyOTP(ctx *gin.Context) {
 		return
 	}
 
-	validate := validator.New()
-	err := validate.Struct(input)
-	if err != nil {
+	if err := validator.New().Struct(input); err != nil {
 		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
+		return
 	}
 
 	if err := a.authService.VerifyOTP(ctx.Request.Context(), input.Email, input.OTP); err != nil {
@@ -213,15 +210,17 @@ func (a *AuthController) VerifyOTP(ctx *gin.Context) {
 	responseRes.Success(ctx, http.StatusOK, "Email verified successfully", nil)
 }
 
-// @Summary Resend OTP
-// @Description Resend OTP to email address
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param request body dto.ResendOTPInput true "Email address"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Router /auth/resend-otp [post]
+// ResendOTP resends verification OTP to email
+//
+//	@Summary		Resend OTP
+//	@Description	Resend OTP to email address for verification
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.ResendOTPInput	true	"Email address"
+//	@Success		200		{object}	response.Response		"OTP sent successfully"
+//	@Failure		400		{object}	response.Response		"Bad request"
+//	@Router			/auth/resend-otp [post]
 func (a *AuthController) ResendOTP(ctx *gin.Context) {
 	var input dto.ResendOTPInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
@@ -229,10 +228,9 @@ func (a *AuthController) ResendOTP(ctx *gin.Context) {
 		return
 	}
 
-	validate := validator.New()
-	err := validate.Struct(input)
-	if err != nil {
+	if err := validator.New().Struct(input); err != nil {
 		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
+		return
 	}
 
 	if err := a.authService.ResendOTP(ctx.Request.Context(), input.Email); err != nil {

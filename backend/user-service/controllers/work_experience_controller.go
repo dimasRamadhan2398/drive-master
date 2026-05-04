@@ -25,9 +25,9 @@ type WorkExperienceController struct {
 // @Produce json
 // @Param id path string true "User ID (UUID)"
 // @Param request body dto.CreateWorkExperienceRequest true "Work experience data"
-// @Success 201 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 201 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /instructors/{id}/work-experiences [post]
 func (w *WorkExperienceController) CreateWorkExperience(ctx *gin.Context) {
 	var instructorIDStr = ctx.Param("id")
@@ -49,7 +49,7 @@ func (w *WorkExperienceController) CreateWorkExperience(ctx *gin.Context) {
 		return
 	}
 
-	result, err := w.workExperienceService.CreateWorkExperience(instructorID, input)
+	result, err := w.workExperienceService.CreateWorkExperience(ctx, instructorID, input)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -63,9 +63,9 @@ func (w *WorkExperienceController) CreateWorkExperience(ctx *gin.Context) {
 // @Tags Instructors
 // @Produce json
 // @Param expId path int true "Work Experience ID"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /work-experiences/{expId} [delete]
 func (w *WorkExperienceController) DeleteWorkExperience(ctx *gin.Context) {
 	var expIdStr = ctx.Param("id")
@@ -75,7 +75,7 @@ func (w *WorkExperienceController) DeleteWorkExperience(ctx *gin.Context) {
 		return
 	}
 
-	err = w.workExperienceService.DeleteWorkExperience(uint(expIdNum))
+	err = w.workExperienceService.DeleteWorkExperience(ctx, uint(expIdNum))
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -89,9 +89,9 @@ func (w *WorkExperienceController) DeleteWorkExperience(ctx *gin.Context) {
 // @Tags Instructors
 // @Produce json
 // @Param id path string true "User ID (UUID)"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /instructors/{id}/work-experiences [get]
 func (w *WorkExperienceController) GetWorkExperience(ctx *gin.Context) {
 	var expId = ctx.Param("id")
@@ -106,7 +106,7 @@ func (w *WorkExperienceController) GetWorkExperience(ctx *gin.Context) {
 		return
 	}
 
-	result, err := w.workExperienceService.GetWorkExperiences(expIdUuid)
+	result, err := w.workExperienceService.GetWorkExperiences(ctx, expIdUuid)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -123,9 +123,9 @@ func (w *WorkExperienceController) GetWorkExperience(ctx *gin.Context) {
 // @Produce json
 // @Param expId path int true "Work Experience ID"
 // @Param request body dto.CreateWorkExperienceRequest true "Update work experience data"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /work-experiences/{expId} [put]
 func (w *WorkExperienceController) UpdateWorkExperience(ctx *gin.Context) {
 	expID, err := getUintIDFromPath(ctx, "expId")
@@ -150,7 +150,7 @@ func (w *WorkExperienceController) UpdateWorkExperience(ctx *gin.Context) {
 		Description:  *input.Description,
 	}
 
-	if err := w.workExperienceService.UpdateWorkExperience(workExp); err != nil {
+	if err := w.workExperienceService.UpdateWorkExperience(ctx, workExp); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}

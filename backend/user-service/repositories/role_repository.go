@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"errors"
 
 	"user-service/models"
@@ -12,9 +13,9 @@ import (
 )
 
 type IRoleRepository interface {
-	FindRoleByID(id uint) (*models.Role, error)
-	FindAllRoles() ([]models.Role, error)
-	UpdateUserRole(userID uuid.UUID, roleID uint) error
+	FindRoleByID(ctx context.Context, id uint) (*models.Role, error)
+	FindAllRoles(ctx context.Context) ([]models.Role, error)
+	UpdateUserRole(ctx context.Context, userID uuid.UUID, roleID uint) error
 }
 
 type RoleRepository struct {
@@ -26,7 +27,7 @@ func NewRoleRepository(db *gorm.DB) IRoleRepository {
 }
 
 // FindRoleByID implements IRoleRepository
-func (r *RoleRepository) FindRoleByID(id uint) (*models.Role, error) {
+func (r *RoleRepository) FindRoleByID(ctx context.Context, id uint) (*models.Role, error) {
 	var role models.Role
 	if err := r.GetDB().First(&role, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -38,7 +39,7 @@ func (r *RoleRepository) FindRoleByID(id uint) (*models.Role, error) {
 }
 
 // FindAllRoles implements IRoleRepository
-func (r *RoleRepository) FindAllRoles() ([]models.Role, error) {
+func (r *RoleRepository) FindAllRoles(ctx context.Context) ([]models.Role, error) {
 	var roles []models.Role
 	if err := r.GetDB().Find(&roles).Error; err != nil {
 		return nil, err
@@ -47,7 +48,7 @@ func (r *RoleRepository) FindAllRoles() ([]models.Role, error) {
 }
 
 // UpdateUserRole implements IRoleRepository
-func (r *RoleRepository) UpdateUserRole(userID uuid.UUID, roleID uint) error {
+func (r *RoleRepository) UpdateUserRole(ctx context.Context, userID uuid.UUID, roleID uint) error {
 	result := r.GetDB().Model(&models.User{}).Where("id = ?", userID).Update("role_id", roleID)
 	if result.Error != nil {
 		return result.Error

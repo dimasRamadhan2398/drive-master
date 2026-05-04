@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"user-service/models"
 	"user-service/repositories"
 
@@ -8,9 +9,9 @@ import (
 )
 
 type IRoleService interface {
-	GetRole(id uint) (*models.Role, error)
-	GetAllRoles() ([]models.Role, error)
-	UpdateUserRole(userID uuid.UUID, roleID uint) error
+	GetRole(ctx context.Context, id uint) (*models.Role, error)
+	GetAllRoles(ctx context.Context) ([]models.Role, error)
+	UpdateUserRole(ctx context.Context, userID uuid.UUID, roleID uint) error
 }
 
 type RoleService struct {
@@ -22,16 +23,16 @@ func NewRoleService(repo repositories.IRoleRepository) *RoleService {
 }
 
 // GetRole retrieves a role by ID
-func (s *RoleService) GetRole(id uint) (*models.Role, error) {
-	return s.repo.FindRoleByID(id)
+func (s *RoleService) GetRole(ctx context.Context, id uint) (*models.Role, error) {
+	return s.repo.FindRoleByID(ctx, id)
 }
 
 // GetAllRoles retrieves all roles
-func (s *RoleService) GetAllRoles() ([]models.Role, error) {
-	return s.repo.FindAllRoles()
+func (s *RoleService) GetAllRoles(ctx context.Context) ([]models.Role, error) {
+	return s.repo.FindAllRoles(ctx)
 }
 
 // UpdateUserRole updates the user's role
-func (s *RoleService) UpdateUserRole(userID uuid.UUID, roleID uint) error {
-	return s.repo.UpdateUserRole(userID, roleID)
+func (s *RoleService) UpdateUserRole(ctx context.Context, userID uuid.UUID, roleID uint) error {
+	return s.repo.UpdateUserRole(ctx, userID, roleID)
 }

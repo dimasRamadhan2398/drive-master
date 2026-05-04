@@ -35,9 +35,9 @@ func NewCoverageAreaController(
 // @Produce json
 // @Param id path string true "User ID (UUID)"
 // @Param request body dto.AddCoverageAreaInput true "Coverage area data"
-// @Success 201 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 201 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /instructors/{id}/coverage-areas [post]
 func (c *CoverageAreaController) AddCoverageArea(ctx *gin.Context) {
 	userID, err := getUserIDFromPath(ctx, "id")
@@ -56,7 +56,7 @@ func (c *CoverageAreaController) AddCoverageArea(ctx *gin.Context) {
 	// For now, use a placeholder area ID
 	areaID := uint(1)
 
-	if _, err := c.coverageAreaService.AddCoverageArea(userID, areaID); err != nil {
+	if _, err := c.coverageAreaService.AddCoverageArea(ctx, userID, areaID); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
@@ -70,9 +70,9 @@ func (c *CoverageAreaController) AddCoverageArea(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "User ID (UUID)"
 // @Param areaId path int true "Coverage Area ID"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /instructors/{id}/coverage-areas/{areaId} [delete]
 func (c *CoverageAreaController) RemoveCoverageArea(ctx *gin.Context) {
 	userID, err := getUserIDFromPath(ctx, "id")
@@ -87,7 +87,7 @@ func (c *CoverageAreaController) RemoveCoverageArea(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.coverageAreaService.RemoveCoverageArea(userID, areaID); err != nil {
+	if err := c.coverageAreaService.RemoveCoverageArea(ctx, userID, areaID); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
@@ -100,9 +100,9 @@ func (c *CoverageAreaController) RemoveCoverageArea(ctx *gin.Context) {
 // @Tags Instructors
 // @Produce json
 // @Param id path string true "User ID (UUID)"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
 // @Router /instructors/{id}/coverage-areas [get]
 func (c *CoverageAreaController) GetCoverageAreas(ctx *gin.Context) {
 	userID, err := getUserIDFromPath(ctx, "id")
@@ -111,7 +111,7 @@ func (c *CoverageAreaController) GetCoverageAreas(ctx *gin.Context) {
 		return
 	}
 
-	areas, err := c.coverageAreaService.GetCoverageAreas(userID)
+	areas, err := c.coverageAreaService.GetCoverageAreas(ctx, userID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return

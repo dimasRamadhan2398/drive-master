@@ -114,11 +114,6 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginInput) (*dto.Logi
 }
 
 func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
-
 	if s.isUsernameExist(ctx, req.Username) {
 		return nil, apperrors.ErrUsernameExist
 	}
@@ -129,6 +124,11 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 
 	if req.Password != req.ConfirmPassword {
 		return nil, apperrors.ErrPasswordDoesNotMatch
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
 	}
 
 	registerReq := &dto.RegisterRequest{
@@ -145,6 +145,12 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	if err != nil {
 		return nil, err
 	}
+
+	go func() {
+		if err := s.GenerateAndSendOTP(context.Background(), user.Email); err != nil {
+			s.LogError("Failed to send OTP after registration", logger.LogField("error", err))
+		}
+	}()
 
 	return &dto.RegisterResponse{
 		User: dto.CreateUserResponse{

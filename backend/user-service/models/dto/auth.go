@@ -8,6 +8,7 @@ import (
 const DateFormat = "02/01/2006"
 
 // Date is a custom type for parsing DD/MM/YYYY date format
+// swagger:strfmt date
 type Date struct {
 	time.Time
 }
@@ -48,14 +49,14 @@ type LoginResponse struct {
 }
 
 type RegisterRequest struct {
-	Name            string `json:"name" validate:"required"`
-	Username        string `json:"username" validate:"required"`
-	Password        string `json:"password" validate:"required"`
-	ConfirmPassword string `json:"confirmPassword" validate:"required"`
-	Email           string `json:"email" validate:"required,email"`
-	PhoneNumber     string `json:"phoneNumber" validate:"required"`
-	DateOfBirth     Date   `json:"dateOfBirth" validate:"required"`
-	RoleID          uint   `json:"roleId"`
+	Name            string    `json:"name" binding:"required"`
+	Username        string    `json:"username" binding:"required"`
+	Password        string    `json:"password" binding:"required"`
+	ConfirmPassword string    `json:"confirmPassword" binding:"required"`
+	Email           string    `json:"email" binding:"required,email"`
+	PhoneNumber     string    `json:"phoneNumber" binding:"required"`
+	DateOfBirth     Date      `json:"dateOfBirth" binding:"required" swaggertype:"string" format:"date" example:"1999-08-25"`
+	RoleID          uint      `json:"roleId"`
 }
 
 type RegisterResponse struct {

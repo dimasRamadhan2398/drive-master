@@ -15,7 +15,7 @@ type RoleController struct {
 
 // GetAll implements [IRoleController].
 func (r *RoleController) GetAll(ctx *gin.Context) {
-	roles, err := r.roleSvc.GetAllRoles()
+	roles, err := r.roleSvc.GetAllRoles(ctx)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -34,7 +34,7 @@ func (r *RoleController) GetRole(ctx *gin.Context) {
 		return
 	}
 
-	role, err := r.roleSvc.GetRole(uint(num))
+	role, err := r.roleSvc.GetRole(ctx, uint(num))
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return

@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"user-service/models"
 	"user-service/pkg/base"
 
@@ -9,9 +10,9 @@ import (
 )
 
 type ICoverageAreaRepository interface {
-	FindCoverageAreasByInstructorID(instructorID uuid.UUID) ([]models.InstructorArea, error)
-	AddCoverageArea(area *models.InstructorArea) error
-	RemoveCoverageArea(instructorID uuid.UUID, areaID uint) error
+	FindCoverageAreasByInstructorID(ctx context.Context, instructorID uuid.UUID) ([]models.InstructorArea, error)
+	AddCoverageArea(ctx context.Context, area *models.InstructorArea) error
+	RemoveCoverageArea(ctx context.Context, instructorID uuid.UUID, areaID uint) error
 }
 
 type CoverageAreaRepository struct {
@@ -19,12 +20,12 @@ type CoverageAreaRepository struct {
 }
 
 // AddCoverageArea implements [ICoverageAreaRepository].
-func (c *CoverageAreaRepository) AddCoverageArea(area *models.InstructorArea) error {
+func (c *CoverageAreaRepository) AddCoverageArea(ctx context.Context, area *models.InstructorArea) error {
 	return c.BaseRepository.Create(area)
 }
 
 // FindCoverageAreasByInstructorID implements [ICoverageAreaRepository].
-func (c *CoverageAreaRepository) FindCoverageAreasByInstructorID(instructorID uuid.UUID) ([]models.InstructorArea, error) {
+func (c *CoverageAreaRepository) FindCoverageAreasByInstructorID(ctx context.Context, instructorID uuid.UUID) ([]models.InstructorArea, error) {
 	var areas []models.InstructorArea
 	if err := c.BaseRepository.FindWithOptions(&models.InstructorArea{}, &areas, &base.QueryOptions{
 		Where: map[string]interface{}{
@@ -37,7 +38,7 @@ func (c *CoverageAreaRepository) FindCoverageAreasByInstructorID(instructorID uu
 }
 
 // RemoveCoverageArea implements [ICoverageAreaRepository].
-func (c *CoverageAreaRepository) RemoveCoverageArea(instructorID uuid.UUID, areaID uint) error {
+func (c *CoverageAreaRepository) RemoveCoverageArea(ctx context.Context, instructorID uuid.UUID, areaID uint) error {
 	err := c.BaseRepository.Delete(&models.InstructorArea{InstructorID: instructorID})
 	if err != nil {
 		return err
