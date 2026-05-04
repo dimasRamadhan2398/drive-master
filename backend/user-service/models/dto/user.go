@@ -23,7 +23,7 @@ type CreateUserResponse struct {
 	Email       string    `json:"email"`
 	Username    string    `json:"username"`
 	PhoneNumber string    `json:"phoneNumber"`
-	DateOfBirth time.Time `json:"dateOfBirth"`
+	DateOfBirth string    `json:"dateOfBirth"`
 	RoleID      uint      `json:"roleId"`
 }
 
@@ -44,7 +44,7 @@ type UpdateUserResponse struct {
 	Username    string    `json:"username"`
 	PhoneNumber string    `json:"phoneNumber"`
 	Image       string    `json:"image"`
-	DateOfBirth time.Time `json:"dateOfBirth"`
+	DateOfBirth string    `json:"dateOfBirth"`
 	Address     string    `json:"address"`
 	RoleID      uint      `json:"roleId"`
 }

@@ -37,10 +37,6 @@ func (r *Registry) GetUserService() IUserService {
 	return NewUserService(r.repoRegistry.GetUser())
 }
 
-func (r *Registry) GetAuthService() IAuthService {
-	return NewAuthService(r.repoRegistry.GetUser(), r.redisClient, r.GetEmailService())
-}
-
 func (r *Registry) GetMemberService() IMemberService {
 	return NewMemberService(r.repoRegistry.GetMember())
 }
@@ -51,6 +47,10 @@ func (r *Registry) GetInstructorService() IInstructorService {
 
 func (r *Registry) GetRoleService() IRoleService {
 	return NewRoleService(r.repoRegistry.GetRole())
+}
+
+func (r *Registry) GetAuthService() IAuthService {
+	return NewAuthService(r.repoRegistry.GetUser(), r.redisClient, r.GetEmailService(), r.GetRoleService())
 }
 
 func (r *Registry) GetEmailService() IMailtrapEmailService {

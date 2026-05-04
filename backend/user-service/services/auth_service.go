@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 	"user-service/models/dto"
 	"user-service/pkg/base"
@@ -39,9 +40,12 @@ type AuthService struct {
 	userRepo     repositories.IUserRepository
 	redisCli    *redis.Client
 	emailService IMailtrapEmailService
+	memberService IMemberService
+	instructorService IInstructorService
+	roleService   IRoleService
 }
 
-func NewAuthService(userRepo repositories.IUserRepository, redisCli *redis.Client, emailService IMailtrapEmailService) *AuthService {
+func NewAuthService(userRepo repositories.IUserRepository, redisCli *redis.Client, emailService IMailtrapEmailService, roleService IRoleService) *AuthService {
 	return &AuthService{
 		userRepo:     userRepo,
 		redisCli:     redisCli,
@@ -141,9 +145,26 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		RoleID:       req.RoleID,
 	}
 
+	roles, err := s.roleService.FindAllRoles(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	user, err := s.userRepo.Create(ctx, registerReq)
 	if err != nil {
 		return nil, err
+	}
+
+
+	for _, role := range roles {
+		if role.ID == req.RoleID {
+			if(strings.ToLower(role.Name) == "member") {
+				s.memberService.CreateMemberProfile(ctx, user.ID)
+			}else if(strings.ToLower(role.Name) == "instructor") {
+				s.instructorService.CreateInstructorProfile(ctx, user.ID)
+			}
+			break
+		}
 	}
 
 	go func() {

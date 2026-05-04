@@ -56,6 +56,19 @@ func ErrorFromAppError(c *gin.Context, appErr *apperrors.AppError) {
 
 // ErrorFromGeneric sends an error response from a generic error
 func ErrorFromGeneric(c *gin.Context, err error) {
+	// Check if it's an AppError
+	if appErr, ok := err.(*apperrors.AppError); ok {
+		c.JSON(appErr.StatusCode, Response{
+			Success: false,
+			Error: &ErrorDetail{
+				Code:    appErr.Code,
+				Message: appErr.Message,
+			},
+		})
+		return
+	}
+
+	// Fallback for non-AppError
 	c.JSON(http.StatusInternalServerError, Response{
 		Success: false,
 		Error: &ErrorDetail{

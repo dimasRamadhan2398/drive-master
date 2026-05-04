@@ -55,7 +55,7 @@ type RegisterRequest struct {
 	ConfirmPassword string    `json:"confirmPassword" binding:"required"`
 	Email           string    `json:"email" binding:"required,email"`
 	PhoneNumber     string    `json:"phoneNumber" binding:"required"`
-	DateOfBirth     Date      `json:"dateOfBirth" binding:"required" swaggertype:"string" format:"date" example:"1999-08-25"`
+	DateOfBirth     string      `json:"dateOfBirth" binding:"required" swaggertype:"string" format:"date" example:"1999-08-25"`
 	RoleID          uint      `json:"roleId"`
 }
 

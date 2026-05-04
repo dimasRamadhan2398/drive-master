@@ -15,7 +15,7 @@ type RoleController struct {
 
 // GetAll implements [IRoleController].
 func (r *RoleController) GetAll(ctx *gin.Context) {
-	roles, err := r.roleSvc.GetAllRoles(ctx)
+	roles, err := r.roleSvc.FindAllRoles(ctx)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return

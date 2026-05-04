@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"time"
 	"user-service/models"
 	"user-service/models/dto"
 	"user-service/pkg/base"
@@ -39,6 +40,10 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 }
 
 func (r *UserRepository) Create(ctx context.Context, user *dto.RegisterRequest) (*models.User, error) {
+	t, err := time.Parse(user.DateOfBirth, "2006-01-02")
+	if(err != nil) {
+		t = time.Now()
+	}
 	userModel := models.User{
 		Name:         user.Name,
 		Username:     user.Username,
@@ -46,7 +51,7 @@ func (r *UserRepository) Create(ctx context.Context, user *dto.RegisterRequest) 
 		EmailAddress: user.Email,
 		PhoneNumber:  user.PhoneNumber,
 		PasswordHash: user.Password,
-		DateOfBirth:  user.DateOfBirth.Time,
+		DateOfBirth:  t,
 		RoleID:       user.RoleID,
 		IsActive:     true,
 	}
