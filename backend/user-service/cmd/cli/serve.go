@@ -140,7 +140,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	repoRegistry := repositories.NewRepositoryRegistry(db)
 
 	// Initialize services
-	serviceRegistry := services.NewServiceRegistry(repoRegistry, eventPublisher)
+	serviceRegistry := services.NewServiceRegistry(repoRegistry, eventPublisher, redisClient)
 
 	// Initialize controller
 	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)

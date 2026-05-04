@@ -23,6 +23,8 @@ type IAuthController interface {
 	Register(ctx *gin.Context)
 	ConfirmForgotPassword(ctx *gin.Context)
 	ResetPassword(ctx *gin.Context)
+	VerifyOTP(ctx *gin.Context)
+	ResendOTP(ctx *gin.Context)
 }
 
 func NewAuthController(
@@ -178,4 +180,65 @@ func (a *AuthController) ResetPassword(ctx *gin.Context) {
 	go a.emailService.SendPasswordResetEmail(ctx.Request.Context(), user.Email, user.Username)
 
 	responseRes.Success(ctx, http.StatusOK, "If the email exists, a reset link has been sent", nil)
+}
+
+// @Summary Verify OTP
+// @Description Verify OTP sent to email and mark user as verified
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.VerifyOTPInput true "OTP verification data"
+// @Success 200 {object} responseRes.Response
+// @Failure 400 {object} responseRes.Response
+// @Failure 401 {object} responseRes.Response
+// @Router /auth/verify-otp [post]
+func (a *AuthController) VerifyOTP(ctx *gin.Context) {
+	var input dto.VerifyOTPInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	err := validate.Struct(input)
+	if err != nil {
+		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
+	}
+
+	if err := a.authService.VerifyOTP(ctx.Request.Context(), input.Email, input.OTP); err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Email verified successfully", nil)
+}
+
+// @Summary Resend OTP
+// @Description Resend OTP to email address
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.ResendOTPInput true "Email address"
+// @Success 200 {object} responseRes.Response
+// @Failure 400 {object} responseRes.Response
+// @Router /auth/resend-otp [post]
+func (a *AuthController) ResendOTP(ctx *gin.Context) {
+	var input dto.ResendOTPInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	err := validate.Struct(input)
+	if err != nil {
+		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
+	}
+
+	if err := a.authService.ResendOTP(ctx.Request.Context(), input.Email); err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "OTP has been sent to your email", nil)
 }

@@ -25,5 +25,7 @@ func (u *AuthRoute) Run() {
 	group.POST("/register", u.controller.GetAuthController().Register)
 	group.PUT("/reset-password",  u.controller.GetAuthController().ResetPassword)
 	group.PUT("/confirm-reset-password",  u.controller.GetAuthController().ConfirmForgotPassword)
+	group.POST("/verify-otp", u.controller.GetAuthController().VerifyOTP)
+	group.POST("/resend-otp", u.controller.GetAuthController().ResendOTP)
 }
 

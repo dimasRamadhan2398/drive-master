@@ -192,6 +192,45 @@ The Team`, resetLink)
 	})
 }
 
+// SendOTPEmail sends an OTP verification email
+func (s *MailtrapEmailService) SendOTPEmail(ctx context.Context, toEmail, otp string) error {
+	subject := "Email Verification - Your OTP Code"
+
+	text := fmt.Sprintf(`Hello,
+
+Thank you for registering with us. To verify your email address, please use the following OTP code:
+
+%s
+
+This code is valid for 15 minutes. If you did not request this email, please ignore it.
+
+Best regards,
+The Team`, otp)
+
+	html := fmt.Sprintf(`<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+	<h1 style="color: #333;">Email Verification</h1>
+	<p>Thank you for registering with us. To verify your email address, please use the following OTP code:</p>
+
+	<div style="background-color: #f8f9fa; padding: 30px; border-radius: 8px; margin: 30px 0; text-align: center;">
+		<p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #007bff; margin: 0;">%s</p>
+	</div>
+
+	<p style="color: #666;">This code is valid for <strong>15 minutes</strong>.</p>
+	<p style="color: #666;">If you did not request this email, please ignore it.</p>
+	<p style="color: #666; margin-top: 30px;">Best regards,<br>The Team</p>
+</body>
+</html>`, otp)
+
+	return s.SendEmail(ctx, dto.SendEmailRequest{
+		To:      []dto.EmailAddress{{Email: toEmail}},
+		Subject: subject,
+		Text:    text,
+		HTML:    html,
+		Tags:    []string{"otp", "email-verification"},
+	})
+}
+
 // SendBookingConfirmationEmail sends a booking confirmation email
 func (s *MailtrapEmailService) SendBookingConfirmationEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, lessonType string) error {
 	subject := fmt.Sprintf("Booking Confirmed: %s Lesson", lessonType)

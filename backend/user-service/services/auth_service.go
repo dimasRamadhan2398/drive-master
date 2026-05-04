@@ -25,19 +25,28 @@ import (
 type IAuthService interface {
 	Login(ctx context.Context, req *dto.LoginInput) (*dto.LoginResponse, error)
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error)
-	ValidateCredentials(ctx context.Context, emailOrUsername, password string) (*dto.LoginResponse, error)
 	ChangePassword(ctx context.Context, userID uuid.UUID, oldPassword, newPassword string) error
 	HashPassword(password string) (string, error)
+
+	// OTP methods
+	GenerateAndSendOTP(ctx context.Context, email string) error
+	VerifyOTP(ctx context.Context, email, otp string) error
+	ResendOTP(ctx context.Context, email string) error
 }
 
 type AuthService struct {
 	*base.BaseService
-	userRepo repositories.IUserRepository
-	redisCli *redis.Client
+	userRepo     repositories.IUserRepository
+	redisCli    *redis.Client
+	emailService IMailtrapEmailService
 }
 
-func NewAuthService(userRepo repositories.IUserRepository) *AuthService {
-	return &AuthService{userRepo: userRepo}
+func NewAuthService(userRepo repositories.IUserRepository, redisCli *redis.Client, emailService IMailtrapEmailService) *AuthService {
+	return &AuthService{
+		userRepo:     userRepo,
+		redisCli:     redisCli,
+		emailService: emailService,
+	}
 }
 
 type Claims struct {
@@ -61,6 +70,11 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginInput) (*dto.Logi
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		return nil, apperrors.ErrInvalidCredentials
 	}
+
+	// Check if user is verified (optional - uncomment if required)
+	// if !user.IsVerified {
+	// 	return nil, apperrors.ErrEmailNotVerified
+	// }
 
 	// Set expiration time
 	expirationTime := time.Now().Add(time.Duration(config.AppCfg.JWT.ExpiryHour) * time.Minute).Unix()
@@ -118,12 +132,13 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	}
 
 	registerReq := &dto.RegisterRequest{
-		Name:        req.Name,
-		Username:    req.Username,
-		Email:       req.Email,
-		PhoneNumber: req.PhoneNumber,
-		Password:    string(hashedPassword),
-		RoleID:      req.RoleID,
+		Name:         req.Name,
+		Username:     req.Username,
+		Email:        req.Email,
+		PhoneNumber:  req.PhoneNumber,
+		DateOfBirth:  req.DateOfBirth,
+		Password:     string(hashedPassword),
+		RoleID:       req.RoleID,
 	}
 
 	user, err := s.userRepo.Create(ctx, registerReq)
@@ -137,36 +152,6 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 			Email:       user.Email,
 			Username:    user.Username,
 			PhoneNumber: user.PhoneNumber,
-			RoleID:      user.RoleID,
-		},
-	}, nil
-}
-
-// ValidateCredentials validates user credentials and returns the user
-func (s *AuthService) ValidateCredentials(ctx context.Context, emailOrUsername, password string) (*dto.LoginResponse, error) {
-	user, err := s.userRepo.FindByEmail(ctx, emailOrUsername)
-	if err != nil {
-		// If not found by email, try by username
-		user, err = s.userRepo.FindByUsername(ctx, emailOrUsername)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Verify password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return nil, err
-	}
-
-	return &dto.LoginResponse{
-		User: dto.GetUserResponse{
-			UserID:      user.ID,
-			Email:       user.Email,
-			Username:    user.Username,
-			PhoneNumber: user.PhoneNumber,
-			Image:       user.Image,
-			DateOfBirth: user.DateOfBirth,
-			Address:     user.Address,
 			RoleID:      user.RoleID,
 		},
 	}, nil
@@ -203,24 +188,124 @@ func (s *AuthService) HashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
-func (s *AuthService) generateDeviceOTP(ctx context.Context, userID uuid.UUID, email string) (string, error) {
+// GenerateAndSendOTP generates a 6-digit OTP, stores it in Redis, and sends it via email
+func (s *AuthService) GenerateAndSendOTP(ctx context.Context, email string) error {
+	// Verify email exists
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		return apperrors.ErrUserNotFound
+	}
+
+	// Check if already verified
+	if user.IsVerified {
+		return apperrors.ErrAlreadyVerified
+	}
+
+	// Generate 6-digit OTP
+	otp, err := s.generateOTP()
+	if err != nil {
+		return err
+	}
+
+	// Store OTP in Redis for 15 minutes with user ID key
+	otpKey := fmt.Sprintf("email:otp:%s", user.ID.String())
+	if err := s.redisCli.Client.Set(ctx, otpKey, otp, 15*time.Minute).Err(); err != nil {
+		s.LogError("Failed to store OTP in redis", logger.LogField("error", err))
+		return errors.ErrInternalServer
+	}
+
+	// Send OTP via email
+	if err := s.emailService.SendOTPEmail(ctx, email, otp); err != nil {
+		s.LogError("Failed to send OTP email", logger.LogField("error", err))
+		return errors.ErrInternalServer
+	}
+
+	return nil
+}
+
+// VerifyOTP verifies the OTP and marks the user as verified
+func (s *AuthService) VerifyOTP(ctx context.Context, email, otp string) error {
+	// Find user by email
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		return apperrors.ErrUserNotFound
+	}
+
+	// Check if already verified
+	if user.IsVerified {
+		return apperrors.ErrAlreadyVerified
+	}
+
+	// Get stored OTP from Redis
+	otpKey := fmt.Sprintf("email:otp:%s", user.ID.String())
+	storedOtp, err := s.redisCli.Client.Get(ctx, otpKey).Result()
+	if err != nil {
+		return apperrors.ErrOTPExpired
+	}
+
+	// Verify OTP matches
+	if storedOtp != otp {
+		return apperrors.ErrInvalidOTP
+	}
+
+	// Mark user as verified
+	user.IsVerified = true
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return err
+	}
+
+	// Delete OTP from Redis after successful verification
+	s.redisCli.Client.Del(ctx, otpKey)
+
+	return nil
+}
+
+// ResendOTP generates a new OTP and sends it via email
+func (s *AuthService) ResendOTP(ctx context.Context, email string) error {
+	// Verify email exists
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		return apperrors.ErrUserNotFound
+	}
+
+	// Check if already verified
+	if user.IsVerified {
+		return apperrors.ErrAlreadyVerified
+	}
+
+	// Delete existing OTP if any
+	otpKey := fmt.Sprintf("email:otp:%s", user.ID.String())
+	s.redisCli.Client.Del(ctx, otpKey)
+
+	// Generate new OTP
+	otp, err := s.generateOTP()
+	if err != nil {
+		return err
+	}
+
+	// Store new OTP in Redis for 15 minutes
+	if err := s.redisCli.Client.Set(ctx, otpKey, otp, 15*time.Minute).Err(); err != nil {
+		s.LogError("Failed to store OTP in redis", logger.LogField("error", err))
+		return errors.ErrInternalServer
+	}
+
+	// Send new OTP via email
+	if err := s.emailService.SendOTPEmail(ctx, email, otp); err != nil {
+		s.LogError("Failed to send OTP email", logger.LogField("error", err))
+		return errors.ErrInternalServer
+	}
+
+	return nil
+}
+
+// generateOTP generates a cryptographically secure 6-digit OTP
+func (s *AuthService) generateOTP() (string, error) {
 	max := big.NewInt(1000000)
 	n, err := rand.Int(rand.Reader, max)
-
 	if err != nil {
 		return "", errors.ErrGenerateOTP
 	}
-
-	otpCode := fmt.Sprintf("%06d", n.Int64())
-
-	// Store OTP in Redis for 15 minutes
-	otpKey := fmt.Sprintf("device:otp:%s", userID.String())
-	if err := s.redisCli.Client.Set(ctx, otpKey, otpCode, 15*time.Minute).Err(); err != nil {
-		s.LogError("Failed to store OTP in redis", logger.LogField("error", err))
-		return "", errors.ErrInternalServer
-	}
-
-	return otpCode, nil
+	return fmt.Sprintf("%06d", n.Int64()), nil
 }
 
 func (s *AuthService) isUsernameExist(ctx context.Context, username string) bool {

@@ -3,12 +3,14 @@ package services
 import (
 	"user-service/pkg/config"
 	pkgKafka "user-service/pkg/kafka"
+	"user-service/pkg/redis"
 	"user-service/repositories"
 )
 
 type Registry struct {
-	repoRegistry *repositories.Registry
+	repoRegistry   *repositories.Registry
 	eventPublisher pkgKafka.IEventPublisher
+	redisClient    *redis.Client
 }
 
 type IServiceRegistry interface {
@@ -23,8 +25,12 @@ type IServiceRegistry interface {
 	GetCoverageAreaService() ICoverageAreaService
 }
 
-func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgKafka.IEventPublisher) IServiceRegistry {
-	return &Registry{repoRegistry: repoRegistry, eventPublisher: eventPublisher}
+func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgKafka.IEventPublisher, redisClient *redis.Client) IServiceRegistry {
+	return &Registry{
+		repoRegistry:   repoRegistry,
+		eventPublisher: eventPublisher,
+		redisClient:    redisClient,
+	}
 }
 
 func (r *Registry) GetUserService() IUserService {
@@ -32,7 +38,7 @@ func (r *Registry) GetUserService() IUserService {
 }
 
 func (r *Registry) GetAuthService() IAuthService {
-	return NewAuthService(r.repoRegistry.GetUser())
+	return NewAuthService(r.repoRegistry.GetUser(), r.redisClient, r.GetEmailService())
 }
 
 func (r *Registry) GetMemberService() IMemberService {

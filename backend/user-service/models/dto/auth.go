@@ -84,3 +84,14 @@ type ChangePasswordInput struct {
 	CurrentPassword string `json:"currentPassword" binding:"required"`
 	NewPassword     string `json:"newPassword"     binding:"required,min=8"`
 }
+
+// VerifyOTPInput is used for POST /auth/verify-otp
+type VerifyOTPInput struct {
+	Email string `json:"email" binding:"required,email"`
+	OTP   string `json:"otp"   binding:"required,len=6"`
+}
+
+// ResendOTPInput is used for POST /auth/resend-otp
+type ResendOTPInput struct {
+	Email string `json:"email" binding:"required,email"`
+}
