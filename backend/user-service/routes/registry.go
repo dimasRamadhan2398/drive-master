@@ -2,7 +2,6 @@ package routes
 
 import (
 	"user-service/controllers"
-	routes "user-service/routes/user"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,12 +21,28 @@ func NewRouteRegistry(controller controllers.IControllerRegistry, group *gin.Rou
 
 func (r *Registry) Serve() {
 	r.GetUserRoute().Run()
+	r.GetAuthRoute().Run()
+	r.GetInstructorRoute().Run()
+	r.GetWorkExperienceRoute().Run()
+	r.GetCoverageAreaRoute().Run()
 }
 
-func (r *Registry) GetAuthRoute() routes.IUserRoute {
-	return routes.authRoute(r.controller, r.group)
+func (r *Registry) GetAuthRoute() IAuthRoute {
+	return NewAuthRoute(r.controller, r.group)
 }
 
-func (r *Registry) GetUserRoute() routes.IUserRoute {
-	return routes.NewUserRoute(r.controller, r.group)
+func (r *Registry) GetUserRoute() IUserRoute {
+	return NewUserRoute(r.controller, r.group)
+}
+
+func (r *Registry) GetInstructorRoute() IInstructorRoute {
+	return NewInstructorRoute(r.controller, r.group)
+}
+
+func (r *Registry) GetWorkExperienceRoute() IWorkExperienceRoute {
+	return NewWorkExperienceRoute(r.controller, r.group)
+}
+
+func (r *Registry) GetCoverageAreaRoute() ICoverageAreaRoute {
+	return NewCoverageAreaRoute(r.controller, r.group)
 }

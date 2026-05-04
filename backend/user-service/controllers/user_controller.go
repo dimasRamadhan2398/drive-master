@@ -69,7 +69,7 @@ func (c *UserController) CreateUser(cxt *gin.Context) {
 		return
 	}
 
-	user, err := c.userService.CreateUser(input)
+	user, err := c.userService.CreateUser(cxt.Request.Context(), input)
 	if err != nil {
 		responseRes.ErrorFromGeneric(cxt, err)
 		return
@@ -86,7 +86,7 @@ func (c *UserController) CreateUser(cxt *gin.Context) {
 // @Failure 500 {object} responseRes.Response
 // @Router /users [get]
 func (c *UserController) GetAllUsers(cxt *gin.Context) {
-	users, err := c.userService.GetAllUsersWithProfiles()
+	users, err := c.userService.GetAllUsersWithProfiles(cxt.Request.Context())
 	if err != nil {
 		responseRes.ErrorFromGeneric(cxt, err)
 		return
@@ -111,7 +111,7 @@ func (c *UserController) GetUserByID(cxt *gin.Context) {
 		return
 	}
 
-	user, err := c.userService.GetUserByIDWithProfiles(id)
+	user, err := c.userService.GetUserByIDWithProfiles(cxt.Request.Context(), id)
 	if err != nil {
 		responseRes.ErrorFromGeneric(cxt, err)
 		return
@@ -144,7 +144,7 @@ func (c *UserController) UpdateUser(cxt *gin.Context) {
 		return
 	}
 
-	user, err := c.userService.GetUserByID(id)
+	user, err := c.userService.GetUserByID(cxt.Request.Context(), id)
 	if err != nil {
 		responseRes.ErrorFromGeneric(cxt, err)
 		return
@@ -184,7 +184,7 @@ func (c *UserController) UpdateUser(cxt *gin.Context) {
 		userModel.RoleID = *input.RoleID
 	}
 
-	if err := c.userService.UpdateUser(userModel); err != nil {
+	if err := c.userService.UpdateUser(cxt.Request.Context(), userModel); err != nil {
 		responseRes.ErrorFromGeneric(cxt, err)
 		return
 	}
@@ -208,7 +208,7 @@ func (c *UserController) DeleteUser(cxt *gin.Context) {
 		return
 	}
 
-	user, err := c.userService.GetUserByID(id)
+	user, err := c.userService.GetUserByID(cxt.Request.Context(), id)
 	if err != nil {
 		responseRes.ErrorFromGeneric(cxt, err)
 		return
@@ -219,7 +219,7 @@ func (c *UserController) DeleteUser(cxt *gin.Context) {
 		ID: user.ID,
 	}
 
-	if err := c.userService.DeleteUser(userModel); err != nil {
+	if err := c.userService.DeleteUser(cxt.Request.Context(), userModel); err != nil {
 		responseRes.ErrorFromGeneric(cxt, err)
 		return
 	}

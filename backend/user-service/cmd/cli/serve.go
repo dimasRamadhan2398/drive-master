@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
+	"time"
 	"user-service/controllers"
 	"user-service/database/seeders"
 	docs "user-service/docs"
@@ -44,7 +44,7 @@ var (
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
-	serveCmd.Flags().StringVarP(&servePort, "port", "p", "8081", "Port to listen on")
+	serveCmd.Flags().StringVarP(&servePort, "port", "p", "8001", "Port to listen on")
 	serveCmd.Flags().StringVar(&serveHost, "host", "0.0.0.0", "Host to bind to")
 	serveCmd.Flags().BoolVar(&serveSwagger, "swagger", true, "Enable Swagger documentation")
 	serveCmd.Flags().BoolVar(&serveMigrate, "migrate", true, "Run database migrations on startup")
@@ -65,6 +65,12 @@ func runServe(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 	defer logger.Sync()
+
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		panic(err)
+	}
+	time.Local = loc
 
 	logger.Info("Starting User Service", logger.LogField("port", loadedConfig.Server.Port), logger.LogField("host", loadedConfig.Database.Host))
 
@@ -120,9 +126,6 @@ func runServe(cmd *cobra.Command, args []string) {
 		Topic:    loadedConfig.Kafka.Topic,
 		Enabled:  loadedConfig.Kafka.Enabled,
 	})
-
-	// TODO: Pass eventPublisher to services that need it
-	_ = eventPublisher
 	// Run migrations if enabled
 	if serveMigrate {
 		runMigrations(db)
@@ -137,18 +140,10 @@ func runServe(cmd *cobra.Command, args []string) {
 	repoRegistry := repositories.NewRepositoryRegistry(db)
 
 	// Initialize services
-	serviceRegistry := services.NewServiceRegistry(repoRegistry)
+	serviceRegistry := services.NewServiceRegistry(repoRegistry, eventPublisher)
 
 	// Initialize controller
-	userController := controllers.NewUserController(
-		serviceRegistry.GetUserService(),
-		serviceRegistry.GetAuthService(),
-		serviceRegistry.GetMemberService(),
-		serviceRegistry.GetInstructorService(),
-		serviceRegistry.GetRoleService(),
-		serviceRegistry.GetEmailService(),
-		serviceRegistry.GetMediaService(),
-	)
+	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
 
 	router := gin.Default()
 
@@ -156,28 +151,36 @@ func runServe(cmd *cobra.Command, args []string) {
 	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.Title = "User Service API"
 	docs.SwaggerInfo.Description = "API documentation for User Service"
-	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%s", servePort)
-	docs.SwaggerInfo.BasePath = "/"
+	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%d", loadedConfig.Server.Port)
+	docs.SwaggerInfo.BasePath = "/api/v1"
 
-	// Setup routes
-	routes.SetupRoutes(router, userController)
-
-	router.Use(middlewares.CORSMiddleware())
-
-	// Health check endpoint
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "healthy",
-			"service": "auth-service",
-		})
-	})
+	// Rate limiter configuration
+	maxRequests := float64(loadedConfig.App.RateLimiterMax)
+	expirationTTL := time.Duration(loadedConfig.App.RateLimiterTime) * time.Second
 
 	// Swagger documentation
 	if serveSwagger {
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 
-	addr := fmt.Sprintf("%s:%s", serveHost, servePort)
+	// Health check endpoint
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "healthy",
+			"service": "user-service",
+		})
+	})
+
+	// Setup routes
+	group := router.Group("/api/v1")
+	route := routes.NewRouteRegistry(controllerRegistry, group)
+	route.Serve()
+
+	// CORS and rate limiter middleware
+	router.Use(middlewares.CORSMiddleware())
+	router.Use(middlewares.RateLimiter(maxRequests, expirationTTL))
+
+	addr := fmt.Sprintf("%s:%d", serveHost, loadedConfig.Server.Port)
 	log.Printf("User Service listening on %s", addr)
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)

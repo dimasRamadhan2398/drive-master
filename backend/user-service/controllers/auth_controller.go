@@ -18,7 +18,6 @@ type AuthController struct {
 	roleService  services.IRoleService
 }
 
-
 type IAuthController interface {
 	Login(ctx *gin.Context)
 	Register(ctx *gin.Context)
@@ -63,35 +62,21 @@ func (a *AuthController) Login(ctx *gin.Context) {
 		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
 	}
 
-	user, err := a.authService.ValidateCredentials(input.Email, input.Password)
+	loginResp, err := a.authService.Login(ctx.Request.Context(), input)
+	if err != nil {
+		responseRes.Error(ctx, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized), "Invalid username or password", "")
+		return
+	}
+
+	// Get user role and add to response
+	role, err := a.roleService.GetRole(loginResp.User.RoleID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
-
-	// Get user role
-	role, err := a.roleService.GetRole(user.RoleID)
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	// Build login response
-	loginResp := dto.LoginResponse{
-		User: dto.GetUserResponse{
-			UserID:      user.ID,
-			Email:       user.Email,
-			Username:    user.Username,
-			PhoneNumber: user.PhoneNumber,
-			Image:       user.Image,
-			DateOfBirth: user.DateOfBirth,
-			Address:     user.Address,
-			RoleID:      user.RoleID,
-			Role: dto.RoleResponse{
-				ID:   role.ID,
-				Name: role.Name,
-			},
-		},
+	loginResp.User.Role = dto.RoleResponse{
+		ID:   role.ID,
+		Name: role.Name,
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Login successful", loginResp)
@@ -102,13 +87,13 @@ func (a *AuthController) Login(ctx *gin.Context) {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param request body dto.CreateUserRequest true "User registration data"
+// @Param request body dto.RegisterRequest true "User registration data"
 // @Success 201 {object} responseRes.Response
 // @Failure 400 {object} responseRes.Response
 // @Failure 409 {object} responseRes.Response
 // @Router /auth/register [post]
 func (a *AuthController) Register(ctx *gin.Context) {
-	var input dto.CreateUserRequest
+	var input dto.RegisterRequest
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
 		return
@@ -120,16 +105,16 @@ func (a *AuthController) Register(ctx *gin.Context) {
 		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
 	}
 
-	user, err := a.userService.CreateUser(input)
+	registerResp, err := a.authService.Register(ctx.Request.Context(), &input)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
 
 	// Send welcome email asynchronously
-	go a.emailService.SendWelcomeEmail(ctx.Request.Context(), user.Email, user.Username)
+	go a.emailService.SendWelcomeEmail(ctx.Request.Context(), input.Email, input.Username)
 
-	responseRes.Success(ctx, http.StatusCreated, "User registered successfully", user)
+	responseRes.Success(ctx, http.StatusCreated, "User registered successfully", registerResp)
 }
 
 // @Summary Confirm Forgot Password
@@ -180,7 +165,7 @@ func (a *AuthController) ResetPassword(ctx *gin.Context) {
 		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
 	}
 
-	user, err := a.userService.GetUserByEmail(input.EmailAddress)
+	user, err := a.userService.GetUserByEmail(ctx.Request.Context(), input.EmailAddress)
 	if err != nil {
 		// Don't reveal if user exists or not
 		responseRes.Success(ctx, http.StatusOK, "If the email exists, a reset link has been sent", nil)
@@ -188,10 +173,9 @@ func (a *AuthController) ResetPassword(ctx *gin.Context) {
 	}
 
 	// TODO: Generate reset token and store it
-	resetToken := "placeholder-token"
 
 	// Send password reset email asynchronously
-	go a.emailService.SendPasswordResetEmail(ctx.Request.Context(), user.Email, resetToken)
+	go a.emailService.SendPasswordResetEmail(ctx.Request.Context(), user.Email, user.Username)
 
 	responseRes.Success(ctx, http.StatusOK, "If the email exists, a reset link has been sent", nil)
 }

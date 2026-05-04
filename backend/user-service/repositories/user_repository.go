@@ -1,7 +1,9 @@
 package repositories
 
 import (
+	"context"
 	"user-service/models"
+	"user-service/models/dto"
 	"user-service/pkg/base"
 
 	"github.com/google/uuid"
@@ -9,22 +11,22 @@ import (
 )
 
 type IUserRepository interface {
-	Create(user *models.User) error
-	FindByID(id uuid.UUID) (*models.User, error)
-	FindByEmail(email string) (*models.User, error)
-	FindByUsername(username string) (*models.User, error)
-	FindByPhoneNumber(phoneNumber string) (*models.User, error)
-	ExistsByEmail(email string) (bool, error)
-	ExistsByUsername(username string) (bool, error)
-	ExistsByPhoneNumber(phoneNumber string) (bool, error)
-	FindByRoleID(roleID uint) ([]models.User, error)
-	FindAll() ([]models.User, error)
-	Update(user *models.User) error
-	Delete(user *models.User) error
-	GetAllWithProfiles() ([]models.User, error)
-	FindByIDWithProfiles(id uuid.UUID) (*models.User, error)
-	CountByRoleID(roleID uint) (int64, error)
-	FindByRoleIDWithPagination(roleID uint, offset, limit int) ([]models.User, error)
+	Create(ctx context.Context, user *dto.RegisterRequest) (*models.User, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*models.User, error)
+	FindByEmail(ctx context.Context, email string) (*models.User, error)
+	FindByUsername(ctx context.Context, username string) (*models.User, error)
+	FindByPhoneNumber(ctx context.Context, phoneNumber string) (*models.User, error)
+	ExistsByEmail(ctx context.Context, email string) (bool, error)
+	ExistsByUsername(ctx context.Context, username string) (bool, error)
+	ExistsByPhoneNumber(ctx context.Context, phoneNumber string) (bool, error)
+	FindByRoleID(ctx context.Context, roleID uint) ([]models.User, error)
+	FindAll(ctx context.Context) ([]models.User, error)
+	Update(ctx context.Context, user *models.User) error
+	Delete(ctx context.Context, user *models.User) error
+	GetAllWithProfiles(ctx context.Context) ([]models.User, error)
+	FindByIDWithProfiles(ctx context.Context, id uuid.UUID) (*models.User, error)
+	CountByRoleID(ctx context.Context, roleID uint) (int64, error)
+	FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int) ([]models.User, error)
 }
 
 type UserRepository struct {
@@ -36,12 +38,28 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{BaseRepository: base.NewBaseRepository(db)}
 }
 
-func (r *UserRepository) Create(user *models.User) error {
-	return r.BaseRepository.Create(user)
+func (r *UserRepository) Create(ctx context.Context, user *dto.RegisterRequest) (*models.User, error) {
+	userModel := models.User{
+		Name:         user.Name,
+		Username:     user.Username,
+		Email:        user.Email,
+		EmailAddress: user.Email,
+		PhoneNumber:  user.PhoneNumber,
+		PasswordHash: user.Password,
+		DateOfBirth:  user.DateOfBirth.Time,
+		RoleID:       user.RoleID,
+		IsActive:     true,
+	}
+
+	if err := r.BaseRepository.Create(&userModel); err != nil {
+		return nil, err
+	}
+
+	return &userModel, nil
 }
 
 
-func (r *UserRepository) FindByID(id uuid.UUID) (*models.User, error) {
+func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var user models.User
 	if err := r.BaseRepository.FindByID(&user, id); err != nil {
 		return nil, err
@@ -49,7 +67,7 @@ func (r *UserRepository) FindByID(id uuid.UUID) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
+func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 	if err := r.BaseRepository.FindOne(&user, "email = ?", email); err != nil {
 		return nil, err
@@ -58,7 +76,7 @@ func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
 }
 
 // FindByUsername finds a user by username
-func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
+func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
 	if err := r.BaseRepository.FindOne(&user, "username = ?", username); err != nil {
 		return nil, err
@@ -67,7 +85,7 @@ func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
 }
 
 // FindByPhoneNumber finds a user by phone number
-func (r *UserRepository) FindByPhoneNumber(phoneNumber string) (*models.User, error) {
+func (r *UserRepository) FindByPhoneNumber(ctx context.Context, phoneNumber string) (*models.User, error) {
 	var user models.User
 	if err := r.BaseRepository.FindOne(&user, "phone_number = ?", phoneNumber); err != nil {
 		return nil, err
@@ -75,7 +93,7 @@ func (r *UserRepository) FindByPhoneNumber(phoneNumber string) (*models.User, er
 	return &user, nil
 }
 
-func (r *UserRepository) GetAllWithProfiles() ([]models.User, error) {
+func (r *UserRepository) GetAllWithProfiles(ctx context.Context) ([]models.User, error) {
 	var users []models.User
 	opts := base.NewQueryOptions().
 		WithPreloads("Role", "MemberProfile", "InstructorProfile")
@@ -86,28 +104,28 @@ func (r *UserRepository) GetAllWithProfiles() ([]models.User, error) {
 }
 
 // FindByIDWithProfiles finds a user by UUID with their Role, MemberProfile, and InstructorProfile
-func (r *UserRepository) FindByIDWithProfiles(id uuid.UUID) (*models.User, error) {
+func (r *UserRepository) FindByIDWithProfiles(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var user models.User
 	if err := r.BaseRepository.FindByIDWithPreload(&user, id, "Role", "MemberProfile", "InstructorProfile"); err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
-func (r *UserRepository) ExistsByEmail(email string) (bool, error) {
+func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	return r.BaseRepository.Exists(&models.User{}, "email = ?", email)
 }
 
 // ExistsByUsername checks if a user exists with the given username
-func (r *UserRepository) ExistsByUsername(username string) (bool, error) {
+func (r *UserRepository) ExistsByUsername(ctx context.Context, username string) (bool, error) {
 	return r.BaseRepository.Exists(&models.User{}, "username = ?", username)
 }
 
 // ExistsByPhoneNumber checks if a user exists with the given phone number
-func (r *UserRepository) ExistsByPhoneNumber(phoneNumber string) (bool, error) {
+func (r *UserRepository) ExistsByPhoneNumber(ctx context.Context, phoneNumber string) (bool, error) {
 	return r.BaseRepository.Exists(&models.User{}, "phone_number = ?", phoneNumber)
 }
 
-func (r *UserRepository) FindByRoleID(roleID uint) ([]models.User, error) {
+func (r *UserRepository) FindByRoleID(ctx context.Context, roleID uint) ([]models.User, error) {
 	var users []models.User
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"role_id": roleID})
@@ -118,7 +136,7 @@ func (r *UserRepository) FindByRoleID(roleID uint) ([]models.User, error) {
 }
 
 // FindAll retrieves all users
-func (r *UserRepository) FindAll() ([]models.User, error) {
+func (r *UserRepository) FindAll(ctx context.Context) ([]models.User, error) {
 	var users []models.User
 	opts := base.NewQueryOptions()
 	if err := r.BaseRepository.FindMany(&models.User{}, &users, opts); err != nil {
@@ -128,17 +146,17 @@ func (r *UserRepository) FindAll() ([]models.User, error) {
 }
 
 // Update saves changes to an existing user
-func (r *UserRepository) Update(user *models.User) error {
+func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
 	return r.BaseRepository.Update(user)
 }
 
 // Delete soft-deletes a user
-func (r *UserRepository) Delete(user *models.User) error {
+func (r *UserRepository) Delete(ctx context.Context, user *models.User) error {
 	return r.BaseRepository.Delete(user)
 }
 
 // CountByRoleID counts the number of users with a specific role ID
-func (r *UserRepository) CountByRoleID(roleID uint) (int64, error) {
+func (r *UserRepository) CountByRoleID(ctx context.Context, roleID uint) (int64, error) {
 	var count int64
 	if err := r.DB.Model(&models.User{}).Where("role_id = ?", roleID).Count(&count).Error; err != nil {
 		return 0, err
@@ -147,7 +165,7 @@ func (r *UserRepository) CountByRoleID(roleID uint) (int64, error) {
 }
 
 // FindByRoleIDWithPagination retrieves users with a specific role ID with pagination
-func (r *UserRepository) FindByRoleIDWithPagination(roleID uint, offset, limit int) ([]models.User, error) {
+func (r *UserRepository) FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int) ([]models.User, error) {
 	var users []models.User
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"role_id": roleID}).

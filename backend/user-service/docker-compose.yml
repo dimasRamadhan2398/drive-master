@@ -16,9 +16,9 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-drivemaster_user_service}
       - CONFIG_PATH=./pkg/config/config.yaml
       - RUN_MIGRATIONS=true
-      - RUN_SEEDERS=false
+      - RUN_SEEDERS=true
     ports:
-      - "8081:8081"
+      - "8001:8001"
     networks:
       - drive_master_network
       - user_service_network

@@ -2,11 +2,13 @@ package services
 
 import (
 	"user-service/pkg/config"
+	pkgKafka "user-service/pkg/kafka"
 	"user-service/repositories"
 )
 
 type Registry struct {
 	repoRegistry *repositories.Registry
+	eventPublisher pkgKafka.IEventPublisher
 }
 
 type IServiceRegistry interface {
@@ -17,10 +19,12 @@ type IServiceRegistry interface {
 	GetRoleService() IRoleService
 	GetEmailService() IMailtrapEmailService
 	GetMediaService() IMediaService
+	GetWorkExperienceService() IWorkExperienceService
+	GetCoverageAreaService() ICoverageAreaService
 }
 
-func NewServiceRegistry(repoRegistry *repositories.Registry) IServiceRegistry {
-	return &Registry{repoRegistry: repoRegistry}
+func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgKafka.IEventPublisher) IServiceRegistry {
+	return &Registry{repoRegistry: repoRegistry, eventPublisher: eventPublisher}
 }
 
 func (r *Registry) GetUserService() IUserService {
@@ -36,7 +40,7 @@ func (r *Registry) GetMemberService() IMemberService {
 }
 
 func (r *Registry) GetInstructorService() IInstructorService {
-	return NewInstructorService(r.repoRegistry.GetInstructor(), r.repoRegistry.GetWorkExperience())
+	return NewInstructorService(r.repoRegistry.GetInstructor())
 }
 
 func (r *Registry) GetRoleService() IRoleService {
@@ -51,4 +55,12 @@ func (r *Registry) GetEmailService() IMailtrapEmailService {
 func (r *Registry) GetMediaService() IMediaService {
 	cfg := config.Get()
 	return NewMediaService(cfg.ImageKit.PrivateKey)
+}
+
+func (r *Registry) GetWorkExperienceService() IWorkExperienceService {
+	return NewWorkExperienceService(r.repoRegistry.GetWorkExperience(), r.repoRegistry.GetInstructor())
+}
+
+func (r *Registry) GetCoverageAreaService() ICoverageAreaService {
+	return NewCoverageAreaService(r.repoRegistry.GetCoverageArea())
 }

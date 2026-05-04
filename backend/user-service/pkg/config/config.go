@@ -144,6 +144,28 @@ func Load(path string) (*Config, error) {
 	viper.SetConfigFile(path)
 	viper.SetConfigType("yaml")
 
+	// Bind environment variables
+	viper.AutomaticEnv()
+
+	// Allow env var overrides for server config
+	_ = viper.BindEnv("server.port", "PORT")
+	_ = viper.BindEnv("server.mode", "SERVER_MODE")
+
+	// Database env overrides
+	_ = viper.BindEnv("database.host", "POSTGRES_HOST")
+	_ = viper.BindEnv("database.port", "POSTGRES_PORT")
+	_ = viper.BindEnv("database.username", "POSTGRES_USER")
+	_ = viper.BindEnv("database.password", "POSTGRES_PASSWORD")
+	_ = viper.BindEnv("database.name", "POSTGRES_DB")
+
+	// Redis env overrides
+	_ = viper.BindEnv("redis.host", "REDIS_HOST")
+	_ = viper.BindEnv("redis.port", "REDIS_PORT")
+	_ = viper.BindEnv("redis.password", "REDIS_PASSWORD")
+
+	// Kafka env overrides
+	_ = viper.BindEnv("kafka.brokers", "KAFKA_BROKERS")
+
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
 	}

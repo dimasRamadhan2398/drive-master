@@ -67,12 +67,12 @@ services:
       kafka:
         condition: service_started
     environment:
-      PORT: 8081
+      PORT: 8001
       POSTGRES_DSN: host=postgres user=app password=app dbname=app port=5432 sslmode=disable
       KAFKA_BROKER: kafka:29092
       KAFKA_TOPIC_USER_CREATED: user.created
     ports:
-      - "8081:8081"
+      - "8001:8001"
 
   core-service:
     build:
@@ -106,7 +106,7 @@ services:
       - core-service
     environment:
       PORT: 8080
-      USER_SERVICE_URL: http://user-service:8081
+      USER_SERVICE_URL: http://user-service:8001
       CORE_SERVICE_URL: http://core-service:8082
     ports:
       - "8080:8080"

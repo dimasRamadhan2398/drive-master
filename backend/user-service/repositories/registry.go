@@ -37,10 +37,16 @@ func (r *Registry) GetWorkExperience() IWorkExperienceRepository {
 	return NewWorkExperienceRepository(r.db)
 }
 
+// GetCoverageArea implements IRepositoryRegistry
+func (r *Registry) GetCoverageArea() ICoverageAreaRepository {
+	return NewCoverageArea(r.db)
+}
+
 type IRepositoryRegistry interface {
 	GetUser() IUserRepository
 	GetMember() IMemberRepository
 	GetInstructor() IInstructorRepository
 	GetRole() IRoleRepository
 	GetWorkExperience() IWorkExperienceRepository
+	GetCoverageArea() ICoverageAreaRepository
 }

@@ -26,10 +26,10 @@ type IInstructorController interface {
 	GetInstructorProfile(ctx *gin.Context)
 	UpdateInstructorProfile(ctx *gin.Context)
 	GetInstructorLists(ctx *gin.Context)
-	AddCoverageArea(ctx *gin.Context)
-	RemoveCoverageArea(ctx *gin.Context)
 	UploadProfilePic(ctx *gin.Context)
 	DeleteProfilePic(ctx *gin.Context)
+	UploadBase64Media(ctx *gin.Context)
+	GetMediaMetadata(ctx *gin.Context)
 }
 
 func NewInstructorController(
@@ -79,7 +79,7 @@ func (c *InstructorController) GetInstructorLists(ctx *gin.Context) {
 		query.Limit = 100
 	}
 
-	result, err := c.userService.GetInstructorsWithPagination(query.Page, query.Limit)
+	result, err := c.userService.GetInstructorsWithPagination(ctx.Request.Context(), query.Page, query.Limit)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -89,7 +89,7 @@ func (c *InstructorController) GetInstructorLists(ctx *gin.Context) {
 }
 
 // @Summary Get Instructor Profile
-// @Description Get instructor profile by user ID with work experiences
+// @Description Get instructor profile by user ID
 // @Tags Instructors
 // @Produce json
 // @Param id path string true "User ID (UUID)"
@@ -110,16 +110,7 @@ func (c *InstructorController) GetInstructorProfile(ctx *gin.Context) {
 		return
 	}
 
-	workExps, err := c.instructorService.GetWorkExperiences(userID)
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	responseRes.Success(ctx, http.StatusOK, "Instructor profile retrieved successfully", gin.H{
-		"profile":         profile,
-		"workExperiences": workExps,
-	})
+	responseRes.Success(ctx, http.StatusOK, "Instructor profile retrieved successfully", profile)
 }
 
 // @Summary Update Instructor Profile
@@ -183,73 +174,6 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Instructor profile updated successfully", profile)
-}
-
-// @Summary Add Coverage Area
-// @Description Add coverage area for an instructor
-// @Tags Instructors
-// @Accept json
-// @Produce json
-// @Param id path string true "User ID (UUID)"
-// @Param request body dto.AddCoverageAreaInput true "Coverage area data"
-// @Success 201 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
-// @Router /instructors/{id}/coverage-areas [post]
-func (c *InstructorController) AddCoverageArea(ctx *gin.Context) {
-	userID, err := getUserIDFromPath(ctx, "id")
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	var input dto.AddCoverageAreaInput
-	if err := ctx.ShouldBindJSON(&input); err != nil {
-		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
-		return
-	}
-
-	// TODO: Look up area ID by name from location service
-	// For now, use a placeholder area ID
-	areaID := uint(1)
-
-	if err := c.instructorService.AddCoverageArea(userID, areaID); err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	responseRes.Success(ctx, http.StatusCreated, "Coverage area added successfully", nil)
-}
-
-// @Summary Remove Coverage Area
-// @Description Remove coverage area for an instructor
-// @Tags Instructors
-// @Produce json
-// @Param id path string true "User ID (UUID)"
-// @Param areaId path int true "Coverage Area ID"
-// @Success 200 {object} responseRes.Response
-// @Failure 400 {object} responseRes.Response
-// @Failure 404 {object} responseRes.Response
-// @Router /instructors/{id}/coverage-areas/{areaId} [delete]
-func (c *InstructorController) RemoveCoverageArea(ctx *gin.Context) {
-	userID, err := getUserIDFromPath(ctx, "id")
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	areaID, err := getUintIDFromPath(ctx, "areaId")
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	if err := c.instructorService.RemoveCoverageArea(userID, areaID); err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	responseRes.Success(ctx, http.StatusOK, "Coverage area removed successfully", nil)
 }
 
 // @Summary Upload Media

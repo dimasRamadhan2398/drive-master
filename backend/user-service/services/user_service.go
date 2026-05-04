@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"user-service/models"
 	"user-service/models/dto"
 	"user-service/pkg/base"
@@ -11,14 +12,14 @@ import (
 )
 
 type IUserService interface {
-	CreateUser(input dto.CreateUserRequest) (*models.User, error)
-	GetUserByID(id uuid.UUID) (*models.User, error)
-	GetUserByIDWithProfiles(id uuid.UUID) (*models.User, error)
-	GetAllUsersWithProfiles() ([]models.User, error)
-	UpdateUser(user *models.User) error
-	DeleteUser(user *models.User) error
-	GetUserByEmail(email string) (*models.User, error)
-	GetInstructorsWithPagination(page, limit int) (*dto.InstructorListResponse, error)
+	CreateUser(ctx context.Context, input dto.CreateUserRequest) (*models.User, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error)
+	GetUserByIDWithProfiles(ctx context.Context, id uuid.UUID) (*models.User, error)
+	GetAllUsersWithProfiles(ctx context.Context) ([]models.User, error)
+	UpdateUser(ctx context.Context, user *models.User) error
+	DeleteUser(ctx context.Context, user *models.User) error
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+	GetInstructorsWithPagination(ctx context.Context, page, limit int) (*dto.InstructorListResponse, error)
 }
 
 type UserService struct {
@@ -30,9 +31,9 @@ func NewUserService(repo repositories.IUserRepository) IUserService {
 	return &UserService{repo: repo, BaseService: base.NewBaseService()}
 }
 
-func (s *UserService) CreateUser(input dto.CreateUserRequest) (*models.User, error) {
+func (s *UserService) CreateUser(ctx context.Context, input dto.CreateUserRequest) (*models.User, error) {
 	// Check if email already exists
-	exists, err := s.repo.ExistsByEmail(input.EmailAddress)
+	exists, err := s.repo.ExistsByEmail(ctx, input.EmailAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +42,7 @@ func (s *UserService) CreateUser(input dto.CreateUserRequest) (*models.User, err
 	}
 
 	// Check if username already exists
-	exists, err = s.repo.ExistsByUsername(input.Username)
+	exists, err = s.repo.ExistsByUsername(ctx, input.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (s *UserService) CreateUser(input dto.CreateUserRequest) (*models.User, err
 	}
 
 	// Check if phone number already exists
-	exists, err = s.repo.ExistsByPhoneNumber(input.PhoneNumber)
+	exists, err = s.repo.ExistsByPhoneNumber(ctx, input.PhoneNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -64,65 +65,55 @@ func (s *UserService) CreateUser(input dto.CreateUserRequest) (*models.User, err
 		return nil, err
 	}
 
-	// Create user
-	user := &models.User{
-		Username:     input.Username,
-		PasswordHash: string(hashedPassword),
-		Email:        input.EmailAddress,
-		EmailAddress: input.EmailAddress,
-		PhoneNumber:  input.PhoneNumber,
-		Image:        input.Image,
-		DateOfBirth:  input.DateOfBirth,
-		RoleID:       input.RoleID,
+	registerReq := &dto.RegisterRequest{
+		Name:        input.Name,
+		Username:    input.Username,
+		Email:       input.EmailAddress,
+		PhoneNumber: input.PhoneNumber,
+		Password:    string(hashedPassword),
+		RoleID:      input.RoleID,
 	}
 
-	// Set optional fields
-	if input.Name != "" {
-		user.Name = input.Name
-	}
-	if input.Address != "" {
-		user.Address = input.Address
-	}
-
-	if err := s.repo.Create(user); err != nil {
+	createdUser, err := s.repo.Create(ctx, registerReq)
+	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return createdUser, nil
 }
 
-func (s *UserService) GetUserByID(id uuid.UUID) (*models.User, error) {
-	return s.repo.FindByID(id)
+func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
+	return s.repo.FindByID(ctx, id)
 }
 
-func (s *UserService) GetUserByIDWithProfiles(id uuid.UUID) (*models.User, error) {
-	return s.repo.FindByIDWithProfiles(id)
+func (s *UserService) GetUserByIDWithProfiles(ctx context.Context, id uuid.UUID) (*models.User, error) {
+	return s.repo.FindByIDWithProfiles(ctx, id)
 }
 
-func (s *UserService) GetAllUsersWithProfiles() ([]models.User, error) {
-	return s.repo.GetAllWithProfiles()
+func (s *UserService) GetAllUsersWithProfiles(ctx context.Context) ([]models.User, error) {
+	return s.repo.GetAllWithProfiles(ctx)
 }
 
-func (s *UserService) UpdateUser(user *models.User) error {
-	return s.repo.Update(user)
+func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
+	return s.repo.Update(ctx, user)
 }
 
-func (s *UserService) DeleteUser(user *models.User) error {
-	return s.repo.Delete(user)
+func (s *UserService) DeleteUser(ctx context.Context, user *models.User) error {
+	return s.repo.Delete(ctx, user)
 }
 
-func (s *UserService) GetUserByEmail(email string) (*models.User, error) {
-	return s.repo.FindByEmail(email)
+func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	return s.repo.FindByEmail(ctx, email)
 }
 
 // GetInstructorsWithPagination returns paginated list of instructors with their profiles
-func (s *UserService) GetInstructorsWithPagination(page, limit int) (*dto.InstructorListResponse, error) {
+func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, limit int) (*dto.InstructorListResponse, error) {
 	// Get role ID for instructor (assuming role with name "instructor" exists)
 	// For now, we'll use a default role ID of 3 (instructor)
 	instructorRoleID := uint(3)
 
 	// Get total count
-	total, err := s.repo.CountByRoleID(instructorRoleID)
+	total, err := s.repo.CountByRoleID(ctx, instructorRoleID)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +126,7 @@ func (s *UserService) GetInstructorsWithPagination(page, limit int) (*dto.Instru
 	}
 
 	// Get paginated users
-	users, err := s.repo.FindByRoleIDWithPagination(instructorRoleID, offset, limit)
+	users, err := s.repo.FindByRoleIDWithPagination(ctx, instructorRoleID, offset, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -168,8 +159,8 @@ func (s *UserService) GetInstructorsWithPagination(page, limit int) (*dto.Instru
 
 // Error definitions
 var (
-	ErrEmailAlreadyExists     = &UserServiceError{Message: "email already exists"}
-	ErrUsernameAlreadyExists  = &UserServiceError{Message: "username already exists"}
+	ErrEmailAlreadyExists       = &UserServiceError{Message: "email already exists"}
+	ErrUsernameAlreadyExists    = &UserServiceError{Message: "username already exists"}
 	ErrPhoneNumberAlreadyExists = &UserServiceError{Message: "phone number already exists"}
 )
 

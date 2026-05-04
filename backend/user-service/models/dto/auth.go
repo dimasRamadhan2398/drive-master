@@ -1,5 +1,38 @@
 package dto
 
+import (
+	"time"
+)
+
+// DateFormat is the custom date format used for DD/MM/YYYY
+const DateFormat = "02/01/2006"
+
+// Date is a custom type for parsing DD/MM/YYYY date format
+type Date struct {
+	time.Time
+}
+
+// UnmarshalJSON parses the date from DD/MM/YYYY format
+func (d *Date) UnmarshalJSON(data []byte) error {
+	// Remove quotes
+	str := string(data)
+	if str == "null" || str == `""` {
+		return nil
+	}
+
+	parsed, err := time.Parse(DateFormat, str)
+	if err != nil {
+		return err
+	}
+	d.Time = parsed
+	return nil
+}
+
+// MarshalJSON returns the date in DD/MM/YYYY format
+func (d Date) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + d.Time.Format(DateFormat) + `"`), nil
+}
+
 type LoginInput struct {
 	// accepts either email or username
 	Email string `json:"email" binding:"required"`
@@ -12,6 +45,21 @@ type LoginResponse struct {
 	RefreshToken string          `json:"refreshToken"`
 	ExpiresIn    int64           `json:"expiresIn"` // unix timestamp
 	User         GetUserResponse `json:"user"`
+}
+
+type RegisterRequest struct {
+	Name            string `json:"name" validate:"required"`
+	Username        string `json:"username" validate:"required"`
+	Password        string `json:"password" validate:"required"`
+	ConfirmPassword string `json:"confirmPassword" validate:"required"`
+	Email           string `json:"email" validate:"required,email"`
+	PhoneNumber     string `json:"phoneNumber" validate:"required"`
+	DateOfBirth     Date   `json:"dateOfBirth" validate:"required"`
+	RoleID          uint   `json:"roleId"`
+}
+
+type RegisterResponse struct {
+	User CreateUserResponse `json:"user"`
 }
 
 // RefreshTokenInput is used for POST /auth/refresh

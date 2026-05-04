@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 	"user-service/pkg/base"
 	"user-service/pkg/config"
 	"user-service/pkg/constants"
@@ -15,6 +16,11 @@ import (
 	"github.com/didip/tollbooth/limiter"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	DefaultMaxRequests        = 100               // requests per window
+	DefaultExpirationTTLSeconds = 60              // 1 minute window
 )
 
 func HandlePanic() gin.HandlerFunc {
@@ -33,8 +39,35 @@ func HandlePanic() gin.HandlerFunc {
 	}
 }
 
-func RateLimiter(lmt *limiter.Limiter) gin.HandlerFunc {
+// RateLimiter creates a rate limiting middleware using tollbooth
+// maxRequests: maximum number of requests allowed per expiration window
+// expirationTTL: how long the rate limit window lasts (e.g., 60 seconds)
+func RateLimiter(maxRequests float64, expirationTTL time.Duration) gin.HandlerFunc {
+	lmt := tollbooth.NewLimiter(maxRequests, &limiter.ExpirableOptions{
+		DefaultExpirationTTL: expirationTTL,
+	})
+	lmt.SetIPLookups([]string{"X-Forwarded-For", "X-Real-IP", "RemoteAddr"})
+
+	// Paths to exclude from rate limiting
+	excludedPaths := []string{"/swagger/", "/health"}
+
 	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+
+		// Skip rate limiting for excluded paths
+		shouldSkip := false
+		for _, excludedPath := range excludedPaths {
+			if strings.HasPrefix(path, excludedPath) {
+				shouldSkip = true
+				break
+			}
+		}
+
+		if shouldSkip {
+			c.Next()
+			return
+		}
+
 		err := tollbooth.LimitByRequest(lmt, c.Writer, c.Request)
 		if err != nil {
 			c.JSON(http.StatusTooManyRequests, base.Response{
@@ -42,6 +75,7 @@ func RateLimiter(lmt *limiter.Limiter) gin.HandlerFunc {
 				Message: apperrors.ErrTooManyRequests.Error(),
 			})
 			c.Abort()
+			return
 		}
 		c.Next()
 	}

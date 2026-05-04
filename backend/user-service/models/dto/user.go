@@ -19,7 +19,7 @@ type CreateUserRequest struct {
 }
 
 type CreateUserResponse struct {
-	UserID      uuid.UUID      `json:"userId"`
+	UserID      uuid.UUID `json:"userId"`
 	Email       string    `json:"email"`
 	Username    string    `json:"username"`
 	PhoneNumber string    `json:"phoneNumber"`

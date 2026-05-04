@@ -8,7 +8,7 @@ import (
 // @title           User Service API
 // @version         1.0
 // @description     API documentation for User Service
-// @host            localhost:8081
+// @host            localhost:8001
 // @BasePath        /api/v1
 
 // @securityDefinitions.apikey BearerAuth

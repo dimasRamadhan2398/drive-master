@@ -69,7 +69,7 @@ EOF
 # Switch to non-root user
 USER appuser
 
-EXPOSE 8081
+EXPOSE 8001
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["/entrypoint.sh"]

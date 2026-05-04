@@ -27,6 +27,7 @@ type User struct {
 	DateOfBirth   time.Time `json:"dateOfBirth"`
 	Address       string    `json:"address" gorm:"size:255"`
 	IsActive      bool      `json:"isActive" gorm:"default:true"`
+	IsVerified    bool      `json:"isVerified" gorm:"default:false"`
 	RoleID        uint      `json:"roleId" gorm:"not null"`
 	Role          Role      `json:"role" gorm:"foreignKey:RoleID"`
 	CreatedAt     time.Time `json:"createdAt"`

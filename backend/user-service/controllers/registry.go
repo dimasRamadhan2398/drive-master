@@ -43,7 +43,17 @@ func (r *ControllerRegistry) GetMemberController() IMemberController {
 
 // GetRoleController implements [IControllerRegistry].
 func (r *ControllerRegistry) GetRoleController() IRoleController {
-	panic("unimplemented")
+	return NewRoleController(r.service.GetRoleService())
+}
+
+// GetRoleController implements [IControllerRegistry].
+func (r *ControllerRegistry) GetWorkExperienceController() IWorkExperienceController {
+	return NewWorkExperienceController(r.service.GetWorkExperienceService())
+}
+
+// GetCoverageAreaController implements [IControllerRegistry].
+func (r *ControllerRegistry) GetCoverageAreaController() ICoverageAreaController {
+	return NewCoverageAreaController(r.service.GetCoverageAreaService())
 }
 
 // IControllerRegistry defines methods for getting controllers
@@ -53,6 +63,8 @@ type IControllerRegistry interface {
 	GetRoleController() IRoleController
 	GetInstructorController() IInstructorController
 	GetMemberController() IMemberController
+	GetWorkExperienceController() IWorkExperienceController
+	GetCoverageAreaController() ICoverageAreaController
 }
 
 // NewControllerRegistry creates a new controller registry

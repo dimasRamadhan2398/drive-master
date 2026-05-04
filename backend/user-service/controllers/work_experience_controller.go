@@ -15,7 +15,7 @@ import (
 )
 
 type WorkExperienceController struct {
-	instructorService services.IInstructorService
+	workExperienceService services.IWorkExperienceService
 }
 
 // @Summary Create Work Experience
@@ -49,7 +49,7 @@ func (w *WorkExperienceController) CreateWorkExperience(ctx *gin.Context) {
 		return
 	}
 
-	result, err := w.instructorService.CreateWorkExperience(instructorID, input)
+	result, err := w.workExperienceService.CreateWorkExperience(instructorID, input)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -75,7 +75,7 @@ func (w *WorkExperienceController) DeleteWorkExperience(ctx *gin.Context) {
 		return
 	}
 
-	err = w.instructorService.DeleteWorkExperience(uint(expIdNum))
+	err = w.workExperienceService.DeleteWorkExperience(uint(expIdNum))
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -106,7 +106,7 @@ func (w *WorkExperienceController) GetWorkExperience(ctx *gin.Context) {
 		return
 	}
 
-	result, err := w.instructorService.GetWorkExperiences(expIdUuid)
+	result, err := w.workExperienceService.GetWorkExperiences(expIdUuid)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -150,7 +150,7 @@ func (w *WorkExperienceController) UpdateWorkExperience(ctx *gin.Context) {
 		Description:  *input.Description,
 	}
 
-	if err := w.instructorService.UpdateWorkExperience(workExp); err != nil {
+	if err := w.workExperienceService.UpdateWorkExperience(workExp); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
@@ -165,8 +165,8 @@ type IWorkExperienceController interface {
 	DeleteWorkExperience(c *gin.Context)
 }
 
-func NewWorkExperienceController(instructorService services.IInstructorService) IWorkExperienceController {
+func NewWorkExperienceController(workExperienceService services.IWorkExperienceService) IWorkExperienceController {
 	return &WorkExperienceController{
-		instructorService: instructorService,
+		workExperienceService: workExperienceService,
 	}
 }

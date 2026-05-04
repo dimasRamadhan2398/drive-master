@@ -22,8 +22,7 @@ func NewInstructorRoute(controller controllers.IControllerRegistry, group *gin.R
 
 func (u *InstructorRoute) Run() {
 	group := u.group.Group("/instructors")
-	group.GET("/login", middlewares.Authenticate(), u.)
-	group.POST("/register", u.controller.GetUserController().Register)
-	group.PUT("/forgot-password",  u.controller.GetUserController().ForgotPassword)
-	group.PUT("/reset-password",  u.controller.GetUserController().ResetPassword)
+	group.GET("/", middlewares.Authenticate(), u.controller.GetInstructorController().GetInstructorLists)
+	group.GET("/:id/profile", u.controller.GetInstructorController().GetInstructorProfile)
+	group.PUT("/:id/profile", u.controller.GetInstructorController().UpdateInstructorProfile)
 }

@@ -1,0 +1,23 @@
+services:
+  booking-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: drive_master_booking_service
+    environment:
+      - POSTGRES_DSN=host=drive_master_postgres user=${POSTGRES_USER:-admin_drive} password=${POSTGRES_PASSWORD:-drivemaster123} dbname=${POSTGRES_DB:-drivemaster_booking_service} port=5432 sslmode=disable
+      - REDIS_ADDR=drive_master_redis:6379
+      - PORT=8082
+    ports:
+      - "8082:8082"
+    networks:
+      - drive_master_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+networks:
+  drive_master_network:
+    external: true

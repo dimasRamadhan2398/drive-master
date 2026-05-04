@@ -16,6 +16,7 @@ type IMailtrapEmailService interface {
 	SendEmail(ctx context.Context, input dto.SendEmailRequest) error
 	SendWelcomeEmail(ctx context.Context, toEmail, username string) error
 	SendPasswordResetEmail(ctx context.Context, toEmail, resetToken string) error
+	SendOTPEmail(ctx context.Context, toEmail, otp string) error
 	SendBookingConfirmationEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, lessonType string) error
 	SendLessonReminderEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, lessonType string) error
 	SendLessonCancellationEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, reason string) error

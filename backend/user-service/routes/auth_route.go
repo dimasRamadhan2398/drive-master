@@ -23,7 +23,7 @@ func (u *AuthRoute) Run() {
 	group := u.group.Group("/auth")
 	group.POST("/login", u.controller.GetAuthController().Login)
 	group.POST("/register", u.controller.GetAuthController().Register)
-	group.PUT("/forgot-password",  u.controller.GetAuthController().ForgotPassword)
 	group.PUT("/reset-password",  u.controller.GetAuthController().ResetPassword)
+	group.PUT("/confirm-reset-password",  u.controller.GetAuthController().ConfirmForgotPassword)
 }
 
