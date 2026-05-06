@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"user-service/models/dto"
+	"user-service/pkg/base"
 	apperrors "user-service/pkg/errors"
+	"user-service/pkg/logger"
 )
 
 type IMailtrapEmailService interface {
@@ -24,6 +26,7 @@ type IMailtrapEmailService interface {
 
 // MailtrapEmailService sends emails via Mailtrap Sending API
 type MailtrapEmailService struct {
+	*base.BaseService
 	apiToken  string
 	fromEmail string
 	fromName  string
@@ -49,9 +52,14 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		return apperrors.ErrBadRequest
 	}
 
+	// Use a dedicated timeout context for email sending (30 seconds)
+	// This prevents "context canceled" errors when caller's context is cancelled
+	emailCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	// Build recipients
 	toRecipients := make([]dto.EmailAddress, len(input.To))
-	for i, _ := range input.To {
+	for i := range input.To {
 		toRecipients[i] = dto.EmailAddress{Email: input.To[i].Email}
 	}
 
@@ -83,13 +91,15 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
+		s.LogError("Failed to format marshal json", logger.LogField("error", err))
 		return apperrors.ErrInternalServer
 	}
 
 	// Create HTTP request
 	url := "https://send.api.mailtrap.io/api/send"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequestWithContext(emailCtx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
 	if err != nil {
+		s.LogError("Failed to create http email request", logger.LogField("error", err))
 		return apperrors.ErrInternalServer
 	}
 
@@ -100,12 +110,19 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 	// Send request
 	resp, err := s.client.Do(req)
 	if err != nil {
+		// Check if context was cancelled/timeout
+		if emailCtx.Err() == context.DeadlineExceeded {
+			s.LogError("Email request timed out", logger.LogField("error", err))
+		} else {
+			s.LogError("Failed to send email client", logger.LogField("error", err))
+		}
 		return apperrors.ErrInternalServer
 	}
 	defer resp.Body.Close()
 
 	// Check response
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		s.LogError("Failed to check response", logger.LogField("status", resp.StatusCode))
 		return apperrors.ErrInternalServer
 	}
 
@@ -144,13 +161,20 @@ The Team`, username)
 </body>
 </html>`, username)
 
-	return s.SendEmail(ctx, dto.SendEmailRequest{
+	err := s.SendEmail(ctx, dto.SendEmailRequest{
 		To:      []dto.EmailAddress{{Email: toEmail}},
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
 		Tags:    []string{"welcome", "onboarding"},
 	})
+
+	if err != nil {
+		s.LogError("Failed to send welcome email", logger.LogField("error", err))
+		return err
+	}
+
+	return nil
 }
 
 // SendPasswordResetEmail sends a password reset email
@@ -183,13 +207,20 @@ The Team`, resetLink)
 </body>
 </html>`, resetLink)
 
-	return s.SendEmail(ctx, dto.SendEmailRequest{
+	err := s.SendEmail(ctx, dto.SendEmailRequest{
 		To:      []dto.EmailAddress{{Email: toEmail}},
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
 		Tags:    []string{"password-reset", "security"},
 	})
+
+	if err != nil {
+		s.LogError("Failed to send password reset email", logger.LogField("error", err))
+		return err
+	}
+
+	return nil
 }
 
 // SendOTPEmail sends an OTP verification email
@@ -222,13 +253,20 @@ The Team`, otp)
 </body>
 </html>`, otp)
 
-	return s.SendEmail(ctx, dto.SendEmailRequest{
+	err := s.SendEmail(ctx, dto.SendEmailRequest{
 		To:      []dto.EmailAddress{{Email: toEmail}},
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
 		Tags:    []string{"otp", "email-verification"},
 	})
+
+	if(err != nil) {
+		s.LogError("Failed to send OTP email", logger.LogField("error", err))
+		return err
+	}
+
+	return nil
 }
 
 // SendBookingConfirmationEmail sends a booking confirmation email
@@ -267,13 +305,20 @@ The Team`, studentName, instructorName, dateTime, lessonType)
 </body>
 </html>`, studentName, instructorName, dateTime, lessonType)
 
-	return s.SendEmail(ctx, dto.SendEmailRequest{
+	err := s.SendEmail(ctx, dto.SendEmailRequest{
 		To:      []dto.EmailAddress{{Email: toEmail}},
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
 		Tags:    []string{"booking", "confirmation"},
 	})
+
+	if err != nil {
+		s.LogError("Failed to send booking confirmation email", logger.LogField("error", err))
+		return err
+	}
+
+	return nil
 }
 
 // SendLessonReminderEmail sends a reminder email before a lesson
@@ -311,13 +356,20 @@ The Team`, studentName, instructorName, dateTime, lessonType)
 </body>
 </html>`, studentName, instructorName, dateTime, lessonType)
 
-	return s.SendEmail(ctx, dto.SendEmailRequest{
+	err := s.SendEmail(ctx, dto.SendEmailRequest{
 		To:      []dto.EmailAddress{{Email: toEmail}},
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
 		Tags:    []string{"reminder", "lesson"},
 	})
+
+	if err != nil {
+		s.LogError("Failed to send lesson reminder email", logger.LogField("error", err))
+		return err
+	}
+
+	return nil
 }
 
 // SendLessonCancellationEmail sends a lesson cancellation notification
@@ -356,11 +408,18 @@ The Team`, studentName, instructorName, dateTime, reason)
 </body>
 </html>`, studentName, instructorName, dateTime, reason)
 
-	return s.SendEmail(ctx, dto.SendEmailRequest{
+	err := s.SendEmail(ctx, dto.SendEmailRequest{
 		To:      []dto.EmailAddress{{Email: toEmail}},
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
 		Tags:    []string{"cancellation", "lesson"},
 	})
+
+	if err != nil {
+		s.LogError("Failed to send lesson cancellation email", logger.LogField("error", err))
+		return err
+	}
+
+	return nil
 }

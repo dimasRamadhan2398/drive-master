@@ -29,11 +29,11 @@ func NewRoleRepository(db *gorm.DB) IRoleRepository {
 // FindRoleByID implements IRoleRepository
 func (r *RoleRepository) FindRoleByID(ctx context.Context, id uint) (*models.Role, error) {
 	var role models.Role
-	if err := r.GetDB().First(&role, id).Error; err != nil {
+	if err := r.BaseRepository.FindByID(&role, id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrNotFound
 		}
-		return nil, err
+		return nil, apperrors.TranslateDBError(err)
 	}
 	return &role, nil
 }
@@ -41,20 +41,17 @@ func (r *RoleRepository) FindRoleByID(ctx context.Context, id uint) (*models.Rol
 // FindAllRoles implements IRoleRepository
 func (r *RoleRepository) FindAllRoles(ctx context.Context) ([]models.Role, error) {
 	var roles []models.Role
-	if err := r.GetDB().Find(&roles).Error; err != nil {
-		return nil, err
+	if err := r.BaseRepository.FindMany(&models.Role{}, &roles, base.NewQueryOptions()); err != nil {
+		return nil, apperrors.TranslateDBError(err)
 	}
 	return roles, nil
 }
 
 // UpdateUserRole implements IRoleRepository
 func (r *RoleRepository) UpdateUserRole(ctx context.Context, userID uuid.UUID, roleID uint) error {
-	result := r.GetDB().Model(&models.User{}).Where("id = ?", userID).Update("role_id", roleID)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return apperrors.ErrNotFound
+	err := r.BaseRepository.FindMany(&models.Role{}, nil, base.NewQueryOptions().WithWhere(map[string]any{"id": roleID}))
+	if err != nil {
+		return apperrors.TranslateDBError(err)
 	}
 	return nil
 }

@@ -1,12 +1,14 @@
 package response
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
 	apperrors "user-service/pkg/errors"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type Response struct {
@@ -56,7 +58,11 @@ func ErrorFromAppError(c *gin.Context, appErr *apperrors.AppError) {
 
 // ErrorFromGeneric sends an error response from a generic error
 func ErrorFromGeneric(c *gin.Context, err error) {
-	// Check if it's an AppError
+	if err == nil {
+		return
+	}
+
+	// Check if it's an AppError directly
 	if appErr, ok := err.(*apperrors.AppError); ok {
 		c.JSON(appErr.StatusCode, Response{
 			Success: false,
@@ -68,7 +74,38 @@ func ErrorFromGeneric(c *gin.Context, err error) {
 		return
 	}
 
-	// Fallback for non-AppError
+	// Try to unwrap the error to check for AppError
+	unwrappedErr := err
+	for {
+		unwrappedErr = errors.Unwrap(unwrappedErr)
+		if unwrappedErr == nil {
+			break
+		}
+		if appErr, ok := unwrappedErr.(*apperrors.AppError); ok {
+			c.JSON(appErr.StatusCode, Response{
+				Success: false,
+				Error: &ErrorDetail{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
+			})
+			return
+		}
+	}
+
+	// Check for GORM errors
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusNotFound, Response{
+			Success: false,
+			Error: &ErrorDetail{
+				Code:    "NOT_FOUND",
+				Message: "Resource not found",
+			},
+		})
+		return
+	}
+
+	// Fallback for unknown errors
 	c.JSON(http.StatusInternalServerError, Response{
 		Success: false,
 		Error: &ErrorDetail{

@@ -50,12 +50,12 @@ func (r *Registry) GetRoleService() IRoleService {
 }
 
 func (r *Registry) GetAuthService() IAuthService {
-	return NewAuthService(r.repoRegistry.GetUser(), r.redisClient, r.GetEmailService(), r.GetRoleService())
+	return NewAuthService(r.repoRegistry.GetUser(), r.redisClient, r.GetEmailService(), r.GetMemberService(), r.GetInstructorService(), r.GetRoleService())
 }
 
 func (r *Registry) GetEmailService() IMailtrapEmailService {
 	cfg := config.Get()
-	return NewMailtrapEmailService(cfg.Email.Token, cfg.Email.FromEmail, cfg.Email.AppName)
+	return NewMailtrapEmailService(cfg.Email.APIKey, cfg.Email.FromEmail, cfg.Email.AppName)
 }
 
 func (r *Registry) GetMediaService() IMediaService {

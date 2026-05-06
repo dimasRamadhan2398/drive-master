@@ -26,7 +26,7 @@ type UserSessionRepository struct {
 	*base.BaseRepository // no separate db field, use r.DB from BaseRepository
 }
 
-func NewUserSessionRepository(db *gorm.DB) *UserSessionRepository {
+func NewUserSessionRepository(db *gorm.DB) IUserSessionRepository {
 	return &UserSessionRepository{
 		BaseRepository: base.NewBaseRepository(db),
 	}

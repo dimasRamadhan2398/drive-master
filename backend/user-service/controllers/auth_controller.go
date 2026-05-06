@@ -106,7 +106,7 @@ func (a *AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	registerResp, err := a.authService.Register(ctx.Request.Context(), &input)
+	registerResp, err := a.authService.Register(ctx, &input)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return

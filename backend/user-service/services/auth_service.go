@@ -45,11 +45,14 @@ type AuthService struct {
 	roleService   IRoleService
 }
 
-func NewAuthService(userRepo repositories.IUserRepository, redisCli *redis.Client, emailService IMailtrapEmailService, roleService IRoleService) *AuthService {
+func NewAuthService(userRepo repositories.IUserRepository, redisCli *redis.Client, emailService IMailtrapEmailService, memberService IMemberService, instructorService IInstructorService, roleService IRoleService) IAuthService {
 	return &AuthService{
-		userRepo:     userRepo,
-		redisCli:     redisCli,
-		emailService: emailService,
+		userRepo:        userRepo,
+		redisCli:        redisCli,
+		emailService:    emailService,
+		memberService:   memberService,
+		instructorService: instructorService,
+		roleService:     roleService,
 	}
 }
 
@@ -147,11 +150,13 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 
 	roles, err := s.roleService.FindAllRoles(ctx)
 	if err != nil {
+		s.LogError("error happening role repo:", logger.LogField("error", err));
 		return nil, err
 	}
 
 	user, err := s.userRepo.Create(ctx, registerReq)
 	if err != nil {
+		s.LogError("error happening user repo:", logger.LogField("error", err));
 		return nil, err
 	}
 
@@ -159,9 +164,13 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	for _, role := range roles {
 		if role.ID == req.RoleID {
 			if(strings.ToLower(role.Name) == "member") {
-				s.memberService.CreateMemberProfile(ctx, user.ID)
+				if _, err := s.memberService.CreateMemberProfile(ctx, user.ID); err != nil {
+					return nil, fmt.Errorf("failed to create instructor profile: %w", err)
+				}
 			}else if(strings.ToLower(role.Name) == "instructor") {
-				s.instructorService.CreateInstructorProfile(ctx, user.ID)
+				if _, err := s.instructorService.CreateInstructorProfile(ctx, user.ID); err != nil {
+					return nil, fmt.Errorf("failed to create instructor profile: %w", err)
+				}
 			}
 			break
 		}
