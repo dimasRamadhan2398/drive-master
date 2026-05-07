@@ -55,7 +55,7 @@ func (r *Registry) GetAuthService() IAuthService {
 
 func (r *Registry) GetEmailService() IMailtrapEmailService {
 	cfg := config.Get()
-	return NewMailtrapEmailService(cfg.Email.APIKey, cfg.Email.FromEmail, cfg.Email.AppName)
+	return NewMailtrapEmailService(cfg.Email.Host, cfg.Email.Port, cfg.Email.User, cfg.Email.Password, cfg.Email.FromEmail, cfg.Email.FromName)
 }
 
 func (r *Registry) GetMediaService() IMediaService {

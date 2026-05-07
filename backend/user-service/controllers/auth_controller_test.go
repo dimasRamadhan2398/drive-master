@@ -233,14 +233,14 @@ func TestRegister_Success(t *testing.T) {
 	}`
 
 // {
-		// "name": "Rizqiko Harliano",
-		// "username": "Zeta72",
-		// "password": "kepetokan",
-		// "confirmPassword": "kepetokan",
-		// "email": "muhammadrizqiko@gmail.com",
-		// "phoneNumber": "081312168535",
-		// "dateOfBirth": "1999-08-25",
-		// "roleId": 3
+// 		"name": "Rizqiko Harliano",
+// 		"username": "Zeta72",
+// 		"password": "kepetokan",
+// 		"confirmPassword": "kepetokan",
+// 		"email": "muhammadrizqiko@gmail.com",
+// 		"phoneNumber": "081312168535",
+// 		"dateOfBirth": "1999-08-25",
+// 		"roleId": 3
 // }
 
 	mockAuthService.On("Register", mock.Anything, mock.AnythingOfType("*dto.RegisterRequest")).Return(&dto.RegisterResponse{

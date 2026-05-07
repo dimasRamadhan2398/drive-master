@@ -112,7 +112,7 @@ func (a *AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	go a.emailService.SendWelcomeEmail(ctx.Request.Context(), input.Email, input.Username)
+	// go a.emailService.SendWelcomeEmail(ctx.Request.Context(), input.Email, input.Username)
 
 	responseRes.Success(ctx, http.StatusCreated, "User registered successfully. Please check your email for OTP verification", registerResp)
 }

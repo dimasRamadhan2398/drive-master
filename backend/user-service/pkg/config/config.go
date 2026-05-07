@@ -36,11 +36,16 @@ type DatabaseConfig struct {
 }
 
 type EmailConfig struct {
-	Token     string `yaml:"token"`
-	APIKey    string `yaml:"api_key"`
-	FromEmail string `yaml:"from_email"`
-	AppName   string `yaml:"app_name"`
-	Enabled   bool   `yaml:"enabled"`
+	Token     string `mapstructure:"token" yaml:"token"`
+	APIKey    string `mapstructure:"api_key" yaml:"api_key"`
+	FromEmail string `mapstructure:"from_email" yaml:"from_email"`
+	FromName  string `mapstructure:"from_name" yaml:"from_name"`
+	AppName   string `mapstructure:"app_name" yaml:"app_name"`
+	Enabled   bool   `mapstructure:"enabled" yaml:"enabled"`
+	Host      string `mapstructure:"smtp_host" yaml:"smtp_host"`
+	Port      int    `mapstructure:"smtp_port" yaml:"smtp_port"`
+	User      string `mapstructure:"smtp_username" yaml:"smtp_username"`
+	Password  string `mapstructure:"smtp_password" yaml:"smtp_password"`
 }
 
 type RedisConfig struct {
@@ -138,11 +143,20 @@ func setDefaults(){
 	viper.SetDefault("app.signature_key", "")
 	viper.SetDefault("app.rate_limiter_max", 100)
 	viper.SetDefault("app.rate_limiter_time", 1)
+
+	viper.SetDefault("email.smtp_host",     "sandbox.smtp.mailtrap.io")
+	viper.SetDefault("email.smtp_port",     587)
+	viper.SetDefault("email.smtp_user",     "49bbd2a554bd3e")
+	viper.SetDefault("email.smtp_password", "4f4bc1b03a1d70")
+	viper.SetDefault("email.from_name",     "Drive Master Indonesia")
 }
 
 func Load(path string) (*Config, error) {
 	viper.SetConfigFile(path)
 	viper.SetConfigType("yaml")
+
+	// Set defaults FIRST (before reading config)
+	setDefaults()
 
 	// Bind environment variables
 	viper.AutomaticEnv()
@@ -166,10 +180,18 @@ func Load(path string) (*Config, error) {
 	// Kafka env overrides
 	_ = viper.BindEnv("kafka.brokers", "KAFKA_BROKERS")
 
+	// ImageKit env overrides
+	_ = viper.BindEnv("imagekit.id", "IMAGEKIT_ID")
+	_ = viper.BindEnv("imagekit.private_key", "IMAGEKIT_PRIVATE_KEY")
+	_ = viper.BindEnv("imagekit.url_endpoint", "IMAGEKIT_URL_ENDPOINT")
+
+	// JWT env overrides
+	_ = viper.BindEnv("jwt.secret", "JWT_SECRET")
+	_ = viper.BindEnv("jwt.expiry_hour", "JWT_EXPIRY_HOUR")
+
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
 	}
-	setDefaults()
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {

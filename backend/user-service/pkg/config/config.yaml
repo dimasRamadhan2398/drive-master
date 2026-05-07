@@ -47,7 +47,14 @@ app:
   rate_limiter_time: 1
 
 email:
-  api_key: re_HhxUfk1S_32urxpbqaA1KrimBdH3Pa65w
-  from_email: "Admin Drive Master Indonesia"
+  api_key: a46d0971bbad11c555a678664db94e65
+  from_email: "noreply@ai-forlearning.com"
   app_name: user_service
   enabled: true
+  smtp_host: sandbox.smtp.mailtrap.io
+  smtp_port: 587
+  smtp_username: 49bbd2a554bd3e
+  smtp_password: 4f4bc1b03a1d70
+  # smtp_username: noreply@ai-forlearning.com
+  # smtp_password: Admindrivemaster123!
+  from_name: "Drive Master Indonesia"
