@@ -53,7 +53,7 @@ cd /app
 # Run migrations if enabled
 if [ "${RUN_MIGRATIONS}" != "false" ]; then
     echo "Running database migrations..."
-    ./user-service migrate || true
+    ./user-service migrate --reset || true
 fi
 
 # Run seeders if enabled

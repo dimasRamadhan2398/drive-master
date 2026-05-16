@@ -14,6 +14,7 @@ import (
 
 type IRoleRepository interface {
 	FindRoleByID(ctx context.Context, id uint) (*models.Role, error)
+	FindRoleByName(ctx context.Context, name string) (*models.Role, error)
 	FindAllRoles(ctx context.Context) ([]models.Role, error)
 	UpdateUserRole(ctx context.Context, userID uuid.UUID, roleID uint) error
 }
@@ -38,6 +39,21 @@ func (r *RoleRepository) FindRoleByID(ctx context.Context, id uint) (*models.Rol
 	return &role, nil
 }
 
+func (r *RoleRepository) FindRoleByName(ctx context.Context, name string) (*models.Role, error) {
+	var roles []models.Role
+	if err := r.BaseRepository.FindMany(&models.Role{}, &roles, base.NewQueryOptions().WithWhere(map[string]any{"name": name}).WithPagination(0, 1)); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.ErrNotFound
+		}
+		return nil, apperrors.TranslateDBError(err)
+	}
+	if len(roles) == 0 {
+		return nil, apperrors.ErrNotFound
+	}
+	return &roles[0], nil
+}
+
+
 // FindAllRoles implements IRoleRepository
 func (r *RoleRepository) FindAllRoles(ctx context.Context) ([]models.Role, error) {
 	var roles []models.Role
@@ -49,9 +65,13 @@ func (r *RoleRepository) FindAllRoles(ctx context.Context) ([]models.Role, error
 
 // UpdateUserRole implements IRoleRepository
 func (r *RoleRepository) UpdateUserRole(ctx context.Context, userID uuid.UUID, roleID uint) error {
-	err := r.BaseRepository.FindMany(&models.Role{}, nil, base.NewQueryOptions().WithWhere(map[string]any{"id": roleID}))
+	var roles []models.Role
+	err := r.BaseRepository.FindMany(&models.Role{}, &roles, base.NewQueryOptions().WithWhere(map[string]any{"id": roleID}).WithPagination(0, 1))
 	if err != nil {
 		return apperrors.TranslateDBError(err)
+	}
+	if len(roles) == 0 {
+		return apperrors.ErrNotFound
 	}
 	return nil
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-definePageMeta({ layout: 'dashboard' })
+definePageMeta({ layout: 'dashboard', middleware: ['auth'] })
 
 // Onboarding modal state - would check if user has completed profile
 const showOnboarding = ref(false)

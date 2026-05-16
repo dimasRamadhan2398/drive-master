@@ -1,12 +1,14 @@
 package constants
 
 const (
-	Admin       = "admin"
+	Viewer       = "viewer"
 	Member      = "member"
 	Instructor  = "instructor"
+	SuperAdmin = "super_admin"
 
 	// Role IDs (used for role transitions)
-	RoleIDAdmin       = 1
+	RoleIDViewer       = 1
 	RoleIDMember      = 2
 	RoleIDInstructor = 3
+	RoleIDSuperAdmin = 4
 )

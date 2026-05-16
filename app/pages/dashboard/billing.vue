@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 
 
-definePageMeta({ layout: 'dashboard' })
+definePageMeta({ layout: 'dashboard', middleware: ['auth'] })
 
 // Billing data
 const userData = {

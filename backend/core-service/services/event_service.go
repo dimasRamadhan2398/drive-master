@@ -9,12 +9,16 @@ import (
 	"core-service/repositories"
 )
 
-type EventService struct {
-	eventRepo *repositories.EventRepository
-	cacheRepo *repositories.CacheRepository
+type IEventService interface {
+	HandleUserCreated(ctx context.Context, event models.UserCreatedEvent) error
 }
 
-func NewEventService(eventRepo *repositories.EventRepository, cacheRepo *repositories.CacheRepository) *EventService {
+type EventService struct {
+	eventRepo repositories.IEventRepository
+	cacheRepo repositories.ICacheRepository
+}
+
+func NewEventService(eventRepo repositories.IEventRepository, cacheRepo repositories.ICacheRepository) *EventService {
 	return &EventService{
 		eventRepo: eventRepo,
 		cacheRepo: cacheRepo,

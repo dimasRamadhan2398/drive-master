@@ -9,7 +9,7 @@ services:
     ports:
       - "2181:2181"
     volumes:
-      - zookeeper_data:/var/lib/zookeeper/data
+      - drive_master_zookeeper_data:/var/lib/zookeeper/data
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "2181"]
       interval: 10s
@@ -39,7 +39,7 @@ services:
       KAFKA_LOG_SEGMENT_BYTES: 1073741824
       KAFKA_NUM_PARTITIONS: 3
     volumes:
-      - kafka_data:/var/lib/kafka/data
+      - drive_master_kafka_data:/var/lib/kafka/data
     healthcheck:
       test:
         [
@@ -79,7 +79,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - drive_master_redis_data:/data
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-drivemaster123}
     healthcheck:
@@ -102,7 +102,7 @@ services:
     networks:
       - drive_master_network
 
-  # PostgreSQL Database
+  # PostgreSQL Database (shared for all services)
   postgres:
     image: postgres:16-alpine
     container_name: drive_master_postgres
@@ -111,15 +111,11 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin_drive}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-drivemaster123}
-      POSTGRES_DB: ${POSTGRES_DB:-drivemaster_user_service}
     volumes:
-      - drivemaster_pg_data:/var/lib/postgresql/data
+      - drive_master_postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-admin_drive} -d ${POSTGRES_DB:-drivemaster_user_service}",
-        ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin_drive}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -127,11 +123,10 @@ services:
       - drive_master_network
 
 volumes:
-  redis_data:
-  zookeeper_data:
-  kafka_data:
-  postgres_data:
-  drivemaster_pg_data:
+  drive_master_redis_data:
+  drive_master_zookeeper_data:
+  drive_master_kafka_data:
+  drive_master_postgres_data:
 
 networks:
   drive_master_network:

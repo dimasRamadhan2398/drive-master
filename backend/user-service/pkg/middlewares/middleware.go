@@ -11,10 +11,12 @@ import (
 	"user-service/pkg/config"
 	"user-service/pkg/constants"
 	apperrors "user-service/pkg/errors"
+	"user-service/pkg/response"
 
 	"github.com/didip/tollbooth"
 	"github.com/didip/tollbooth/limiter"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,6 +24,83 @@ const (
 	DefaultMaxRequests        = 100               // requests per window
 	DefaultExpirationTTLSeconds = 60              // 1 minute window
 )
+
+type Claims struct {
+	UserID   string   `json:"user_id"`
+	Username string   `json:"username"`
+	Roles    []string `json:"roles"`
+	jwt.RegisteredClaims
+}
+
+// AuthMiddleware validates JWT tokens
+
+type IAuthMiddleware interface {
+	Authenticate() gin.HandlerFunc
+    AuthenticateWithoutToken() gin.HandlerFunc
+}
+
+type AuthMiddleware struct {
+	secret string
+}
+
+func NewAuthMiddleware(secret string) IAuthMiddleware {
+	return &AuthMiddleware{
+		secret: secret,
+	}
+}
+
+
+// Authenticate validates both the API key signature and Bearer token
+func (m *AuthMiddleware) Authenticate() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.GetHeader(constants.Authorization)
+		if token == "" {
+			responseUnauthorized(c, apperrors.ErrUnauthorized.Error())
+			return
+		}
+
+		err := validateAPIKey(c)
+		if err != nil {
+			responseUnauthorized(c, err.Error())
+			return
+		}
+
+		tokenString := extractBearerToken(token)
+		if tokenString == "" {
+			responseUnauthorized(c, apperrors.ErrUnauthorized.Error())
+			return
+		}
+
+		// Store token in context for downstream handlers
+		// Parse and validate token
+		newToken, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(m.secret), nil
+		})
+		// jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// 	return []byte(m.secret), nil
+		// })
+
+		if err != nil || !newToken.Valid {
+			response.Unauthorized(c, "Invalid or expired token")
+			c.Abort()
+			return
+		}
+		c.Set(constants.Token, tokenString)
+		c.Next()
+	}
+}
+
+// AuthenticateWithoutToken only validates the API key signature (no Bearer token required)
+func (m *AuthMiddleware) AuthenticateWithoutToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		err := validateAPIKey(c)
+		if err != nil {
+			responseUnauthorized(c, err.Error())
+			return
+		}
+		c.Next()
+	}
+}
 
 func HandlePanic() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -86,7 +165,8 @@ func extractBearerToken(token string) string {
 	if len(arrayToken) == 2 {
 		return arrayToken[1]
 	}
-	return ""
+	// If no "Bearer " prefix, return the token as-is
+	return token
 }
 
 func responseUnauthorized(c *gin.Context, message string) {
@@ -106,6 +186,10 @@ func responseError(c *gin.Context, statusCode int, message string) {
 }
 
 func validateAPIKey(c *gin.Context) error {
+	cfg := config.Get()
+	if cfg.App.AppEnv == "local" || cfg.App.AppEnv == "development" {
+		return nil
+	}
 	apiKey := c.GetHeader(constants.XApiKey)
 	requestAt := c.GetHeader(constants.XRequestAt)
 	serviceName := c.GetHeader(constants.XServiceName)
@@ -114,7 +198,6 @@ func validateAPIKey(c *gin.Context) error {
 		return apperrors.ErrUnauthorized
 	}
 
-	cfg := config.Get()
 	validateKey := fmt.Sprintf("%s:%s:%s", serviceName, cfg.App.SignatureKey, requestAt)
 	hash := sha256.New()
 	hash.Write([]byte(validateKey))
@@ -133,43 +216,4 @@ func contains(roles []string, role string) bool {
 		}
 	}
 	return false
-}
-
-// Authenticate validates both the API key signature and Bearer token
-func Authenticate() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		token := c.GetHeader(constants.Authorization)
-		if token == "" {
-			responseUnauthorized(c, apperrors.ErrUnauthorized.Error())
-			return
-		}
-
-		err := validateAPIKey(c)
-		if err != nil {
-			responseUnauthorized(c, err.Error())
-			return
-		}
-
-		tokenString := extractBearerToken(token)
-		if tokenString == "" {
-			responseUnauthorized(c, apperrors.ErrUnauthorized.Error())
-			return
-		}
-
-		// Store token in context for downstream handlers
-		c.Set(constants.Token, tokenString)
-		c.Next()
-	}
-}
-
-// AuthenticateWithoutToken only validates the API key signature (no Bearer token required)
-func AuthenticateWithoutToken() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		err := validateAPIKey(c)
-		if err != nil {
-			responseUnauthorized(c, err.Error())
-			return
-		}
-		c.Next()
-	}
 }

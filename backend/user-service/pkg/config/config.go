@@ -1,6 +1,8 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/spf13/viper"
 )
 
@@ -17,22 +19,22 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port        int `yaml:"port"`
-	Mode        string `yaml:"mode"`
-	ReadTimeout int `yaml:"read_timeout"`
+	Port        int    `mapstructure:"port" yaml:"port"`
+	Mode        string `mapstructure:"mode" yaml:"mode"`
+	ReadTimeout int    `mapstructure:"read_timeout" yaml:"read_timeout"`
 }
 
 type DatabaseConfig struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	Name     string `yaml:"name"`
-	SSLMode  string `yaml:"sslmode"`
-	MaxOpenConnections    int    `json:"maxOpenConnections"`
-	MaxLifeTimeConnection int    `json:"maxLifeTimeConnection"`
-	MaxIdleConnections    int    `json:"maxIdleConnections"`
-	MaxIdleTime           int    `json:"maxIdleTime"`
+	Host               string `mapstructure:"host" yaml:"host"`
+	Port               int    `mapstructure:"port" yaml:"port"`
+	Username           string `mapstructure:"username" yaml:"username"`
+	Password           string `mapstructure:"password" yaml:"password"`
+	Name               string `mapstructure:"name" yaml:"name"`
+	SSLMode            string `mapstructure:"sslmode" yaml:"sslmode"`
+	MaxOpenConnections int    `mapstructure:"max_open_connections" yaml:"maxOpenConnections"`
+	MaxLifeTimeConnection int `mapstructure:"max_life_time_connection" yaml:"maxLifeTimeConnection"`
+	MaxIdleConnections int    `mapstructure:"max_idle_connections" yaml:"maxIdleConnections"`
+	MaxIdleTime        int    `mapstructure:"max_idle_time" yaml:"maxIdleTime"`
 }
 
 type EmailConfig struct {
@@ -49,41 +51,42 @@ type EmailConfig struct {
 }
 
 type RedisConfig struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Password string `yaml:"password"`
-	DB       int    `yaml:"db"`
+	Host     string `mapstructure:"host" yaml:"host"`
+	Port     int    `mapstructure:"port" yaml:"port"`
+	Password string `mapstructure:"password" yaml:"password"`
+	DB       int    `mapstructure:"db" yaml:"db"`
 }
 
 type ImageKitConfig struct {
-	ID          string `yaml:"id"`
-	PrivateKey  string `yaml:"private_key"`
-	URLEndpoint string `yaml:"url_endpoint"`
+	ID          string `mapstructure:"id" yaml:"id"`
+	PrivateKey  string `mapstructure:"private_key" yaml:"private_key"`
+	URLEndpoint string `mapstructure:"url_endpoint" yaml:"url_endpoint"`
 }
 
 type JWTConfig struct {
-	Secret      string `yaml:"secret"`
-	ExpiryHour  int    `yaml:"expiry_hour"`
+	Secret                 string `mapstructure:"secret" yaml:"secret"`
+	ExpiryHour             int    `mapstructure:"expiry_hour" yaml:"expiry_hour"`
+	RefreshTokenExpiryDays  int    `mapstructure:"refresh_token_expiry_days" yaml:"refresh_token_expiry_days"`
 }
 
 type LogConfig struct {
-	Level  string `yaml:"level"`
-	Format string `yaml:"format"`
+	Level  string `mapstructure:"level" yaml:"level"`
+	Format string `mapstructure:"format" yaml:"format"`
 }
 
 type KafkaConfig struct {
-	Enabled     bool     `yaml:"enabled"`
-	Brokers     []string `yaml:"brokers"`
-	Topic       string   `yaml:"topic"`
-	ServiceName string   `yaml:"service_name"`
+	Enabled     bool     `mapstructure:"enabled" yaml:"enabled"`
+	Brokers     []string `mapstructure:"brokers" yaml:"brokers"`
+	Topic       string   `mapstructure:"topic" yaml:"topic"`
+	ServiceName string   `mapstructure:"service_name" yaml:"service_name"`
 }
 
 type AppConfig struct {
-	AppName        string `yaml:"app_name"`
-	AppEnv        string `yaml:"app_env"`
-	SignatureKey  string `yaml:"signature_key"`
-	RateLimiterMax int    `yaml:"rate_limiter_max"`
-	RateLimiterTime int   `yaml:"rate_limiter_time"`
+	AppName        string `mapstructure:"app_name" yaml:"app_name"`
+	AppEnv         string `mapstructure:"app_env" yaml:"app_env"`
+	SignatureKey   string `mapstructure:"signature_key" yaml:"signature_key"`
+	RateLimiterMax int    `mapstructure:"rate_limiter_max" yaml:"rate_limiter_max"`
+	RateLimiterTime int   `mapstructure:"rate_limiter_time" yaml:"rate_limiter_time"`
 }
 
 var AppCfg *Config
@@ -126,6 +129,7 @@ func setDefaults(){
 	// JWT
 	viper.SetDefault("jwt.secret", "")
 	viper.SetDefault("jwt.expiry_hour", 24)
+	viper.SetDefault("jwt.refresh_token_expiry_days", 7)
 
 	// Log
 	viper.SetDefault("log.level", "info")
@@ -151,15 +155,18 @@ func setDefaults(){
 	viper.SetDefault("email.from_name",     "Drive Master Indonesia")
 }
 
+
 func Load(path string) (*Config, error) {
+	// IMPORTANT: Set defaults FIRST before reading config file
+	setDefaults()
+
+	// Set config file path
 	viper.SetConfigFile(path)
 	viper.SetConfigType("yaml")
 
-	// Set defaults FIRST (before reading config)
-	setDefaults()
-
 	// Bind environment variables
 	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// Allow env var overrides for server config
 	_ = viper.BindEnv("server.port", "PORT")
@@ -188,6 +195,11 @@ func Load(path string) (*Config, error) {
 	// JWT env overrides
 	_ = viper.BindEnv("jwt.secret", "JWT_SECRET")
 	_ = viper.BindEnv("jwt.expiry_hour", "JWT_EXPIRY_HOUR")
+	_ = viper.BindEnv("jwt.refresh_token_expiry_days", "JWT_REFRESH_TOKEN_EXPIRY_DAYS")
+
+	// App env overrides
+	_ = viper.BindEnv("app.app_env", "APP_ENV")
+	_ = viper.BindEnv("app.signature_key", "APP_SIGNATURE_KEY")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

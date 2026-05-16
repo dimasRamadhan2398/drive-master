@@ -43,6 +43,8 @@ type IRepositoryRegistry interface {
 	GetRegion() IRegionRepository
 	GetCache() ICacheRepository
 	GetEvent() IEventRepository
+	GetCar() ICarRepository
+	GetPackage() IPackageRepository
 }
 
 // GetRegion returns the region repository
@@ -61,4 +63,14 @@ func (r *Registry) GetCache() ICacheRepository {
 // GetEvent returns the event repository
 func (r *Registry) GetEvent() IEventRepository {
 	return NewEventRepository(r.db)
+}
+
+// GetCar returns the car repository
+func (r *Registry) GetCar() ICarRepository {
+	return NewCarRepository(r.baseRepo)
+}
+
+// GetPackage returns the package repository
+func (r *Registry) GetPackage() IPackageRepository {
+	return NewPackageRepository(r.baseRepo)
 }

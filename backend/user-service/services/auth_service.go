@@ -25,6 +25,7 @@ import (
 
 type IAuthService interface {
 	Login(ctx context.Context, req *dto.LoginInput) (*dto.LoginResponse, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*dto.LoginResponse, error)
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error)
 	ChangePassword(ctx context.Context, userID uuid.UUID, oldPassword, newPassword string) error
 	HashPassword(password string) (string, error)
@@ -83,8 +84,12 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginInput) (*dto.Logi
 	// 	return nil, apperrors.ErrEmailNotVerified
 	// }
 
+	cfg := config.Get()
+
+	// s.LogError("error happening auth service:", logger.LogField("exipry hour", cfg.JWT.ExpiryHour));
+	// s.LogError("error happening auth service:", logger.LogField("exipry days", cfg.JWT.RefreshTokenExpiryDays));
 	// Set expiration time
-	expirationTime := time.Now().Add(time.Duration(config.AppCfg.JWT.ExpiryHour) * time.Minute).Unix()
+	expirationTime := time.Now().Add(time.Duration(cfg.JWT.ExpiryHour) * time.Hour).Unix()
 
 	// Build user response
 	userResp := dto.GetUserResponse{
@@ -108,16 +113,100 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginInput) (*dto.Logi
 
 	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(config.AppCfg.JWT.Secret))
+	tokenString, err := token.SignedString([]byte(cfg.JWT.Secret))
 	if err != nil {
+		return nil, apperrors.ErrInternalServer
+	}
+
+	// Generate refresh token
+	refreshToken := generateRefreshToken()
+	refreshKey := fmt.Sprintf("refresh_token:%s", refreshToken)
+	expiryDuration := time.Duration(cfg.JWT.RefreshTokenExpiryDays) * 24 * time.Hour
+	if err := s.redisCli.Client.Set(ctx, refreshKey, user.ID.String(), expiryDuration).Err(); err != nil {
 		return nil, apperrors.ErrInternalServer
 	}
 
 	return &dto.LoginResponse{
 		User:         userResp,
 		AccessToken:  tokenString,
+		RefreshToken: refreshToken,
 		ExpiresIn:    expirationTime,
 	}, nil
+}
+
+// RefreshToken validates refresh token and returns new access + refresh tokens
+func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.LoginResponse, error) {
+	cfg := config.Get()
+
+	// Get stored refresh token from Redis
+	refreshKey := fmt.Sprintf("refresh_token:%s", refreshToken)
+	storedUserID, err := s.redisCli.Client.Get(ctx, refreshKey).Result()
+	if err != nil {
+		return nil, apperrors.ErrUnauthorized
+	}
+
+	// Parse stored user ID
+	userID, err := uuid.Parse(storedUserID)
+	if err != nil {
+		return nil, apperrors.ErrUnauthorized
+	}
+
+	// Find user by ID
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, apperrors.ErrUserNotFound
+	}
+
+	// Generate new access token
+	accessExpirationTime := time.Now().Add(time.Duration(cfg.JWT.ExpiryHour) * 3600).Unix()
+	userResp := dto.GetUserResponse{
+		UserID:      user.ID,
+		Email:       user.Email,
+		Username:    user.Username,
+		PhoneNumber: user.PhoneNumber,
+		Image:       user.Image,
+		DateOfBirth: user.DateOfBirth,
+		Address:     user.Address,
+		RoleID:      user.RoleID,
+	}
+
+	claims := &Claims{
+		User: &userResp,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Unix(accessExpirationTime, 0)),
+		},
+	}
+
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	accessTokenString, err := accessToken.SignedString([]byte(cfg.JWT.Secret))
+	if err != nil {
+		return nil, apperrors.ErrInternalServer
+	}
+
+	// Delete old refresh token
+	s.redisCli.Client.Del(ctx, refreshKey)
+
+	// Generate new refresh token
+	newRefreshToken := generateRefreshToken()
+	refreshKey = fmt.Sprintf("refresh_token:%s", newRefreshToken)
+	expiryDuration := time.Duration(cfg.JWT.RefreshTokenExpiryDays) * 24 * time.Hour
+	if err := s.redisCli.Client.Set(ctx, refreshKey, user.ID.String(), expiryDuration).Err(); err != nil {
+		return nil, apperrors.ErrInternalServer
+	}
+
+	return &dto.LoginResponse{
+		User:         userResp,
+		AccessToken:  accessTokenString,
+		RefreshToken: newRefreshToken,
+		ExpiresIn:    accessExpirationTime,
+	}, nil
+}
+
+// generateRefreshToken generates a cryptographically secure random token
+func generateRefreshToken() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
 }
 
 func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error) {
@@ -165,7 +254,7 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		if role.ID == req.RoleID {
 			if(strings.ToLower(role.Name) == "member") {
 				if _, err := s.memberService.CreateMemberProfile(ctx, user.ID); err != nil {
-					return nil, fmt.Errorf("failed to create instructor profile: %w", err)
+					return nil, fmt.Errorf("failed to create member profile: %w", err)
 				}
 			}else if(strings.ToLower(role.Name) == "instructor") {
 				if _, err := s.instructorService.CreateInstructorProfile(ctx, user.ID); err != nil {
@@ -182,6 +271,29 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		}
 	}()
 
+	cfg := config.Get()
+	accessExpirationTime := time.Now().Add(time.Duration(cfg.JWT.ExpiryHour) * time.Hour).Unix()
+	claims := &Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Unix(accessExpirationTime, 0)),
+		},
+	}
+
+	// Generate JWT token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(cfg.JWT.Secret))
+	if err != nil {
+		return nil, apperrors.ErrInternalServer
+	}
+
+	// Generate refresh token
+	refreshToken := generateRefreshToken()
+	refreshKey := fmt.Sprintf("refresh_token:%s", refreshToken)
+	expiryDuration := time.Duration(cfg.JWT.RefreshTokenExpiryDays) * 24 * time.Hour
+	if err := s.redisCli.Client.Set(ctx, refreshKey, user.ID.String(), expiryDuration).Err(); err != nil {
+		return nil, apperrors.ErrInternalServer
+	}
+
 	return &dto.RegisterResponse{
 		User: dto.CreateUserResponse{
 			UserID:      user.ID,
@@ -190,6 +302,9 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 			PhoneNumber: user.PhoneNumber,
 			RoleID:      user.RoleID,
 		},
+		AccessToken:  tokenString,
+		RefreshToken: refreshToken,
+		ExpiresIn:    accessExpirationTime,
 	}, nil
 }
 

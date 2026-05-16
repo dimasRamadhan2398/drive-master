@@ -2,7 +2,7 @@
 import { useToast } from '@nuxt/ui/runtime/composables/index.js'
 import { ref } from 'vue'
 
-definePageMeta({ layout: 'dashboard' })
+definePageMeta({ layout: 'dashboard', middleware: ['auth'] })
 
 const toast = useToast()
 

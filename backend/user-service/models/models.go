@@ -16,28 +16,29 @@ type Role struct {
 
 // User represents the users table
 type User struct {
-	ID            uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	Name          string    `json:"name" gorm:"size:120;not null"`
-	Username      string    `json:"username" gorm:"size:120;not null;uniqueIndex"`
-	PasswordHash  string    `json:"-" gorm:"size:255;not null"`
-	Email         string    `json:"email" gorm:"size:190;not null;uniqueIndex"`
-	EmailAddress  string    `json:"emailAddress" gorm:"size:190;not null;uniqueIndex"`
-	PhoneNumber   string    `json:"phoneNumber" gorm:"size:20"`
-	Image         string    `json:"image" gorm:"size:500"`
-	DateOfBirth   time.Time `json:"dateOfBirth" gorm:"type:date"`
-	Address       string    `json:"address" gorm:"size:255"`
-	IsActive      bool      `json:"isActive" gorm:"default:true"`
-	IsVerified    bool      `json:"isVerified" gorm:"default:false"`
-	RoleID        uint      `json:"roleId" gorm:"not null"`
-	Role          Role      `json:"role" gorm:"foreignKey:RoleID"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
+	ID            uuid.UUID        `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	Name          string           `json:"name" gorm:"size:120;not null"`
+	Username      string           `json:"username" gorm:"size:120;not null;uniqueIndex"`
+	PasswordHash  string           `json:"-" gorm:"size:255;not null"`
+	Email         string           `json:"email" gorm:"size:190;not null;uniqueIndex"`
+	EmailAddress  string           `json:"emailAddress" gorm:"size:190;not null;uniqueIndex"`
+	PhoneNumber   string           `json:"phoneNumber" gorm:"size:20"`
+	Image         string           `json:"image" gorm:"size:500"`
+	DateOfBirth   time.Time        `json:"dateOfBirth" gorm:"type:date"`
+	Address       string           `json:"address" gorm:"size:255"`
+	IsActive      bool             `json:"isActive" gorm:"default:true"`
+	IsVerified    bool             `json:"isVerified" gorm:"default:false"`
+	RoleID        uint             `json:"roleId" gorm:"not null"`
+	Role          Role             `json:"role" gorm:"foreignKey:RoleID"`
+	MemberProfile *MemberProfile    `json:"memberProfile,omitempty" gorm:"foreignKey:UserID"`
+	InstructorProfile *InstructorProfile `json:"instructorProfile,omitempty" gorm:"foreignKey:UserID"`
+	CreatedAt     time.Time        `json:"createdAt"`
+	UpdatedAt     time.Time        `json:"updatedAt"`
 }
 
 type UserSession struct {
 	ID           uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID       uuid.UUID  `json:"userId" gorm:"type:uuid;not null;index"`
-	User         User       `json:"-" gorm:"foreignKey:UserID"`
 	RefreshToken string     `json:"-" gorm:"size:500;not null;uniqueIndex"`
 	DeviceInfo   string     `json:"deviceInfo" gorm:"size:255"`
 	IPAddress    string     `json:"ipAddress" gorm:"size:50"`
@@ -54,7 +55,6 @@ func (s *UserSession) IsExpired() bool {
 type MemberProfile struct {
 	ID                uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID            uuid.UUID `json:"userId" gorm:"type:uuid;not null;uniqueIndex"`
-	User              User      `json:"user" gorm:"foreignKey:UserID"`
 	SessionsCompleted int       `json:"sessionsCompleted" gorm:"default:0"`
 	TrainingTime      int       `json:"trainingTime" gorm:"default:0"` // in minutes
 	AverageRating     float64   `json:"averageRating" gorm:"default:0"`
@@ -67,7 +67,6 @@ type MemberProfile struct {
 type InstructorProfile struct {
 	ID                       uuid.UUID        `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID                   uuid.UUID        `json:"userId" gorm:"type:uuid;not null;uniqueIndex"`
-	User                     User             `json:"user" gorm:"foreignKey:UserID"`
 	LicenseNumber            string           `json:"licenseNumber" gorm:"size:50"`
 	BNSPCertificateNumber    string           `json:"bnspCertificateNumber" gorm:"size:50"`
 	YearsOfExperience        int              `json:"yearsOfExperience" gorm:"default:0"`
@@ -85,17 +84,16 @@ type InstructorProfile struct {
 
 // WorkExperience represents the work_experiences table
 type WorkExperience struct {
-	ID           uint             `json:"id" gorm:"primaryKey"`
-	InstructorID uuid.UUID        `json:"instructorId" gorm:"type:uuid;not null"`
-	Instructor   InstructorProfile `json:"instructor" gorm:"foreignKey:InstructorID"`
-	CompanyName  string           `json:"companyName" gorm:"size:255;not null"`
-	Role         string           `json:"role" gorm:"size:100;not null"`
-	StartDate    time.Time        `json:"startDate" gorm:"not null"`
-	EndDate      *time.Time       `json:"endDate"`
-	Description  string           `json:"description" gorm:"type:text"`
-	IsVerified   bool             `json:"isVerified" gorm:"default:false"`
-	CreatedAt    time.Time        `json:"createdAt"`
-	UpdatedAt    time.Time        `json:"updatedAt"`
+	ID           uint       `json:"id" gorm:"primaryKey"`
+	InstructorID uuid.UUID  `json:"instructorId" gorm:"type:uuid;not null"`
+	CompanyName  string     `json:"companyName" gorm:"size:255;not null"`
+	Role         string     `json:"role" gorm:"size:100;not null"`
+	StartDate    time.Time  `json:"startDate" gorm:"not null"`
+	EndDate      *time.Time `json:"endDate"`
+	Description  string     `json:"description" gorm:"type:text"`
+	IsVerified   bool       `json:"isVerified" gorm:"default:false"`
+	CreatedAt    time.Time  `json:"createdAt"`
+	UpdatedAt    time.Time  `json:"updatedAt"`
 }
 
 // InstructorArea represents the instructor_areas table

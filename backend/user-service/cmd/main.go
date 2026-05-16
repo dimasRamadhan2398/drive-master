@@ -14,6 +14,17 @@ import (
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+// @securityDefinitions.apikey XApiKey
+// @in header
+// @name x-api-key
+
+// @securityDefinitions.apikey XRequestAt
+// @in header
+// @name x-request-at
+
+// @securityDefinitions.apikey XServiceName
+// @in header
+// @name x-service-name
 func main() {
     if err := cli.Execute(); err != nil {
         os.Exit(1)

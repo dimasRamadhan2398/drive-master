@@ -2,7 +2,8 @@
 import { ref, computed } from 'vue'
 
 definePageMeta({
-  layout: 'blank'
+  layout: 'blank',
+  middleware: ['guest']
 })
 
 const router = useRouter()

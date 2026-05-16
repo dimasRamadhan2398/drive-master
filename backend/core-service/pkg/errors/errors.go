@@ -72,4 +72,5 @@ var (
 	ErrDuplicateEntry     = New("DUPLICATE_ENTRY", "Duplicate entry", http.StatusConflict)
 	ErrGenerateOTP        = New("FAILED_TO_GENERATE_OTP", "Error generating OTP", http.StatusInternalServerError)
 	ErrAccountLocked      = New("ACCOUNT_LOCKED", "Account locked", http.StatusUnauthorized)
+	ErrIDNotFound 		  = New("ID_NOT_FOUND", "Resource not found. Please write the correct ID", http.StatusNotFound)
 )

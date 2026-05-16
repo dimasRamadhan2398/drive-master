@@ -4,7 +4,8 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { computed, reactive, ref, onMounted } from 'vue'
 
 definePageMeta({
-  layout: 'blank'
+  layout: 'blank',
+  middleware: ['guest']
 })
 
 const route = useRoute()

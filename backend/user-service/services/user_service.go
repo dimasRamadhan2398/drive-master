@@ -24,11 +24,12 @@ type IUserService interface {
 
 type UserService struct {
 	*base.BaseService
+	roleRepo repositories.IRoleRepository
 	repo repositories.IUserRepository
 }
 
-func NewUserService(repo repositories.IUserRepository) IUserService {
-	return &UserService{repo: repo, BaseService: base.NewBaseService()}
+func NewUserService(repo repositories.IUserRepository, roleRepo repositories.IRoleRepository) IUserService {
+	return &UserService{repo: repo, roleRepo: roleRepo, BaseService: base.NewBaseService()}
 }
 
 func (s *UserService) CreateUser(ctx context.Context, input dto.CreateUserRequest) (*models.User, error) {
@@ -108,12 +109,12 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models
 
 // GetInstructorsWithPagination returns paginated list of instructors with their profiles
 func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, limit int) (*dto.InstructorListResponse, error) {
-	// Get role ID for instructor (assuming role with name "instructor" exists)
-	// For now, we'll use a default role ID of 3 (instructor)
-	instructorRoleID := uint(3)
+	roleModel, err := s.roleRepo.FindRoleByName(ctx, "instructor")
+	if err != nil {
+		return nil, err
+	}
 
-	// Get total count
-	total, err := s.repo.CountByRoleID(ctx, instructorRoleID)
+	total, err := s.repo.CountByRoleID(ctx, roleModel.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +127,7 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 	}
 
 	// Get paginated users
-	users, err := s.repo.FindByRoleIDWithPagination(ctx, instructorRoleID, offset, limit)
+	users, err := s.repo.FindByRoleIDWithPagination(ctx, roleModel.ID, offset, limit)
 	if err != nil {
 		return nil, err
 	}

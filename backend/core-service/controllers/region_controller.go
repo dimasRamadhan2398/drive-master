@@ -34,7 +34,7 @@ func NewRegionController(regionService services.IRegionService) IRegionControlle
 // @Success 200 {object} response.Response
 // @Router /api/v1/regions/provinces [get]
 func (c *RegionController) GetAllProvinces(ctx *gin.Context) {
-	provinces, err := c.regionService.GetAllProvinces()
+	provinces, err := c.regionService.GetAllProvinces(ctx.Request.Context())
 	if err != nil {
 		response.InternalServerError(ctx, "Failed to fetch provinces")
 		return
@@ -58,7 +58,7 @@ func (c *RegionController) GetRegenciesByProvince(ctx *gin.Context) {
 		return
 	}
 
-	regencies, err := c.regionService.GetRegenciesByProvince(province)
+	regencies, err := c.regionService.GetRegenciesByProvince(ctx.Request.Context(), province)
 	if err != nil {
 		response.InternalServerError(ctx, "Failed to fetch regencies")
 		return
@@ -90,7 +90,7 @@ func (c *RegionController) GetDistrictsByRegency(ctx *gin.Context) {
 		return
 	}
 
-	districts, err := c.regionService.GetDistrictsByRegency(province, regency)
+	districts, err := c.regionService.GetDistrictsByRegency(ctx.Request.Context(), province, regency)
 	if err != nil {
 		response.InternalServerError(ctx, "Failed to fetch districts")
 		return

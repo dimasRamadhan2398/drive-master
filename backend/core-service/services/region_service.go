@@ -1,18 +1,19 @@
 package services
 
 import (
+	"context"
 	"core-service/models"
 	"core-service/repositories"
 )
 
-type RegionService struct {
-	regionRepo repositories.IRegionRepository
+type IRegionService interface {
+	GetAllProvinces(ctx context.Context) ([]models.Province, error)
+	GetRegenciesByProvince(ctx context.Context, province string) ([]models.Regency, error)
+	GetDistrictsByRegency(ctx context.Context, province, regency string) ([]models.District, error)
 }
 
-type IRegionService interface {
-	GetAllProvinces() ([]models.Province, error)
-	GetRegenciesByProvince(province string) ([]models.Regency, error)
-	GetDistrictsByRegency(province, regency string) ([]models.District, error)
+type RegionService struct {
+	regionRepo repositories.IRegionRepository
 }
 
 func NewRegionService(regionRepo repositories.IRegionRepository) *RegionService {
@@ -21,14 +22,14 @@ func NewRegionService(regionRepo repositories.IRegionRepository) *RegionService 
 	}
 }
 
-func (s *RegionService) GetAllProvinces() ([]models.Province, error) {
+func (s *RegionService) GetAllProvinces(ctx context.Context) ([]models.Province, error) {
 	return s.regionRepo.GetProvinces()
 }
 
-func (s *RegionService) GetRegenciesByProvince(province string) ([]models.Regency, error) {
+func (s *RegionService) GetRegenciesByProvince(ctx context.Context, province string) ([]models.Regency, error) {
 	return s.regionRepo.GetRegencies(province)
 }
 
-func (s *RegionService) GetDistrictsByRegency(province, regency string) ([]models.District, error) {
+func (s *RegionService) GetDistrictsByRegency(ctx context.Context, province, regency string) ([]models.District, error) {
 	return s.regionRepo.GetDistricts(province, regency)
 }

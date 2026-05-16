@@ -61,6 +61,9 @@ type RegisterRequest struct {
 
 type RegisterResponse struct {
 	User CreateUserResponse `json:"user"`
+	AccessToken  string     `json:"accessToken"`
+	RefreshToken string     `json:"refreshToken"`
+	ExpiresIn    int64      `json:"expiresIn"`
 }
 
 // RefreshTokenInput is used for POST /auth/refresh

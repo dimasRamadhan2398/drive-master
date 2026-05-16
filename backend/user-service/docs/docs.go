@@ -1493,6 +1493,21 @@ const docTemplate = `{
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
+        },
+        "XApiKey": {
+            "type": "apiKey",
+            "name": "x-api-key",
+            "in": "header"
+        },
+        "XRequestAt": {
+            "type": "apiKey",
+            "name": "x-request-at",
+            "in": "header"
+        },
+        "XServiceName": {
+            "type": "apiKey",
+            "name": "x-service-name",
+            "in": "header"
         }
     }
 }`

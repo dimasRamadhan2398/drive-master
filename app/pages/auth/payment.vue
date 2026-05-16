@@ -2,7 +2,8 @@
 import { ref } from 'vue'
 
 definePageMeta({
-  layout: 'blank'
+  layout: 'blank',
+  middleware: ['guest']
 })
 
 const route = useRoute()

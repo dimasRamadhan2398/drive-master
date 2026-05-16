@@ -1,11 +1,17 @@
 package middlewares
 
 import (
+	"core-service/pkg/base"
+	"core-service/pkg/config"
+	"core-service/pkg/constants"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
+
+	apperrors "core-service/pkg/errors"
 
 	"github.com/didip/tollbooth"
 	"github.com/didip/tollbooth/limiter"
@@ -29,8 +35,32 @@ func HandlePanic() gin.HandlerFunc {
 	}
 }
 
-func RateLimiter(lmt *limiter.Limiter) gin.HandlerFunc {
+func RateLimiter(maxRequests float64, expirationTTL time.Duration) gin.HandlerFunc {
+	lmt := tollbooth.NewLimiter(maxRequests, &limiter.ExpirableOptions{
+		DefaultExpirationTTL: expirationTTL,
+	})
+	lmt.SetIPLookups([]string{"X-Forwarded-For", "X-Real-IP", "RemoteAddr"})
+
+	// Paths to exclude from rate limiting
+	excludedPaths := []string{"/swagger/", "/health"}
+
 	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+
+		// Skip rate limiting for excluded paths
+		shouldSkip := false
+		for _, excludedPath := range excludedPaths {
+			if strings.HasPrefix(path, excludedPath) {
+				shouldSkip = true
+				break
+			}
+		}
+
+		if shouldSkip {
+			c.Next()
+			return
+		}
+
 		err := tollbooth.LimitByRequest(lmt, c.Writer, c.Request)
 		if err != nil {
 			c.JSON(http.StatusTooManyRequests, base.Response{
@@ -38,6 +68,7 @@ func RateLimiter(lmt *limiter.Limiter) gin.HandlerFunc {
 				Message: apperrors.ErrTooManyRequests.Error(),
 			})
 			c.Abort()
+			return
 		}
 		c.Next()
 	}

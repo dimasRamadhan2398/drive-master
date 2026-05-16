@@ -10,19 +10,20 @@ import (
 type InstructorRoute struct {
 	controller controllers.IControllerRegistry
 	group      *gin.RouterGroup
+	authMiddleware middlewares.IAuthMiddleware
 }
 
 type IInstructorRoute interface {
 	Run()
 }
 
-func NewInstructorRoute(controller controllers.IControllerRegistry, group *gin.RouterGroup) IInstructorRoute {
-	return &InstructorRoute{controller: controller, group: group}
+func NewInstructorRoute(controller controllers.IControllerRegistry, group *gin.RouterGroup, authMiddleware middlewares.IAuthMiddleware) IInstructorRoute {
+	return &InstructorRoute{controller: controller, group: group, authMiddleware: authMiddleware}
 }
 
 func (u *InstructorRoute) Run() {
 	group := u.group.Group("/instructors")
-	group.GET("/", middlewares.Authenticate(), u.controller.GetInstructorController().GetInstructorLists)
+	group.GET("/", u.controller.GetInstructorController().GetInstructorLists)
 	group.GET("/:id/profile", u.controller.GetInstructorController().GetInstructorProfile)
-	group.PUT("/:id/profile", u.controller.GetInstructorController().UpdateInstructorProfile)
+	group.PUT("/:id/profile", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().UpdateInstructorProfile)
 }

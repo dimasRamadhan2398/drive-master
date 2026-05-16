@@ -24,8 +24,18 @@ func NewRouteRegistry(controller controllers.IControllerRegistry, group *gin.Rou
 
 func (r *Registry) Serve() {
 	r.GetRegionRoute().Run()
+	r.GetCarRoute().Run()
+	r.GetPackageRoute().Run()
 }
 
 func (r *Registry) GetRegionRoute() IRegionRoute {
 	return NewRegionRoute(r.controller, r.group)
+}
+
+func (r *Registry) GetCarRoute() ICarRoute {
+	return NewCarRoute(r.controller, r.group)
+}
+
+func (r *Registry) GetPackageRoute() IPackageRoute {
+	return NewPackageRoute(r.controller, r.group)
 }

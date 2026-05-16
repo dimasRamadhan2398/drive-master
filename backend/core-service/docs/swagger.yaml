@@ -1,0 +1,440 @@
+basePath: /api/v1
+definitions:
+  core-service_models_dto.CreateBenefitRequest:
+    properties:
+      description:
+        type: string
+      icon:
+        type: string
+      sortOrder:
+        type: integer
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  core-service_models_dto.CreateCarRequest:
+    properties:
+      brand:
+        type: string
+      color:
+        type: string
+      imageUrl:
+        type: string
+      licensePlate:
+        type: string
+      model:
+        type: string
+      notes:
+        type: string
+      transmission:
+        $ref: '#/definitions/models.TransmissionType'
+      year:
+        type: integer
+    required:
+    - brand
+    - licensePlate
+    - model
+    - year
+    type: object
+  core-service_models_dto.CreatePackageRequest:
+    properties:
+      benefits:
+        items:
+          $ref: '#/definitions/core-service_models_dto.CreateBenefitRequest'
+        type: array
+      description:
+        type: string
+      discountPrice:
+        type: number
+      durationMinutes:
+        type: integer
+      imageUrl:
+        type: string
+      name:
+        type: string
+      packageType:
+        $ref: '#/definitions/models.PackageType'
+      price:
+        type: number
+      totalSessions:
+        type: integer
+    required:
+    - name
+    - packageType
+    - price
+    type: object
+  core-service_models_dto.UpdateCarRequest:
+    properties:
+      brand:
+        type: string
+      color:
+        type: string
+      imageUrl:
+        type: string
+      mileage:
+        type: integer
+      model:
+        type: string
+      notes:
+        type: string
+      status:
+        $ref: '#/definitions/models.CarStatus'
+      transmission:
+        $ref: '#/definitions/models.TransmissionType'
+      year:
+        type: integer
+    type: object
+  core-service_models_dto.UpdatePackageRequest:
+    properties:
+      description:
+        type: string
+      discountPrice:
+        type: number
+      durationMinutes:
+        type: integer
+      imageUrl:
+        type: string
+      name:
+        type: string
+      packageType:
+        $ref: '#/definitions/models.PackageType'
+      price:
+        type: number
+      status:
+        $ref: '#/definitions/models.PackageStatus'
+      totalSessions:
+        type: integer
+    type: object
+  core-service_pkg_response.ErrorDetail:
+    properties:
+      code:
+        type: string
+      details:
+        type: string
+      message:
+        type: string
+    type: object
+  core-service_pkg_response.Response:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/core-service_pkg_response.ErrorDetail'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  models.CarStatus:
+    enum:
+    - available
+    - in_use
+    - maintenance
+    type: string
+    x-enum-varnames:
+    - CarStatusAvailable
+    - CarStatusInUse
+    - CarStatusMaintenance
+  models.PackageStatus:
+    enum:
+    - active
+    - inactive
+    type: string
+    x-enum-varnames:
+    - PackageStatusActive
+    - PackageStatusInactive
+  models.PackageType:
+    enum:
+    - bronze
+    - silver
+    - gold
+    - platinum
+    type: string
+    x-enum-varnames:
+    - PackageTypeBronze
+    - PackageTypeSilver
+    - PackageTypeGold
+    - PackageTypePlatinum
+  models.TransmissionType:
+    enum:
+    - manual
+    - automatic
+    type: string
+    x-enum-varnames:
+    - TransmissionManual
+    - TransmissionAutomatic
+host: localhost:8001
+info:
+  contact: {}
+  description: API documentation for Core Service - manages cars, packages, and regions
+  title: Core Service API
+  version: "1.0"
+paths:
+  /api/v1/cars:
+    get:
+      description: Retrieves all cars
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Get all cars
+      tags:
+      - Cars
+    post:
+      consumes:
+      - application/json
+      description: Creates a new car
+      parameters:
+      - description: Car data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/core-service_models_dto.CreateCarRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Create a new car
+      tags:
+      - Cars
+  /api/v1/cars/{id}:
+    delete:
+      description: Deletes a car by ID
+      parameters:
+      - description: Car ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Delete a car
+      tags:
+      - Cars
+    get:
+      description: Retrieves a specific car by ID
+      parameters:
+      - description: Car ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Get car by ID
+      tags:
+      - Cars
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing car
+      parameters:
+      - description: Car ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Car data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/core-service_models_dto.UpdateCarRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Update a car
+      tags:
+      - Cars
+  /api/v1/packages:
+    get:
+      description: Retrieves all packages
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Get all packages
+      tags:
+      - Packages
+    post:
+      consumes:
+      - application/json
+      description: Creates a new package
+      parameters:
+      - description: Package data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/core-service_models_dto.CreatePackageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Create a new package
+      tags:
+      - Packages
+  /api/v1/packages/{id}:
+    delete:
+      description: Deletes a package by ID
+      parameters:
+      - description: Package ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Delete a package
+      tags:
+      - Packages
+    get:
+      description: Retrieves a specific package by ID
+      parameters:
+      - description: Package ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Get package by ID
+      tags:
+      - Packages
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing package
+      parameters:
+      - description: Package ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Package data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/core-service_models_dto.UpdatePackageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Update a package
+      tags:
+      - Packages
+  /api/v1/regions/provinces:
+    get:
+      description: Retrieves all provinces
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Get all provinces
+      tags:
+      - Regions
+  /api/v1/regions/provinces/{province}/regencies:
+    get:
+      description: Retrieves all regencies for a specific province
+      parameters:
+      - description: Province ID
+        in: path
+        name: province
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Get regencies by province
+      tags:
+      - Regions
+  /api/v1/regions/regencies/{regency}/districts:
+    get:
+      description: Retrieves all districts for a specific regency
+      parameters:
+      - description: Province ID
+        in: query
+        name: province
+        required: true
+        type: string
+      - description: Regency ID
+        in: path
+        name: regency
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core-service_pkg_response.Response'
+      summary: Get districts by regency
+      tags:
+      - Regions
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+  XApiKey:
+    in: header
+    name: x-api-key
+    type: apiKey
+  XRequestAt:
+    in: header
+    name: x-request-at
+    type: apiKey
+  XServiceName:
+    in: header
+    name: x-service-name
+    type: apiKey
+swagger: "2.0"

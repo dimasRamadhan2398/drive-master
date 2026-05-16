@@ -122,7 +122,7 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Image:        "https://example.com/images/member1.jpg",
 				Address:      "Jakarta, Indonesia",
 			},
-			memberProfile: &models.MemberProfile{
+			memberProfile: &models.MemberProfile{	
 				UserID:             uuid.Nil, // Will be set after user creation
 				SessionsCompleted: 12,
 				TrainingTime:      600,

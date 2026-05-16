@@ -26,6 +26,7 @@ type IAuthController interface {
 	ConfirmResetPassword(ctx *gin.Context)
 	VerifyOTP(ctx *gin.Context)
 	ResendOTP(ctx *gin.Context)
+	RefreshToken(ctx *gin.Context)
 }
 
 func NewAuthController(
@@ -239,4 +240,37 @@ func (a *AuthController) ResendOTP(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "OTP has been sent to your email", nil)
+}
+
+// RefreshToken exchanges a valid refresh token for new access and refresh tokens
+//
+//	@Summary		Refresh Token
+//	@Description	Exchange refresh token for new access and refresh tokens
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.RefreshTokenInput	true	"Refresh token"
+//	@Success		200		{object}	response.Response		"Token refreshed successfully"
+//	@Failure		400		{object}	response.Response		"Bad request"
+//	@Failure		401		{object}	response.Response		"Invalid or expired refresh token"
+//	@Router			/auth/refresh [post]
+func (a *AuthController) RefreshToken(ctx *gin.Context) {
+	var input dto.RefreshTokenInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	if err := validator.New().Struct(input); err != nil {
+		responseRes.Error(ctx, http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity), err.Error(), "")
+		return
+	}
+
+	loginResp, err := a.authService.RefreshToken(ctx.Request.Context(), input.RefreshToken)
+	if err != nil {
+		responseRes.Error(ctx, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized), "Invalid or expired refresh token", "")
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Token refreshed successfully", loginResp)
 }

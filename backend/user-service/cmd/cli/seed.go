@@ -33,7 +33,9 @@ func runSeed(cmd *cobra.Command, args []string) {
 	// Load config first
 	LoadConfig()
 
-	db, err := gorm.Open(postgres.Open(getDSN()), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(getDSN()), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

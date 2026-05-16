@@ -10,6 +10,7 @@ import (
 
 type IRoleService interface {
 	GetRole(ctx context.Context, id uint) (*models.Role, error)
+	GetRoleByName(ctx context.Context, name string) (*models.Role, error)
 	FindAllRoles(ctx context.Context) ([]models.Role, error)
 	UpdateUserRole(ctx context.Context, userID uuid.UUID, roleID uint) error
 }
@@ -25,6 +26,10 @@ func NewRoleService(repo repositories.IRoleRepository) IRoleService {
 // GetRole retrieves a role by ID
 func (s *RoleService) GetRole(ctx context.Context, id uint) (*models.Role, error) {
 	return s.repo.FindRoleByID(ctx, id)
+}
+
+func (s *RoleService) GetRoleByName(ctx context.Context, name string) (*models.Role, error) {
+	return s.repo.FindRoleByName(ctx, name)
 }
 
 // GetAllRoles retrieves all roles

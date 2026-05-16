@@ -18,9 +18,9 @@ func NewRoleSeeder(db *gorm.DB) *RoleSeeder {
 // Seed inserts initial roles into the database
 func (s *RoleSeeder) Seed() error {
 	roles := []models.Role{
-		{Name: "admin"},
-		{Name: "instructor"},
+		{Name: "viewer"},
 		{Name: "member"},
+		{Name: "instructor"},
 		{Name: "super_admin"},
 	}
 

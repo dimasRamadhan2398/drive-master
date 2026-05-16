@@ -989,4 +989,16 @@ securityDefinitions:
     in: header
     name: Authorization
     type: apiKey
+  XApiKey:
+    in: header
+    name: x-api-key
+    type: apiKey
+  XRequestAt:
+    in: header
+    name: x-request-at
+    type: apiKey
+  XServiceName:
+    in: header
+    name: x-service-name
+    type: apiKey
 swagger: "2.0"

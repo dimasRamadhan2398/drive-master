@@ -1,15 +1,14 @@
 package config
 
 import (
-	"os"
+	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/spf13/viper"
 )
 
 type Config struct {
 	Server    ServerConfig    `yaml:"server"`
 	Database  DatabaseConfig  `yaml:"database"`
-	Email     EmailConfig     `yaml:"email"`
 	Redis     RedisConfig     `yaml:"redis"`
 	ImageKit  ImageKitConfig  `yaml:"imagekit"`
 	JWT       JWTConfig       `yaml:"jwt"`
@@ -19,87 +18,182 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port        int `yaml:"port"`
-	Mode        string `yaml:"mode"`
-	ReadTimeout int `yaml:"read_timeout"`
+	Port        int    `mapstructure:"port" yaml:"port"`
+	Mode        string `mapstructure:"mode" yaml:"mode"`
+	ReadTimeout int    `mapstructure:"read_timeout" yaml:"read_timeout"`
 }
 
 type DatabaseConfig struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	Name     string `yaml:"name"`
-	SSLMode  string `yaml:"sslmode"`
-	MaxOpenConnections    int    `json:"maxOpenConnections"`
-	MaxLifeTimeConnection int    `json:"maxLifeTimeConnection"`
-	MaxIdleConnections    int    `json:"maxIdleConnections"`
-	MaxIdleTime           int    `json:"maxIdleTime"`
-}
-
-type EmailConfig struct {
-	Token     string `yaml:"token"`
-	APIKey    string `yaml:"api_key"`
-	FromEmail string `yaml:"from_email"`
-	AppName   string `yaml:"app_name"`
-	Enabled   bool   `yaml:"enabled"`
+	Host               string `mapstructure:"host" yaml:"host"`
+	Port               int    `mapstructure:"port" yaml:"port"`
+	Username           string `mapstructure:"username" yaml:"username"`
+	Password           string `mapstructure:"password" yaml:"password"`
+	Name               string `mapstructure:"name" yaml:"name"`
+	SSLMode            string `mapstructure:"sslmode" yaml:"sslmode"`
+	MaxOpenConnections int    `mapstructure:"max_open_connections" yaml:"maxOpenConnections"`
+	MaxLifeTimeConnection int `mapstructure:"max_life_time_connection" yaml:"maxLifeTimeConnection"`
+	MaxIdleConnections int    `mapstructure:"max_idle_connections" yaml:"maxIdleConnections"`
+	MaxIdleTime        int    `mapstructure:"max_idle_time" yaml:"maxIdleTime"`
 }
 
 type RedisConfig struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Password string `yaml:"password"`
-	DB       int    `yaml:"db"`
+	Host     string `mapstructure:"host" yaml:"host"`
+	Port     int    `mapstructure:"port" yaml:"port"`
+	Password string `mapstructure:"password" yaml:"password"`
+	DB       int    `mapstructure:"db" yaml:"db"`
 }
 
 type ImageKitConfig struct {
-	ID          string `yaml:"id"`
-	PrivateKey  string `yaml:"private_key"`
-	URLEndpoint string `yaml:"url_endpoint"`
+	ID          string `mapstructure:"id" yaml:"id"`
+	PrivateKey  string `mapstructure:"private_key" yaml:"private_key"`
+	URLEndpoint string `mapstructure:"url_endpoint" yaml:"url_endpoint"`
 }
 
 type JWTConfig struct {
-	Secret      string `yaml:"secret"`
-	ExpiryHour  int    `yaml:"expiry_hour"`
+	Secret                 string `mapstructure:"secret" yaml:"secret"`
+	ExpiryHour             int    `mapstructure:"expiry_hour" yaml:"expiry_hour"`
+	RefreshTokenExpiryDays  int    `mapstructure:"refresh_token_expiry_days" yaml:"refresh_token_expiry_days"`
 }
 
 type LogConfig struct {
-	Level  string `yaml:"level"`
-	Format string `yaml:"format"`
+	Level  string `mapstructure:"level" yaml:"level"`
+	Format string `mapstructure:"format" yaml:"format"`
 }
 
 type KafkaConfig struct {
-	Enabled     bool     `yaml:"enabled"`
-	Brokers     []string `yaml:"brokers"`
-	Topic       string   `yaml:"topic"`
-	ServiceName string   `yaml:"service_name"`
+	Enabled     bool     `mapstructure:"enabled" yaml:"enabled"`
+	Brokers     []string `mapstructure:"brokers" yaml:"brokers"`
+	Topic       string   `mapstructure:"topic" yaml:"topic"`
+	ServiceName string   `mapstructure:"service_name" yaml:"service_name"`
 }
 
 type AppConfig struct {
-	AppName        string `yaml:"app_name"`
-	AppEnv        string `yaml:"app_env"`
-	SignatureKey  string `yaml:"signature_key"`
-	RateLimiterMax int    `yaml:"rate_limiter_max"`
-	RateLimiterTime int   `yaml:"rate_limiter_time"`
+	AppName        string `mapstructure:"app_name" yaml:"app_name"`
+	AppEnv         string `mapstructure:"app_env" yaml:"app_env"`
+	SignatureKey   string `mapstructure:"signature_key" yaml:"signature_key"`
+	RateLimiterMax int    `mapstructure:"rate_limiter_max" yaml:"rate_limiter_max"`
+	RateLimiterTime int   `mapstructure:"rate_limiter_time" yaml:"rate_limiter_time"`
 }
 
 var AppCfg *Config
 
+func setDefaults(){
+	viper.SetDefault("server.port", 8002)
+	viper.SetDefault("server.mode", "debug")
+	viper.SetDefault("server.read_timeout", 60)
+
+	// Database
+	viper.SetDefault("database.host", "localhost")
+	viper.SetDefault("database.port", 5432)
+	viper.SetDefault("database.username", "drivemaster")
+	viper.SetDefault("database.password", "drivemaster123")
+	viper.SetDefault("database.name", "drivemaster")
+	viper.SetDefault("database.sslmode", "disable")
+	viper.SetDefault("database.maxOpenConnections", 10)
+	viper.SetDefault("database.maxLifeTimeConnection", 10)
+	viper.SetDefault("database.maxIdleConnections", 10)
+	viper.SetDefault("database.maxIdleTime", 10)
+
+	// Redis
+	viper.SetDefault("redis.host", "localhost")
+	viper.SetDefault("redis.port", 6379)
+	viper.SetDefault("redis.password", "")
+	viper.SetDefault("redis.db", 0)
+
+	// ImageKit
+	viper.SetDefault("imagekit.id", "")
+	viper.SetDefault("imagekit.private_key", "")
+	viper.SetDefault("imagekit.url_endpoint", "")
+
+	// JWT
+	viper.SetDefault("jwt.secret", "")
+	viper.SetDefault("jwt.expiry_hour", 24)
+	viper.SetDefault("jwt.refresh_token_expiry_days", 7)
+
+	// Log
+	viper.SetDefault("log.level", "info")
+	viper.SetDefault("log.format", "json")
+
+	// Kafka
+	viper.SetDefault("kafka.enabled", false)
+	viper.SetDefault("kafka.brokers", []string{"localhost:29092"})
+	viper.SetDefault("kafka.topic", "service-logs")
+	viper.SetDefault("kafka.service_name", "user-service")
+
+	// App
+	viper.SetDefault("app.app_name", "user_service")
+	viper.SetDefault("app.app_env", "development")
+	viper.SetDefault("app.signature_key", "")
+	viper.SetDefault("app.rate_limiter_max", 100)
+	viper.SetDefault("app.rate_limiter_time", 1)
+
+	viper.SetDefault("email.smtp_host",     "sandbox.smtp.mailtrap.io")
+	viper.SetDefault("email.smtp_port",     587)
+	viper.SetDefault("email.smtp_user",     "49bbd2a554bd3e")
+	viper.SetDefault("email.smtp_password", "4f4bc1b03a1d70")
+	viper.SetDefault("email.from_name",     "Drive Master Indonesia")
+}
+
 func Load(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
+	// IMPORTANT: Set defaults FIRST before reading config file
+	setDefaults()
+
+	// Set config file path
+	viper.SetConfigFile(path)
+	viper.SetConfigType("yaml")
+
+	// Bind environment variables
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	// Allow env var overrides for server config
+	_ = viper.BindEnv("server.port", "PORT")
+	_ = viper.BindEnv("server.mode", "SERVER_MODE")
+
+	// Database env overrides
+	_ = viper.BindEnv("database.host", "POSTGRES_HOST")
+	_ = viper.BindEnv("database.port", "POSTGRES_PORT")
+	_ = viper.BindEnv("database.username", "POSTGRES_USER")
+	_ = viper.BindEnv("database.password", "POSTGRES_PASSWORD")
+	_ = viper.BindEnv("database.name", "POSTGRES_DB")
+
+	// Redis env overrides
+	_ = viper.BindEnv("redis.host", "REDIS_HOST")
+	_ = viper.BindEnv("redis.port", "REDIS_PORT")
+	_ = viper.BindEnv("redis.password", "REDIS_PASSWORD")
+
+	// Kafka env overrides
+	_ = viper.BindEnv("kafka.brokers", "KAFKA_BROKERS")
+
+	// ImageKit env overrides
+	_ = viper.BindEnv("imagekit.id", "IMAGEKIT_ID")
+	_ = viper.BindEnv("imagekit.private_key", "IMAGEKIT_PRIVATE_KEY")
+	_ = viper.BindEnv("imagekit.url_endpoint", "IMAGEKIT_URL_ENDPOINT")
+
+	// JWT env overrides
+	_ = viper.BindEnv("jwt.secret", "JWT_SECRET")
+	_ = viper.BindEnv("jwt.expiry_hour", "JWT_EXPIRY_HOUR")
+	_ = viper.BindEnv("jwt.refresh_token_expiry_days", "JWT_REFRESH_TOKEN_EXPIRY_DAYS")
+
+	// App env overrides
+	_ = viper.BindEnv("app.app_env", "APP_ENV")
+	_ = viper.BindEnv("app.signature_key", "APP_SIGNATURE_KEY")
+
+	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
 	}
 
 	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, err
 	}
-
-	AppCfg = &cfg
 	return &cfg, nil
 }
 
 func Get() *Config {
 	return AppCfg
+}
+
+func Set(cfg *Config) {
+	AppCfg = cfg
 }

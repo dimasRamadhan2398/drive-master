@@ -1,21 +1,29 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'dashboard' })
+definePageMeta({
+  layout: 'dashboard',
+  middleware: ['auth']
+})
 
-// Mock data
-const userData = {
-  name: 'John Doe',
-  package: 'Standard Package',
-  totalSessions: 10,
-  completedSessions: 4,
-  remainingSessions: 6,
-  progress: 40,
-  nextSession: {
-    date: 'Tomorrow',
-    time: '09:30 AM',
-    car: 'BYD Atto 1',
-    instructor: 'Pak Ahmad'
+const authStore = useAuthStore()
+
+// Use real user data from auth store
+const userData = computed(() => {
+  const user = authStore.currentUser
+  return {
+    name: user?.name || 'User',
+    package: 'Standard Package',
+    totalSessions: 10,
+    completedSessions: 4,
+    remainingSessions: 6,
+    progress: 40,
+    nextSession: {
+      date: 'Tomorrow',
+      time: '09:30 AM',
+      car: 'BYD Atto 1',
+      instructor: 'Pak Ahmad'
+    }
   }
-}
+})
 
 const recentActivity = [
   { 

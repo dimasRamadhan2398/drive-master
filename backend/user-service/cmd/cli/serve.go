@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 	"user-service/controllers"
 	"user-service/database/seeders"
@@ -81,7 +82,10 @@ func runServe(cmd *cobra.Command, args []string) {
 		gin.SetMode(gin.DebugMode)
 	}
 
-	db, err := gorm.Open(postgres.Open(getDSN()), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(getDSN()), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
+	
 	if err != nil {
 		logger.Fatal("Failed to connect to database: %v", logger.LogField("error", err))
 	}
@@ -145,7 +149,19 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Initialize controller
 	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
 
+	// Initialize auth middleware with JWT secret
+	authMiddleware := middlewares.NewAuthMiddleware(loadedConfig.JWT.Secret)
+
 	router := gin.Default()
+
+
+	// Rate limiter configuration
+	maxRequests := float64(loadedConfig.App.RateLimiterMax)
+	expirationTTL := time.Duration(loadedConfig.App.RateLimiterTime) * time.Second
+
+	// CORS and rate limiter middleware - MUST be added BEFORE routes
+	router.Use(middlewares.CORSMiddleware())
+	router.Use(middlewares.RateLimiter(maxRequests, expirationTTL))
 
 	// Initialize Swagger docs
 	docs.SwaggerInfo.Version = "1.0"
@@ -153,10 +169,14 @@ func runServe(cmd *cobra.Command, args []string) {
 	docs.SwaggerInfo.Description = "API documentation for User Service"
 	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%d", loadedConfig.Server.Port)
 	docs.SwaggerInfo.BasePath = "/api/v1"
-
-	// Rate limiter configuration
-	maxRequests := float64(loadedConfig.App.RateLimiterMax)
-	expirationTTL := time.Duration(loadedConfig.App.RateLimiterTime) * time.Second
+	target := `"securityDefinitions"`
+    security := `"security":[{"BearerAuth":[], "XApiKey":[],"XRequestAt":[],"XServiceName":[]}],`
+    docs.SwaggerInfo.SwaggerTemplate = strings.Replace(
+        docs.SwaggerInfo.SwaggerTemplate,
+        target,
+        security+target,
+        1,
+    )
 
 	// Swagger documentation
 	if serveSwagger {
@@ -173,12 +193,8 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	// Setup routes
 	group := router.Group("/api/v1")
-	route := routes.NewRouteRegistry(controllerRegistry, group)
+	route := routes.NewRouteRegistry(controllerRegistry, group, authMiddleware)
 	route.Serve()
-
-	// CORS and rate limiter middleware
-	router.Use(middlewares.CORSMiddleware())
-	router.Use(middlewares.RateLimiter(maxRequests, expirationTTL))
 
 	addr := fmt.Sprintf("%s:%d", serveHost, loadedConfig.Server.Port)
 	log.Printf("User Service listening on %s", addr)

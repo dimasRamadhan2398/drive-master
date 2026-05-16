@@ -2,7 +2,8 @@
 import { ref, computed } from 'vue'
 
 definePageMeta({
-  layout: 'blank'
+  layout: 'blank',
+  middleware: ['guest']
 })
 
 const selectedPlan = ref<'six_package' | 'eight_package' | 'ten_package' | 'twelve_package'>('eight_package')

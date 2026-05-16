@@ -2,6 +2,9 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { computed } from 'vue'
 
+const authStore = useAuthStore()
+const toast = useToast()
+
 const navItems = computed<NavigationMenuItem[]>(() => [
   {
     label: 'Dashboard',
@@ -35,22 +38,43 @@ const navItems = computed<NavigationMenuItem[]>(() => [
   }
 ])
 
+// Get user from auth store
+const user = computed(() => {
+  const u = authStore.currentUser
+  return {
+    name: u?.name || 'User',
+    email: u?.email || '',
+    avatar: u?.name ? u.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U'
+  }
+})
+
+async function handleLogout() {
+  try {
+    await authStore.logout()
+    toast.add({
+      title: 'Signed out',
+      description: 'You have been successfully signed out.',
+      color: 'success'
+    })
+    navigateTo('/auth/login')
+  } catch {
+    toast.add({
+      title: 'Error',
+      description: 'Failed to sign out. Please try again.',
+      color: 'error'
+    })
+  }
+}
+
 const userMenuItems = [
   [
     { label: 'Profile Settings', icon: 'i-lucide-settings', to: '/dashboard/profile' },
     { label: 'Help & Support', icon: 'i-lucide-help-circle', to: 'https://wa.me/6281234567890', external: true }
   ],
   [
-    { label: 'Sign Out', icon: 'i-lucide-log-out', to: '/auth/login' }
+    { label: 'Sign Out', icon: 'i-lucide-log-out', onClick: handleLogout }
   ]
 ]
-
-// Mock user data
-const user = {
-  name: 'John Doe',
-  email: 'john.doe@example.com',
-  avatar: 'JD'
-}
 </script>
 
 <template>

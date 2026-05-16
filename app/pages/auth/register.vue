@@ -5,7 +5,8 @@ import { reactive, ref } from 'vue'
 import { navigateTo } from 'nuxt/app'
 
 definePageMeta({
-  layout: 'blank'
+  layout: 'blank',
+  middleware: ['guest']
 })
 
 const currentStep = ref(0)
