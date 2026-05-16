@@ -8,6 +8,7 @@ import (
 
 	"booking-service/controllers"
 	"booking-service/database/seeders"
+	"booking-service/docs"
 	"booking-service/models"
 	"booking-service/repositories"
 	"booking-service/routes"
@@ -15,6 +16,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
+	swaggerFiles "github.com/swaggo/files"
+	"github.com/swaggo/gin-swagger"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -104,6 +107,14 @@ func runServe(cmd *cobra.Command, args []string) {
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "booking-service"})
 	})
+
+	// Swagger documentation endpoint
+	docs.SwaggerInfo.Title = "Booking Service API"
+	docs.SwaggerInfo.Description = "API for managing bookings, sessions, entitlements, and certifications"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%s", servePort)
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Initialize route registry and register all routes
 	routeRegistry := routes.NewRouteRegistry(controllerRegistry, router)

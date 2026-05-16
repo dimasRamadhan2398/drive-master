@@ -10,6 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @title Booking Service API
+// @version 1.0
+// @description API for managing bookings, sessions, entitlements, and certifications
+// @host localhost:8082
+// @BasePath /api/v1
+
 type BookingController struct {
 	bookingService services.IBookingService
 }
@@ -28,6 +34,17 @@ type IBookingController interface {
 	CompleteBooking(c *gin.Context)
 }
 
+// CreateBooking godoc
+// @Summary Create a new booking
+// @Description Creates a new booking with the provided details
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param booking body dto.CreateBookingRequest true "Booking data"
+// @Success 201 {object} dto.BookingResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /bookings [post]
 func (c *BookingController) CreateBooking(ctx *gin.Context) {
 	var req dto.CreateBookingRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -44,6 +61,17 @@ func (c *BookingController) CreateBooking(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, resp)
 }
 
+// GetBooking godoc
+// @Summary Get a booking by ID
+// @Description Retrieves a booking by its ID
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param id path int true "Booking ID"
+// @Success 200 {object} dto.BookingResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /bookings/{id} [get]
 func (c *BookingController) GetBooking(ctx *gin.Context) {
 	id, err := getUintIDFromPath(ctx, "id")
 	if err != nil {
@@ -60,6 +88,18 @@ func (c *BookingController) GetBooking(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// UpdateBooking godoc
+// @Summary Update a booking
+// @Description Updates a booking with the provided details
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param id path int true "Booking ID"
+// @Param booking body dto.UpdateBookingRequest true "Booking data"
+// @Success 200 {object} dto.BookingResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /bookings/{id} [put]
 func (c *BookingController) UpdateBooking(ctx *gin.Context) {
 	id, err := getUintIDFromPath(ctx, "id")
 	if err != nil {
@@ -82,6 +122,17 @@ func (c *BookingController) UpdateBooking(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// ListBookings godoc
+// @Summary List all bookings
+// @Description Retrieves a paginated list of bookings
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} dto.BookingListResponse
+// @Failure 500 {object} map[string]string
+// @Router /bookings [get]
 func (c *BookingController) ListBookings(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
@@ -95,6 +146,17 @@ func (c *BookingController) ListBookings(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// CancelBooking godoc
+// @Summary Cancel a booking
+// @Description Cancels a booking by its ID
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param id path int true "Booking ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /bookings/{id}/cancel [post]
 func (c *BookingController) CancelBooking(ctx *gin.Context) {
 	id, err := getUintIDFromPath(ctx, "id")
 	if err != nil {
@@ -110,6 +172,17 @@ func (c *BookingController) CancelBooking(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "booking cancelled"})
 }
 
+// ConfirmBooking godoc
+// @Summary Confirm a booking
+// @Description Confirms a booking by its ID
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param id path int true "Booking ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /bookings/{id}/confirm [post]
 func (c *BookingController) ConfirmBooking(ctx *gin.Context) {
 	id, err := getUintIDFromPath(ctx, "id")
 	if err != nil {
@@ -125,6 +198,17 @@ func (c *BookingController) ConfirmBooking(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "booking confirmed"})
 }
 
+// CompleteBooking godoc
+// @Summary Complete a booking
+// @Description Marks a booking as completed
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param id path int true "Booking ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /bookings/{id}/complete [post]
 func (c *BookingController) CompleteBooking(ctx *gin.Context) {
 	id, err := getUintIDFromPath(ctx, "id")
 	if err != nil {

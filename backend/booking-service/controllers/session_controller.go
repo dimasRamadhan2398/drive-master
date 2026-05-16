@@ -24,6 +24,17 @@ type ISessionController interface {
 	ListSessions(c *gin.Context)
 }
 
+// CreateSession godoc
+// @Summary Create a new session
+// @Description Creates a new session with the provided details
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param session body dto.CreateSessionRequest true "Session data"
+// @Success 201 {object} dto.SessionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /sessions [post]
 func (c *SessionController) CreateSession(ctx *gin.Context) {
 	var req dto.CreateSessionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -40,6 +51,17 @@ func (c *SessionController) CreateSession(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, resp)
 }
 
+// GetSession godoc
+// @Summary Get a session by ID
+// @Description Retrieves a session by its ID
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param id path int true "Session ID"
+// @Success 200 {object} dto.SessionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /sessions/{id} [get]
 func (c *SessionController) GetSession(ctx *gin.Context) {
 	id, err := getUintIDFromPath(ctx, "id")
 	if err != nil {
@@ -56,6 +78,17 @@ func (c *SessionController) GetSession(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// ListSessions godoc
+// @Summary List all sessions
+// @Description Retrieves a paginated list of sessions
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} dto.SessionListResponse
+// @Failure 500 {object} map[string]string
+// @Router /sessions [get]
 func (c *SessionController) ListSessions(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))

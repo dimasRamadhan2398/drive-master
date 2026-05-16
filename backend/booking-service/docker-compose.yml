@@ -5,19 +5,27 @@ services:
       dockerfile: Dockerfile
     container_name: drive_master_booking_service
     environment:
-      - POSTGRES_DSN=host=drive_master_postgres user=${POSTGRES_USER:-admin_drive} password=${POSTGRES_PASSWORD:-drivemaster123} dbname=${POSTGRES_DB:-drivemaster_booking_service} port=5432 sslmode=disable
-      - REDIS_ADDR=drive_master_redis:6379
-      - PORT=8082
+      - KAFKA_BROKERS=drive_master_kafka:29092
+      - REDIS_HOST=drive_master_redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-drivemaster123}
+      - POSTGRES_HOST=drive_master_postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-admin_drive}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-drivemaster123}
+      - POSTGRES_DB=${POSTGRES_DB:-drivemaster_booking_service}
+      - CONFIG_PATH=./pkg/config/config.yaml
+      - RUN_MIGRATIONS=true
+      - RUN_SEEDERS=true
     ports:
-      - "8082:8082"
+      - "8003:8003"
     networks:
       - drive_master_network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - booking_service_network
 
 networks:
+  booking_service_network:
+    name: booking_service_network
+    driver: bridge
   drive_master_network:
     external: true

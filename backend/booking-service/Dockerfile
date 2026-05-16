@@ -30,7 +30,7 @@ COPY --from=builder /app/booking-service .
 # Switch to non-root user
 USER appuser
 
-EXPOSE 8082
+EXPOSE 8003
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["./booking-service"]

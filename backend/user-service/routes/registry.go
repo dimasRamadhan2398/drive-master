@@ -24,6 +24,7 @@ func NewRouteRegistry(controller controllers.IControllerRegistry, group *gin.Rou
 func (r *Registry) Serve() {
 	r.GetUserRoute().Run()
 	r.GetAuthRoute().Run()
+	r.GetMemberRoute().Run()
 	r.GetInstructorRoute().Run()
 	r.GetWorkExperienceRoute().Run()
 	r.GetCoverageAreaRoute().Run()
@@ -35,6 +36,10 @@ func (r *Registry) GetAuthRoute() IAuthRoute {
 
 func (r *Registry) GetUserRoute() IUserRoute {
 	return NewUserRoute(r.controller, r.group, r.authMiddleware)
+}
+
+func (r *Registry) GetMemberRoute() IMemberRoute {
+	return NewMemberRoute(r.controller, r.group, r.authMiddleware)
 }
 
 func (r *Registry) GetInstructorRoute() IInstructorRoute {

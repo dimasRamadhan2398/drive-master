@@ -27,6 +27,17 @@ type IEntitlementController interface {
 	GetUserEntitlements(c *gin.Context)
 }
 
+// CreateEntitlement godoc
+// @Summary Create a new entitlement
+// @Description Creates a new entitlement with the provided details
+// @Tags entitlements
+// @Accept json
+// @Produce json
+// @Param entitlement body dto.CreateEntitlementRequest true "Entitlement data"
+// @Success 201 {object} dto.EntitlementResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /entitlements [post]
 func (c *EntitlementController) CreateEntitlement(ctx *gin.Context) {
 	var req dto.CreateEntitlementRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -43,6 +54,17 @@ func (c *EntitlementController) CreateEntitlement(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, resp)
 }
 
+// GetEntitlement godoc
+// @Summary Get an entitlement by ID
+// @Description Retrieves an entitlement by its ID
+// @Tags entitlements
+// @Accept json
+// @Produce json
+// @Param id path int true "Entitlement ID"
+// @Success 200 {object} dto.EntitlementResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /entitlements/{id} [get]
 func (c *EntitlementController) GetEntitlement(ctx *gin.Context) {
 	id, err := getUintIDFromPath(ctx, "id")
 	if err != nil {
@@ -59,6 +81,18 @@ func (c *EntitlementController) GetEntitlement(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// UpdateEntitlement godoc
+// @Summary Update an entitlement
+// @Description Updates an entitlement with the provided details
+// @Tags entitlements
+// @Accept json
+// @Produce json
+// @Param id path int true "Entitlement ID"
+// @Param entitlement body dto.UpdateEntitlementRequest true "Entitlement data"
+// @Success 200 {object} dto.EntitlementResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /entitlements/{id} [put]
 func (c *EntitlementController) UpdateEntitlement(ctx *gin.Context) {
 	id, err := getUintIDFromPath(ctx, "id")
 	if err != nil {
@@ -81,6 +115,17 @@ func (c *EntitlementController) UpdateEntitlement(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// DeleteEntitlement godoc
+// @Summary Delete an entitlement
+// @Description Deletes an entitlement by its ID
+// @Tags entitlements
+// @Accept json
+// @Produce json
+// @Param id path int true "Entitlement ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /entitlements/{id} [delete]
 func (c *EntitlementController) DeleteEntitlement(ctx *gin.Context) {
 	id, err := getUintIDFromPath(ctx, "id")
 	if err != nil {
@@ -96,6 +141,17 @@ func (c *EntitlementController) DeleteEntitlement(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "entitlement deleted"})
 }
 
+// ListEntitlements godoc
+// @Summary List all entitlements
+// @Description Retrieves a paginated list of entitlements
+// @Tags entitlements
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} dto.EntitlementListResponse
+// @Failure 500 {object} map[string]string
+// @Router /entitlements [get]
 func (c *EntitlementController) ListEntitlements(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
@@ -109,6 +165,17 @@ func (c *EntitlementController) ListEntitlements(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// GetUserEntitlements godoc
+// @Summary Get entitlements by user ID
+// @Description Retrieves all entitlements for a specific user
+// @Tags entitlements
+// @Accept json
+// @Produce json
+// @Param userId path int true "User ID"
+// @Success 200 {object} dto.EntitlementListResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /entitlements/user/{userId} [get]
 func (c *EntitlementController) GetUserEntitlements(ctx *gin.Context) {
 	userID, err := getUintIDFromPath(ctx, "userId")
 	if err != nil {
