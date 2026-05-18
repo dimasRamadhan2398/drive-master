@@ -37,7 +37,8 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Username:     "admin",
 				PasswordHash: string(hashedPassword),
 				Email:        "admin@example.com",
-				EmailAddress: "admin@example.com",
+				FirstName:    "Sandy",
+				LastName:     "Arkosh",
 				PhoneNumber:  "+6281234567890",
 				DateOfBirth:  time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 				RoleID:       roleMap["admin"],
@@ -50,7 +51,8 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Username:     "super_admin",
 				PasswordHash: string(hashedPassword),
 				Email:        "superadmin@example.com",
-				EmailAddress: "superadmin@example.com",
+				FirstName:    "Super",
+				LastName:     "Admin",
 				PhoneNumber:  "+6281234567891",
 				DateOfBirth:  time.Date(1985, 6, 15, 0, 0, 0, 0, time.UTC),
 				RoleID:       roleMap["super_admin"],
@@ -63,7 +65,8 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Username:     "instructor1",
 				PasswordHash: string(hashedPassword),
 				Email:        "instructor1@example.com",
-				EmailAddress: "instructor1@example.com",
+				FirstName:    "Rahmat",
+				LastName:     "Rahkoda",
 				PhoneNumber:  "+6281234567892",
 				DateOfBirth:  time.Date(1988, 3, 20, 0, 0, 0, 0, time.UTC),
 				RoleID:       roleMap["instructor"],
@@ -89,7 +92,8 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Username:     "instructor2",
 				PasswordHash: string(hashedPassword),
 				Email:        "instructor2@example.com",
-				EmailAddress: "instructor2@example.com",
+				FirstName:    "Irena",
+				LastName:     "Setiawan",
 				PhoneNumber:  "+6281234567893",
 				DateOfBirth:  time.Date(1992, 7, 10, 0, 0, 0, 0, time.UTC),
 				RoleID:       roleMap["instructor"],
@@ -115,7 +119,6 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Username:     "member1",
 				PasswordHash: string(hashedPassword),
 				Email:        "member1@example.com",
-				EmailAddress: "member1@example.com",
 				PhoneNumber:  "+6281234567894",
 				DateOfBirth:  time.Date(2000, 11, 25, 0, 0, 0, 0, time.UTC),
 				RoleID:       roleMap["member"],
@@ -134,7 +137,8 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Username:     "member2",
 				PasswordHash: string(hashedPassword),
 				Email:        "member2@example.com",
-				EmailAddress: "member2@example.com",
+				FirstName:    "Rizal",
+				LastName:     "Kokona",
 				PhoneNumber:  "+6281234567895",
 				DateOfBirth:  time.Date(1998, 4, 8, 0, 0, 0, 0, time.UTC),
 				RoleID:       roleMap["member"],
@@ -153,7 +157,7 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 	for _, u := range users {
 		// Check if user already exists
 		var existingUser models.User
-		if err := s.db.Where("email_address = ?", u.user.EmailAddress).First(&existingUser).Error; err == nil {
+		if err := s.db.Where("email_address = ?", u.user.Email).First(&existingUser).Error; err == nil {
 			continue // User already exists, skip
 		}
 

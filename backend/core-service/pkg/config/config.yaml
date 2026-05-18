@@ -48,3 +48,4 @@ app:
   signature_key: 7161a0c1cbde456b38aceef4bdfd7124b5b8c41533220bdae815fdec698ed341bdd6a31c80df9daf8013deaf62bcf8fcfe6029709dce25cba071aa21a319df12
   rate_limiter_max: 100
   rate_limiter_time: 1
+  base_path: /app

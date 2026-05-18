@@ -13,15 +13,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
+
+	"core-service/docs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/swaggo/swag/example/basic/docs"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -171,14 +171,6 @@ func runServe(cmd *cobra.Command, args []string) {
 	docs.SwaggerInfo.Description = "API documentation for Core Service"
 	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%d", loadedConfig.Server.Port)
 	docs.SwaggerInfo.BasePath = "/api/v1"
-	target := `"securityDefinitions"`
-	security := `"security":[{"BearerAuth":[], "XApiKey":[],"XRequestAt":[],"XServiceName":[]}],`
-	docs.SwaggerInfo.SwaggerTemplate = strings.Replace(
-		docs.SwaggerInfo.SwaggerTemplate,
-		target,
-		security+target,
-		1,
-	)
 
 	// Swagger documentation
 	if serveSwagger {

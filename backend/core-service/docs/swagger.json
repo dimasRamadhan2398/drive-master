@@ -1,15 +1,10 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "API documentation for Core Service - manages cars, packages, and regions",
-        "title": "Core Service API",
-        "contact": {},
-        "version": "1.0"
+        "contact": {}
     },
-    "host": "localhost:8001",
-    "basePath": "/api/v1",
     "paths": {
-        "/api/v1/cars": {
+        "/cars": {
             "get": {
                 "description": "Retrieves all cars",
                 "produces": [
@@ -61,7 +56,7 @@
                 }
             }
         },
-        "/api/v1/cars/{id}": {
+        "/cars/{id}": {
             "get": {
                 "description": "Retrieves a specific car by ID",
                 "produces": [
@@ -156,7 +151,7 @@
                 }
             }
         },
-        "/api/v1/packages": {
+        "/packages": {
             "get": {
                 "description": "Retrieves all packages",
                 "produces": [
@@ -208,7 +203,7 @@
                 }
             }
         },
-        "/api/v1/packages/{id}": {
+        "/packages/{id}": {
             "get": {
                 "description": "Retrieves a specific package by ID",
                 "produces": [
@@ -303,7 +298,7 @@
                 }
             }
         },
-        "/api/v1/regions/provinces": {
+        "/regions/provinces": {
             "get": {
                 "description": "Retrieves all provinces",
                 "produces": [
@@ -323,7 +318,7 @@
                 }
             }
         },
-        "/api/v1/regions/provinces/{province}/regencies": {
+        "/regions/provinces/{province}/regencies": {
             "get": {
                 "description": "Retrieves all regencies for a specific province",
                 "produces": [
@@ -352,7 +347,7 @@
                 }
             }
         },
-        "/api/v1/regions/regencies/{regency}/districts": {
+        "/regions/regencies/{regency}/districts": {
             "get": {
                 "description": "Retrieves all districts for a specific regency",
                 "produces": [
@@ -650,5 +645,11 @@
             "name": "x-service-name",
             "in": "header"
         }
-    }
+    },
+    "security": [{
+        "BearerAuth": [],
+        "XApiKey": [],
+        "XRequestAt": [],
+        "XServiceName": []
+    }]
 }

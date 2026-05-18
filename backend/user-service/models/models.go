@@ -17,11 +17,11 @@ type Role struct {
 // User represents the users table
 type User struct {
 	ID            uuid.UUID        `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	Name          string           `json:"name" gorm:"size:120;not null"`
+	FirstName    string    			`json:"firstName" gorm:"required,min=2"`
+	LastName     string    			`json:"lastName" gorm:"required,min=2"`
 	Username      string           `json:"username" gorm:"size:120;not null;uniqueIndex"`
 	PasswordHash  string           `json:"-" gorm:"size:255;not null"`
-	Email         string           `json:"email" gorm:"size:190;not null;uniqueIndex"`
-	EmailAddress  string           `json:"emailAddress" gorm:"size:190;not null;uniqueIndex"`
+	Email         string           `json:"email_address" gorm:"size:190;not null;uniqueIndex"`
 	PhoneNumber   string           `json:"phoneNumber" gorm:"size:20"`
 	Image         string           `json:"image" gorm:"size:500"`
 	DateOfBirth   time.Time        `json:"dateOfBirth" gorm:"type:date"`
@@ -96,10 +96,29 @@ type WorkExperience struct {
 	UpdatedAt    time.Time  `json:"updatedAt"`
 }
 
+// AreaType defines the type of coverage area
+type AreaType string
+
+const (
+	AreaTypeProvince AreaType = "province"
+	AreaTypeRegency  AreaType = "regency"
+	AreaTypeDistrict AreaType = "district"
+)
+
 // InstructorArea represents the instructor_areas table
+// Links an instructor to a specific region from core-service
 type InstructorArea struct {
-	InstructorID uuid.UUID        `json:"instructorId" gorm:"type:uuid;not null"`
-	AreaID 	 	uint		      `json:"areaId" gorm:"type:uint;not null"`
+	InstructorID uuid.UUID `json:"instructorId" gorm:"type:uuid;not null"`
+	AreaType     AreaType  `json:"areaType" gorm:"type:varchar(20);not null"` // province, regency, district
+	AreaID       uint      `json:"areaId" gorm:"not null"`                   // ID from core-service (province/regency/district ID)
+}
+
+// InstructorAreaWithDetails includes region details for display
+type InstructorAreaWithDetails struct {
+	InstructorID uuid.UUID `json:"instructorId"`
+	AreaType     AreaType  `json:"areaType"`
+	AreaID       uint      `json:"areaId"`
+	AreaName     string    `json:"areaName"`
 }
 
 // CreateUserInput is used internally by services

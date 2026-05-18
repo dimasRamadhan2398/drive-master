@@ -8,7 +8,7 @@ import (
 // @title           Core Service API
 // @version         1.0
 // @description     API documentation for Core Service - manages cars, packages, and regions
-// @host            localhost:8001
+// @host            localhost:8002
 // @BasePath        /api/v1
 
 // @securityDefinitions.apikey BearerAuth

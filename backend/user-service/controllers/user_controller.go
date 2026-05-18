@@ -155,9 +155,15 @@ func (c *UserController) UpdateUser(cxt *gin.Context) {
 		ID:           user.ID,
 		Username:     user.Username,
 		Email:        user.Email,
-		EmailAddress: user.Email,
+		FirstName:    user.FirstName,
+		LastName:     user.LastName,
+		DateOfBirth:  user.DateOfBirth,
+		Image:        user.Image,
 		PhoneNumber:  user.PhoneNumber,
 		RoleID:       user.RoleID,
+		Address:      user.Address,
+		IsActive:     user.IsActive,
+		IsVerified:   user.IsVerified,
 	}
 
 	// Update fields if provided
@@ -166,7 +172,6 @@ func (c *UserController) UpdateUser(cxt *gin.Context) {
 	}
 	if input.EmailAddress != nil {
 		userModel.Email = *input.EmailAddress
-		userModel.EmailAddress = *input.EmailAddress
 	}
 	if input.PhoneNumber != nil {
 		userModel.PhoneNumber = *input.PhoneNumber

@@ -95,6 +95,8 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginInput) (*dto.Logi
 	userResp := dto.GetUserResponse{
 		UserID:      user.ID,
 		Email:       user.Email,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
 		Username:    user.Username,
 		PhoneNumber: user.PhoneNumber,
 		Image:       user.Image,
@@ -228,7 +230,8 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	}
 
 	registerReq := &dto.RegisterRequest{
-		Name:         req.Name,
+		FirstName:         req.FirstName,
+		LastName:          req.LastName,
 		Username:     req.Username,
 		Email:        req.Email,
 		PhoneNumber:  req.PhoneNumber,

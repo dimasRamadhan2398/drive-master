@@ -73,6 +73,7 @@ type AppConfig struct {
 	SignatureKey   string `mapstructure:"signature_key" yaml:"signature_key"`
 	RateLimiterMax int    `mapstructure:"rate_limiter_max" yaml:"rate_limiter_max"`
 	RateLimiterTime int   `mapstructure:"rate_limiter_time" yaml:"rate_limiter_time"`
+	BasePath       string `mapstructure:"base_path" yaml:"base_path"`
 }
 
 var AppCfg *Config
@@ -126,6 +127,7 @@ func setDefaults(){
 	viper.SetDefault("app.signature_key", "")
 	viper.SetDefault("app.rate_limiter_max", 100)
 	viper.SetDefault("app.rate_limiter_time", 1)
+	viper.SetDefault("app.base_path", "")
 
 	viper.SetDefault("email.smtp_host",     "sandbox.smtp.mailtrap.io")
 	viper.SetDefault("email.smtp_port",     587)
@@ -178,6 +180,7 @@ func Load(path string) (*Config, error) {
 	// App env overrides
 	_ = viper.BindEnv("app.app_env", "APP_ENV")
 	_ = viper.BindEnv("app.signature_key", "APP_SIGNATURE_KEY")
+	_ = viper.BindEnv("app.base_path", "BASE_PATH")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

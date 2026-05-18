@@ -45,10 +45,9 @@ func (r *UserRepository) Create(ctx context.Context, user *dto.RegisterRequest) 
 		t = time.Now()
 	}
 	userModel := models.User{
-		Name:         user.Name,
+		FirstName:    user.FirstName,
 		Username:     user.Username,
 		Email:        user.Email,
-		EmailAddress: user.Email,
 		PhoneNumber:  user.PhoneNumber,
 		PasswordHash: user.Password,
 		DateOfBirth:  t,

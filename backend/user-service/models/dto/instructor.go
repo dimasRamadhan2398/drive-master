@@ -47,15 +47,18 @@ type InstructorListResponse struct {
 	TotalPages int                       `json:"totalPages"`
 }
 
+// CoverageAreaResponse represents a coverage area in responses
 type CoverageAreaResponse struct {
-	ID           uint   `json:"id"`
-	InstructorID uint   `json:"instructorId"`
-	AreaName     string `json:"areaName"`
+	InstructorID uuid.UUID `json:"instructorId"`
+	AreaType     string    `json:"areaType"`
+	AreaID       uint      `json:"areaId"`
+	AreaName     string    `json:"areaName"`
 }
- 
+
 // AddCoverageAreaInput is used for POST /instructors/:id/coverage-areas
 type AddCoverageAreaInput struct {
-	AreaName string `json:"areaName" binding:"required,min=2"`
+	AreaType string `json:"areaType" binding:"required,oneof=province regency district"`
+	AreaID   uint   `json:"areaId" binding:"required,min=1"`
 }
  
 // RemoveCoverageAreaInput is used for DELETE /instructors/:id/coverage-areas/:areaId

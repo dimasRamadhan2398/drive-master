@@ -32,7 +32,7 @@ func NewRegionController(regionService services.IRegionService) IRegionControlle
 // @Tags Regions
 // @Produce json
 // @Success 200 {object} response.Response
-// @Router /api/v1/regions/provinces [get]
+// @Router /regions/provinces [get]
 func (c *RegionController) GetAllProvinces(ctx *gin.Context) {
 	provinces, err := c.regionService.GetAllProvinces(ctx.Request.Context())
 	if err != nil {
@@ -50,7 +50,7 @@ func (c *RegionController) GetAllProvinces(ctx *gin.Context) {
 // @Produce json
 // @Param province path string true "Province ID"
 // @Success 200 {object} response.Response
-// @Router /api/v1/regions/provinces/{province}/regencies [get]
+// @Router /regions/provinces/{province}/regencies [get]
 func (c *RegionController) GetRegenciesByProvince(ctx *gin.Context) {
 	province := ctx.Param("province")
 	if province == "" {
@@ -75,7 +75,7 @@ func (c *RegionController) GetRegenciesByProvince(ctx *gin.Context) {
 // @Param province query string true "Province ID"
 // @Param regency path string true "Regency ID"
 // @Success 200 {object} response.Response
-// @Router /api/v1/regions/regencies/{regency}/districts [get]
+// @Router /regions/regencies/{regency}/districts [get]
 func (c *RegionController) GetDistrictsByRegency(ctx *gin.Context) {
 	province := ctx.Query("province")
 	regency := ctx.Param("regency")

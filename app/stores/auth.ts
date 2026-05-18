@@ -73,7 +73,8 @@ export const useAuthStore = defineStore("auth", {
       return {
         userId: backendUser.userId,
         email: backendUser.email,
-        name: backendUser.name,
+        firstName: backendUser.firstName,
+        lastName: backendUser.lastName,
         phone: backendUser.phoneNumber,
         role: backendUser.role.name as "admin" | "student" | "instructor",
         createdAt: backendUser.createdAt,
@@ -136,7 +137,8 @@ export const useAuthStore = defineStore("auth", {
           userId: response.userId,
           username: response.username,
           email: response.email,
-          name: response.name,
+          firstName: response.firstName,
+          lastName: response.lastName,
           phoneNumber: response.phoneNumber,
           roleId: response.role.id,
           role: {

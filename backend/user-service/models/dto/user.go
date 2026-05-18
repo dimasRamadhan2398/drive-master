@@ -7,6 +7,8 @@ import (
 )
 
 type CreateUserRequest struct {
+	FirstName    string    `json:"firstName" binding:"required,min=2"`
+	LastName     string    `json:"lastName" binding:"required,min=2"`
 	Username     string    `json:"username" binding:"required,min=2"`
 	Password     string    `json:"password" binding:"required,min=8"`
 	EmailAddress string    `json:"emailAddress" binding:"required,email"`
@@ -22,6 +24,8 @@ type CreateUserResponse struct {
 	UserID      uuid.UUID `json:"userId"`
 	Email       string    `json:"email"`
 	Username    string    `json:"username"`
+	FirstName    string    `json:"firstName"`
+	LastName     string    `json:"lastName"`
 	PhoneNumber string    `json:"phoneNumber"`
 	DateOfBirth string    `json:"dateOfBirth"`
 	RoleID      uint      `json:"roleId"`
@@ -29,6 +33,8 @@ type CreateUserResponse struct {
 
 type UpdateUserRequest struct {
 	Username     *string    `json:"username" binding:"omitempty,min=2"`
+	FirstName    string    `json:"firstName" binding:"required,min=2"`
+	LastName     string    `json:"lastName" binding:"required,min=2"`
 	Password     *string    `json:"password" binding:"omitempty,min=8"`
 	EmailAddress *string    `json:"emailAddress" binding:"omitempty,email"`
 	PhoneNumber  *string    `json:"phoneNumber" binding:"omitempty,min=10"`
@@ -42,6 +48,8 @@ type UpdateUserResponse struct {
 	UserID      uint      `json:"userId"`
 	Email       string    `json:"email"`
 	Username    string    `json:"username"`
+	FirstName    string    `json:"firstName"`
+	LastName     string    `json:"lastName"`
 	PhoneNumber string    `json:"phoneNumber"`
 	Image       string    `json:"image"`
 	DateOfBirth string    `json:"dateOfBirth"`
@@ -51,6 +59,8 @@ type UpdateUserResponse struct {
 
 type GetUserRequest struct {
 	Username     *string    `json:"username" binding:"omitempty,min=2"`
+	FirstName    string    `json:"firstName" binding:"required,min=2"`
+	LastName     string    `json:"lastName" binding:"required,min=2"`
 	Password     *string    `json:"password" binding:"omitempty,min=8"`
 	EmailAddress *string    `json:"emailAddress" binding:"omitempty,email"`
 	PhoneNumber  *string    `json:"phoneNumber" binding:"omitempty,min=10"`
@@ -64,6 +74,8 @@ type GetUserResponse struct {
 	UserID      uuid.UUID         `json:"userId"`
 	Email       string       `json:"email"`
 	Username    string       `json:"username"`
+	FirstName    string    `json:"firstName"`
+	LastName     string    `json:"lastName"`
 	PhoneNumber string       `json:"phoneNumber"`
 	Image       string       `json:"image"`
 	DateOfBirth time.Time    `json:"dateOfBirth"`

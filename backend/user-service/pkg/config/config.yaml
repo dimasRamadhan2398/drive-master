@@ -47,6 +47,9 @@ app:
   rate_limiter_max: 100
   rate_limiter_time: 1
 
+core_service:
+  base_url: "http://core-service:8002"
+
 email:
   api_key: a46d0971bbad11c555a678664db94e65
   from_email: "noreply@ai-forlearning.com"

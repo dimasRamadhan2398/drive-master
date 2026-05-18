@@ -28,6 +28,9 @@ COPY --from=builder /app/core-service .
 # Copy config file
 COPY --from=builder /app/pkg/config/config.yaml ./pkg/config/config.yaml
 
+# Copy database refs (CSV files for seeders)
+COPY --from=builder /app/database/refs ./database/refs
+
 # Set environment variables
 ENV CONFIG_PATH=./pkg/config/config.yaml
 ENV GIN_MODE=release
@@ -43,7 +46,7 @@ cd /app
 # Run migrations if enabled
 if [ "${RUN_MIGRATIONS}" != "false" ]; then
     echo "Running database migrations..."
-    ./core-service migrate || true
+    ./core-service migrate reset -y || true
 fi
 
 # Run seeders if enabled

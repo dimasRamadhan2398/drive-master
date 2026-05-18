@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"net/http"
+
+	"user-service/models"
 	"user-service/models/dto"
 	apperrors "user-service/pkg/errors"
 	responseRes "user-service/pkg/response"
@@ -29,12 +31,12 @@ func NewCoverageAreaController(
 }
 
 // @Summary Add Coverage Area
-// @Description Add coverage area for an instructor
+// @Description Add coverage area for an instructor by specifying area type and ID
 // @Tags Instructors
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID (UUID)"
-// @Param request body dto.AddCoverageAreaInput true "Coverage area data"
+// @Param request body dto.AddCoverageAreaInput true "Coverage area data (areaType: province/regency/district, areaId: ID from core-service)"
 // @Success 201 {object} response.Response
 // @Failure 400 {object} response.Response
 // @Failure 404 {object} response.Response
@@ -52,11 +54,9 @@ func (c *CoverageAreaController) AddCoverageArea(ctx *gin.Context) {
 		return
 	}
 
-	// TODO: Look up area ID by name from location service
-	// For now, use a placeholder area ID
-	areaID := uint(1)
+	areaType := models.AreaType(input.AreaType)
 
-	if _, err := c.coverageAreaService.AddCoverageArea(ctx, userID, areaID); err != nil {
+	if _, err := c.coverageAreaService.AddCoverageArea(ctx, userID, areaType, input.AreaID); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
@@ -69,11 +69,12 @@ func (c *CoverageAreaController) AddCoverageArea(ctx *gin.Context) {
 // @Tags Instructors
 // @Produce json
 // @Param id path string true "User ID (UUID)"
-// @Param areaId path int true "Coverage Area ID"
+// @Param areaType path string true "Area Type (province/regency/district)"
+// @Param areaId path int true "Area ID"
 // @Success 200 {object} response.Response
 // @Failure 400 {object} response.Response
 // @Failure 404 {object} response.Response
-// @Router /instructors/{id}/coverage-areas/{areaId} [delete]
+// @Router /instructors/{id}/coverage-areas/{areaType}/{areaId} [delete]
 func (c *CoverageAreaController) RemoveCoverageArea(ctx *gin.Context) {
 	userID, err := getUserIDFromPath(ctx, "id")
 	if err != nil {
@@ -81,13 +82,14 @@ func (c *CoverageAreaController) RemoveCoverageArea(ctx *gin.Context) {
 		return
 	}
 
+	areaType := models.AreaType(ctx.Param("areaType"))
 	areaID, err := getUintIDFromPath(ctx, "areaId")
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
 
-	if err := c.coverageAreaService.RemoveCoverageArea(ctx, userID, areaID); err != nil {
+	if err := c.coverageAreaService.RemoveCoverageArea(ctx, userID, areaType, areaID); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
@@ -96,7 +98,7 @@ func (c *CoverageAreaController) RemoveCoverageArea(ctx *gin.Context) {
 }
 
 // @Summary Get Coverage Areas
-// @Description Get all coverage areas for an instructor
+// @Description Get all coverage areas for an instructor with region details
 // @Tags Instructors
 // @Produce json
 // @Param id path string true "User ID (UUID)"
@@ -117,5 +119,46 @@ func (c *CoverageAreaController) GetCoverageAreas(ctx *gin.Context) {
 		return
 	}
 
-	responseRes.Success(ctx, http.StatusOK, "Coverage areas retrieved successfully", areas)
+	// Convert to response DTO
+	response := make([]dto.CoverageAreaResponse, 0, len(areas))
+	for _, area := range areas {
+		response = append(response, dto.CoverageAreaResponse{
+			InstructorID: area.InstructorID,
+			AreaType:     string(area.AreaType),
+			AreaID:       area.AreaID,
+			AreaName:     area.AreaName,
+		})
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Coverage areas retrieved successfully", response)
+}
+
+// func getUserIDFromPath(ctx *gin.Context, param string) (uuid.UUID, error) {
+// 	idStr := ctx.Param(param)
+// 	id, err := uuid.Parse(idStr)
+// 	if err != nil {
+// 		return uuid.Nil, err
+// 	}
+// 	return id, nil
+// }
+
+// func getUintIDFromPath(ctx *gin.Context, param string) (uint, error) {
+// 	idStr := ctx.Param(param)
+// 	var id uint
+// 	if _, err := parseUint(idStr, &id); err != nil {
+// 		return 0, err
+// 	}
+// 	return id, nil
+// }
+
+func parseUint(s string, result *uint) (bool, error) {
+	var n uint
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false, nil
+		}
+		n = n*10 + uint(c-'0')
+	}
+	*result = n
+	return true, nil
 }

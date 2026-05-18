@@ -7,15 +7,16 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig    `yaml:"server"`
-	Database  DatabaseConfig  `yaml:"database"`
-	Email     EmailConfig     `yaml:"email"`
-	Redis     RedisConfig     `yaml:"redis"`
-	ImageKit  ImageKitConfig  `yaml:"imagekit"`
-	JWT       JWTConfig       `yaml:"jwt"`
-	Log       LogConfig       `yaml:"log"`
-	Kafka     KafkaConfig     `yaml:"kafka"`
-	App       AppConfig       `yaml:"app"`
+	Server      ServerConfig      `yaml:"server"`
+	Database    DatabaseConfig    `yaml:"database"`
+	Email       EmailConfig       `yaml:"email"`
+	Redis       RedisConfig       `yaml:"redis"`
+	ImageKit    ImageKitConfig    `yaml:"imagekit"`
+	JWT         JWTConfig         `yaml:"jwt"`
+	Log         LogConfig         `yaml:"log"`
+	Kafka       KafkaConfig       `yaml:"kafka"`
+	App         AppConfig         `yaml:"app"`
+	CoreService CoreServiceConfig `yaml:"core_service"`
 }
 
 type ServerConfig struct {
@@ -89,6 +90,10 @@ type AppConfig struct {
 	RateLimiterTime int   `mapstructure:"rate_limiter_time" yaml:"rate_limiter_time"`
 }
 
+type CoreServiceConfig struct {
+	BaseURL string `mapstructure:"base_url" yaml:"base_url"`
+}
+
 var AppCfg *Config
 
 func setDefaults(){
@@ -147,6 +152,9 @@ func setDefaults(){
 	viper.SetDefault("app.signature_key", "")
 	viper.SetDefault("app.rate_limiter_max", 100)
 	viper.SetDefault("app.rate_limiter_time", 1)
+
+	// Core Service
+	viper.SetDefault("core_service.base_url", "http://localhost:8002")
 
 	viper.SetDefault("email.smtp_host",     "sandbox.smtp.mailtrap.io")
 	viper.SetDefault("email.smtp_port",     587)

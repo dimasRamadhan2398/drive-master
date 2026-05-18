@@ -11,8 +11,9 @@ import (
 
 type ICoverageAreaRepository interface {
 	FindCoverageAreasByInstructorID(ctx context.Context, instructorID uuid.UUID) ([]models.InstructorArea, error)
+	FindByInstructorAndArea(ctx context.Context, instructorID uuid.UUID, areaType models.AreaType, areaID uint) (*models.InstructorArea, error)
 	AddCoverageArea(ctx context.Context, area *models.InstructorArea) error
-	RemoveCoverageArea(ctx context.Context, instructorID uuid.UUID, areaID uint) error
+	RemoveCoverageArea(ctx context.Context, instructorID uuid.UUID, areaType models.AreaType, areaID uint) error
 }
 
 type CoverageAreaRepository struct {
@@ -37,13 +38,29 @@ func (c *CoverageAreaRepository) FindCoverageAreasByInstructorID(ctx context.Con
 	return areas, nil
 }
 
-// RemoveCoverageArea implements [ICoverageAreaRepository].
-func (c *CoverageAreaRepository) RemoveCoverageArea(ctx context.Context, instructorID uuid.UUID, areaID uint) error {
-	err := c.BaseRepository.Delete(&models.InstructorArea{InstructorID: instructorID})
-	if err != nil {
-		return err
+// FindByInstructorAndArea finds a specific coverage area for an instructor
+func (c *CoverageAreaRepository) FindByInstructorAndArea(ctx context.Context, instructorID uuid.UUID, areaType models.AreaType, areaID uint) (*models.InstructorArea, error) {
+	var area models.InstructorArea
+	if err := c.BaseRepository.FindWithOptions(&models.InstructorArea{}, &area, &base.QueryOptions{
+		Where: map[string]interface{}{
+			"instructor_id": instructorID,
+			"area_type":      areaType,
+			"area_id":        areaID,
+		},
+		Limit: 1,
+	}); err != nil {
+		return nil, err
 	}
-	return nil
+	return &area, nil
+}
+
+// RemoveCoverageArea implements [ICoverageAreaRepository].
+func (c *CoverageAreaRepository) RemoveCoverageArea(ctx context.Context, instructorID uuid.UUID, areaType models.AreaType, areaID uint) error {
+	return c.BaseRepository.Delete(&models.InstructorArea{}, map[string]interface{}{
+		"instructor_id": instructorID,
+		"area_type":     areaType,
+		"area_id":       areaID,
+	})
 }
 
 func NewCoverageArea(db *gorm.DB) ICoverageAreaRepository {

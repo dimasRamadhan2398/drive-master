@@ -1,6 +1,7 @@
 package services
 
 import (
+	"user-service/clients"
 	"user-service/pkg/config"
 	pkgKafka "user-service/pkg/kafka"
 	"user-service/pkg/redis"
@@ -11,6 +12,7 @@ type Registry struct {
 	repoRegistry   *repositories.Registry
 	eventPublisher pkgKafka.IEventPublisher
 	redisClient    *redis.Client
+	regionService  IRegionService
 }
 
 type IServiceRegistry interface {
@@ -23,13 +25,20 @@ type IServiceRegistry interface {
 	GetMediaService() IMediaService
 	GetWorkExperienceService() IWorkExperienceService
 	GetCoverageAreaService() ICoverageAreaService
+	GetRegionService() IRegionService
 }
 
 func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgKafka.IEventPublisher, redisClient *redis.Client) IServiceRegistry {
+	// Initialize region client and service
+	cfg := config.Get()
+	regionClient := clients.NewRegionClient(cfg.CoreService.BaseURL)
+	regionService := NewRegionService(regionClient)
+
 	return &Registry{
 		repoRegistry:   repoRegistry,
 		eventPublisher: eventPublisher,
 		redisClient:    redisClient,
+		regionService:  regionService,
 	}
 }
 
@@ -68,5 +77,9 @@ func (r *Registry) GetWorkExperienceService() IWorkExperienceService {
 }
 
 func (r *Registry) GetCoverageAreaService() ICoverageAreaService {
-	return NewCoverageAreaService(r.repoRegistry.GetCoverageArea())
+	return NewCoverageAreaService(r.repoRegistry.GetCoverageArea(), r.regionService)
+}
+
+func (r *Registry) GetRegionService() IRegionService {
+	return r.regionService
 }

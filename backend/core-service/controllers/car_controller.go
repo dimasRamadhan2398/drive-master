@@ -38,7 +38,7 @@ func NewCarController(carService services.ICarService) ICarController {
 // @Tags Cars
 // @Produce json
 // @Success 200 {object} response.Response
-// @Router /api/v1/cars [get]
+// @Router /cars [get]
 func (c *CarController) GetAllCars(ctx *gin.Context) {
 	cars, err := c.carService.GetAllCars(ctx.Request.Context())
 	if err != nil {
@@ -56,7 +56,7 @@ func (c *CarController) GetAllCars(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "Car ID"
 // @Success 200 {object} response.Response
-// @Router /api/v1/cars/{id} [get]
+// @Router /cars/{id} [get]
 func (c *CarController) GetCarByID(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)
@@ -87,7 +87,7 @@ func (c *CarController) GetCarByID(ctx *gin.Context) {
 // @Produce json
 // @Param request body dto.CreateCarRequest true "Car data"
 // @Success 201 {object} response.Response
-// @Router /api/v1/cars [post]
+// @Router /cars [post]
 func (c *CarController) CreateCar(ctx *gin.Context) {
 	var req dto.CreateCarRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -129,7 +129,7 @@ func (c *CarController) CreateCar(ctx *gin.Context) {
 // @Param id path string true "Car ID"
 // @Param request body dto.UpdateCarRequest true "Car data"
 // @Success 200 {object} response.Response
-// @Router /api/v1/cars/{id} [put]
+// @Router /cars/{id} [put]
 func (c *CarController) UpdateCar(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)
@@ -200,7 +200,7 @@ func (c *CarController) UpdateCar(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "Car ID"
 // @Success 200 {object} response.Response
-// @Router /api/v1/cars/{id} [delete]
+// @Router /cars/{id} [delete]
 func (c *CarController) DeleteCar(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)

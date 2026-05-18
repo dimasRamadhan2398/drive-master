@@ -25,5 +25,5 @@ func (r *CoverageAreaRoute) Run() {
 	group := r.group.Group("/instructors")
 	group.POST("/:id/coverage-areas", r.authMiddleware.Authenticate(), r.controller.GetCoverageAreaController().AddCoverageArea)
 	group.GET("/:id/coverage-areas", r.authMiddleware.Authenticate(), r.controller.GetCoverageAreaController().GetCoverageAreas)
-	group.DELETE("/:id/coverage-areas/:areaId", r.authMiddleware.Authenticate(), r.controller.GetCoverageAreaController().RemoveCoverageArea)
+	group.DELETE("/:id/coverage-areas/:areaType/:areaId", r.authMiddleware.Authenticate(), r.controller.GetCoverageAreaController().RemoveCoverageArea)
 }

@@ -38,7 +38,7 @@ func NewPackageController(packageService services.IPackageService) IPackageContr
 // @Tags Packages
 // @Produce json
 // @Success 200 {object} response.Response
-// @Router /api/v1/packages [get]
+// @Router /packages [get]
 func (c *PackageController) GetAllPackages(ctx *gin.Context) {
 	packages, err := c.packageService.GetAllPackages(ctx.Request.Context())
 	if err != nil {
@@ -56,7 +56,7 @@ func (c *PackageController) GetAllPackages(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "Package ID"
 // @Success 200 {object} response.Response
-// @Router /api/v1/packages/{id} [get]
+// @Router /packages/{id} [get]
 func (c *PackageController) GetPackageByID(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)
@@ -87,7 +87,7 @@ func (c *PackageController) GetPackageByID(ctx *gin.Context) {
 // @Produce json
 // @Param request body dto.CreatePackageRequest true "Package data"
 // @Success 201 {object} response.Response
-// @Router /api/v1/packages [post]
+// @Router /packages [post]
 func (c *PackageController) CreatePackage(ctx *gin.Context) {
 	var req dto.CreatePackageRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -141,7 +141,7 @@ func (c *PackageController) CreatePackage(ctx *gin.Context) {
 // @Param id path string true "Package ID"
 // @Param request body dto.UpdatePackageRequest true "Package data"
 // @Success 200 {object} response.Response
-// @Router /api/v1/packages/{id} [put]
+// @Router /packages/{id} [put]
 func (c *PackageController) UpdatePackage(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)
@@ -212,7 +212,7 @@ func (c *PackageController) UpdatePackage(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "Package ID"
 // @Success 200 {object} response.Response
-// @Router /api/v1/packages/{id} [delete]
+// @Router /packages/{id} [delete]
 func (c *PackageController) DeletePackage(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)

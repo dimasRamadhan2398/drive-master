@@ -63,7 +63,8 @@ export interface BackendUserResponse {
   userId: string;
   username: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   phoneNumber?: string;
   roleId: number;
   role: {
@@ -82,7 +83,8 @@ export interface RegisterResponse {
   userId: string;
   username: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   phoneNumber?: string;
   role: {
     id: number;

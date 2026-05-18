@@ -67,7 +67,8 @@ func (s *UserService) CreateUser(ctx context.Context, input dto.CreateUserReques
 	}
 
 	registerReq := &dto.RegisterRequest{
-		Name:        input.Name,
+		FirstName:        input.FirstName,
+		LastName:         input.LastName,
 		Username:    input.Username,
 		Email:       input.EmailAddress,
 		PhoneNumber: input.PhoneNumber,

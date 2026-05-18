@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/cars": {
+        "/cars": {
             "get": {
                 "description": "Retrieves all cars",
                 "produces": [
@@ -67,7 +67,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/cars/{id}": {
+        "/cars/{id}": {
             "get": {
                 "description": "Retrieves a specific car by ID",
                 "produces": [
@@ -162,7 +162,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/packages": {
+        "/packages": {
             "get": {
                 "description": "Retrieves all packages",
                 "produces": [
@@ -214,7 +214,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/packages/{id}": {
+        "/packages/{id}": {
             "get": {
                 "description": "Retrieves a specific package by ID",
                 "produces": [
@@ -309,7 +309,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/regions/provinces": {
+        "/regions/provinces": {
             "get": {
                 "description": "Retrieves all provinces",
                 "produces": [
@@ -329,7 +329,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/regions/provinces/{province}/regencies": {
+        "/regions/provinces/{province}/regencies": {
             "get": {
                 "description": "Retrieves all regencies for a specific province",
                 "produces": [
@@ -358,7 +358,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/regions/regencies/{regency}/districts": {
+        "/regions/regencies/{regency}/districts": {
             "get": {
                 "description": "Retrieves all districts for a specific regency",
                 "produces": [
@@ -656,17 +656,23 @@ const docTemplate = `{
             "name": "x-service-name",
             "in": "header"
         }
-    }
+    },
+    "security": [{
+        "BearerAuth": [],
+        "XApiKey": [],
+        "XRequestAt": [],
+        "XServiceName": []
+    }]
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8001",
+	Host:             "localhost:8002",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "Core Service API",
-	Description:      "API documentation for Core Service - manages cars, packages, and regions",
+	Description:      "API documentation for Core Service containing public and reusable data for multiple services",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
