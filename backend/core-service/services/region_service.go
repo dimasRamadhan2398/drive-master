@@ -23,13 +23,13 @@ func NewRegionService(regionRepo repositories.IRegionRepository) *RegionService 
 }
 
 func (s *RegionService) GetAllProvinces(ctx context.Context) ([]models.Province, error) {
-	return s.regionRepo.GetProvinces()
+	return s.regionRepo.GetProvinces(ctx)
 }
 
 func (s *RegionService) GetRegenciesByProvince(ctx context.Context, province string) ([]models.Regency, error) {
-	return s.regionRepo.GetRegencies(province)
+	return s.regionRepo.GetRegencies(ctx, province)
 }
 
 func (s *RegionService) GetDistrictsByRegency(ctx context.Context, province, regency string) ([]models.District, error) {
-	return s.regionRepo.GetDistricts(province, regency)
+	return s.regionRepo.GetDistricts(ctx, province, regency)
 }

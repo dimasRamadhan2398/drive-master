@@ -42,6 +42,16 @@ func (r *Registry) GetCoverageArea() ICoverageAreaRepository {
 	return NewCoverageArea(r.db)
 }
 
+// GetCertification implements IRepositoryRegistry
+func (r *Registry) GetCertification() ICertificationRepository {
+	return NewCertificationRepository(r.db)
+}
+
+// GetEntitlement implements IRepositoryRegistry
+func (r *Registry) GetEntitlement() IEntitlementRepository {
+	return NewEntitlementRepository(r.db)
+}
+
 type IRepositoryRegistry interface {
 	GetUser() IUserRepository
 	GetMember() IMemberRepository
@@ -49,4 +59,6 @@ type IRepositoryRegistry interface {
 	GetRole() IRoleRepository
 	GetWorkExperience() IWorkExperienceRepository
 	GetCoverageArea() ICoverageAreaRepository
+	GetCertification() ICertificationRepository
+	GetEntitlement() IEntitlementRepository
 }

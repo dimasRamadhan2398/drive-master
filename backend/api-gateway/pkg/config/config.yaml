@@ -1,0 +1,23 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+  mode: release
+  read_timeout: 30
+  write_timeout: 30
+
+jwt:
+  secret: your_jwt_secret_here # same secret as user-service
+
+services:
+  user_service_url: "http://user-service:8001"
+  core_service_url: "http://core-service:8002"
+  booking_service_url: "http://booking-service:8003"
+
+rate_limiter:
+  max: 100
+  time: 1 # per second
+
+cors:
+  allowed_origins:
+    - "http://localhost:3000"
+    - "https://yourdomain.com"

@@ -24,11 +24,10 @@ func NewRouteRegistry(controller controllers.IControllerRegistry, engine *gin.En
 }
 
 func (r *Registry) Serve() {
-	group := r.engine.Group("/api/v1")
-	r.GetBookingRoute().Run(group)
-	r.GetSessionRoute().Run(group)
-	r.GetEntitlementRoute().Run(group)
-	r.GetCertificationRoute().Run(group)
+	r.GetBookingRoute().Run()
+	r.GetSessionRoute().Run()
+	r.GetEntitlementRoute().Run()
+	r.GetCertificationRoute().Run()
 }
 
 func (r *Registry) GetBookingRoute() IBookingRoute {

@@ -59,7 +59,7 @@ func main() {
 	httpHandler := handlers.NewHTTPHandler()
 	httpHandler.RegisterRoutes(router)
 
-	port := getenv("PORT", "8082")
+	port := getenv("PORT", "8004")
 	log.Printf("core-service listening on :%s", port)
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("failed to start core-service: %v", err)

@@ -26,6 +26,33 @@ RUN addgroup -g 1000 appgroup && adduser -u 1000 -G appgroup -s /bin/sh -D appus
 
 # Copy binary
 COPY --from=builder /app/booking-service .
+COPY --from=builder /app/pkg/config/config.yaml ./pkg/config/config.yaml
+
+# Set config path environment variable
+ENV CONFIG_PATH=./pkg/config/config.yaml
+
+COPY --chmod=755 <<'EOF' /entrypoint.sh
+#!/bin/sh
+set -e
+
+# Set working directory to app
+cd /app
+
+# Run migrations if enabled
+if [ "${RUN_MIGRATIONS}" != "false" ]; then
+    echo "Running database migrations..."
+    ./booking-service migrate --reset || true
+fi
+
+# Run seeders if enabled
+if [ "${RUN_SEEDERS}" = "true" ]; then
+    echo "Running database seeders..."
+    ./booking-service seed || true
+fi
+
+echo "Starting Booking Service..."
+exec ./booking-service serve "$@"
+EOF
 
 # Switch to non-root user
 USER appuser
@@ -33,4 +60,4 @@ USER appuser
 EXPOSE 8003
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["./booking-service"]
+CMD ["/entrypoint.sh"]

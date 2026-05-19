@@ -15,10 +15,10 @@ import (
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
 	swaggerFiles "github.com/swaggo/files"
-	"github.com/swaggo/gin-swagger"
-	"github.com/redis/go-redis/v9"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -40,7 +40,7 @@ var (
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
-	serveCmd.Flags().StringVarP(&servePort, "port", "p", "8082", "Port to listen on")
+	serveCmd.Flags().StringVarP(&servePort, "port", "p", "8003", "Port to listen on")
 	serveCmd.Flags().StringVar(&serveHost, "host", "0.0.0.0", "Host to bind to")
 	serveCmd.Flags().BoolVar(&serveMigrate, "migrate", true, "Run database migrations on startup")
 	serveCmd.Flags().BoolVar(&serveSeed, "seed", false, "Run database seeders on startup")

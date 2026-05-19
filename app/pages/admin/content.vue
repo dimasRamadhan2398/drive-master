@@ -2,7 +2,7 @@
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { ref } from 'vue'
 
-definePageMeta({ layout: 'admin' })
+definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const toast = useToast()
 const activeTab = ref('pages')

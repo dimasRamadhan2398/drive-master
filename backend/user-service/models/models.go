@@ -134,3 +134,59 @@ type UserCreatedEvent struct {
 	Email  string `json:"email"`
 	Name   string `json:"name"`
 }
+
+// CertificationStatus represents the status of a certification
+type CertificationStatus string
+
+const (
+	CertificationStatusPending   CertificationStatus = "pending"
+	CertificationStatusVerified  CertificationStatus = "verified"
+	CertificationStatusExpired   CertificationStatus = "expired"
+	CertificationStatusRevoked   CertificationStatus = "revoked"
+)
+
+// Certification represents an instructor's certification (e.g., BNSP certificate)
+type Certification struct {
+	ID              uuid.UUID            `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	InstructorID    uuid.UUID            `json:"instructorId" gorm:"type:uuid;not null;index"`
+	CertType        string               `json:"certType" gorm:"size:50;not null"`        // e.g., "BNSP", "SIM", "AWS"
+	CertNumber      string               `json:"certNumber" gorm:"size:100;not null"`     // Certificate number
+	IssuedBy        string               `json:"issuedBy" gorm:"size:255"`               // Issuing authority
+	IssuedDate      time.Time            `json:"issuedDate" gorm:"not null"`              // Date of issue
+	ExpiryDate      *time.Time           `json:"expiryDate"`                             // Expiration date (nullable)
+	Status          CertificationStatus `json:"status" gorm:"type:varchar(20);default:'pending'"`
+	DocumentURL     string               `json:"documentUrl" gorm:"size:500"`            // URL to scanned document
+	Notes           string               `json:"notes" gorm:"type:text"`                 // Additional notes
+	VerifiedAt      *time.Time           `json:"verifiedAt"`                             // When it was verified
+	VerifiedBy      *uuid.UUID           `json:"verifiedBy"`                             // Who verified it
+	CreatedAt       time.Time            `json:"createdAt"`
+	UpdatedAt       time.Time            `json:"updatedAt"`
+}
+
+// EntitlementStatus represents the status of an entitlement
+type EntitlementStatus string
+
+const (
+	EntitlementStatusActive   EntitlementStatus = "active"
+	EntitlementStatusUsed     EntitlementStatus = "used"
+	EntitlementStatusExpired  EntitlementStatus = "expired"
+	EntitlementStatusRevoked  EntitlementStatus = "revoked"
+)
+
+// Entitlement represents a member's entitlement to training sessions
+// Created when a member purchases a package from booking-service
+type Entitlement struct {
+	ID              uuid.UUID           `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	MemberID        uuid.UUID           `json:"memberId" gorm:"type:uuid;not null;index"`
+	BookingID       uuid.UUID           `json:"bookingId" gorm:"type:uuid;index"`           // Reference to booking that created this
+	PackageID       uuid.UUID           `json:"packageId" gorm:"type:uuid"`                // Package ID from core-service
+	PackageName     string              `json:"packageName" gorm:"size:255"`               // Package name (denormalized)
+	TotalSessions   int                 `json:"totalSessions" gorm:"default:0"`             // Total sessions in package
+	Remaining       int                 `json:"remaining" gorm:"default:0"`                 // Remaining sessions
+	UsedSessions    int                 `json:"usedSessions" gorm:"default:0"`              // Sessions already used
+	StartDate       time.Time           `json:"startDate"`                                 // When entitlement becomes active
+	EndDate         *time.Time          `json:"endDate"`                                  // Expiration date
+	Status          EntitlementStatus   `json:"status" gorm:"type:varchar(20);default:'active'"`
+	CreatedAt       time.Time           `json:"createdAt"`
+	UpdatedAt       time.Time           `json:"updatedAt"`
+}

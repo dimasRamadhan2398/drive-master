@@ -30,13 +30,13 @@ func NewPackageRepository(baseRepo *base.BaseRepository) IPackageRepository {
 
 // Create creates a new package
 func (r *PackageRepository) Create(ctx context.Context, pkg *models.Package) error {
-	return r.BaseRepository.Create(pkg)
+	return r.BaseRepository.Create(ctx, pkg)
 }
 
 // FindByID finds a package by ID
 func (r *PackageRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Package, error) {
 	var pkg models.Package
-	if err := r.BaseRepository.FindByID(&pkg, id); err != nil {
+	if err := r.BaseRepository.FindByID(ctx, &pkg, id); err != nil {
 		return nil, err
 	}
 	return &pkg, nil
@@ -46,7 +46,7 @@ func (r *PackageRepository) FindByID(ctx context.Context, id uuid.UUID) (*models
 func (r *PackageRepository) FindByIDWithBenefits(ctx context.Context, id uuid.UUID) (*models.Package, error) {
 	var pkg models.Package
 	opts := base.NewQueryOptions().WithPreloads("Benefits")
-	if err := r.BaseRepository.FindOne(&pkg, "id = ?", id, opts); err != nil {
+	if err := r.BaseRepository.FindOne(ctx, &pkg, "id = ?", id, opts); err != nil {
 		return nil, err
 	}
 	return &pkg, nil
@@ -56,7 +56,7 @@ func (r *PackageRepository) FindByIDWithBenefits(ctx context.Context, id uuid.UU
 func (r *PackageRepository) FindAll(ctx context.Context) ([]models.Package, error) {
 	var packages []models.Package
 	opts := base.NewQueryOptions()
-	if err := r.BaseRepository.FindMany(&models.Package{}, &packages, opts); err != nil {
+	if err := r.BaseRepository.FindMany(ctx, &models.Package{}, &packages, opts); err != nil {
 		return nil, err
 	}
 	return packages, nil
@@ -67,7 +67,7 @@ func (r *PackageRepository) FindByType(ctx context.Context, packageType models.P
 	var packages []models.Package
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"package_type": packageType})
-	if err := r.BaseRepository.FindMany(&models.Package{}, &packages, opts); err != nil {
+	if err := r.BaseRepository.FindMany(ctx, &models.Package{}, &packages, opts); err != nil {
 		return nil, err
 	}
 	return packages, nil
@@ -78,7 +78,7 @@ func (r *PackageRepository) FindByStatus(ctx context.Context, status models.Pack
 	var packages []models.Package
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"status": status})
-	if err := r.BaseRepository.FindMany(&models.Package{}, &packages, opts); err != nil {
+	if err := r.BaseRepository.FindMany(ctx, &models.Package{}, &packages, opts); err != nil {
 		return nil, err
 	}
 	return packages, nil
@@ -86,15 +86,15 @@ func (r *PackageRepository) FindByStatus(ctx context.Context, status models.Pack
 
 // Update updates a package
 func (r *PackageRepository) Update(ctx context.Context, pkg *models.Package) error {
-	return r.BaseRepository.Update(pkg)
+	return r.BaseRepository.Update(ctx, pkg)
 }
 
 // Delete deletes a package
 func (r *PackageRepository) Delete(ctx context.Context, pkg *models.Package) error {
-	return r.BaseRepository.Delete(pkg)
+	return r.BaseRepository.Delete(ctx, pkg)
 }
 
 // Count returns the total number of packages
 func (r *PackageRepository) Count(ctx context.Context) (int64, error) {
-	return r.BaseRepository.Count(&models.Package{}, nil)
+	return r.BaseRepository.Count(ctx, &models.Package{}, nil)
 }

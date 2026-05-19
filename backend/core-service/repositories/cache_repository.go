@@ -7,6 +7,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type ICacheRepository interface {
+	SetUserProfile(ctx context.Context, key, value string) error
+}
+
 type CacheRepository struct {
 	client *redis.Client
 }

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"api-gateway/pkg/config"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -9,29 +10,61 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewReverseProxy(target, stripPrefix string) gin.HandlerFunc {
-	targetURL, err := url.Parse(target)
-	if err != nil {
-		panic(err)
-	}
+type ProxyHandler struct {
+    userServiceURL        *url.URL
+    coreServiceURL        *url.URL
+    bookingServiceURL     *url.URL
+    catalogServiceURL     *url.URL
+    voucherServiceURL     *url.URL
+    notificationServiceURL *url.URL
+    contentServiceURL     *url.URL
+}
 
-	proxy := httputil.NewSingleHostReverseProxy(targetURL)
-	proxy.Director = func(req *http.Request) {
-		req.URL.Scheme = targetURL.Scheme
-		req.URL.Host = targetURL.Host
-		req.Host = targetURL.Host
+func NewProxyHandler(cfg *config.Config) *ProxyHandler {
+    parse := func(raw string) *url.URL {
+        u, err := url.Parse(raw)
+        if err != nil {
+            panic("invalid service URL: " + raw)
+        }
+        return u
+    }
 
-		trimmedPath := strings.TrimPrefix(req.URL.Path, stripPrefix)
-		if trimmedPath == "" {
-			trimmedPath = "/"
-		}
-		if !strings.HasPrefix(trimmedPath, "/") {
-			trimmedPath = "/" + trimmedPath
-		}
-		req.URL.Path = trimmedPath
-	}
+    return &ProxyHandler{
+        userServiceURL:         parse(cfg.Services.UserServiceURL),
+        coreServiceURL:         parse(cfg.Services.CoreServiceURL),
+        bookingServiceURL:      parse(cfg.Services.BookingServiceURL),
+    }
+}
 
-	return func(c *gin.Context) {
-		proxy.ServeHTTP(c.Writer, c.Request)
-	}
+func (h *ProxyHandler) ToUserService(c *gin.Context)        { h.proxy(c, h.userServiceURL, "/api/v1/users") }
+func (h *ProxyHandler) ToCoreService(c *gin.Context)        { h.proxy(c, h.coreServiceURL, "/api/v1/core") }
+func (h *ProxyHandler) ToBookingService(c *gin.Context)     { h.proxy(c, h.bookingServiceURL, "/api/v1/bookings") }
+func (h *ProxyHandler) ToCatalogService(c *gin.Context)     { h.proxy(c, h.catalogServiceURL, "/api/v1/catalog") }
+func (h *ProxyHandler) ToVoucherService(c *gin.Context)     { h.proxy(c, h.voucherServiceURL, "/api/v1/vouchers") }
+func (h *ProxyHandler) ToNotificationService(c *gin.Context){ h.proxy(c, h.notificationServiceURL, "/api/v1/notifications") }
+func (h *ProxyHandler) ToContentService(c *gin.Context)     { h.proxy(c, h.contentServiceURL, "/api/v1/content") }
+
+func (h *ProxyHandler) proxy(c *gin.Context, target *url.URL, stripPrefix string) {
+    proxy := httputil.NewSingleHostReverseProxy(target)
+
+    // strip the gateway prefix before forwarding
+    c.Request.URL.Path = strings.TrimPrefix(c.Request.URL.Path, stripPrefix)
+    if c.Request.URL.Path == "" {
+        c.Request.URL.Path = "/"
+    }
+
+    // forward user context injected by JWT middleware
+    c.Request.Header.Set("X-User-ID",   c.GetString("userID"))
+    c.Request.Header.Set("X-User-Role", c.GetString("userRole"))
+    c.Request.Header.Set("X-Request-ID", c.GetString("requestID"))
+
+    proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+        c.JSON(http.StatusBadGateway, gin.H{
+            "success": false,
+            "message": "service unavailable",
+            "error":   err.Error(),
+        })
+    }
+
+    proxy.ServeHTTP(c.Writer, c.Request)
 }

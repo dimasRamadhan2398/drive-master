@@ -1,23 +1,11 @@
 package repositories
 
 import (
-	"context"
-
 	"core-service/pkg/base"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
-
-// ICacheRepository defines cache operations
-type ICacheRepository interface {
-	SetUserProfile(ctx context.Context, key, value string) error
-}
-
-// IEventRepository defines event persistence operations
-type IEventRepository interface {
-	SaveProcessedEvent(eventType, payload string) error
-}
 
 // Registry implements IRepositoryRegistry
 type Registry struct {
@@ -45,6 +33,8 @@ type IRepositoryRegistry interface {
 	GetEvent() IEventRepository
 	GetCar() ICarRepository
 	GetPackage() IPackageRepository
+	GetTestimonial() ITestimonialRepository
+	GetArticle() IArticleRepository
 }
 
 // GetRegion returns the region repository
@@ -73,4 +63,14 @@ func (r *Registry) GetCar() ICarRepository {
 // GetPackage returns the package repository
 func (r *Registry) GetPackage() IPackageRepository {
 	return NewPackageRepository(r.baseRepo)
+}
+
+// GetTestimonial returns the testimonial repository
+func (r *Registry) GetTestimonial() ITestimonialRepository {
+	return NewTestimonialRepository(r.baseRepo)
+}
+
+// GetArticle returns the article repository
+func (r *Registry) GetArticle() IArticleRepository {
+	return NewArticleRepository(r.baseRepo)
 }

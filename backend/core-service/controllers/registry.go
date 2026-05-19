@@ -13,6 +13,8 @@ type IControllerRegistry interface {
 	GetRegionController() IRegionController
 	GetCarController() ICarController
 	GetPackageController() IPackageController
+	GetTestimonialController() ITestimonialController
+	GetArticleController() IArticleController
 }
 
 // NewControllerRegistry creates a new controller registry
@@ -35,6 +37,16 @@ func (r *Registry) GetCarController() ICarController {
 // GetPackageController returns the package controller
 func (r *Registry) GetPackageController() IPackageController {
 	return NewPackageController(r.svcRegistry.GetPackageService())
+}
+
+// GetTestimonialController returns the testimonial controller
+func (r *Registry) GetTestimonialController() ITestimonialController {
+	return NewTestimonialController(r.svcRegistry.GetTestimonialService())
+}
+
+// GetArticleController returns the article controller
+func (r *Registry) GetArticleController() IArticleController {
+	return NewArticleController(r.svcRegistry.GetArticleService())
 }
 
 // GetRepositoryRegistry returns the repository registry (for dependency injection)

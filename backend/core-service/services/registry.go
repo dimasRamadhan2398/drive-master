@@ -30,11 +30,23 @@ func (r *Registry) GetPackageService() IPackageService {
 	return NewPackageService(r.repoRegistry.GetPackage(), r.eventPublisher)
 }
 
+// GetTestimonialService implements [IServiceRegistry].
+func (r *Registry) GetTestimonialService() ITestimonialService {
+	return NewTestimonialService(r.repoRegistry.GetTestimonial())
+}
+
+// GetArticleService implements [IServiceRegistry].
+func (r *Registry) GetArticleService() IArticleService {
+	return NewArticleService(r.repoRegistry.GetArticle())
+}
+
 type IServiceRegistry interface {
 	GetEventService() IEventService
 	GetRegionService() IRegionService
 	GetCarService() ICarService
 	GetPackageService() IPackageService
+	GetTestimonialService() ITestimonialService
+	GetArticleService() IArticleService
 }
 
 func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPublisher *kafka.EventPublisher) IServiceRegistry {

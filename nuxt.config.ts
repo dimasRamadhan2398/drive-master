@@ -1,8 +1,26 @@
 import { defineNuxtConfig } from "nuxt/config";
 
 export default defineNuxtConfig({
-  devtools: { enabled: false },
+  devtools: { enabled: true },
+  ssr: true,
+  dev: true,
   modules: ["@nuxt/ui", "@pinia/nuxt"],
+  hooks: {
+    "pages:extend"(pages) {
+      function setMiddleware(pageList: any[]) {
+        for (const page of pageList) {
+          if (page.path.startsWith("admin")) {
+            page.meta ||= {};
+            page.meta.middleware = ["admin"];
+          }
+          if (page.children) {
+            setMiddleware(page.children);
+          }
+        }
+      }
+      setMiddleware(pages);
+    },
+  },
   css: ["~/assets/css/main.css"],
   colorMode: {
     preference: "dark",

@@ -56,11 +56,12 @@ func (c *CoverageAreaRepository) FindByInstructorAndArea(ctx context.Context, in
 
 // RemoveCoverageArea implements [ICoverageAreaRepository].
 func (c *CoverageAreaRepository) RemoveCoverageArea(ctx context.Context, instructorID uuid.UUID, areaType models.AreaType, areaID uint) error {
-	return c.BaseRepository.Delete(&models.InstructorArea{}, map[string]interface{}{
-		"instructor_id": instructorID,
-		"area_type":     areaType,
-		"area_id":       areaID,
-	})
+	area := &models.InstructorArea{
+		InstructorID: instructorID,
+		AreaType:     areaType,
+		AreaID:       areaID,
+	}
+	return c.BaseRepository.Delete(area)
 }
 
 func NewCoverageArea(db *gorm.DB) ICoverageAreaRepository {

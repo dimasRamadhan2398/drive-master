@@ -29,13 +29,13 @@ func NewCarRepository(baseRepo *base.BaseRepository) ICarRepository {
 
 // Create creates a new car
 func (r *CarRepository) Create(ctx context.Context, car *models.Car) error {
-	return r.BaseRepository.Create(car)
+	return r.BaseRepository.Create(ctx, car)
 }
 
 // FindByID finds a car by ID
 func (r *CarRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Car, error) {
 	var car models.Car
-	if err := r.BaseRepository.FindByID(&car, id); err != nil {
+	if err := r.BaseRepository.FindByID(ctx, &car, id); err != nil {
 		return nil, err
 	}
 	return &car, nil
@@ -45,7 +45,7 @@ func (r *CarRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Car
 func (r *CarRepository) FindAll(ctx context.Context) ([]models.Car, error) {
 	var cars []models.Car
 	opts := base.NewQueryOptions()
-	if err := r.BaseRepository.FindMany(&models.Car{}, &cars, opts); err != nil {
+	if err := r.BaseRepository.FindMany(ctx, &models.Car{}, &cars, opts); err != nil {
 		return nil, err
 	}
 	return cars, nil
@@ -56,7 +56,7 @@ func (r *CarRepository) FindByStatus(ctx context.Context, status models.CarStatu
 	var cars []models.Car
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"status": status})
-	if err := r.BaseRepository.FindMany(&models.Car{}, &cars, opts); err != nil {
+	if err := r.BaseRepository.FindMany(ctx, &models.Car{}, &cars, opts); err != nil {
 		return nil, err
 	}
 	return cars, nil
@@ -67,7 +67,7 @@ func (r *CarRepository) FindByTransmission(ctx context.Context, transmission mod
 	var cars []models.Car
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"transmission": transmission})
-	if err := r.BaseRepository.FindMany(&models.Car{}, &cars, opts); err != nil {
+	if err := r.BaseRepository.FindMany(ctx, &models.Car{}, &cars, opts); err != nil {
 		return nil, err
 	}
 	return cars, nil
@@ -75,15 +75,15 @@ func (r *CarRepository) FindByTransmission(ctx context.Context, transmission mod
 
 // Update updates a car
 func (r *CarRepository) Update(ctx context.Context, car *models.Car) error {
-	return r.BaseRepository.Update(car)
+	return r.BaseRepository.Update(ctx, car)
 }
 
 // Delete deletes a car
 func (r *CarRepository) Delete(ctx context.Context, car *models.Car) error {
-	return r.BaseRepository.Delete(car)
+	return r.BaseRepository.Delete(ctx, car)
 }
 
 // Count returns the total number of cars
 func (r *CarRepository) Count(ctx context.Context) (int64, error) {
-	return r.BaseRepository.Count(&models.Car{}, nil)
+	return r.BaseRepository.Count(ctx, &models.Car{}, nil)
 }

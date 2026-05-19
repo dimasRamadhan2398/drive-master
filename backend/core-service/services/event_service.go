@@ -31,7 +31,7 @@ func (s *EventService) HandleUserCreated(ctx context.Context, event models.UserC
 		return err
 	}
 
-	if err := s.eventRepo.SaveProcessedEvent("user.created", string(payloadBytes)); err != nil {
+	if err := s.eventRepo.SaveProcessedEvent(ctx, "user.created", string(payloadBytes)); err != nil {
 		return err
 	}
 

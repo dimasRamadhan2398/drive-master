@@ -2,20 +2,23 @@ package routes
 
 import (
 	"booking-service/controllers"
+	"booking-service/pkg/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
 
 type CertificationRoute struct {
 	controller controllers.IControllerRegistry
+	group      *gin.RouterGroup
+	authMiddleware middlewares.IAuthMiddleware
 }
 
 type ICertificationRoute interface {
-	Run(group *gin.RouterGroup)
+	Run()
 }
 
-func (r *CertificationRoute) Run(group *gin.RouterGroup) {
-	certifications := group.Group("/certifications")
+func (r *CertificationRoute) Run() {
+	certifications := r.group.Group("/certifications")
 	{
 		certifications.GET("", r.controller.GetCertificationController().ListCertifications)
 		certifications.POST("", r.controller.GetCertificationController().CreateCertification)

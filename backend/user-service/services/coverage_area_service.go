@@ -37,7 +37,7 @@ func NewCoverageAreaService(
 // AddCoverageArea adds a coverage area to an instructor
 func (s *CoverageAreaService) AddCoverageArea(ctx context.Context, instructorID uuid.UUID, areaType models.AreaType, areaID uint) (*models.InstructorArea, error) {
 	// Validate the area exists in core-service
-	areaName, err := s.regionService.FindAreaByID(ctx, areaType, areaID)
+	_, err := s.regionService.FindAreaByID(ctx, areaType, areaID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid area: %w", err)
 	}

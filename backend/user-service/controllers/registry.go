@@ -56,6 +56,20 @@ func (r *ControllerRegistry) GetCoverageAreaController() ICoverageAreaController
 	return NewCoverageAreaController(r.service.GetCoverageAreaService())
 }
 
+// GetCertificationController implements [IControllerRegistry].
+func (r *ControllerRegistry) GetCertificationController() ICertificationController {
+	return NewCertificationController(
+		r.service.GetCertificationService(),
+	)
+}
+
+// GetEntitlementController implements [IControllerRegistry].
+func (r *ControllerRegistry) GetEntitlementController() IEntitlementController {
+	return NewEntitlementController(
+		r.service.GetEntitlementService(),
+	)
+}
+
 // IControllerRegistry defines methods for getting controllers
 type IControllerRegistry interface {
 	GetUserController() IUserController
@@ -65,6 +79,8 @@ type IControllerRegistry interface {
 	GetMemberController() IMemberController
 	GetWorkExperienceController() IWorkExperienceController
 	GetCoverageAreaController() ICoverageAreaController
+	GetCertificationController() ICertificationController
+	GetEntitlementController() IEntitlementController
 }
 
 // NewControllerRegistry creates a new controller registry

@@ -2,20 +2,23 @@ package routes
 
 import (
 	"booking-service/controllers"
+	"booking-service/pkg/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
 
 type EntitlementRoute struct {
 	controller controllers.IControllerRegistry
+	group      *gin.RouterGroup
+	authMiddleware middlewares.IAuthMiddleware
 }
 
 type IEntitlementRoute interface {
-	Run(group *gin.RouterGroup)
+	Run()
 }
 
-func (r *EntitlementRoute) Run(group *gin.RouterGroup) {
-	entitlements := group.Group("/entitlements")
+func (r *EntitlementRoute) Run() {
+	entitlements := r.group.Group("/entitlements")
 	{
 		entitlements.GET("", r.controller.GetEntitlementController().ListEntitlements)
 		entitlements.POST("", r.controller.GetEntitlementController().CreateEntitlement)

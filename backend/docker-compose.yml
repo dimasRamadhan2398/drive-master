@@ -1,0 +1,275 @@
+services:
+  # ==================== Infrastructure Services ====================
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: drive_master_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin_drive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-drivemaster123}
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin_drive}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - drive_master_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: drive_master_redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-drivemaster123}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-drivemaster123}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-drivemaster123}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - drive_master_network
+
+  # Redis Insight (Redis GUI)
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: drive_master_redisinsight
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+    networks:
+      - drive_master_network
+
+  # Zookeeper (Required for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: drive_master_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - drive_master_network
+
+  # Kafka Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: drive_master_kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_NUM_PARTITIONS: 3
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test:
+        - "CMD"
+        - "kafka-broker-api-versions"
+        - "--bootstrap-server"
+        - "localhost:29092"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - drive_master_network
+
+  # Kafka UI (Kafka Management Interface)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: drive_master_kafka_ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8085:8080"
+    environment:
+      TZ: Asia/Jakarta
+      KAFKA_CLUSTERS_0_NAME: drive_master
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - drive_master_network
+
+  # ==================== Microservices ====================
+
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: drive_master_user_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - PORT=8001
+      - POSTGRES_HOST=drive_master_postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-admin_drive}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-drivemaster123}
+      - POSTGRES_DB=drivemaster_user_service
+      - REDIS_HOST=drive_master_redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-drivemaster123}
+      - KAFKA_BROKERS=drive_master_kafka:29092
+      - KAFKA_ENABLED=true
+      - KAFKA_TOPIC=user.events
+      - KAFKA_GROUP_ID=user-service-consumer
+      - CONFIG_PATH=./pkg/config/config.yaml
+      - RUN_MIGRATIONS=true
+      - RUN_SEEDERS=true
+    ports:
+      - "8001:8001"
+    networks:
+      - drive_master_network
+
+  # Core Service
+  core-service:
+    build:
+      context: ./core-service
+      dockerfile: Dockerfile
+    container_name: drive_master_core_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - PORT=8002
+      - POSTGRES_HOST=drive_master_postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-admin_drive}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-drivemaster123}
+      - POSTGRES_DB=drivemaster_core_service
+      - REDIS_HOST=drive_master_redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-drivemaster123}
+      - KAFKA_BROKERS=drive_master_kafka:29092
+      - KAFKA_ENABLED=true
+      - KAFKA_TOPIC=user.events
+      - KAFKA_GROUP_ID=core-service-consumer
+      - CONFIG_PATH=./pkg/config/config.yaml
+      - RUN_MIGRATIONS=true
+      - RUN_SEEDERS=true
+    ports:
+      - "8002:8002"
+    networks:
+      - drive_master_network
+
+  # Booking Service
+  booking-service:
+    build:
+      context: ./booking-service
+      dockerfile: Dockerfile
+    container_name: drive_master_booking_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - PORT=8003
+      - POSTGRES_HOST=drive_master_postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-admin_drive}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-drivemaster123}
+      - POSTGRES_DB=drivemaster_booking_service
+      - REDIS_HOST=drive_master_redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-drivemaster123}
+      - KAFKA_BROKERS=drive_master_kafka:29092
+      - KAFKA_ENABLED=true
+      - KAFKA_TOPIC=booking.events
+      - KAFKA_GROUP_ID=booking-service-consumer
+      - CONFIG_PATH=./pkg/config/config.yaml
+      - RUN_MIGRATIONS=true
+      - RUN_SEEDERS=true
+    ports:
+      - "8003:8003"
+    networks:
+      - drive_master_network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: drive_master_api_gateway
+    depends_on:
+      user-service:
+        condition: service_started
+      core-service:
+        condition: service_started
+      booking-service:
+        condition: service_started
+    environment:
+      - PORT=8080
+      - GIN_MODE=release
+      - CONFIG_PATH=./pkg/config/config.yaml
+      - USER_SERVICE_URL=http://user-service:8001
+      - CORE_SERVICE_URL=http://core-service:8002
+      - BOOKING_SERVICE_URL=http://booking-service:8003
+    ports:
+      - "8080:8080"
+    networks:
+      - drive_master_network
+
+# ==================== Networks ====================
+networks:
+  drive_master_network:
+    name: drive_master_network
+    driver: bridge
+    attachable: true
+
+# ==================== Volumes ====================
+volumes:
+  postgres_data:
+    name: drive_master_postgres_data
+  redis_data:
+    name: drive_master_redis_data
+  zookeeper_data:
+    name: drive_master_zookeeper_data
+  kafka_data:
+    name: drive_master_kafka_data

@@ -1,0 +1,52 @@
+server:
+  port: 8004
+  mode: debug
+  read_timeout: 60
+
+database:
+  host: localhost
+  port: 5432
+  username: admin_drive
+  password: drivemaster123
+  name: drivemaster_payment_service
+  sslmode: disable
+  max_open_connections: 10
+  max_life_time_connection: 10
+  max_idle_connections: 10
+  max_idle_time: 10
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: your-secret-key-here
+  expiry_hour: 24
+  refresh_token_expiry_days: 7
+
+log:
+  level: info
+  format: json
+
+kafka:
+  enabled: false
+  brokers:
+    - localhost:29092
+  topic: payment.events
+  service_name: payment-service
+
+app:
+  app_name: payment_service
+  app_env: development
+  signature_key: ""
+  rate_limiter_max: 100
+  rate_limiter_time: 1
+
+payment_gateway:
+  midtrans_server_key: ""
+  midtrans_client_key: ""
+  midtrans_environment: sandbox
+  xendit_api_key: ""
+  xendit_environment: sandbox

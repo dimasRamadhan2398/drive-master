@@ -26,6 +26,8 @@ type IServiceRegistry interface {
 	GetWorkExperienceService() IWorkExperienceService
 	GetCoverageAreaService() ICoverageAreaService
 	GetRegionService() IRegionService
+	GetCertificationService() ICertificationService
+	GetEntitlementService() IEntitlementService
 }
 
 func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgKafka.IEventPublisher, redisClient *redis.Client) IServiceRegistry {
@@ -82,4 +84,12 @@ func (r *Registry) GetCoverageAreaService() ICoverageAreaService {
 
 func (r *Registry) GetRegionService() IRegionService {
 	return r.regionService
+}
+
+func (r *Registry) GetCertificationService() ICertificationService {
+	return NewCertificationService(r.repoRegistry.GetCertification())
+}
+
+func (r *Registry) GetEntitlementService() IEntitlementService {
+	return NewEntitlementService(r.repoRegistry.GetEntitlement())
 }
