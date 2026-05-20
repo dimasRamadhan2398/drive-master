@@ -1,0 +1,56 @@
+server:
+  port: 8004
+  mode: debug
+  read_timeout: 60
+
+database:
+  host: localhost
+  port: 5432
+  username: admin_drive
+  password: drivemaster123
+  name: drivemaster_payment_service
+  sslmode: disable
+  max_open_connections: 10
+  max_life_time_connection: 10
+  max_idle_connections: 10
+  max_idle_time: 10
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: your-secret-key-here
+  expiry_hour: 24
+  refresh_token_expiry_days: 7
+
+log:
+  level: info
+  format: json
+
+kafka:
+  enabled: false
+  brokers:
+    - localhost:29092
+  topic: payment.events
+  service_name: payment-service
+
+app:
+  app_name: payment_service
+  app_env: development
+  signature_key: baf8f21c59948f5731ece01240fb303a8744e668a0befff55a63a3eb7022d8c9
+  rate_limiter_max: 100
+  rate_limiter_time: 1
+
+midtrans:
+  server_key: "${MIDTRANS_SERVER_KEY}"
+  client_key: "${MIDTRANS_CLIENT_KEY}"
+  environment: sandbox
+  merchant_id: "M243240030"
+  base_url: https://api.sandbox.midtrans.com
+  snap_url: https://app.sandbox.midtrans.com/snap/snap.js
+  enabled: true
+  notification_url: http://localhost:8004/notifications
+  timeout_seconds: 30

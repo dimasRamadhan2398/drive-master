@@ -1,0 +1,14 @@
+.nuxt
+node_modules/
+.env
+database.db
+database.db-journal
+.data
+.DS_STORE
+.vscode
+vendor/
+backend/user-service/vendor/
+backend/user-service/user-service
+
+.output/
+.nuxt/
