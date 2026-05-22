@@ -25,7 +25,7 @@ type IUserService interface {
 type UserService struct {
 	*base.BaseService
 	roleRepo repositories.IRoleRepository
-	repo repositories.IUserRepository
+	repo     repositories.IUserRepository
 }
 
 func NewUserService(repo repositories.IUserRepository, roleRepo repositories.IRoleRepository) IUserService {
@@ -67,8 +67,8 @@ func (s *UserService) CreateUser(ctx context.Context, input dto.CreateUserReques
 	}
 
 	registerReq := &dto.RegisterRequest{
-		FirstName:        input.FirstName,
-		LastName:         input.LastName,
+		FirstName:   input.FirstName,
+		LastName:    input.LastName,
 		Username:    input.Username,
 		Email:       input.EmailAddress,
 		PhoneNumber: input.PhoneNumber,

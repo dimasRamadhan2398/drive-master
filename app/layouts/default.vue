@@ -1,23 +1,82 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { computed } from 'vue';
+<<<<<<< HEAD
 
 const { pages } = useContent()
 
+=======
+import { useAuth } from '~/composables/useAuth';
+
+const { pages } = useContent()
+
+const { user, isLoggedIn, logout } = useAuth()
+
+>>>>>>> main
 const navItems = computed<NavigationMenuItem[]>(() => {
   const baseItems = [
     { label: 'Home', to: '/' },
     { label: 'Services', to: '/services' },
     { label: 'Packages', to: '/packages' },
+<<<<<<< HEAD
     { label: 'Article', to: '/blog' },
   ]
 
   const dynamicItems = pages.value
     .filter(p => p.status === 'published' && p.slug !== '/' && p.slug !== '/services' && p.slug !== '/packages')
+=======
+    { label: 'Instructors', to: '/instructors' },
+    { label: 'Article', to: '/blog' },
+    { label: 'About Us', to: '/about' },
+    { label: 'Contact Us', to: '/contact' },
+  ]
+
+  const dynamicItems = pages.value
+    .filter(p => p.status === 'published' && 
+    p.slug !== '/' && 
+    p.slug !== '/services' && 
+    p.slug !== '/packages' && 
+    p.slug !== '/instructors' && 
+    p.slug !== '/blog' && 
+    p.slug !== '/about' && 
+    p.slug !== '/contact')
+>>>>>>> main
     .map(p => ({ label: p.title, to: p.slug }))
 
   return [...baseItems, ...dynamicItems]
 })
+<<<<<<< HEAD
+=======
+
+const userMenuItems = computed(() => [
+  [
+    {
+      label: user.value?.name || 'Member',
+      slot: 'account',
+      disabled: true
+    }
+  ],
+  [
+    {
+      label: 'Dashboard',
+      icon: 'i-lucide-layout-dashboard',
+      to: '/dashboard'
+    },
+    {
+      label: 'Settings',
+      icon: 'i-lucide-settings',
+      to: '/dashboard/profile'
+    }
+  ],
+  [
+    {
+      label: 'Logout',
+      icon: 'i-lucide-log-out',
+      click: () => logout()
+    }
+  ]
+])
+>>>>>>> main
 </script>
 
 <template>
@@ -33,17 +92,73 @@ const navItems = computed<NavigationMenuItem[]>(() => {
 
       <template #right>
         <UColorModeButton />
+<<<<<<< HEAD
         <NuxtLink to="/auth/login">
           <UButton label="Login" color="warning" variant="ghost" class="hidden sm:flex" />
         </NuxtLink>
         <NuxtLink to="/auth/register">
           <UButton label="Register" color="warning" />
         </NuxtLink>
+=======
+        
+        <template v-if="isLoggedIn">
+          <UDropdownMenu :items="userMenuItems" :ui="{ content: 'w-48' }">
+            <UButton variant="ghost" color="neutral" class="p-0.5 rounded-full">
+              <UAvatar 
+                :src="user?.avatar" 
+                :alt="user?.name" 
+                size="sm"
+                class="ring-2 ring-warning/20"
+              />
+            </UButton>
+            
+            <template #account="{ item }">
+              <div class="text-left">
+                <p class="font-medium text-gray-900 dark:text-white truncate">
+                  {{ user?.name }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {{ user?.email }}
+                </p>
+              </div>
+            </template>
+          </UDropdownMenu>
+        </template>
+        <template v-else>
+          <NuxtLink to="/auth/login">
+            <UButton label="Login" color="warning" variant="ghost" class="hidden sm:flex" />
+          </NuxtLink>
+          <NuxtLink to="/auth/register">
+            <UButton label="Register" color="warning" />
+          </NuxtLink>
+        </template>
+>>>>>>> main
       </template>
 
       <template #body>
         <UNavigationMenu :items="navItems" orientation="vertical" class="-mx-2.5" />
+<<<<<<< HEAD
         <div class="flex flex-col gap-2 mt-4 pt-4 border-t border-default">
+=======
+        
+        <div v-if="isLoggedIn" class="mt-4 pt-4 border-t border-default space-y-4">
+          <div class="flex items-center gap-3 px-2">
+            <UAvatar :src="user?.avatar" :alt="user?.name" size="md" />
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate">{{ user?.name }}</p>
+              <p class="text-xs text-muted truncate">{{ user?.email }}</p>
+            </div>
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <NuxtLink to="/dashboard">
+              <UButton label="Dashboard" icon="i-lucide-layout-dashboard" color="warning" variant="ghost" block />
+            </NuxtLink>
+            <UButton label="Logout" icon="i-lucide-log-out" color="error" variant="ghost" block @click="logout" />
+          </div>
+        </div>
+        <div v-else class="flex flex-col gap-2 mt-4 pt-4 border-t border-default">
+>>>>>>> main
           <NuxtLink to="/auth/login">
             <UButton label="Login" color="warning" variant="ghost" block />
           </NuxtLink>

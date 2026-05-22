@@ -1,4 +1,12 @@
 <script setup lang="ts">
+<<<<<<< HEAD
+=======
+useSeoMeta({
+  title: 'Services | Drive Master Academy',
+  description: 'Comprehensive driving courses designed for the electric future. From beginners to advanced drivers, we have the perfect program for you.',
+})
+
+>>>>>>> main
 const services = [
   {
     title: '6x Sessions',
@@ -206,6 +214,7 @@ const serviceAreas = [
       ]"
     />
 
+<<<<<<< HEAD
     <!-- Service Types
     <UPageSection
       headline="Programs"
@@ -244,6 +253,8 @@ const serviceAreas = [
     </UPageSection>
     -->
 
+=======
+>>>>>>> main
     <!-- Our Services -->
     <UPageSection
       :ui="{ headline: 'text-warning' }"
@@ -302,6 +313,7 @@ const serviceAreas = [
       </UPageGrid>
     </UPageSection>
 
+<<<<<<< HEAD
     <!-- Facilities
     <UPageSection
       headline="Premium Fleet"
@@ -341,6 +353,8 @@ const serviceAreas = [
     </UPageSection>
   -->
 
+=======
+>>>>>>> main
     <!-- Service Areas -->
     <UPageSection
       headline="Coverage"

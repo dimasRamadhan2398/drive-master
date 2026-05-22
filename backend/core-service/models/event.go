@@ -20,21 +20,21 @@ type ProcessedEvent struct {
 // ========== CAR EVENTS ==========
 
 type CarCreatedEvent struct {
-	CarID       string `json:"carId"`
-	Brand       string `json:"brand"`
-	Model       string `json:"model"`
-	Year        int    `json:"year"`
+	CarID        string `json:"carId"`
+	Brand        string `json:"brand"`
+	Model        string `json:"model"`
+	Year         int    `json:"year"`
 	LicensePlate string `json:"licensePlate"`
 	Transmission string `json:"transmission"`
-	CreatedAt   string `json:"createdAt"`
+	CreatedAt    string `json:"createdAt"`
 }
 
 type CarUpdatedEvent struct {
-	CarID  string `json:"carId"`
-	Brand  string `json:"brand,omitempty"`
-	Model  string `json:"model,omitempty"`
-	Year   int    `json:"year,omitempty"`
-	Status string `json:"status,omitempty"`
+	CarID     string `json:"carId"`
+	Brand     string `json:"brand,omitempty"`
+	Model     string `json:"model,omitempty"`
+	Year      int    `json:"year,omitempty"`
+	Status    string `json:"status,omitempty"`
 	UpdatedAt string `json:"updatedAt"`
 }
 
@@ -49,7 +49,7 @@ type PackageCreatedEvent struct {
 	Name        string  `json:"name"`
 	PackageType string  `json:"packageType"`
 	Price       float64 `json:"price"`
-	CreatedAt   string `json:"createdAt"`
+	CreatedAt   string  `json:"createdAt"`
 }
 
 type PackageUpdatedEvent struct {
@@ -58,7 +58,7 @@ type PackageUpdatedEvent struct {
 	PackageType string  `json:"packageType,omitempty"`
 	Price       float64 `json:"price,omitempty"`
 	Status      string  `json:"status,omitempty"`
-	UpdatedAt   string `json:"updatedAt"`
+	UpdatedAt   string  `json:"updatedAt"`
 }
 
 type PackageDeletedEvent struct {

@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+<<<<<<< HEAD
 definePageMeta({ layout: 'dashboard', middleware: ['auth'] })
+=======
+definePageMeta({ layout: 'dashboard' })
+>>>>>>> main
 
 const freeTrial = ref({
   used: false,
@@ -17,7 +21,11 @@ const trialSession = ref({
   time: '14:00',
   duration: 15,
   instructor: 'Pak Ahmad',
+<<<<<<< HEAD
   vehicle: 'Tesla Model 3',
+=======
+  vehicle: 'BYD Atto 1',
+>>>>>>> main
   location: 'Alam Sutera, Jakarta'
 })
 
@@ -257,11 +265,19 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                     </div>
                     <div>
                       <p class="text-muted">Vehicle</p>
+<<<<<<< HEAD
                       <p class="font-medium">Tesla Model 3</p>
                     </div>
                     <div>
                       <p class="text-muted">Instructor</p>
                       <p class="font-medium">Pak Ahmad</p>
+=======
+                      <p class="font-medium">BYD Atto 1</p>
+                    </div>
+                    <div>
+                      <p class="text-muted">Instructor</p>
+                      <p class="font-medium">Mr. Ahmad</p>
+>>>>>>> main
                     </div>
                   </div>
                 </div>

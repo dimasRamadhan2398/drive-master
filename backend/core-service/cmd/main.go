@@ -27,7 +27,7 @@ import (
 // @in header
 // @name x-service-name
 func main() {
-    if err := cli.Execute(); err != nil {
-        os.Exit(1)
-    }
+	if err := cli.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

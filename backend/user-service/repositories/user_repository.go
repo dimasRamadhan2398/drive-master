@@ -70,6 +70,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Us
 	}
 	return &user, nil
 }
+<<<<<<< HEAD
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
@@ -180,3 +181,5 @@ func (r *UserRepository) FindByRoleIDWithPagination(ctx context.Context, roleID 
 	}
 	return users, nil
 }
+=======
+>>>>>>> main

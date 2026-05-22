@@ -2,7 +2,11 @@
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { reactive, ref } from 'vue'
 
+<<<<<<< HEAD
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
+=======
+definePageMeta({ layout: 'admin' })
+>>>>>>> main
 
 const toast = useToast()
 
@@ -35,8 +39,12 @@ const notificationSettings = reactive({
 })
 
 const vehicles = ref([
+<<<<<<< HEAD
   { id: 1, name: 'Tesla Model 3', plate: 'B 1234 EV', status: 'active', photoUrl: '' },
   { id: 2, name: 'BYD Atto 3', plate: 'B 5678 EV', status: 'active', photoUrl: '' }
+=======
+  { id: 1, name: 'BYD Atto 1', plate: 'B 1234 EV', status: 'active', photoUrl: '' }
+>>>>>>> main
 ])
 
 // Vehicle CRUD State
@@ -78,9 +86,15 @@ function deleteVehicle() {
 }
 
 const instructors = ref([
+<<<<<<< HEAD
   { id: 1, name: 'Pak Ahmad', phone: '081234567001', bnsp: 'BNSP-101-2023', sim: 'SIM A', photoUrl: '', experience: 5, bio: 'Expert in defensive driving techniques.', status: 'active' },
   { id: 2, name: 'Bu Sari', phone: '081234567002', bnsp: 'BNSP-102-2022', sim: 'SIM A', photoUrl: '', experience: 8, bio: 'Patient and friendly, great for beginners.', status: 'active' },
   { id: 3, name: 'Pak Budi', phone: '081234567003', bnsp: 'BNSP-105-2024', sim: 'SIM A', photoUrl: '', experience: 3, bio: 'Specialist in night driving and bad weather conditions.', status: 'active' }
+=======
+  { id: 1, name: 'Mr. Ahmad', phone: '081234567001', bnsp: 'BNSP-101-2023', sim: 'SIM A', photoUrl: '', experience: 5, bio: 'Expert in defensive driving techniques.', status: 'active' },
+  { id: 2, name: 'Ms. Sari', phone: '081234567002', bnsp: 'BNSP-102-2022', sim: 'SIM A', photoUrl: '', experience: 8, bio: 'Patient and friendly, great for beginners.', status: 'active' },
+  { id: 3, name: 'Mr. Budi', phone: '081234567003', bnsp: 'BNSP-105-2024', sim: 'SIM A', photoUrl: '', experience: 3, bio: 'Specialist in night driving and bad weather conditions.', status: 'active' }
+>>>>>>> main
 ])
 
 // Instructor CRUD State
@@ -129,11 +143,19 @@ function handleImageUpload(event: Event, targetForm: any) {
   if (!input.files || input.files.length === 0) return
 
   const file = input.files[0]
+<<<<<<< HEAD
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
     toast.add({ title: 'Invalid File', description: 'Please upload JPG, PNG, or WebP.', color: 'error' })
     return
   }
   if (file.size > MAX_IMAGE_SIZE) {
+=======
+  if (file && !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    toast.add({ title: 'Invalid File', description: 'Please upload JPG, PNG, or WebP.', color: 'error' })
+    return
+  }
+  if (file && file.size > MAX_IMAGE_SIZE) {
+>>>>>>> main
     toast.add({ title: 'File Too Large', description: 'Image exceeds 5MB limit.', color: 'error' })
     return
   }
@@ -142,7 +164,11 @@ function handleImageUpload(event: Event, targetForm: any) {
   reader.onload = (e) => {
     targetForm.photoUrl = e.target?.result as string
   }
+<<<<<<< HEAD
   reader.readAsDataURL(file)
+=======
+  if (file) reader.readAsDataURL(file)
+>>>>>>> main
   input.value = ''
 }
 
@@ -217,10 +243,17 @@ function saveSettings() {
               <UInput v-model="operatingHours.mondayEnd" type="time" class="w-full" color="warning" />
             </div>
             <div class="flex items-center gap-4">
+<<<<<<< HEAD
               <span class="w-32 text-sm font-medium">Weekend</span>
               <UInput v-model="operatingHours.weekendStart" type="time" class="w-32" />
               <span class="text-muted">to</span>
               <UInput v-model="operatingHours.weekendEnd" type="time" class="w-32" />
+=======
+              <span class="w-32 text-sm font-medium">Saturday & Sunday</span>
+              <UInput v-model="operatingHours.weekendStart" type="time" class="w-full" color="warning"/>
+              <span class="text-muted">to</span>
+              <UInput v-model="operatingHours.weekendEnd" type="time" class="w-full" color="warning"/>
+>>>>>>> main
             </div>
             <div class="flex items-center gap-4">
               <span class="w-32 text-md font-medium">Night Shift</span>
@@ -376,7 +409,11 @@ function saveSettings() {
             </div>
             <div>
               <label class="block text-sm font-medium mb-1.5">Vehicle Name</label>
+<<<<<<< HEAD
               <UInput v-model="vehicleForm.name" placeholder="e.g. Tesla Model 3" class="w-full" />
+=======
+              <UInput v-model="vehicleForm.name" placeholder="e.g. BYD Atto 1" class="w-full" />
+>>>>>>> main
             </div>
             <div>
               <label class="block text-sm font-medium mb-1.5">License Plate</label>

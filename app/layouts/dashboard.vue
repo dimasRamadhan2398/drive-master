@@ -2,9 +2,12 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { computed } from 'vue'
 
+<<<<<<< HEAD
 const authStore = useAuthStore()
 const toast = useToast()
 
+=======
+>>>>>>> main
 const navItems = computed<NavigationMenuItem[]>(() => [
   {
     label: 'Dashboard',
@@ -38,6 +41,7 @@ const navItems = computed<NavigationMenuItem[]>(() => [
   }
 ])
 
+<<<<<<< HEAD
 // Get user from auth store
 const user = computed(() => {
   const u = authStore.currentUser
@@ -66,15 +70,30 @@ async function handleLogout() {
   }
 }
 
+=======
+>>>>>>> main
 const userMenuItems = [
   [
     { label: 'Profile Settings', icon: 'i-lucide-settings', to: '/dashboard/profile' },
     { label: 'Help & Support', icon: 'i-lucide-help-circle', to: 'https://wa.me/6281234567890', external: true }
   ],
   [
+<<<<<<< HEAD
     { label: 'Sign Out', icon: 'i-lucide-log-out', onClick: handleLogout }
   ]
 ]
+=======
+    { label: 'Sign Out', icon: 'i-lucide-log-out', to: '/auth/login' }
+  ]
+]
+
+// Mock user data
+const user = {
+  name: 'John Doe',
+  email: 'john.doe@example.com',
+  avatar: 'JD'
+}
+>>>>>>> main
 </script>
 
 <template>
@@ -88,7 +107,11 @@ const userMenuItems = [
       :collapsed-size="0"
     >
       <template #header="{ collapsed }">
+<<<<<<< HEAD
         <NuxtLink v-if="!collapsed" to="/" class="flex items-center gap-2 px-2">
+=======
+        <NuxtLink v-if="!collapsed" to="/dashboard" class="flex items-center gap-2 px-2">
+>>>>>>> main
           <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
         </NuxtLink>
         <UIcon v-else name="i-simple-icons-nuxtdotjs" class="size-5 text-primary mx-auto" />

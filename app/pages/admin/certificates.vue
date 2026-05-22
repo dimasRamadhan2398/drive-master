@@ -8,7 +8,6 @@ definePageMeta({ layout: 'admin', middleware: ['admin'] })
 const toast = useToast()
 const searchQuery = ref('')
 const showIssueModal = ref(false)
-
 type EligibleStudent = {
   id: number
   name: string
