@@ -41,7 +41,7 @@ func NewUserRepository(db *gorm.DB) IUserRepository {
 
 func (r *UserRepository) Create(ctx context.Context, user *dto.RegisterRequest) (*models.User, error) {
 	t, err := time.Parse(user.DateOfBirth, "2006-01-02")
-	if(err != nil) {
+	if err != nil {
 		t = time.Now()
 	}
 	userModel := models.User{
@@ -62,7 +62,6 @@ func (r *UserRepository) Create(ctx context.Context, user *dto.RegisterRequest) 
 	return &userModel, nil
 }
 
-
 func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var user models.User
 	if err := r.BaseRepository.FindByID(&user, id); err != nil {
@@ -70,7 +69,6 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Us
 	}
 	return &user, nil
 }
-<<<<<<< HEAD
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
@@ -181,5 +179,3 @@ func (r *UserRepository) FindByRoleIDWithPagination(ctx context.Context, roleID 
 	}
 	return users, nil
 }
-=======
->>>>>>> main
