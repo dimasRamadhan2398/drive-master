@@ -33,7 +33,7 @@ function startSession(id: string, student: string) {
       </span>
     </UButton>
 
-    <template #content>
+    <template>
       <div class="p-4 border-b border-default flex items-center justify-between">
         <h3 class="font-bold text-sm">Upcoming Sessions</h3>
         <UBadge :label="activeAlerts.length.toString()" color="error" variant="subtle" size="sm" />

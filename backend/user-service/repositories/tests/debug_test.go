@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"testing"
 
 	"user-service/models"
@@ -72,7 +73,7 @@ func TestUserRepository_RepoFindAll(t *testing.T) {
 	// Use repository
 	repo := repositories.NewUserRepository(db)
 
-	users, err := repo.FindAll()
+	users, err := repo.FindAll(context.Background())
 	t.Logf("FindAll result: err=%v, users=%d", err, len(users))
 
 	if err != nil {

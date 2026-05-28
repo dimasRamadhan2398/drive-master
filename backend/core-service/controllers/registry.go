@@ -15,6 +15,7 @@ type IControllerRegistry interface {
 	GetPackageController() IPackageController
 	GetTestimonialController() ITestimonialController
 	GetArticleController() IArticleController
+	GetAnalyticsController() IAnalyticsController
 }
 
 // NewControllerRegistry creates a new controller registry
@@ -47,6 +48,11 @@ func (r *Registry) GetTestimonialController() ITestimonialController {
 // GetArticleController returns the article controller
 func (r *Registry) GetArticleController() IArticleController {
 	return NewArticleController(r.svcRegistry.GetArticleService())
+}
+
+// GetAnalyticsController returns the analytics controller
+func (r *Registry) GetAnalyticsController() IAnalyticsController {
+	return NewAnalyticsController(r.svcRegistry.GetAnalyticsService())
 }
 
 // GetRepositoryRegistry returns the repository registry (for dependency injection)

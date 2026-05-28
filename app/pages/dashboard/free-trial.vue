@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-<<<<<<< HEAD
-definePageMeta({ layout: 'dashboard', middleware: ['auth'] })
-=======
 definePageMeta({ layout: 'dashboard' })
->>>>>>> main
 
 const freeTrial = ref({
   used: false,
@@ -21,11 +17,7 @@ const trialSession = ref({
   time: '14:00',
   duration: 15,
   instructor: 'Pak Ahmad',
-<<<<<<< HEAD
-  vehicle: 'Tesla Model 3',
-=======
   vehicle: 'BYD Atto 1',
->>>>>>> main
   location: 'Alam Sutera, Jakarta'
 })
 
@@ -201,7 +193,7 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
           <UBadge 
             v-else
             label="Expired"
-            color="red"
+            color="error"
             variant="subtle"
           />
         </div>
@@ -265,19 +257,11 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                     </div>
                     <div>
                       <p class="text-muted">Vehicle</p>
-<<<<<<< HEAD
-                      <p class="font-medium">Tesla Model 3</p>
-                    </div>
-                    <div>
-                      <p class="text-muted">Instructor</p>
-                      <p class="font-medium">Pak Ahmad</p>
-=======
                       <p class="font-medium">BYD Atto 1</p>
                     </div>
                     <div>
                       <p class="text-muted">Instructor</p>
                       <p class="font-medium">Mr. Ahmad</p>
->>>>>>> main
                     </div>
                   </div>
                 </div>
@@ -390,7 +374,7 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                   <UButton 
                     label="Cancel Booking"
                     icon="i-lucide-trash"
-                    color="red"
+                    color="error"
                     variant="outline"
                     :loading="loading"
                     @click="cancelFreeTrial"
@@ -466,7 +450,7 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
         </div>
 
         <!-- Expired State -->
-        <UAlert v-if="isExpired" icon="i-lucide-alert-circle" color="red">
+        <UAlert v-if="isExpired" icon="i-lucide-alert-circle" color="error">
           <template #title>Trial Period Expired</template>
           <template #description>
             Unfortunately, your free trial offer has expired. Please purchase a package to continue your training.

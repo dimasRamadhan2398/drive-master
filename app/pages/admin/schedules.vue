@@ -1,21 +1,6 @@
 <script setup lang="ts">
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { ref, computed } from 'vue'
-<<<<<<< HEAD
-
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
-
-const toast = useToast()
-const showAddSlotModal = ref(false)
-const selectedDate = ref(new Date('2026-04-10T00:00:00'))
-
-const filterInstructor = ref('All Instructors')
-const filterVehicle = ref('All Vehicles')
-
-const { slots: timeSlots, toggleSlotStatus: _toggleSlotStatus, deleteSlot: _deleteSlot } = useSchedules()
-
-const instructors = ['Pak Ahmad', 'Bu Sari', 'Pak Budi']
-=======
 import { useRoute, navigateTo } from 'nuxt/app'
 
 definePageMeta({ layout: 'admin' })
@@ -41,7 +26,6 @@ const filterVehicle = ref('All Vehicles')
 const { slots: timeSlots, toggleSlotStatus: _toggleSlotStatus, deleteSlot: _deleteSlot, updateSlotStatus, addSlot, editSlot, bookSlot } = useSchedules()
 
 const instructors = ['Mr. Ahmad', 'Ms. Sari', 'Mr. Budi']
->>>>>>> main
 const vehicles = ['BYD Atto 1']
 
 // FITUR BARU: Sinkronisasi jam operasional dari settings
@@ -127,18 +111,12 @@ function completeSession(slotId: string) {
     toast.add({ 
       title: 'Session Completed', 
       description: 'Driving session has been finished.', 
-<<<<<<< HEAD
-      color: 'primary', 
-=======
       color: 'neutral', 
->>>>>>> main
       icon: 'i-lucide-check-circle' 
     })
   }
 }
 
-<<<<<<< HEAD
-=======
 function handleManualBooking(slotId: string) {
   const studentName = studentNameToBook.value ? decodeURIComponent(studentNameToBook.value) : null
   if (studentName) {
@@ -172,7 +150,6 @@ function cancelBooking(slotId: string) {
   }
 }
 
->>>>>>> main
 // FITUR BARU: Add Slot State & Logic
 const newSlotData = ref({
   time: '08:00',
@@ -233,13 +210,10 @@ const editSlotData = ref({
 })
 
 function openEditModal(slot: any) {
-<<<<<<< HEAD
-=======
   if (slot.status !== 'available') {
     toast.add({ title: 'Error', description: 'Hanya slot dengan status Available yang bisa diedit', color: 'error' })
     return
   }
->>>>>>> main
   editSlotData.value = {
     id: slot.id,
     time: slot.time,
@@ -256,8 +230,6 @@ function saveEditSlot() {
     return
   }
 
-<<<<<<< HEAD
-=======
   // Validasi jam operasional (Termasuk Night Shift)
   const { start, end, nightStart, nightEnd, nightEnabled, isClosed } = currentDayOperatingHours.value
   if (isClosed) {
@@ -275,7 +247,6 @@ function saveEditSlot() {
     return
   }
 
->>>>>>> main
   editSlot(editSlotData.value.id, {
     time: editSlotData.value.time,
     duration: editSlotData.value.duration + ' min',
@@ -291,8 +262,6 @@ function saveEditSlot() {
 <template>
   <UDashboardPanel>
     <template #header>
-<<<<<<< HEAD
-=======
       <UAlert
         v-if="studentNameToBook"
         icon="i-lucide-user-check"
@@ -305,13 +274,10 @@ function saveEditSlot() {
           <span>Pilih slot untuk <strong>{{ decodeURIComponent(studentNameToBook) }}</strong>. <UButton variant="link" :padded="false" @click="navigateTo('/admin/schedules')">Batalkan</UButton></span>
         </template>
       </UAlert>
->>>>>>> main
       <UDashboardNavbar title="Schedule Management">
         <template #right>
           <UButton icon="i-lucide-plus" color="warning" label="Add Time Slot" @click="showAddSlotModal = true" />
           <UColorModeButton />
-<<<<<<< HEAD
-=======
           <!-- Add Slot Modal -->
           <UModal v-model:open="showAddSlotModal" title="Add New Time Slot">
             <template #body>
@@ -359,7 +325,6 @@ function saveEditSlot() {
               </div>
             </template>
           </UModal>
->>>>>>> main
         </template>
       </UDashboardNavbar>
 
@@ -438,13 +403,8 @@ function saveEditSlot() {
           </UCard>
           <UCard>
             <div class="flex items-center gap-3">
-<<<<<<< HEAD
-              <div class="p-2 rounded-lg bg-blue-500/10">
-                <UIcon name="i-lucide-check-square" class="size-5 text-blue-500" />
-=======
               <div class="p-2 rounded-lg bg-neutral-500/10">
                 <UIcon name="i-lucide-check-square" class="size-5 text-neutral-500" />
->>>>>>> main
               </div>
               <div>
                 <p class="text-xl font-bold">{{ timeSlots.filter(s => s.status === 'completed').length }}</p>
@@ -497,14 +457,9 @@ function saveEditSlot() {
                 <h2 class="font-semibold">Time Slots</h2>
                 <div class="flex gap-2">
                   <UBadge label="Available" color="success" variant="subtle" />
-<<<<<<< HEAD
-                  <UBadge label="Booked" color="primary" variant="subtle" />
-                  <UBadge label="Completed" color="blue" variant="subtle" />
-=======
                   <UBadge label="Booked" color="info" variant="subtle" />
                   <UBadge label="Completed" color="neutral" variant="subtle" />
                   <UBadge label="Blocked" color="error" variant="subtle" />
->>>>>>> main
                 </div>
               </div>
             </template>
@@ -515,14 +470,6 @@ function saveEditSlot() {
                 :key="slot.id"
                 class="p-4 rounded-lg border border-default hover:shadow-md transition-shadow"
                 :class="{
-<<<<<<< HEAD
-                  'border-l-4 border-l-green-500': slot.status === 'available',
-                  'border-l-4 border-l-primary bg-primary/5': slot.status === 'booked',
-                  'border-l-4 border-l-amber-500': slot.status === 'in-progress',
-                  'border-l-4 border-l-blue-500 bg-blue-500/5': slot.status === 'completed',
-                  'border-l-4 border-l-red-500 opacity-60': slot.status === 'blocked'
-                }"
-=======
                   'border-l-4 border-l-primary': slot.status === 'available',
                   'border-l-4 border-l-info bg-info/5': slot.status === 'booked',
                   'border-l-4 border-l-amber-500': slot.status === 'in-progress',
@@ -531,7 +478,6 @@ function saveEditSlot() {
                   'cursor-pointer hover:bg-primary/5': studentNameToBook && slot.status === 'available'
                 }"
                 @click="handleSlotClick(slot)"
->>>>>>> main
               >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-5">
@@ -553,22 +499,14 @@ function saveEditSlot() {
                       <div class="flex items-center gap-2 mt-1">
                         <UIcon name="i-lucide-contact" class="size-4 text-muted" />
                         <span class="text-sm">{{ slot.instructor }}</span>
-<<<<<<< HEAD
-                        <UBadge v-if="slot.time >= operatingHours.nightStart" label="Night Session" variant="subtle" size="xs" color="indigo" class="ml-2" />
-=======
                         <UBadge v-if="slot.time >= operatingHours.nightStart" label="Night Session" variant="subtle" size="xs" color="neutral" class="ml-2" />
->>>>>>> main
                       </div>
                     </div>
 
                     <div v-if="slot.student" class="hidden sm:block ml-4 pl-4 border-l border-default">
                       <p class="text-xs text-muted uppercase font-bold tracking-wider mb-1">Booked by</p>
                       <p class="font-bold flex items-center gap-2">
-<<<<<<< HEAD
-                        <UIcon name="i-lucide-user" class="size-4 text-primary" />
-=======
                         <UIcon name="i-lucide-user" class="size-4 text-info" />
->>>>>>> main
                         {{ slot.student }}
                       </p>
                     </div>
@@ -600,21 +538,12 @@ function saveEditSlot() {
                     <UBadge 
                       class="hidden sm:flex"
                       :label="slot.status === 'available' ? 'Available' : slot.status === 'booked' ? 'Booked' : slot.status === 'in-progress' ? 'In Progress' : slot.status === 'completed' ? 'Completed' : 'Blocked'"
-<<<<<<< HEAD
-                      :color="slot.status === 'available' ? 'success' : slot.status === 'booked' ? 'primary' : slot.status === 'in-progress' ? 'warning' : slot.status === 'completed' ? 'blue' : 'error'"
-=======
                       :color="slot.status === 'available' ? 'primary' : slot.status === 'booked' ? 'info' : slot.status === 'in-progress' ? 'warning' : slot.status === 'completed' ? 'neutral' : 'error'"
->>>>>>> main
                       variant="subtle"
                     />
                     <UDropdownMenu
                       :items="[
                         [
-<<<<<<< HEAD
-                          { label: slot.status === 'blocked' ? 'Unblock Slot' : 'Block Slot', icon: slot.status === 'blocked' ? 'i-lucide-unlock' : 'i-lucide-lock', onSelect: () => toggleSlotStatus(slot.id) },
-                          { label: 'Book Manually', icon: 'i-lucide-user-plus', onSelect: () => bookSlot(slot.id, 'Test Student') },
-                          { label: 'Edit Slot', icon: 'i-lucide-pencil', onSelect: () => openEditModal(slot) }
-=======
                           { label: slot.status === 'blocked' ? 'Unblock Slot' : 'Block Slot', icon: slot.status === 'blocked' ? 'i-lucide-unlock' : 'i-lucide-lock', onSelect: () => toggleSlotStatus(slot.id), disabled: slot.status === 'in-progress' || slot.status === 'completed' },
                           { label: 'Book Manually', icon: 'i-lucide-user-plus', onSelect: () => handleManualBooking(slot.id), disabled: slot.status !== 'available' },
                           { label: 'Edit Slot', icon: 'i-lucide-pencil', onSelect: () => openEditModal(slot), disabled: slot.status !== 'available' }
@@ -623,7 +552,6 @@ function saveEditSlot() {
                           { label: 'Start Session', icon: 'i-lucide-play', color: 'warning', onSelect: () => startSession(slot.id), disabled: slot.status !== 'booked' },
                           { label: 'Complete Session', icon: 'i-lucide-check-circle', color: 'primary', onSelect: () => completeSession(slot.id), disabled: slot.status !== 'in-progress' },
                           { label: 'Cancel Booking', icon: 'i-lucide-user-minus', color: 'neutral', onSelect: () => cancelBooking(slot.id), disabled: slot.status !== 'booked' }
->>>>>>> main
                         ],
                         [
                           { label: 'Delete Slot', icon: 'i-lucide-trash', color: 'error', onSelect: () => deleteSlot(slot.id) }
@@ -631,10 +559,7 @@ function saveEditSlot() {
                       ]"
                     >
                       <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" />
-<<<<<<< HEAD
-=======
                       
->>>>>>> main
                     </UDropdownMenu>
                     
                   </div>
@@ -649,23 +574,11 @@ function saveEditSlot() {
           </UCard>
         </div>
       </div>
-<<<<<<< HEAD
-    </template>
-
-    <!-- Add Slot Modal -->
-    <UModal v-model:open="showAddSlotModal" title="Add New Time Slot">
-      <template #body>
-        <div class="space-y-5">
-          <UFormField label="Date" required>
-            <UInput type="date" :model-value="localDateStr" disabled />
-          </UFormField>
-=======
 
       <!-- FITUR BARU: Edit Slot Modal -->
     <UModal v-model:open="showEditSlotModal" title="Edit Time Slot">
       <template #body>
         <div class="space-y-5">
->>>>>>> main
           <div class="grid grid-cols-2 gap-4">
             <UFormField :label="currentDayOperatingHours.isClosed ? 'Closed Today' : `Start Time`" required>
               <template #hint>
@@ -674,22 +587,6 @@ function saveEditSlot() {
                   <span v-if="currentDayOperatingHours.nightEnabled">Night: {{ currentDayOperatingHours.nightStart }}-{{ currentDayOperatingHours.nightEnd }}</span>
                 </div>
               </template>
-<<<<<<< HEAD
-              <UInput 
-                type="time" 
-                v-model="newSlotData.time" 
-                :disabled="currentDayOperatingHours.isClosed"
-              />
-            </UFormField>
-            <UFormField label="Duration" required>
-              <USelect 
-                :items="[
-                  { label: '45 minutes', value: '45' },
-                  { label: '60 minutes', value: '60' },
-                  { label: '90 minutes', value: '90' }
-                ]"
-                v-model="newSlotData.duration"
-=======
               <UInput type="time" v-model="editSlotData.time" :disabled="currentDayOperatingHours.isClosed" class="w-full"/>
             </UFormField>
             <UFormField label="Duration">
@@ -700,75 +597,25 @@ function saveEditSlot() {
                 v-model="editSlotData.duration"
                 disabled
                 class="w-full"
->>>>>>> main
               />
             </UFormField>
           </div>
           <UFormField label="Vehicle" required>
-<<<<<<< HEAD
-            <USelect :items="vehicles" v-model="newSlotData.car" placeholder="Select vehicle" />
-          </UFormField>
-          <UFormField label="Instructor" required>
-            <USelect :items="instructors" v-model="newSlotData.instructor" placeholder="Select instructor" />
-=======
             <USelect :items="vehicles" v-model="editSlotData.car" placeholder="Select vehicle" class="w-full"/>
           </UFormField>
           <UFormField label="Instructor" required>
             <USelect :items="instructors" v-model="editSlotData.instructor" placeholder="Select instructor" class="w-full"/>
->>>>>>> main
           </UFormField>
         </div>
       </template>
       <template #footer>
         <div class="flex justify-end gap-3">
-<<<<<<< HEAD
-          <UButton label="Cancel" variant="ghost" color="neutral" @click="showAddSlotModal = false" />
-          <UButton label="Create Slot" icon="i-lucide-plus" @click="saveNewSlot" />
-=======
           <UButton label="Save Changes" icon="i-lucide-save" @click="saveEditSlot" color="warning"/>
->>>>>>> main
         </div>
       </template>
     </UModal>
 
-<<<<<<< HEAD
-    <!-- FITUR BARU: Edit Slot Modal -->
-    <UModal v-model:open="showEditSlotModal" title="Edit Time Slot">
-      <template #body>
-        <div class="space-y-5">
-          <div class="grid grid-cols-2 gap-4">
-            <UFormField label="Start Time" required>
-              <UInput type="time" v-model="editSlotData.time" />
-            </UFormField>
-            <UFormField label="Duration" required>
-              <USelect 
-                :items="[
-                  { label: '45 minutes', value: '45' },
-                  { label: '60 minutes', value: '60' },
-                  { label: '90 minutes', value: '90' }
-                ]"
-                v-model="editSlotData.duration"
-              />
-            </UFormField>
-          </div>
-          <UFormField label="Vehicle" required>
-            <USelect :items="vehicles" v-model="editSlotData.car" placeholder="Select vehicle" />
-          </UFormField>
-          <UFormField label="Instructor" required>
-            <USelect :items="instructors" v-model="editSlotData.instructor" placeholder="Select instructor" />
-          </UFormField>
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <UButton label="Cancel" variant="ghost" color="neutral" @click="showEditSlotModal = false" />
-          <UButton label="Save Changes" icon="i-lucide-save" @click="saveEditSlot" />
-        </div>
-      </template>
-    </UModal>
-=======
     </template>
->>>>>>> main
 
   </UDashboardPanel>
 </template>

@@ -35,31 +35,7 @@ COPY --from=builder /app/database/refs ./database/refs
 ENV CONFIG_PATH=./pkg/config/config.yaml
 ENV GIN_MODE=release
 
-# Create entrypoint script
-COPY --chmod=755 <<'EOF' /entrypoint.sh
-#!/bin/sh
-set -e
-
-# Set working directory to app
-cd /app
-
-# Run migrations if enabled
-if [ "${RUN_MIGRATIONS}" != "false" ]; then
-    echo "Running database migrations..."
-    ./core-service migrate || true
-fi
-
-# Run seeders if enabled
-if [ "${RUN_SEEDERS}" = "true" ]; then
-    echo "Running database seeders..."
-    ./core-service seed || true
-fi
-
-echo "Starting Core Service..."
-exec ./core-service serve "$@"
-EOF
-
 EXPOSE 8002
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["/entrypoint.sh"]
+CMD ["sh", "-c", "if [ \"${RUN_MIGRATIONS}\" != \"false\" ]; then ./core-service migrate || true; fi && if [ \"${RUN_SEEDERS}\" = \"true\" ]; then ./core-service seed || true; fi && exec ./core-service serve"]

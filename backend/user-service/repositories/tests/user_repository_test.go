@@ -1,7 +1,9 @@
 package tests
 
 import (
+	"context"
 	"testing"
+	"user-service/models/dto"
 
 	"user-service/models"
 	"user-service/repositories"
@@ -17,13 +19,21 @@ func TestUserRepository_Create(t *testing.T) {
 	db := SetupTestDB(t)
 	repo := repositories.NewUserRepository(db)
 
-	// Auto migrate only User model to avoid relationship issues with SQLite
 	err := db.AutoMigrate(&models.User{}, &models.Role{})
 	require.NoError(t, err)
 
-	user := CreateMockUser()
+	req := &dto.RegisterRequest{
+		FirstName: "test",
+		LastName: "user",
+		Username: "testuser",
+		Email: "test@example.com",
+		PhoneNumber: "1234567890",
+		Password: "password",
+		DateOfBirth: "2006-01-02",
+		RoleID: 1,
+	}
 
-	err = repo.Create(user)
+	user, err := repo.Create(context.Background(), req)
 	assert.NoError(t, err)
 	assert.NotEqual(t, uuid.Nil, user.ID)
 }
@@ -37,10 +47,10 @@ func TestUserRepository_FindByID(t *testing.T) {
 	require.NoError(t, err)
 
 	user := CreateMockUser()
-	err = repo.Create(user)
+	err = db.Create(user).Error
 	require.NoError(t, err)
 
-	result, err := repo.FindByID(user.ID)
+	result, err := repo.FindByID(context.Background(), user.ID)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, user.ID, result.ID)
@@ -57,7 +67,7 @@ func TestUserRepository_FindByID_NotFound(t *testing.T) {
 
 	nonExistentID := uuid.New()
 
-	result, err := repo.FindByID(nonExistentID)
+	result, err := repo.FindByID(context.Background(), nonExistentID)
 	assert.Error(t, err)
 	assert.Nil(t, result)
 }
@@ -71,10 +81,10 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 	require.NoError(t, err)
 
 	user := CreateMockUser()
-	err = repo.Create(user)
+	err = db.Create(user).Error
 	require.NoError(t, err)
 
-	result, err := repo.FindByEmail(user.EmailAddress)
+	result, err := repo.FindByEmail(context.Background(), user.EmailAddress)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, user.EmailAddress, result.EmailAddress)
@@ -88,7 +98,7 @@ func TestUserRepository_FindByEmail_NotFound(t *testing.T) {
 	err := db.AutoMigrate(&models.User{}, &models.Role{})
 	require.NoError(t, err)
 
-	result, err := repo.FindByEmail("nonexistent@example.com")
+	result, err := repo.FindByEmail(context.Background(), "nonexistent@example.com")
 	assert.Error(t, err)
 	assert.Nil(t, result)
 }
@@ -102,10 +112,10 @@ func TestUserRepository_FindByUsername(t *testing.T) {
 	require.NoError(t, err)
 
 	user := CreateMockUser()
-	err = repo.Create(user)
+	err = db.Create(user).Error
 	require.NoError(t, err)
 
-	result, err := repo.FindByUsername(user.Username)
+	result, err := repo.FindByUsername(context.Background(), user.Username)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, user.Username, result.Username)
@@ -120,16 +130,16 @@ func TestUserRepository_Update(t *testing.T) {
 	require.NoError(t, err)
 
 	user := CreateMockUser()
-	err = repo.Create(user)
+	err = db.Create(user).Error
 	require.NoError(t, err)
 
 	// Update the user
 	user.Username = "updateduser"
-	err = repo.Update(user)
+	err = repo.Update(context.Background(), user)
 	assert.NoError(t, err)
 
 	// Verify the update
-	result, err := repo.FindByID(user.ID)
+	result, err := repo.FindByID(context.Background(), user.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, "updateduser", result.Username)
 }
@@ -143,15 +153,15 @@ func TestUserRepository_Delete(t *testing.T) {
 	require.NoError(t, err)
 
 	user := CreateMockUser()
-	err = repo.Create(user)
+	err = db.Create(user).Error
 	require.NoError(t, err)
 
 	// Delete the user
-	err = repo.Delete(user)
+	err = repo.Delete(context.Background(), user)
 	assert.NoError(t, err)
 
 	// Verify deletion
-	result, err := repo.FindByID(user.ID)
+	result, err := repo.FindByID(context.Background(), user.ID)
 	assert.Error(t, err)
 	assert.Nil(t, result)
 }
@@ -165,16 +175,16 @@ func TestUserRepository_ExistsByEmail(t *testing.T) {
 	require.NoError(t, err)
 
 	user := CreateMockUser()
-	err = repo.Create(user)
+	err = db.Create(user).Error
 	require.NoError(t, err)
 
 	// Check that email exists
-	exists, err := repo.ExistsByEmail(user.EmailAddress)
+	exists, err := repo.ExistsByEmail(context.Background(), user.EmailAddress)
 	assert.NoError(t, err)
 	assert.True(t, exists)
 
 	// Check that non-existent email returns false
-	exists, err = repo.ExistsByEmail("nonexistent@example.com")
+	exists, err = repo.ExistsByEmail(context.Background(), "nonexistent@example.com")
 	assert.NoError(t, err)
 	assert.False(t, exists)
 }
@@ -188,14 +198,14 @@ func TestUserRepository_ExistsByUsername(t *testing.T) {
 	require.NoError(t, err)
 
 	user := CreateMockUser()
-	err = repo.Create(user)
+	err = db.Create(user).Error
 	require.NoError(t, err)
 
-	exists, err := repo.ExistsByUsername(user.Username)
+	exists, err := repo.ExistsByUsername(context.Background(), user.Username)
 	assert.NoError(t, err)
 	assert.True(t, exists)
 
-	exists, err = repo.ExistsByUsername("nonexistentuser")
+	exists, err = repo.ExistsByUsername(context.Background(), "nonexistentuser")
 	assert.NoError(t, err)
 	assert.False(t, exists)
 }
@@ -209,14 +219,14 @@ func TestUserRepository_ExistsByPhoneNumber(t *testing.T) {
 	require.NoError(t, err)
 
 	user := CreateMockUser()
-	err = repo.Create(user)
+	err = db.Create(user).Error
 	require.NoError(t, err)
 
-	exists, err := repo.ExistsByPhoneNumber(user.PhoneNumber)
+	exists, err := repo.ExistsByPhoneNumber(context.Background(), user.PhoneNumber)
 	assert.NoError(t, err)
 	assert.True(t, exists)
 
-	exists, err = repo.ExistsByPhoneNumber("+9999999999")
+	exists, err = repo.ExistsByPhoneNumber(context.Background(), "+9999999999")
 	assert.NoError(t, err)
 	assert.False(t, exists)
 }
@@ -251,7 +261,7 @@ func TestUserRepository_FindAll(t *testing.T) {
 	err = db.Create(user2).Error
 	require.NoError(t, err)
 
-	users, err := repo.FindAll()
+	users, err := repo.FindAll(context.Background())
 	assert.NoError(t, err)
 	assert.Len(t, users, 2)
 }
@@ -267,15 +277,15 @@ func TestUserRepository_FindByRoleID(t *testing.T) {
 	// Create users with different roles
 	user1 := CreateMockUserWithRole(1)
 	user1.Username = "user1"
-	err = repo.Create(user1)
+	err = db.Create(user1).Error
 	require.NoError(t, err)
 
 	user2 := CreateMockUserWithRole(2)
 	user2.Username = "user2"
-	err = repo.Create(user2)
+	err = db.Create(user2).Error
 	require.NoError(t, err)
 
-	users, err := repo.FindByRoleID(1)
+	users, err := repo.FindByRoleID(context.Background(), 1)
 	assert.NoError(t, err)
 	assert.Len(t, users, 1)
 	assert.Equal(t, uint(1), users[0].RoleID)

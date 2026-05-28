@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { useToast } from '@nuxt/ui/runtime/composables/index.js'
 import { ref } from 'vue'
-<<<<<<< HEAD
-
-definePageMeta({ layout: 'dashboard', middleware: ['auth'] })
-
-const toast = useToast()
-=======
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -15,7 +9,6 @@ definePageMeta({ layout: 'dashboard' })
 const toast = useToast()
 const certificatePreview = ref<HTMLElement[] | null>(null)
 const isDownloading = ref(false)
->>>>>>> main
 
 // Mock certificate data
 const certificateStatus = ref({
@@ -41,15 +34,6 @@ const issuedCertificates = ref([
 // For demo purposes, set certificate as available
 const hasCertificate = ref(true)
 
-<<<<<<< HEAD
-function downloadCertificate(certId: string) {
-  toast.add({
-    title: 'Download Started',
-    description: 'Your certificate is being downloaded.',
-    icon: 'i-lucide-download',
-    color: 'success'
-  })
-=======
 async function downloadCertificate(certId: string) {
   if (!certificatePreview.value || certificatePreview.value.length === 0) {
     toast.add({ title: 'Error', description: 'Elemen pratinjau sertifikat tidak ditemukan.', color: 'error' })
@@ -131,7 +115,6 @@ async function shareCertificate(certId: string) {
       copyVerificationLink(certId)
     }
   }
->>>>>>> main
 }
 </script>
 
@@ -198,11 +181,7 @@ async function shareCertificate(certId: string) {
                 <h2 class="font-semibold">Certificate Preview</h2>
               </template>
 
-<<<<<<< HEAD
-              <div v-for="certificate in issuedCertificates" :key="certificate.id" class="aspect-[1.414/1] bg-gradient-to-br from-warning/5 to-warning/10 rounded-lg border-2 border-dashed border-warning/30 flex flex-col items-center justify-center p-8 text-center">
-=======
               <div ref="certificatePreview" v-for="certificate in issuedCertificates" :key="certificate.id" class="aspect-[1.414/1] bg-gradient-to-br from-warning/5 to-warning/10 rounded-lg border-2 border-dashed border-warning/30 flex flex-col items-center justify-center p-8 text-center">
->>>>>>> main
                 <div class="flex items-center gap-2 mb-4">
                   <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
                 </div>
@@ -225,12 +204,8 @@ async function shareCertificate(certId: string) {
                   label="Download Certificate (PDF)" 
                   icon="i-lucide-download" 
                   block
-<<<<<<< HEAD
-                  @click="downloadCertificate('EVDA-2026-001234')"
-=======
                   :loading="isDownloading"
                   @click="issuedCertificates[0] && downloadCertificate(issuedCertificates[0].id)"
->>>>>>> main
                 />
               </template>
             </UCard>
@@ -279,13 +254,8 @@ async function shareCertificate(certId: string) {
                 </p>
 
                 <div class="flex gap-2">
-<<<<<<< HEAD
-                  <UButton label="Copy Link" icon="i-lucide-copy" variant="outline" color="neutral" size="md" />
-                  <UButton label="Share" icon="i-lucide-share-2" variant="outline" color="neutral" size="md" />
-=======
                   <UButton label="Copy Link" icon="i-lucide-copy" variant="outline" color="neutral" size="md" @click="issuedCertificates[0] && copyVerificationLink(issuedCertificates[0].id)" />
                   <UButton label="Share" icon="i-lucide-share-2" variant="outline" color="neutral" size="md" @click="issuedCertificates[0] && shareCertificate(issuedCertificates[0].id)" />
->>>>>>> main
                 </div>
               </UCard>
             </div>
@@ -295,11 +265,7 @@ async function shareCertificate(certId: string) {
         <!-- Certificate Info -->
         <UCard>
           <template #header>
-<<<<<<< HEAD
-            <h2 class="font-semibold">About EV Driving Certificates</h2>
-=======
             <h2 class="font-semibold">About Drive Master Certificates</h2>
->>>>>>> main
           </template>
 
           <div class="grid md:grid-cols-3 gap-6">

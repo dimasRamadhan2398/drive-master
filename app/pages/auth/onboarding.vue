@@ -4,17 +4,6 @@ import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
 definePageMeta({
-<<<<<<< HEAD
-  layout: 'blank',
-  middleware: ['guest']
-})
-
-const loading = ref(false)
-
-const schema = z.object({
-  fullName: z.string().min(3, 'Name must be at least 3 characters'),
-  ktpNumber: z.string().min(16, 'KTP number must be 16 digits').max(16, 'KTP number must be 16 digits'),
-=======
   layout: 'blank'
 })
 
@@ -23,16 +12,11 @@ const showTermsModal = ref(false)
 
 const schema = z.object({
   fullName: z.string().min(3, 'Name must be at least 3 characters'),
->>>>>>> main
   agreedToTerms: z.boolean().refine(val => val === true, 'You must agree to terms')
 })
 
 const formData = reactive({
   fullName: '',
-<<<<<<< HEAD
-  ktpNumber: '',
-=======
->>>>>>> main
   agreedToTerms: false
 })
 
@@ -43,12 +27,6 @@ async function onSubmit(event: FormSubmitEvent<any>) {
     // Simulate API call to save profile
     await new Promise(resolve => setTimeout(resolve, 1500))
     
-<<<<<<< HEAD
-    console.log('[v0] Onboarding completed:', formData)
-    
-    // Redirect to plan selection
-    navigateTo('/auth/select-plan')
-=======
     console.log('Onboarding completed:', formData)
     
     let plan = null
@@ -61,7 +39,6 @@ async function onSubmit(event: FormSubmitEvent<any>) {
     } else {
       navigateTo('/auth/select-plan')
     }
->>>>>>> main
   } finally {
     loading.value = false
   }
@@ -69,14 +46,6 @@ async function onSubmit(event: FormSubmitEvent<any>) {
 
 const features = [
   {
-<<<<<<< HEAD
-    icon: 'i-lucide-check-circle',
-    title: 'Verified Identity',
-    description: 'Your KTP information will be used to issue your official certificate'
-  },
-  {
-=======
->>>>>>> main
     icon: 'i-lucide-gift',
     title: 'Free Trial Access',
     description: 'Unlock your 15-minute free trial session after onboarding'
@@ -110,11 +79,7 @@ const features = [
       </div>
 
       <!-- Features Grid -->
-<<<<<<< HEAD
-      <div class="grid sm:grid-cols-2 gap-4 mb-8">
-=======
       <div class="grid sm:grid-cols-3 gap-4 mb-8">
->>>>>>> main
         <div 
           v-for="feature in features" 
           :key="feature.title"
@@ -150,24 +115,6 @@ const features = [
             </template>
           </UFormField>
 
-<<<<<<< HEAD
-          <!-- KTP Number -->
-          <UFormField name="ktpNumber" label="KTP Number (16 Digits)" required>
-            <UInput 
-              v-model="formData.ktpNumber"
-              placeholder="e.g., 3520123456789012"
-              icon="i-lucide-credit-card"
-              size="lg"
-              class="w-full"
-              @input="formData.ktpNumber = formData.ktpNumber.replace(/\D/g, '').slice(0, 16)"
-            />
-            <template #hint>
-              Your KTP data will be verified and used for certificate issuance
-            </template>
-          </UFormField>
-
-=======
->>>>>>> main
           <!-- Info Alert -->
           <UAlert icon="i-lucide-shield-check" color="primary">
             <template #title>Your Data is Secure</template>
@@ -181,10 +128,6 @@ const features = [
             <UCheckbox v-model="formData.agreedToTerms" color="warning">
               <template #label>
                 <span class="text-sm">
-<<<<<<< HEAD
-                  I agree that my KTP information will be used to issue my official training certificate and follow 
-                  <NuxtLink to="/terms" class="text-warning hover:underline">Terms of Service</NuxtLink>
-=======
                   I agree that my information will be used to issue my official training certificate and follow 
                   <UButton label="Terms of Service" color="warning" variant="ghost" class="underline" @click="showTermsModal = true" />
                   <UModal v-model:open="showTermsModal" title="Terms of Service">
@@ -247,7 +190,6 @@ const features = [
                       </div>
                     </template>
                   </UModal>
->>>>>>> main
                 </span>
               </template>
             </UCheckbox>
@@ -281,26 +223,6 @@ const features = [
           </div>
         </template>
       </UCard>
-<<<<<<< HEAD
-
-      <!-- Help Section
-      <div class="mt-8 p-6 bg-muted/30 rounded-lg text-center">
-        <p class="text-sm text-muted mb-3">
-          Don't have your KTP number handy?
-        </p>
-        <NuxtLink to="https://wa.me/6281234567890" target="_blank">
-          <UButton 
-            label="Chat Support on WhatsApp"
-            icon="i-simple-icons-whatsapp"
-            color="neutral"
-            variant="outline"
-            size="sm"
-          />
-        </NuxtLink>
-      </div>
-    -->
-=======
->>>>>>> main
     </div>
   </div>
 </template>

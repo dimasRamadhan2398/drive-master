@@ -2,15 +2,6 @@
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { ref } from 'vue'
 
-<<<<<<< HEAD
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
-
-const toast = useToast()
-const showEditModal = ref(false)
-const selectedPackage = ref<any>(null)
-
-// Mock packages data
-=======
 definePageMeta({ layout: 'admin' })
 
 const toast = useToast()
@@ -39,7 +30,6 @@ const newAddon = ref({
 const editingAddon = ref<any>(null)
 
 // Mock data paket - Di aplikasi nyata, ini akan berasal dari API
->>>>>>> main
 const packages = ref([
   {
     id: 1,
@@ -51,21 +41,13 @@ const packages = ref([
     features: [
       'Free Trial',
       '6x Sessions',
-<<<<<<< HEAD
-    ],
-    isActive: true,
-    isPopular: true,
-=======
       'SIM A'
     ],
     isActive: true,
->>>>>>> main
     totalSold: 89
   },
   {
     id: 2,
-<<<<<<< HEAD
-=======
     name: '6x + Night Session',
     price: 1850000,
     sessions: 6,
@@ -111,7 +93,6 @@ const packages = ref([
   },
   {
     id: 5,
->>>>>>> main
     name: '8x',
     price: 1950000,
     sessions: 8,
@@ -120,14 +101,6 @@ const packages = ref([
     features: [
       'Free Trial',
       '8x Sessions',
-<<<<<<< HEAD
-    ],
-    isActive: true,
-    totalSold: 22
-  },
-  {
-    id: 3,
-=======
       'SIM A'
     ],
     isActive: true,
@@ -184,7 +157,6 @@ const packages = ref([
   },
   {
     id: 9,
->>>>>>> main
     name: '10x',
     price: 2250000,
     sessions: 10,
@@ -193,18 +165,12 @@ const packages = ref([
     features: [
       'Free Trial',
       '10x Sessions',
-<<<<<<< HEAD
-=======
       'SIM A'
->>>>>>> main
     ],
     isActive: true,
     totalSold: 22
   },
   {
-<<<<<<< HEAD
-    id: 4,
-=======
     id: 10,
     name: '10x + Night Session',
     price: 2450000,
@@ -251,7 +217,6 @@ const packages = ref([
   },
   {
     id: 13,
->>>>>>> main
     name: '12x',
     price: 2650000,
     sessions: 12,
@@ -263,8 +228,6 @@ const packages = ref([
     ],
     isActive: true,
     totalSold: 22
-<<<<<<< HEAD
-=======
   },
   {
     id: 14,
@@ -310,18 +273,12 @@ const packages = ref([
     ],
     isActive: true,
     totalSold: 22
->>>>>>> main
   }
 ])
 
 // Mock add-ons data
 const addOns = ref([
   { id: 1, name: 'Extra Session', price: 350000, description: 'Additional training session', sold: 34 },
-<<<<<<< HEAD
-  // { id: 2, name: 'Simulator Session', price: 150000, description: 'Practice in driving simulator', sold: 22 },
-  // { id: 3, name: 'SIM Exam Prep', price: 500000, description: 'License test preparation', sold: 18 }
-=======
->>>>>>> main
 ])
 
 function formatPrice(price: number) {
@@ -329,16 +286,12 @@ function formatPrice(price: number) {
 }
 
 function editPackage(pkg: any) {
-<<<<<<< HEAD
-  selectedPackage.value = { ...pkg }
-=======
   // Buat salinan dan ubah array fitur menjadi string untuk textarea
   selectedPackage.value = {
     ...pkg,
     // Pastikan fitur adalah array sebelum join, untuk menghindari error jika data tidak konsisten
     features: Array.isArray(pkg.features) ? pkg.features.join('\n') : ''
   }
->>>>>>> main
   showEditModal.value = true
 }
 
@@ -353,8 +306,6 @@ function togglePackageStatus(pkgId: number) {
     })
   }
 }
-<<<<<<< HEAD
-=======
 
 function saveNewPackage() {
   if (!newPackage.value.name || newPackage.value.price <= 0) {
@@ -484,7 +435,6 @@ function saveEditedAddon() {
   editingAddon.value = null
 }
 
->>>>>>> main
 </script>
 
 <template>
@@ -492,11 +442,7 @@ function saveEditedAddon() {
     <template #header>
       <UDashboardNavbar title="Package Management">
         <template #right>
-<<<<<<< HEAD
-          <UButton icon="i-lucide-plus" color="warning" label="Add Package" />
-=======
           <UButton icon="i-lucide-plus" color="warning" label="Add Package" @click="showAddModal = true" />
->>>>>>> main
           <UColorModeButton />
         </template>
       </UDashboardNavbar>
@@ -595,19 +541,11 @@ function saveEditedAddon() {
                 <UDropdownMenu
                   :items="[
                     [
-<<<<<<< HEAD
-                      { label: 'View Sales', icon: 'i-lucide-chart-bar' },
-                      { label: 'Duplicate', icon: 'i-lucide-copy' }
-                    ],
-                    [
-                      { label: 'Delete', icon: 'i-lucide-trash', color: 'error' }
-=======
                       { label: 'View Sales', icon: 'i-lucide-chart-bar', onSelect: () => viewPackageSales(pkg) },
                       { label: 'Duplicate', icon: 'i-lucide-copy', onSelect: () => duplicatePackage(pkg) }
                     ],
                     [
                       { label: 'Delete', icon: 'i-lucide-trash', color: 'error', onSelect: () => deletePackage(pkg.id) }
->>>>>>> main
                     ]
                   ]"
                 >
@@ -618,41 +556,6 @@ function saveEditedAddon() {
 
             </template>
           </UCard>
-<<<<<<< HEAD
-          <!-- Edit Package Modal -->
-          <UModal v-model:open="showEditModal" title="Edit Package">
-            <template #body>
-              <div v-if="selectedPackage" class="space-y-4">
-                <UFormField label="Package Name" required>
-                  <UInput v-model="selectedPackage.name" class="w-full" color="warning"/>
-                </UFormField>
-                <UFormField label="Price (IDR)" required>
-                  <UInput v-model="selectedPackage.price" type="number" :step="100000" class="w-full" color="warning"/>
-                </UFormField>
-                <div class="grid grid-cols-2 gap-4">
-                  <UFormField label="Sessions" required>
-                    <UInput v-model="selectedPackage.sessions" type="number" class="w-full" color="warning" />
-                  </UFormField>
-                  <UFormField label="Duration (min)" required>
-                    <UInput v-model="selectedPackage.duration" type="number" :step="15" class="w-full" color="warning" />
-                  </UFormField>
-                </div>
-                <UFormField label="Description">
-                  <UTextarea v-model="selectedPackage.description" class="w-full" color="warning" />
-                </UFormField>
-                <USwitch v-model="selectedPackage.isPopular" label="Mark as Popular" class="w-full" color="warning" />
-              </div>
-            </template>
-            <template #footer>
-              <div class="flex justify-end gap-3">
-                <UButton label="Cancel" variant="ghost" color="neutral" @click="showEditModal = false" />
-                <UButton label="Save Changes" icon="i-lucide-save" color="warning" @click="showEditModal = false" />
-              </div>
-            </template>
-          </UModal>
-        </div>
-
-=======
         </div>
 
         <!-- Modals -->
@@ -778,17 +681,12 @@ function saveEditedAddon() {
           </template>
         </UModal>
 
->>>>>>> main
         <!-- Add-ons Section -->
         <UCard>
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="font-semibold">Package Add-ons</h2>
-<<<<<<< HEAD
-              <UButton label="Add Add-on" icon="i-lucide-plus" size="md" color="warning" variant="outline" />
-=======
               <UButton label="Add Add-on" icon="i-lucide-plus" size="md" color="warning" variant="outline" @click="showAddonModal = true" />
->>>>>>> main
             </div>
           </template>
 
@@ -810,11 +708,7 @@ function saveEditedAddon() {
                   <p class="font-bold">{{ addon.sold }}</p>
                   <p class="text-md text-muted">Sold</p>
                 </div>
-<<<<<<< HEAD
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="md" />
-=======
                 <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="md" @click="openEditAddonModal(addon)" />
->>>>>>> main
               </div>
             </div>
           </div>
@@ -822,8 +716,4 @@ function saveEditedAddon() {
       </div>
     </template>
   </UDashboardPanel>
-<<<<<<< HEAD
 </template>
-=======
-</template>
->>>>>>> main

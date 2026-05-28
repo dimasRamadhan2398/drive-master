@@ -11,7 +11,10 @@ export const useSettings = () => {
     sundayClosed: true
   }))
 
+  const promoEndDate = useCookie('promo-end-date', { default: () => '2026-05-31T23:59:59' })
+
   return {
-    operatingHours
+    operatingHours,
+    promoEndDate
   }
 }

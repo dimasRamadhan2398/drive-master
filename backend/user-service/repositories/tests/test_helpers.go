@@ -31,7 +31,7 @@ func CreateMockUser() *models.User {
 		ID:           id,
 		Username:     "testuser",
 		PasswordHash: "$2a$10$hashedpassword",
-		Email:        "test@example.com",
+		EmailAddress: "test@example.com",
 		PhoneNumber:  "+1234567890",
 		RoleID:       1,
 	}

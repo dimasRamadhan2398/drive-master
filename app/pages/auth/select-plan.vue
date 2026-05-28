@@ -2,27 +2,6 @@
 import { ref, computed } from 'vue'
 
 definePageMeta({
-<<<<<<< HEAD
-  layout: 'blank',
-  middleware: ['guest']
-})
-
-const selectedPlan = ref<'six_package' | 'eight_package' | 'ten_package' | 'twelve_package'>('eight_package')
-const loading = ref(false)
-
-// Check if promo is active (dynamic)
-const isPromoActive = computed(() => {
-  const now = new Date()
-  const promoEnd = new Date('2026-05-20T23:59:59') // Can be dynamic from backend
-  return now < promoEnd
-})
-
-const promoDuration = computed(() => {
-  const now = new Date()
-  const promoEnd = new Date('2026-05-20T23:59:59')
-  const daysLeft = Math.ceil((promoEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-  return daysLeft > 0 ? daysLeft : 0
-=======
   layout: 'blank'
 })
 
@@ -56,8 +35,10 @@ if (process.client) {
   }, 1000)
 }
 
+const { promoEndDate } = useSettings()
+
 const isPromoActive = computed(() => {
-  const promoEnd = new Date('2026-05-20T23:59:59')
+  const promoEnd = new Date(promoEndDate.value || '2026-05-31T23:59:59')
   return now.value < promoEnd
 })
 
@@ -78,21 +59,12 @@ const timeLeft = computed(() => {
   const seconds = totalSeconds % 60
 
   return { hours, minutes, seconds }
->>>>>>> main
 })
 
 const plans = [
   {
     id: 'six_package',
     name: '6x',
-<<<<<<< HEAD
-    originalPrice: 1750000,
-    // promoPrice: 1600000,
-    sessions: 6,
-    features: [
-      'Free Trial',
-      '6 training sessions'
-=======
     originalPrice: 1950000,
     promoPrice: 1750000,
     duration: '3 Months',
@@ -143,21 +115,12 @@ const plans = [
       'Free Trial',
       '6 training sessions',
       'SIM A'
->>>>>>> main
     ],
     highlight: false
   },
   {
     id: 'eight_package',
     name: '8x',
-<<<<<<< HEAD
-    originalPrice: 1950000,
-    // promoPrice: 1750000,
-    sessions: 8,
-    features: [
-      'Free Trial',
-      '8 training sessions'
-=======
     originalPrice: 2150000,
     promoPrice: 1950000,
     duration: '3 Months',
@@ -208,21 +171,12 @@ const plans = [
       'Free Trial',
       '8 training sessions',
       'SIM A'
->>>>>>> main
     ],
     highlight: true
   },
   {
     id: 'ten_package',
     name: '10x',
-<<<<<<< HEAD
-    originalPrice: 2250000,
-    // promoPrice: 2100000,
-    sessions: 10,
-    features: [
-      'Free Trial',
-      '10 training sessions'
-=======
     originalPrice: 2500000,
     promoPrice: 2250000,
     duration: '3 Months',
@@ -273,21 +227,12 @@ const plans = [
       'Free Trial',
       '10 training sessions',
       'SIM A'
->>>>>>> main
     ],
     highlight: false
   },
   {
     id: 'twelve_package',
     name: '12x',
-<<<<<<< HEAD
-    originalPrice: 2650000,
-    // promoPrice: 2500000,
-    sessions: 12,
-    features: [
-      'Free Trial',
-      '12 training sessions'
-=======
     originalPrice: 2950000,
     promoPrice: 2650000,
     duration: '3 Months',
@@ -338,19 +283,11 @@ const plans = [
       'Free Trial',
       '12 training sessions',
       'SIM A'
->>>>>>> main
     ],
     highlight: false
   }
 ]
 
-<<<<<<< HEAD
-const currentPlan = computed(() => plans.find(p => p.id === selectedPlan.value))
-// const discount = computed(() => {
-//   if (!currentPlan.value || !isPromoActive.value) return 0
-//   return Math.round(((currentPlan.value.originalPrice - currentPlan.value.promoPrice) / currentPlan.value.originalPrice) * 100)
-// })
-=======
 const currentActivePlan = computed(() => route.query.current_plan as string | null)
 
 // Set initial selected plan, avoiding the current active one
@@ -370,7 +307,6 @@ const discount = computed(() => {
   if (!currentPlan.value || !isPromoActive.value) return 0
   return Math.ceil(((currentPlan.value.originalPrice - currentPlan.value.promoPrice) / currentPlan.value.originalPrice) * 100)
 })
->>>>>>> main
 
 async function selectPlan() {
   if (!currentPlan.value) return
@@ -398,16 +334,7 @@ const freeTrialInfo = [
   {
     icon: 'i-lucide-clock',
     title: '15 Minutes',
-<<<<<<< HEAD
-    description: 'Session duration for all user types (free and paid)'
-  },
-  {
-    icon: 'i-lucide-check-circle',
-    title: 'No Commitment',
-    description: 'Experience our service risk-free before payment'
-=======
     description: 'Free 15 minutes trial session'
->>>>>>> main
   },
   {
     icon: 'i-lucide-zap',
@@ -432,9 +359,6 @@ const freeTrialInfo = [
         </p>
       </div>
 
-<<<<<<< HEAD
-      <!-- Promo Banner Section (Hidden) -->
-=======
       <!-- Premium Promo Banner with Real-time Countdown -->
       <Transition
         enter-active-class="transition duration-500 ease-out"
@@ -490,7 +414,6 @@ const freeTrialInfo = [
           </div>
         </div>
       </Transition>
->>>>>>> main
 
       <!-- Plan Cards -->
       <div class="grid md:grid-cols-4 gap-6 mb-12">
@@ -505,12 +428,6 @@ const freeTrialInfo = [
             type="radio" 
             :value="plan.id"
             class="sr-only"
-<<<<<<< HEAD
-          />
-          <label 
-            :for="`plan-${plan.id}`"
-            class="block h-full cursor-pointer"
-=======
             :disabled="plan.id === currentActivePlan"
           />
           <label 
@@ -519,50 +436,33 @@ const freeTrialInfo = [
               'block h-full',
               plan.id === currentActivePlan ? 'cursor-not-allowed' : 'cursor-pointer'
             ]"
->>>>>>> main
           >
             <UCard
               :class="[
                 'h-full flex flex-col transition-all',
                 selectedPlan === plan.id 
                   ? 'ring-2 ring-warning shadow-xl' 
-<<<<<<< HEAD
-                  : 'hover:shadow-lg'
-              ]"
-            >
-              <div v-if="plan.highlight" class="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                <UBadge label="Most Popular" color="primary" />
-=======
                   : 'hover:shadow-lg',
                 plan.id === currentActivePlan && 'opacity-60 bg-gray-50 dark:bg-gray-800/50'
               ]"
             >
               <div v-if="plan.highlight" class="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                 <UBadge label="Most Popular" color="warning" />
->>>>>>> main
               </div>
 
               <template #header>
                 <div class="text-center">
                   <h3 class="text-2xl font-bold">{{ plan.name }}</h3>
-<<<<<<< HEAD
-                  <!-- <p class="text-muted text-sm mt-2">{{ plan.duration }}</p> -->
-=======
                   <p class="text-muted text-sm mt-2">Package Duration : {{ plan.duration }}</p>
                   <div v-if="plan.id === currentActivePlan" class="mt-2">
                     <UBadge label="Current Plan" color="neutral" variant="subtle" />
                   </div>
->>>>>>> main
                 </div>
               </template>
 
               <div class="flex-1 space-y-6">
                 <!-- Pricing -->
                 <div class="text-center">
-<<<<<<< HEAD
-                  <div>
-                    <p class="text-4xl font-bold text-warning">
-=======
                   <div v-if="isPromoActive && plan.promoPrice < plan.originalPrice" class="space-y-2">
                     <p class="text-sm text-muted line-through">
                       Rp {{ plan.originalPrice.toLocaleString('id-ID') }}
@@ -576,7 +476,6 @@ const freeTrialInfo = [
                   </div>
                   <div v-else>
                     <p class="text-4xl font-bold">
->>>>>>> main
                       Rp {{ plan.originalPrice.toLocaleString('id-ID') }}
                     </p>
                   </div>
@@ -601,19 +500,10 @@ const freeTrialInfo = [
               </div>
 
               <!-- Selection Indicator -->
-<<<<<<< HEAD
-              <div v-if="selectedPlan === plan.id" class="pt-4 border-t">
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-medium">Selected</span>
-                  <div class="p-1 rounded-full bg-warning">
-                    <UIcon name="i-lucide-check" class="size-4 text-white" />
-                  </div>
-=======
               <div v-if="selectedPlan === plan.id" class="pt-4">
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-medium">Selected</span>
                   <UIcon name="i-lucide-check" class="size-4 text-warning" />
->>>>>>> main
                 </div>
               </div>
             </UCard>
@@ -626,19 +516,11 @@ const freeTrialInfo = [
         <div class="text-center mb-8">
           <h2 class="text-2xl font-bold">Free Trial Session Included</h2>
           <p class="text-muted mt-2">
-<<<<<<< HEAD
-            Available for both free and paid registered users - one time offer
-          </p>
-        </div>
-
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-=======
             Available for paid registered users - one time offer
           </p>
         </div>
 
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
->>>>>>> main
           <UCard v-for="item in freeTrialInfo" :key="item.title">
             <div class="text-center space-y-3">
               <div class="flex justify-center">
@@ -661,14 +543,8 @@ const freeTrialInfo = [
           <div class="text-center space-y-4">
             <h3 class="text-xl font-bold">Ready to Get Started?</h3>
             <p class="text-muted">
-<<<<<<< HEAD
-              Selected package: <span class="font-bold">{{ currentPlan?.name }} - Rp {{ currentPlan?.originalPrice?.toLocaleString('id-ID') }}</span>
-            </p>
-            <!-- Promo pricing hidden -->
-=======
               Selected package: <span class="font-bold">{{ currentPlan?.name }} - Rp {{ (isPromoActive ? currentPlan?.promoPrice : currentPlan?.originalPrice)?.toLocaleString('id-ID') }}</span>
             </p>
->>>>>>> main
 
             <div class="flex gap-3 pt-2">
               <UButton 
@@ -688,13 +564,6 @@ const freeTrialInfo = [
         </UCard>
       </div>
 
-<<<<<<< HEAD
-      <!-- Additional Info Section (Hidden) -->
     </div>
   </div>
 </template>
-=======
-    </div>
-  </div>
-</template>
->>>>>>> main

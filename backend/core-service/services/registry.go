@@ -8,6 +8,7 @@ import (
 type Registry struct {
 	repoRegistry   repositories.IRepositoryRegistry
 	eventPublisher *kafka.EventPublisher
+	analyticsSvc   IAnalyticsService
 }
 
 // GetEventService implements [IServiceRegistry].
@@ -40,6 +41,11 @@ func (r *Registry) GetArticleService() IArticleService {
 	return NewArticleService(r.repoRegistry.GetArticle())
 }
 
+// GetAnalyticsService implements [IServiceRegistry].
+func (r *Registry) GetAnalyticsService() IAnalyticsService {
+	return r.analyticsSvc
+}
+
 type IServiceRegistry interface {
 	GetEventService() IEventService
 	GetRegionService() IRegionService
@@ -47,11 +53,13 @@ type IServiceRegistry interface {
 	GetPackageService() IPackageService
 	GetTestimonialService() ITestimonialService
 	GetArticleService() IArticleService
+	GetAnalyticsService() IAnalyticsService
 }
 
 func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPublisher *kafka.EventPublisher) IServiceRegistry {
 	return &Registry{
 		repoRegistry:   repoRegistry,
 		eventPublisher: eventPublisher,
+		analyticsSvc:   NewAnalyticsService(),
 	}
 }

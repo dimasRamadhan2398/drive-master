@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-<<<<<<< HEAD
-=======
 useSeoMeta({
   title: 'Home | Drive Master Academy',
   description: 'Drive Master Academy offers comprehensive EV and manual driving courses in Alam Sutera with expert instructors and certified programs.',
 })
 
->>>>>>> main
 // Course Material
 const courseMaterial = [
   {
@@ -66,53 +63,6 @@ const courseMaterial = [
   }
 ]
 
-<<<<<<< HEAD
-// Course packages
-const packages = [
-  {
-    title: '6x',
-    price: 'Rp 1.750.000',
-    description: 'Perfect for beginners looking to get started',
-    features: [
-      'Free Trial',
-      '6x training sessions',
-    ],
-    highlight: false,
-    button: { label: 'Get Started', color: 'neutral' as const, variant: 'outline' as const }
-  },
-  {
-    title: '8x',
-    price: 'Rp 1.950.000',
-    description: 'Our most popular package for comprehensive learning',
-    features: [
-      'Free Trial',
-      '8x training sessions',
-    ],
-    highlight: true,
-    button: { label: 'Most Popular', color: 'warning' as const }
-  },
-  {
-    title: '10x',
-    price: 'Rp 2.250.000',
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '10x training sessions',
-    ],
-    highlight: false,
-    button: { label: 'Get Started', color: 'neutral' as const, variant: 'outline' as const }
-  },
-  {
-    title: '12x',
-    price: 'Rp 2.650.000',
-    description: 'Perfect drivers looking to master driving',
-    features: [
-      'Free Trial',
-      '12x training sessions',
-    ],
-    highlight: false,
-    button: { label: 'Get Started', color: 'neutral' as const, variant: 'outline' as const }
-=======
 const selectedPlan = ref<
 'six_package' | 
 'six_package_night' | 
@@ -139,7 +89,8 @@ if (process.client) {
 }
 
 const isPromoActive = computed(() => {
-  const promoEnd = new Date('2026-05-20T23:59:59')
+  // Promo diubah ke tanggal di masa depan (misalnya 2026-12-31) agar banner muncul
+  const promoEnd = new Date('2026-12-31T23:59:59')
   return now.value < promoEnd
 })
 
@@ -392,7 +343,6 @@ const plans = [
       'SIM A'
     ],
     highlight: false
->>>>>>> main
   }
 ]
 
@@ -408,11 +358,7 @@ const testimonials = [
     name: 'Budi Santoso',
     role: 'Working Professional',
     avatar: 'BS',
-<<<<<<< HEAD
-    content: 'The instructors are incredibly patient and the Tesla cars are amazing to learn in. Got my license on the first try!'
-=======
     content: 'The instructors are incredibly patient and the BYD Atto 1 cars are amazing to learn in. Got my license on the first try!'
->>>>>>> main
   },
   {
     name: 'Amanda Chen',
@@ -445,12 +391,6 @@ const currentDate = ref(new Date('2026-04-10T00:00:00'))
 const currentMonth = computed(() => {
   return currentDate.value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 })
-<<<<<<< HEAD
-const currentMonthStr = computed(() => {
-  return currentDate.value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-})
-=======
->>>>>>> main
 const currentMonthShortStr = computed(() => {
   return currentDate.value.toLocaleDateString('en-US', { month: 'short' })
 })
@@ -476,15 +416,6 @@ const calendarDays = computed(() => {
   return days
 })
 
-<<<<<<< HEAD
-function changeMonth(offset: number) {
-  const newDate = new Date(currentDate.value)
-  newDate.setMonth(newDate.getMonth() + offset)
-  currentDate.value = newDate
-}
-
-=======
->>>>>>> main
 const timeSlots = computed(() => {
   const year = currentDate.value.getFullYear()
   const month = String(currentDate.value.getMonth() + 1).padStart(2, '0')
@@ -496,11 +427,6 @@ const timeSlots = computed(() => {
     .map(slot => ({
       time: slot.time,
       car: slot.car,
-<<<<<<< HEAD
-      available: slot.status === 'available'
-    }))
-})
-=======
       instructor: slot.instructor,
       available: slot.status === 'available'
     }))
@@ -526,7 +452,6 @@ const instructors = [
     image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80'
   }
 ]
->>>>>>> main
 </script>
 
 <template>
@@ -536,11 +461,7 @@ const instructors = [
       <ContentSectionRenderer 
         v-for="section in homePage.sections" 
         :key="section.id" 
-<<<<<<< HEAD
-        :section="section" 
-=======
         :section="{ type: section.type, data: section }" 
->>>>>>> main
       />
     </template>
 
@@ -611,41 +532,6 @@ const instructors = [
       description="Flexible packages designed to match your goals and schedule."
       :ui="{ headline: 'text-warning' }"
     >
-<<<<<<< HEAD
-      <div class="grid md:grid-cols-4 gap-6 lg:gap-8">
-        <UCard
-          v-for="pkg in packages"
-          :key="pkg.title"
-          :class="[
-            'flex flex-col',
-            pkg.highlight ? 'ring-2 ring-warning shadow-xl scale-[1.02]' : ''
-          ]"
-        >
-          <template #header>
-            <div class="text-center">
-              <UBadge v-if="pkg.highlight" label="Most Popular" color="warning" class="mb-2" />
-              <h3 class="text-xl font-bold">{{ pkg.title }}</h3>
-              <div class="mt-2">
-                <span class="text-3xl font-bold text-warning">{{ pkg.price }}</span>
-              </div>
-              <p class="text-muted text-md mt-2">{{ pkg.description }}</p>
-            </div>
-          </template>
-          
-          <ul class="space-y-3 flex-1">
-            <li v-for="feature in pkg.features" :key="feature" class="flex items-start gap-2">
-              <UIcon name="i-lucide-check" class="size-5 text-warning shrink-0 mt-0.5" />
-              <span class="text-md">{{ feature }}</span>
-            </li>
-          </ul>
-
-          <template #footer>
-            <NuxtLink to="/auth/register" class="w-full">
-              <UButton v-bind="pkg.button" block />
-            </NuxtLink>
-          </template>
-        </UCard>
-=======
       <!-- Premium Promo Banner with Real-time Countdown -->
       <Transition
         enter-active-class="transition duration-500 ease-out"
@@ -789,7 +675,6 @@ const instructors = [
             </UCard>
           </label>
         </div>
->>>>>>> main
       </div>
     </UPageSection>
 
@@ -900,15 +785,9 @@ const instructors = [
           </div>
 
           <template #footer>
-<<<<<<< HEAD
-            <NuxtLink to="/auth/register" class="w-full">
-              <UButton 
-                label="Continue to Registration" 
-=======
             <NuxtLink :to="{ path: '/auth/register', query: { plan: selectedPlan } }" class="w-full">
               <UButton 
                 label="Choose this Schedule" 
->>>>>>> main
                 icon="i-lucide-arrow-right"
                 color="warning"
                 trailing
@@ -921,8 +800,6 @@ const instructors = [
       </div>
     </UPageSection>
 
-<<<<<<< HEAD
-=======
     <!-- Instructors Section -->
     <UPageSection
       headline="Our Instructor"
@@ -967,7 +844,6 @@ const instructors = [
       </div>
     </UPageSection>
 
->>>>>>> main
     <!-- Location Section -->
     <UPageSection
       id="contact"
@@ -975,10 +851,7 @@ const instructors = [
       title="Conveniently Located in Alam Sutera"
       description="Our training center is strategically located in Alam Sutera, easily accessible from Tangerang and Jakarta."
       :ui="{ headline: 'text-warning' }"
-<<<<<<< HEAD
-=======
       class="bg-muted/30"
->>>>>>> main
     >
       <div class="grid lg:grid-cols-2 gap-8">
         <div class="space-y-6">
@@ -1051,13 +924,8 @@ const instructors = [
         </div>
 
         <!-- Map Placeholder -->
-<<<<<<< HEAD
-        <div class="h-[400px] lg:h-full min-h-[400px] rounded-2xl overflow-hidden bg-elevated border border-default">
-          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.1806061048765!2d106.65588507475077!3d-6.2399118937483635!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69fbc070b4d71d%3A0x8b1a633faf5dbd46!2sALAM%20SUTERA!5e0!3m2!1sen!2sid!4v1776223155011!5m2!1sen!2sid" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-=======
         <div class="h-auto lg:h-full min-h-auto rounded-2xl overflow-hidden bg-elevated border border-default">
           <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.1806061048765!2d106.65588507475077!3d-6.2399118937483635!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69fbc070b4d71d%3A0x8b1a633faf5dbd46!2sALAM%20SUTERA!5e0!3m2!1sen!2sid!4v1776223155011!5m2!1sen!2sid" width="600" height="550" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
->>>>>>> main
         </div>
       </div>
     </UPageSection>
@@ -1068,10 +936,6 @@ const instructors = [
       title="What Our Students Say"
       description="Join hundreds of satisfied students who have learned to drive with us."
       :ui="{ headline: 'text-warning' }"
-<<<<<<< HEAD
-      class="bg-muted/30"
-=======
->>>>>>> main
     >
       <div class="grid md:grid-cols-3 gap-6">
         <UCard v-for="testimonial in testimonials" :key="testimonial.name">
@@ -1097,10 +961,7 @@ const instructors = [
       title="Frequently Asked Questions"
       description="Find answers to common questions about our EV driving courses."
       :ui="{ headline: 'text-warning' }"
-<<<<<<< HEAD
-=======
       class="bg-muted/30"
->>>>>>> main
     >
       <div class="max-w-3xl mx-auto">
         <UAccordion :items="faqItems" />

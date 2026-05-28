@@ -6,14 +6,19 @@ require (
 	github.com/IBM/sarama v1.48.0
 	github.com/didip/tollbooth v4.0.2+incompatible
 	github.com/dustin/go-humanize v1.0.1
+	github.com/elazarl/goproxy v1.8.3 // indirect
+	github.com/gammazero/deque v1.2.1 // indirect
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/imagekit-developer/imagekit-go/v2 v2.4.0
+	github.com/moul/http2curl v1.0.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/redis/go-redis/v9 v9.19.0
 	github.com/segmentio/kafka-go v0.4.50
 	github.com/sirupsen/logrus v1.9.4
+	github.com/smartystreets/goconvey v1.8.1 // indirect
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
@@ -22,16 +27,10 @@ require (
 	github.com/swaggo/swag v1.16.6
 	go.uber.org/zap v1.28.0
 	golang.org/x/crypto v0.50.0
+	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/driver/sqlite v1.6.0
-	gorm.io/gorm v1.31.1
-)
-
-require (
-	github.com/gammazero/deque v1.2.1 // indirect
-	github.com/moul/http2curl v1.0.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
-	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
+	gorm.io/gorm v1.30.0
 )
 
 require (

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({ layout: 'admin' })
@@ -28,23 +28,36 @@ const allTransactions = ref([
     { id: 110, studentName: 'Anita Sari', packageId: 3, purchaseDate: '2026-04-12', amount: 2250000, status: 'Completed' },
 ])
 
+// Filter periode transaksi
+const startDate = ref('')
+const endDate = ref('')
+
+const filteredTransactions = computed(() => {
+  return allTransactions.value.filter(t => {
+    const pDate = new Date(t.purchaseDate)
+    if (startDate.value && pDate < new Date(startDate.value)) return false
+    if (endDate.value && pDate > new Date(endDate.value)) return false
+    return true
+  })
+})
+
 // Data untuk tampilan paket spesifik
 const selectedPackage = computed(() => packages.value.find(p => p.id === packageId.value))
 const packageTransactions = computed(() => {
     if (!packageId.value) return []
-    return allTransactions.value.filter(t => t.packageId === packageId.value)
+    return filteredTransactions.value.filter(t => t.packageId === packageId.value)
 })
 const packageTotalRevenue = computed(() => packageTransactions.value.reduce((sum, t) => sum + t.amount, 0))
 const packageTotalSales = computed(() => packageTransactions.value.length)
 
 // Data untuk tampilan dasbor umum
-const overallTotalRevenue = computed(() => allTransactions.value.reduce((sum, t) => sum + t.amount, 0))
-const overallTotalSales = computed(() => allTransactions.value.length)
+const overallTotalRevenue = computed(() => filteredTransactions.value.reduce((sum, t) => sum + t.amount, 0))
+const overallTotalSales = computed(() => filteredTransactions.value.length)
 
 // Sales breakdown by package
 const salesByPackage = computed(() => {
   return packages.value.map(pkg => {
-    const pkgTransactions = allTransactions.value.filter(t => t.packageId === pkg.id)
+    const pkgTransactions = filteredTransactions.value.filter(t => t.packageId === pkg.id)
     const totalSales = pkgTransactions.length
     const revenue = pkgTransactions.reduce((sum, t) => sum + t.amount, 0)
     return {
@@ -57,7 +70,7 @@ const salesByPackage = computed(() => {
 
 // Transaksi yang akan ditampilkan di tabel
 const displayTransactions = computed(() => {
-  return packageId.value ? packageTransactions.value : allTransactions.value
+  return packageId.value ? packageTransactions.value : filteredTransactions.value
 })
 
 function formatPrice(price: number) {
@@ -126,6 +139,17 @@ const tableData = computed(() => displayTransactions.value.map(t => {
     </template>
 
     <template #body>
+      <!-- Filter Tanggal (Visible in both views) -->
+      <div class="px-6 pt-6 flex items-end gap-4 pb-2">
+        <UFormGroup label="Start Date">
+          <UInput type="date" v-model="startDate" />
+        </UFormGroup>
+        <UFormGroup label="End Date">
+          <UInput type="date" v-model="endDate" />
+        </UFormGroup>
+        <UButton v-if="startDate || endDate" label="Clear Filter" color="neutral" variant="soft" @click="startDate = ''; endDate = ''" />
+      </div>
+
       <!-- Tampilan Body Paket Spesifik -->
       <div v-if="packageId">
         <div v-if="selectedPackage" class="p-6 space-y-6">
@@ -206,6 +230,8 @@ const tableData = computed(() => displayTransactions.value.map(t => {
             </div>
           </UCard>
         </div>
+
+        
 
         <!-- Sales by Package Dashboard -->
         <div class="space-y-4">

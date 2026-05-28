@@ -15,21 +15,12 @@ const generateMockData = (hours: any): TimeSlot[] => {
   const year = 2026
   const month = 4 // April
   const daysInMonth = 30 // April memiliki 30 hari
-<<<<<<< HEAD
-  
-  const baseTimes = ['07:00', '08:30', '10:00', '11:30', '13:00', '14:30', '16:00', '17:30', '19:00']
-  const instructors = ['Pak Ahmad', 'Bu Sari', 'Pak Budi']
-  const cars = ['Tesla Model 3', 'BYD Atto 3']
-  const statuses: ('available' | 'available' | 'booked' | 'blocked')[] = ['available', 'available', 'booked', 'blocked']
-  
-=======
 
   const baseTimes = ['07:00', '08:30', '10:00', '11:30', '13:00', '14:30', '16:00', '17:30', '19:00']
   const instructors = ['Mr. Ahmad', 'Ms. Sari', 'Mr. Budi']
   const cars = ['BYD Atto 1']
   const statuses: ('available' | 'available' | 'booked' | 'blocked')[] = ['available', 'available', 'booked', 'blocked']
 
->>>>>>> main
   let idCounter = 1
 
   for (let day = 1; day <= daysInMonth; day++) {
@@ -37,11 +28,6 @@ const generateMockData = (hours: any): TimeSlot[] => {
     const dateObj = new Date(year, month - 1, day)
     const dayOfWeek = dateObj.getDay() // 0 = Sunday, 6 = Saturday
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> main
     // Jika Minggu dan disetel tutup, lewati
     if (dayOfWeek === 0 && hours.sundayClosed) continue
 
@@ -61,20 +47,6 @@ const generateMockData = (hours: any): TimeSlot[] => {
     // Bikin variasi jumlah jadwal per hari
     const slotsCount = Math.min(allowedTimes.length, Math.floor(Math.random() * 3) + 3)
     const shuffledTimes = [...allowedTimes].sort(() => 0.5 - Math.random())
-<<<<<<< HEAD
-    
-    for (let i = 0; i < slotsCount; i++) {
-      const dateStr = `${year}-04-${day.toString().padStart(2, '0')}`
-      const status = statuses[Math.floor(Math.random() * statuses.length)]
-      
-      result.push({
-        id: idCounter.toString(),
-        date: dateStr,
-        time: shuffledTimes[i],
-        duration: '60 min',
-        car: cars[Math.floor(Math.random() * cars.length)],
-        instructor: instructors[Math.floor(Math.random() * instructors.length)],
-=======
 
     for (let i = 0; i < slotsCount; i++) {
       const dateStr = `${year}-04-${day.toString().padStart(2, '0')}`
@@ -87,18 +59,12 @@ const generateMockData = (hours: any): TimeSlot[] => {
         duration: '60 min',
         car: cars[Math.floor(Math.random() * cars.length)]!,
         instructor: instructors[Math.floor(Math.random() * instructors.length)]!,
->>>>>>> main
         student: status === 'booked' ? `Siswa ${idCounter}` : null,
         status: status
       })
       idCounter++
     }
   }
-<<<<<<< HEAD
-  
-=======
-
->>>>>>> main
   return result.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
 }
 
@@ -140,13 +106,10 @@ export const useSchedules = () => {
     const slot = slots.value.find(s => s.id === id)
     if (slot) {
       slot.status = status
-<<<<<<< HEAD
-=======
       // FITUR BARU: Jika kembali ke available, hapus data siswa
       if (status === 'available') {
         slot.student = null
       }
->>>>>>> main
     }
   }
 
@@ -188,15 +151,9 @@ export const useSmartAlerts = () => {
         const [h, m] = slot.time.split(':').map(Number)
         const slotTime = new Date()
         slotTime.setHours(h, m, 0, 0)
-<<<<<<< HEAD
-        
-        const diffMinutes = (slotTime.getTime() - now.getTime()) / (1000 * 60)
-        
-=======
 
         const diffMinutes = (slotTime.getTime() - now.getTime()) / (1000 * 60)
 
->>>>>>> main
         // Jika kursus akan dimulai dalam 15 menit
         if (diffMinutes > 0 && diffMinutes <= 15) {
           // Tambah ke activeAlerts jika belum ada
@@ -212,19 +169,11 @@ export const useSmartAlerts = () => {
               description: `Kursus ${slot.student} akan dimulai pukul ${slot.time}. Apakah sudah siap?`,
               icon: 'i-lucide-bell-ring',
               color: 'warning',
-<<<<<<< HEAD
-              timeout: 0, 
-              actions: [
-                { 
-                  label: 'Start Now', 
-=======
-              timeout: 0,
               actions: [
                 {
                   label: 'Start Now',
->>>>>>> main
                   color: 'warning',
-                  click: () => {
+                  onClick: () => {
                     updateSlotStatus(slot.id, 'in-progress')
                     activeAlerts.value = activeAlerts.value.filter(a => a.id !== slot.id)
                     toast.add({ title: 'Session Started', color: 'success', icon: 'i-lucide-play' })
@@ -236,11 +185,6 @@ export const useSmartAlerts = () => {
         }
       }
     })
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> main
     // Bersihkan activeAlerts jika status sudah bukan booked (misal sudah started via manual button)
     activeAlerts.value = activeAlerts.value.filter(alert => {
       const currentSlot = slots.value.find(s => s.id === alert.id)

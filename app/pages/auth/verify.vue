@@ -2,12 +2,7 @@
 import { ref, computed } from 'vue'
 
 definePageMeta({
-<<<<<<< HEAD
-  layout: 'blank',
-  middleware: ['guest']
-=======
   layout: 'blank'
->>>>>>> main
 })
 
 const router = useRouter()

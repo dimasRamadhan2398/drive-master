@@ -1,88 +1,4 @@
 <script setup lang="ts">
-<<<<<<< HEAD
-import { z } from "zod";
-import type { FormSubmitEvent } from "@nuxt/ui";
-import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
-import { reactive, ref } from "vue";
-
-definePageMeta({ layout: "dashboard", middleware: ["auth"] });
-
-const toast = useToast();
-const auth = useAuthStore();
-const loading = ref(false);
-
-const profileSchema = z.object({
-  fullName: z.string().min(3, "Name must be at least 3 characters"),
-  email: z.string().email("Please enter a valid email"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
-  address: z.string().optional(),
-});
-
-const passwordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-// Mock user data
-const profileData = reactive({
-  fullName: auth.currentUser!.firstName + " " + auth.currentUser!.lastName,
-  email: auth.currentUser!.email,
-  phone: auth.currentUser!.phoneNumber,
-  address: auth.currentUser?.address,
-});
-
-const passwordData = reactive({
-  currentPassword: "",
-  newPassword: "",
-  confirmPassword: "",
-});
-
-const memberInfo = {
-  memberId: "EVDA-MEM-2026-0042",
-  package: "8x Session",
-  joinDate: "March 10, 2026",
-  expiryDate: "September 10, 2026",
-};
-
-async function updateProfile(
-  event: FormSubmitEvent<z.output<typeof profileSchema>>,
-) {
-  loading.value = true;
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  loading.value = false;
-
-  toast.add({
-    title: "Profile Updated",
-    description: "Your profile has been successfully updated.",
-    icon: "i-lucide-check-circle",
-    color: "success",
-  });
-}
-
-async function updatePassword(
-  event: FormSubmitEvent<z.output<typeof passwordSchema>>,
-) {
-  loading.value = true;
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  loading.value = false;
-
-  passwordData.currentPassword = "";
-  passwordData.newPassword = "";
-  passwordData.confirmPassword = "";
-
-  toast.add({
-    title: "Password Changed",
-    description: "Your password has been successfully updated.",
-    icon: "i-lucide-check-circle",
-    color: "success",
-  });
-=======
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
@@ -158,7 +74,6 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
     icon: 'i-lucide-check-circle',
     color: 'success'
   })
->>>>>>> main
 }
 </script>
 
@@ -181,20 +96,9 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
             <div class="text-center md:text-left">
               <h2 class="text-2xl font-bold">{{ profileData.fullName }}</h2>
               <p class="text-muted">{{ profileData.email }}</p>
-<<<<<<< HEAD
-              <div
-                class="flex flex-wrap gap-2 mt-3 justify-center md:justify-start"
-              >
-                <UBadge :label="memberInfo.package" color="warning" />
-                <UBadge
-                  :label="`ID: ${memberInfo.memberId}`"
-                  variant="subtle"
-                />
-=======
               <div class="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
                 <UBadge :label="memberInfo.package" color="warning" />
                 <UBadge :label="`ID: ${memberInfo.memberId}`" variant="subtle" />
->>>>>>> main
               </div>
             </div>
           </div>
@@ -232,33 +136,6 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
             <h2 class="font-semibold">Personal Information</h2>
           </template>
 
-<<<<<<< HEAD
-          <UForm
-            :schema="profileSchema"
-            :state="profileData"
-            class="space-y-4"
-            @submit="updateProfile"
-          >
-            <div class="grid md:grid-cols-2 gap-4">
-              <UFormField name="fullName" label="Full Name">
-                <UInput v-model="profileData.fullName" icon="i-lucide-user" />
-              </UFormField>
-
-              <UFormField name="email" label="Email Address">
-                <UInput
-                  v-model="profileData.email"
-                  type="email"
-                  icon="i-lucide-mail"
-                />
-              </UFormField>
-
-              <UFormField name="phone" label="Phone Number">
-                <UInput v-model="profileData.phone" icon="i-lucide-phone" />
-              </UFormField>
-
-              <UFormField name="address" label="Address">
-                <UInput v-model="profileData.address" icon="i-lucide-map-pin" />
-=======
           <UForm :schema="profileSchema" :state="profileData" class="space-y-4" @submit="updateProfile">
             <div class="grid md:grid-cols-2 gap-4">
               <UFormField name="fullName" label="Full Name">
@@ -275,21 +152,11 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
 
               <UFormField name="address" label="Address">
                 <UInput v-model="profileData.address" icon="i-lucide-map-pin" class="w-full"/>
->>>>>>> main
               </UFormField>
             </div>
 
             <div class="flex justify-end">
-<<<<<<< HEAD
-              <UButton
-                type="submit"
-                label="Save Changes"
-                :loading="loading"
-                icon="i-lucide-save"
-              />
-=======
               <UButton type="submit" label="Save Changes" :loading="loading" icon="i-lucide-save" />
->>>>>>> main
             </div>
           </UForm>
         </UCard>
@@ -300,65 +167,23 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
             <h2 class="font-semibold">Change Password</h2>
           </template>
 
-<<<<<<< HEAD
-          <UForm
-            :schema="passwordSchema"
-            :state="passwordData"
-            class="space-y-4"
-            @submit="updatePassword"
-          >
-            <UFormField name="currentPassword" label="Current Password">
-              <UInput
-                v-model="passwordData.currentPassword"
-                type="password"
-                icon="i-lucide-lock"
-              />
-=======
           <UForm :schema="passwordSchema" :state="passwordData" class="space-y-4" @submit="updatePassword">
             <UFormField name="currentPassword" label="Current Password">
               <UInput v-model="passwordData.currentPassword" type="password" icon="i-lucide-lock" class="w-full"/>
->>>>>>> main
             </UFormField>
 
             <div class="grid md:grid-cols-2 gap-4">
               <UFormField name="newPassword" label="New Password">
-<<<<<<< HEAD
-                <UInput
-                  v-model="passwordData.newPassword"
-                  type="password"
-                  icon="i-lucide-key"
-                />
-              </UFormField>
-
-              <UFormField name="confirmPassword" label="Confirm New Password">
-                <UInput
-                  v-model="passwordData.confirmPassword"
-                  type="password"
-                  icon="i-lucide-key"
-                />
-=======
                 <UInput v-model="passwordData.newPassword" type="password" icon="i-lucide-key" class="w-full"/>
               </UFormField>
 
               <UFormField name="confirmPassword" label="Confirm New Password">
                 <UInput v-model="passwordData.confirmPassword" type="password" icon="i-lucide-key" class="w-full"/>
->>>>>>> main
               </UFormField>
             </div>
 
             <div class="flex justify-end">
-<<<<<<< HEAD
-              <UButton
-                type="submit"
-                label="Update Password"
-                :loading="loading"
-                variant="outline"
-                color="neutral"
-                icon="i-lucide-shield"
-              />
-=======
               <UButton type="submit" label="Update Password" :loading="loading" variant="outline" color="neutral" icon="i-lucide-shield" />
->>>>>>> main
             </div>
           </UForm>
         </UCard>
@@ -370,24 +195,9 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
           </template>
 
           <div class="space-y-4">
-<<<<<<< HEAD
-            <USwitch
-              label="Email notifications for upcoming sessions"
-              :default-checked="true"
-            />
-            <USwitch
-              label="WhatsApp reminders (24 hours before session)"
-              :default-checked="true"
-            />
-            <USwitch
-              label="Promotional updates and offers"
-              :default-checked="false"
-            />
-=======
             <USwitch label="Email notifications for upcoming sessions" :default-checked="true" />
             <USwitch label="WhatsApp reminders (24 hours before session)" :default-checked="true" />
             <USwitch label="Promotional updates and offers" :default-checked="false" />
->>>>>>> main
             <USwitch label="Newsletter subscription" :default-checked="false" />
           </div>
         </UCard>
@@ -404,22 +214,9 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
           <div class="flex items-center justify-between">
             <div>
               <p class="font-medium">Delete Account</p>
-<<<<<<< HEAD
-              <p class="text-md text-muted">
-                Permanently delete your account and all associated data.
-              </p>
-            </div>
-            <UButton
-              label="Delete Account"
-              color="error"
-              variant="outline"
-              icon="i-lucide-trash-2"
-            />
-=======
               <p class="text-md text-muted">Permanently delete your account and all associated data.</p>
             </div>
             <UButton label="Delete Account" color="error" variant="outline" icon="i-lucide-trash-2" />
->>>>>>> main
           </div>
         </UCard>
       </div>

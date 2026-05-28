@@ -35,24 +35,7 @@ COPY --from=builder /app/pkg/config/config.yaml ./pkg/config/config.yaml
 ENV CONFIG_PATH=./pkg/config/config.yaml
 ENV GIN_MODE=release
 
-# Create entrypoint script for flexibility
-COPY --chmod=755 <<'EOF' /entrypoint.sh
-#!/bin/sh
-set -e
-
-# Set working directory to app
-cd /app
-
-# Override config path if provided via environment
-if [ -n "${API_GATEWAY_CONFIG}" ]; then
-    export CONFIG_PATH="${API_GATEWAY_CONFIG}"
-fi
-
-echo "Starting API Gateway with config: ${CONFIG_PATH}"
-exec ./api-gateway "$@"
-EOF
-
 EXPOSE 8080
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["/entrypoint.sh"]
+CMD ["sh", "-c", "if [ -n \"${API_GATEWAY_CONFIG}\" ]; then export CONFIG_PATH=\"${API_GATEWAY_CONFIG}\"; fi && exec ./api-gateway"]

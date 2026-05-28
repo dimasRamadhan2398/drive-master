@@ -1,18 +1,6 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-<<<<<<< HEAD
-import { reactive, ref } from 'vue'
-import { navigateTo } from 'nuxt/app'
-
-definePageMeta({
-  layout: 'blank',
-  middleware: ['guest']
-})
-
-const currentStep = ref(0)
-const totalSteps = 3
-=======
 import { reactive, ref, computed } from 'vue'
 import { navigateTo, useRoute } from 'nuxt/app'
 
@@ -28,7 +16,6 @@ const totalSteps = computed(() => planFromQuery.value ? 2 : 3)
 
 const showPrivacyModal = ref(false)
 const showTermsModal = ref(false)
->>>>>>> main
 
 const packageOptions = [
   { label: '6x Session - Rp 1.750.000', value: '6x' },
@@ -89,43 +76,59 @@ async function prevStep() {
 }
 
 async function onSubmit(event: FormSubmitEvent<any>) {
-<<<<<<< HEAD
-  if (currentStep.value < totalSteps - 1) {
-=======
   if (currentStep.value < totalSteps.value - 1) {
->>>>>>> main
     nextStep()
     return
   }
   
   loading.value = true
-  await new Promise(resolve => setTimeout(resolve, 1500))
-  loading.value = false
+  const config = useRuntimeConfig()
+  const toast = useToast()
 
-  // Simpan data kontak ke sessionStorage agar bisa digunakan di halaman payment
-  if (import.meta.client) {
-    sessionStorage.setItem('dm_reg_email', formData.email)
-    sessionStorage.setItem('dm_reg_phone', formData.phone)
-<<<<<<< HEAD
-=======
-    if (planFromQuery.value) {
-      sessionStorage.setItem('dm_selected_plan', planFromQuery.value)
+  try {
+    // Kirim data ke backend API Gateway
+    const nameParts = formData.fullName.trim().split(/\s+/)
+    const firstName = nameParts[0]
+    const lastName = nameParts.slice(1).join(' ') || firstName
+
+    // Generate username from email
+    const username = formData.email.split('@')[0]
+
+    const response = await $fetch(`${config.public.userApiBase}/auth/register`, {
+      method: 'POST',
+      body: {
+        firstName,
+        lastName,
+        username,
+        email: formData.email,
+        phoneNumber: formData.phone,
+        dateOfBirth: formData.birthDate,
+        password: formData.password,
+        confirmPassword: formData.password,
+        roleId: 2, // 2 is Member role
+      }
+    })
+
+    // Simpan data kontak ke sessionStorage agar bisa digunakan di halaman payment
+    if (import.meta.client) {
+      sessionStorage.setItem('dm_reg_email', formData.email)
+      sessionStorage.setItem('dm_reg_phone', formData.phone)
+      if (planFromQuery.value) {
+        sessionStorage.setItem('dm_selected_plan', planFromQuery.value)
+      }
     }
->>>>>>> main
-  }
 
-  console.log('[v0] Registration submitted, redirecting to verify:', formData.email)
-  
-  navigateTo(`/auth/verify?email=${encodeURIComponent(formData.email)}`)
+    console.log('Registration successful, redirecting to verify:', response)
+    navigateTo(`/auth/verify?email=${encodeURIComponent(formData.email)}`)
+
+  } catch (error: any) {
+    console.error('Registration failed:', error)
+    toast.add({ title: 'Registration Failed', description: error.data?.message || 'An error occurred. Please try again.', color: 'error' })
+  } finally {
+    loading.value = false
+  }
 }
 
-<<<<<<< HEAD
-const stepItems = [
-  { label: 'Personal Info', icon: 'i-lucide-user' },
-  { label: 'Create Account', icon: 'i-lucide-shield-check' },
-  { label: 'Select Package', icon: 'i-lucide-package' }
-]
-=======
 const stepItems = computed(() => {
   const items = [
     { label: 'Personal Info', icon: 'i-lucide-user' },
@@ -136,7 +139,6 @@ const stepItems = computed(() => {
   }
   return items
 })
->>>>>>> main
 </script>
 
 <template>
@@ -261,11 +263,6 @@ const stepItems = computed(() => {
               <template #label>
                 <span class="text-sm">
                   I agree to the 
-<<<<<<< HEAD
-                  <NuxtLink to="/terms" class="text-warning hover:underline">Terms of Service</NuxtLink>
-                  and
-                  <NuxtLink to="/privacy" class="text-warning hover:underline">Privacy Policy</NuxtLink>
-=======
                   <UButton label="Terms of Service" color="warning" variant="ghost" class="underline" @click="showTermsModal = true" />
                   <UModal v-model:open="showTermsModal" title="Terms of Service">
                     <template #body>
@@ -392,7 +389,6 @@ const stepItems = computed(() => {
                         </div>
                       </template>
                   </UModal>
->>>>>>> main
                 </span>
               </template>
             </UCheckbox>
@@ -468,19 +464,6 @@ const stepItems = computed(() => {
             </p>
           </div>
 
-<<<<<<< HEAD
-          <!-- <UFormField name="startDate" label="Preferred Start Date (Optional)">
-            <UInput 
-              v-model="formData.startDate"
-              type="date"
-              size="lg"
-              class="w-full"
-              color="warning"
-            />
-          </UFormField> -->
-
-=======
->>>>>>> main
           <div class="flex justify-between pt-4">
             <UButton label="Back" variant="ghost" color="neutral" icon="i-lucide-arrow-left" @click="prevStep" />
             <UButton type="submit" label="Proceed to Payment" color="warning" trailingIcon="i-lucide-arrow-right" size="lg" />

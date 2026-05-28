@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-<<<<<<< HEAD
-definePageMeta({ layout: 'dashboard', middleware: ['auth'] })
-=======
 definePageMeta({ layout: 'dashboard' })
->>>>>>> main
 
 // Onboarding modal state - would check if user has completed profile
 const showOnboarding = ref(false)
@@ -38,13 +34,8 @@ const userData = {
   nextSession: {
     date: 'Tomorrow',
     time: '09:30 AM',
-<<<<<<< HEAD
-    car: 'Tesla Model 3',
-    instructor: 'Pak Ahmad'
-=======
     car: 'BYD Atto 1',
     instructor: 'Mr. Ahmad'
->>>>>>> main
   }
 }
 

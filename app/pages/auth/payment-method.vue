@@ -4,21 +4,13 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { computed, reactive, ref, onMounted } from 'vue'
 
 definePageMeta({
-<<<<<<< HEAD
-  layout: 'blank',
-  middleware: ['guest']
-=======
   layout: 'blank'
->>>>>>> main
 })
 
 const route = useRoute()
 const router = useRouter()
-<<<<<<< HEAD
-=======
 const showPrivacyModal = ref(false)
 const showTermsModal = ref(false)
->>>>>>> main
 
 const selectedPlan = computed(() => route.query.plan as string || 'eight_package')
 
@@ -56,23 +48,15 @@ const paymentMethods = [
 const schema = z.object({
   paymentMethod: z.string().min(1, 'Please select a payment method'),
   email: z.string().email('Please enter a valid email'),
-<<<<<<< HEAD
-  phone: z.string().min(10, 'Please enter a valid phone number')
-=======
   phone: z.string().min(10, 'Please enter a valid phone number'),
   privacy: z.boolean().refine((val) => val === true, 'You must agree to the privacy policy')
->>>>>>> main
 })
 
 const formData = reactive({
   paymentMethod: 'va',
   email: '',
-<<<<<<< HEAD
-  phone: ''
-=======
   phone: '',
   privacy: false
->>>>>>> main
 })
 
 // Isi otomatis dari data registrasi yang tersimpan di sessionStorage
@@ -101,11 +85,6 @@ async function onSubmit() {
 
 const packagePrices = {
   six_package: 'Rp 1.750.000',
-<<<<<<< HEAD
-  eight_package: 'Rp 1.950.000',
-  ten_package: 'Rp 2.250.000',
-  twelve_package: 'Rp 2.650.000'
-=======
   six_package_night: 'Rp 1.850.000',
   six_package_weekend: 'Rp 1.850.000',
   six_package_weekend_night: 'Rp 1.950.000',
@@ -121,16 +100,10 @@ const packagePrices = {
   twelve_package_night: 'Rp 2.900.000',
   twelve_package_weekend: 'Rp 2.900.000',
   twelve_package_weekend_night: 'Rp 3.150.000'
->>>>>>> main
 }
 
 const packageNames = {
   six_package: '6x Sessions',
-<<<<<<< HEAD
-  eight_package: '8x Sessions',
-  ten_package: '10x Sessions',
-  twelve_package: '12x Sessions'
-=======
   six_package_night: '6x Sessions + Night Session',
   six_package_weekend: '6x Sessions + Weekend Session',
   six_package_weekend_night: '6x Sessions + Weekend & Night Session',
@@ -146,7 +119,6 @@ const packageNames = {
   twelve_package_night: '12x Sessions + Night Session',
   twelve_package_weekend: '12x Sessions + Weekend Session',
   twelve_package_weekend_night: '12x Sessions + Weekend & Night Session'
->>>>>>> main
 }
 </script>
 
@@ -259,20 +231,6 @@ const packageNames = {
           </div>
 
           <!-- Terms -->
-<<<<<<< HEAD
-          <div class="pt-4 border-t">
-            <UCheckbox>
-              <template #label>
-                <span class="text-sm">
-                  I agree to the 
-                  <NuxtLink to="/terms" class="text-warning hover:underline">Terms of Service</NuxtLink>
-                  and
-                  <NuxtLink to="/privacy" class="text-warning hover:underline">Privacy Policy</NuxtLink>
-                </span>
-              </template>
-            </UCheckbox>
-          </div>
-=======
           <UFormField name="privacy">
             <UCheckbox v-model="formData.privacy" color="warning" required>
               <template #label>
@@ -408,7 +366,6 @@ const packageNames = {
               </template>
             </UCheckbox>
           </UFormField>
->>>>>>> main
 
           <!-- Actions -->
           <div class="flex gap-3 pt-4 border-t">
@@ -432,10 +389,6 @@ const packageNames = {
           </div>
         </UForm>
 
-<<<<<<< HEAD
-        <!-- Footer removed -->
-=======
->>>>>>> main
       </UCard>
     </div>
   </div>

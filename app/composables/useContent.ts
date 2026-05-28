@@ -3,8 +3,9 @@ import { ref } from 'vue'
 // Tipe data untuk konsistensi
 export interface PageSection {
   id: string
-  type: 'hero' | 'feature_grid' | 'cta' | 'testimonial' | 'logocloud'
-  props: Record<string, any>
+  type: string
+  props?: Record<string, any>
+  data: any
 }
 
 export interface Page {

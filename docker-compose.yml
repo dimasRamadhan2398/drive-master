@@ -68,7 +68,10 @@ services:
         condition: service_started
     environment:
       PORT: 8081
-      POSTGRES_DSN: host=postgres user=app password=app dbname=app port=5432 sslmode=disable
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
       KAFKA_BROKER: kafka:29092
       KAFKA_TOPIC_USER_CREATED: user.created
     ports:
@@ -88,8 +91,12 @@ services:
         condition: service_started
     environment:
       PORT: 8082
-      POSTGRES_DSN: host=postgres user=app password=app dbname=app port=5432 sslmode=disable
-      REDIS_ADDR: redis:6379
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ""
       KAFKA_BROKER: kafka:29092
       KAFKA_TOPIC_USER_CREATED: user.created
       KAFKA_GROUP_ID: core-service-group
@@ -106,8 +113,8 @@ services:
       - core-service
     environment:
       PORT: 8080
-      USER_SERVICE_URL: http://user-service:8081
-      CORE_SERVICE_URL: http://core-service:8082
+      USER_SERVICE_URL: http://user-service:8081/api/v1
+      CORE_SERVICE_URL: http://core-service:8082/api/v1
     ports:
       - "8080:8080"
 

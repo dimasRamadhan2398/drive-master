@@ -32,6 +32,14 @@ func (m *MockAuthService) Login(ctx context.Context, req *dto.LoginInput) (*dto.
 	return args.Get(0).(*dto.LoginResponse), args.Error(1)
 }
 
+func (m *MockAuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.LoginResponse, error) {
+	args := m.Called(ctx, refreshToken)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*dto.LoginResponse), args.Error(1)
+}
+
 func (m *MockAuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
@@ -180,6 +188,14 @@ func (m *MockRoleService) FindAllRoles(ctx context.Context) ([]models.Role, erro
 	return args.Get(0).([]models.Role), args.Error(1)
 }
 
+func (m *MockRoleService) GetRoleByName(ctx context.Context, name string) (*models.Role, error) {
+	args := m.Called(ctx, name)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Role), args.Error(1)
+}
+
 func (m *MockRoleService) GetAllRoles() ([]models.Role, error) {
 	args := m.Called()
 	return args.Get(0).([]models.Role), args.Error(1)
@@ -222,7 +238,8 @@ func TestRegister_Success(t *testing.T) {
 
 	// Use raw JSON string with the correct date format (DD/MM/YYYY)
 	registerJSON := `{
-		"name": "John Doe",
+		"firstName": "John",
+		"lastName": "Doe",
 		"username": "johndoe",
 		"password": "password123",
 		"confirmPassword": "password123",
@@ -343,7 +360,8 @@ func TestRegister_InvalidEmail(t *testing.T) {
 
 	// Invalid email format - missing @ and domain
 	registerJSON := `{
-		"name": "John Doe",
+		"firstName": "John",
+		"lastName": "Doe",
 		"username": "johndoe",
 		"password": "password123",
 		"confirmPassword": "password123",
@@ -379,7 +397,8 @@ func TestRegister_EmailAlreadyExists(t *testing.T) {
 	router := setupRouter(controller)
 
 	registerJSON := `{
-		"name": "John Doe",
+		"firstName": "John",
+		"lastName": "Doe",
 		"username": "johndoe",
 		"password": "password123",
 		"confirmPassword": "password123",
@@ -418,7 +437,8 @@ func TestRegister_UsernameAlreadyExists(t *testing.T) {
 	router := setupRouter(controller)
 
 	registerJSON := `{
-		"name": "John Doe",
+		"firstName": "John",
+		"lastName": "Doe",
 		"username": "johndoe",
 		"password": "password123",
 		"confirmPassword": "password123",
@@ -457,7 +477,8 @@ func TestRegister_PasswordMismatch(t *testing.T) {
 	router := setupRouter(controller)
 
 	registerJSON := `{
-		"name": "Rizqiko Harliano",
+		"firstName": "Rizqiko",
+		"lastName": "Harliano",
 		"username": "Zeta72",
 		"password": "kepetokan",
 		"confirmPassword": "kepetokan",

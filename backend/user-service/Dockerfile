@@ -42,34 +42,10 @@ COPY --from=builder /app/pkg/config/config.yaml ./pkg/config/config.yaml
 # Set config path environment variable
 ENV CONFIG_PATH=./pkg/config/config.yaml
 
-# Copy entrypoint script
-COPY --chmod=755 <<'EOF' /entrypoint.sh
-#!/bin/sh
-set -e
-
-# Set working directory to app
-cd /app
-
-# Run migrations if enabled
-if [ "${RUN_MIGRATIONS}" != "false" ]; then
-    echo "Running database migrations..."
-    ./user-service migrate || true
-fi
-
-# Run seeders if enabled
-if [ "${RUN_SEEDERS}" = "true" ]; then
-    echo "Running database seeders..."
-    ./user-service seed || true
-fi
-
-echo "Starting User Service..."
-exec ./user-service serve "$@"
-EOF
-
 # Switch to non-root user
 USER appuser
 
 EXPOSE 8001
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["/entrypoint.sh"]
+CMD ["sh", "-c", "if [ \"${RUN_MIGRATIONS}\" != \"false\" ]; then ./user-service migrate || true; fi && if [ \"${RUN_SEEDERS}\" = \"true\" ]; then ./user-service seed || true; fi && exec ./user-service serve"]

@@ -1,32 +1,4 @@
 <script setup lang="ts">
-<<<<<<< HEAD
-definePageMeta({
-  layout: 'dashboard',
-  middleware: ['auth']
-})
-
-const authStore = useAuthStore()
-
-// Use real user data from auth store
-const userData = computed(() => {
-  const user = authStore.currentUser
-  return {
-    name: user?.name || 'User',
-    package: 'Standard Package',
-    totalSessions: 10,
-    completedSessions: 4,
-    remainingSessions: 6,
-    progress: 40,
-    nextSession: {
-      date: 'Tomorrow',
-      time: '09:30 AM',
-      car: 'BYD Atto 1',
-      instructor: 'Pak Ahmad'
-    }
-  }
-})
-
-=======
 import { computed } from 'vue'
 
 definePageMeta({ layout: 'dashboard' })
@@ -86,7 +58,6 @@ const sessionDetails = {
   pickup: 'Main Lobby of Green Bay Apartments, Pluit'
 }
 
->>>>>>> main
 const recentActivity = [
   { 
     id: 1, 
@@ -148,11 +119,7 @@ const quickActions = [
         </UCard>
 
         <!-- Stats Cards -->
-<<<<<<< HEAD
-        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-=======
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
->>>>>>> main
           <UCard>
             <div class="flex items-center gap-4">
               <div class="p-3 rounded-xl bg-primary/10">
@@ -160,11 +127,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ userData.completedSessions }}</p>
-<<<<<<< HEAD
-                <p class="text-md text-muted">Sessions Completed</p>
-=======
                 <p class="text-sm text-muted">Sessions Completed</p>
->>>>>>> main
               </div>
             </div>
           </UCard>
@@ -176,11 +139,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ userData.remainingSessions }}</p>
-<<<<<<< HEAD
-                <p class="text-md text-muted">Sessions Remaining</p>
-=======
                 <p class="text-sm text-muted">Sessions Remaining</p>
->>>>>>> main
               </div>
             </div>
           </UCard>
@@ -192,11 +151,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ userData.progress }}%</p>
-<<<<<<< HEAD
-                <p class="text-md text-muted">Course Progress</p>
-=======
                 <p class="text-sm text-muted">Course Progress</p>
->>>>>>> main
               </div>
             </div>
           </UCard>
@@ -208,11 +163,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">Pending</p>
-<<<<<<< HEAD
-                <p class="text-md text-muted">Certificate Status</p>
-=======
                 <p class="text-sm text-muted">Certificate Status</p>
->>>>>>> main
               </div>
             </div>
           </UCard>
@@ -228,22 +179,14 @@ const quickActions = [
               </div>
             </template>
 
-<<<<<<< HEAD
-            <div class="flex flex-col md:flex-row gap-6">
-=======
             <div class="flex flex-col sm:flex-row gap-6">
->>>>>>> main
               <div class="flex-1 space-y-4">
                 <div class="flex items-center gap-3">
                   <div class="p-2 rounded-lg bg-muted">
                     <UIcon name="i-lucide-calendar" class="size-5 text-warning" />
                   </div>
                   <div>
-<<<<<<< HEAD
-                    <p class="text-md text-muted">Date</p>
-=======
                     <p class="text-sm text-muted">Date</p>
->>>>>>> main
                     <p class="font-medium">{{ userData.nextSession.date }}</p>
                   </div>
                 </div>
@@ -253,11 +196,7 @@ const quickActions = [
                     <UIcon name="i-lucide-clock" class="size-5 text-warning" />
                   </div>
                   <div>
-<<<<<<< HEAD
-                    <p class="text-md text-muted">Time</p>
-=======
                     <p class="text-sm text-muted">Time</p>
->>>>>>> main
                     <p class="font-medium">{{ userData.nextSession.time }}</p>
                   </div>
                 </div>
@@ -269,33 +208,11 @@ const quickActions = [
                     <UIcon name="i-lucide-car" class="size-5 text-warning" />
                   </div>
                   <div>
-<<<<<<< HEAD
-                    <p class="text-md text-muted">Vehicle</p>
-=======
                     <p class="text-sm text-muted">Vehicle</p>
->>>>>>> main
                     <p class="font-medium">{{ userData.nextSession.car }}</p>
                   </div>
                 </div>
 
-<<<<<<< HEAD
-                <div class="flex items-center gap-3">
-                  <div class="p-2 rounded-lg bg-muted">
-                    <UIcon name="i-lucide-user" class="size-5 text-warning" />
-                  </div>
-                  <div>
-                    <p class="text-md text-muted">Instructor</p>
-                    <p class="font-medium">{{ userData.nextSession.instructor }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <template #footer>
-              <div class="flex gap-3">
-                <UButton label="View Details" variant="outline" color="neutral" />
-                <UButton label="Reschedule" variant="ghost" color="warning" icon="i-lucide-calendar-days" />
-=======
                 <div class="flex items-center gap-3 group">
                   <div class="p-2 rounded-lg bg-muted">
                     <UIcon name="i-lucide-user" class="size-5 text-warning" />
@@ -312,7 +229,6 @@ const quickActions = [
               <div class="flex gap-3">
                 <UButton label="View Details" variant="outline" color="neutral" @click="showDetails = true" />
                 <UButton label="Reschedule" to="/dashboard/schedule" variant="ghost" color="neutral" icon="i-lucide-calendar-days" />
->>>>>>> main
               </div>
             </template>
           </UCard>
@@ -354,11 +270,7 @@ const quickActions = [
               </div>
 
               <div class="space-y-2">
-<<<<<<< HEAD
-                <div class="flex justify-between text-md">
-=======
                 <div class="flex justify-between text-sm">
->>>>>>> main
                   <span class="text-muted">Completed</span>
                   <span class="font-medium">{{ userData.completedSessions }}/{{ userData.totalSessions }}</span>
                 </div>
@@ -367,11 +279,7 @@ const quickActions = [
             </div>
 
             <template #footer>
-<<<<<<< HEAD
-              <p class="text-md text-muted text-center">
-=======
               <p class="text-sm text-muted text-center">
->>>>>>> main
                 {{ userData.remainingSessions }} more sessions to complete your course
               </p>
             </template>
@@ -385,11 +293,7 @@ const quickActions = [
               <div class="flex items-center justify-between">
                 <h2 class="font-semibold">Recent Activity</h2>
                 <NuxtLink to="/dashboard/history">
-<<<<<<< HEAD
-                  <UButton label="View All" variant="ghost" color="neutral" size="md" trailingIcon="i-lucide-arrow-right" />
-=======
                   <UButton label="View All" variant="ghost" color="warning" size="sm" trailingIcon="i-lucide-arrow-right" />
->>>>>>> main
                 </NuxtLink>
               </div>
             </template>
@@ -412,15 +316,9 @@ const quickActions = [
                 </div>
                 <div class="flex-1 min-w-0">
                   <p class="font-medium">{{ activity.title }}</p>
-<<<<<<< HEAD
-                  <p class="text-md text-muted truncate">{{ activity.description }}</p>
-                </div>
-                <span class="text-md text-muted whitespace-nowrap">{{ activity.date }}</span>
-=======
                   <p class="text-sm text-muted truncate">{{ activity.description }}</p>
                 </div>
                 <span class="text-xs text-muted whitespace-nowrap">{{ activity.date }}</span>
->>>>>>> main
               </div>
             </div>
           </UCard>
@@ -430,11 +328,7 @@ const quickActions = [
               <h2 class="font-semibold">Quick Actions</h2>
             </template>
 
-<<<<<<< HEAD
-            <div class="grid grid-cols-1 gap-3">
-=======
             <div class="grid grid-cols-1 space-y-3">
->>>>>>> main
               <NuxtLink 
                 v-for="action in quickActions" 
                 :key="action.label"
@@ -461,10 +355,6 @@ const quickActions = [
           </UCard>
         </div>
       </div>
-<<<<<<< HEAD
-    </template>
-  </UDashboardPanel>
-=======
       <!-- Centered Modal -->
       <UModal v-model:open="showDetails" title="Session Detail" :ui="{ content: 'm-auto sm:max-w-md' }">
         <template #body>
@@ -499,5 +389,4 @@ const quickActions = [
   </UDashboardPanel>
 
   
->>>>>>> main
 </template>

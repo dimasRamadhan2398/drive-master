@@ -2,11 +2,7 @@
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { computed, ref } from 'vue'
 
-<<<<<<< HEAD
-definePageMeta({ layout: 'dashboard', middleware: ['auth'] })
-=======
 definePageMeta({ layout: 'dashboard' })
->>>>>>> main
 
 const toast = useToast()
 
@@ -27,11 +23,7 @@ const currentMonthShortStr = computed(() => {
   return currentDate.value.toLocaleDateString('en-US', { month: 'short' })
 })
 
-<<<<<<< HEAD
-const { slots: globalSlots, bookSlot } = useSchedules()
-=======
 const { slots: globalSlots, bookSlot, updateSlotStatus } = useSchedules()
->>>>>>> main
 
 // FITUR BARU: Kalender merender hari secara dinamis berdasarkan bulan yang sedang dipilih
 const calendarDays = computed(() => {
@@ -92,11 +84,7 @@ const availableSlots = computed(() => {
 // Mock upcoming sessions
 const upcomingSessions = ref([
   { 
-<<<<<<< HEAD
-    id: 1, 
-=======
     id: '1', 
->>>>>>> main
     sessionNumber: 5,
     date: 'Mar 28, 2026', 
     time: '09:30 AM',
@@ -105,11 +93,7 @@ const upcomingSessions = ref([
     topic: 'Highway Driving - Advanced'
   },
   { 
-<<<<<<< HEAD
-    id: 2, 
-=======
     id: '2', 
->>>>>>> main
     sessionNumber: 6,
     date: 'Apr 2, 2026', 
     time: '11:00 AM',
@@ -120,14 +104,6 @@ const upcomingSessions = ref([
 ])
 
 const selectedSlotDetails = computed(() => {
-<<<<<<< HEAD
-  return availableSlots.value.find(s => s.id === selectedSlot.value)
-})
-
-function selectSlot(slotId: string) {
-  const slot = availableSlots.value.find(s => s.id === slotId)
-  if (slot?.available) {
-=======
   return globalSlots.value.find(s => s.id === selectedSlot.value)
 })
 
@@ -217,27 +193,11 @@ function confirmCancel() {
 function selectSlot(slotId: string) {
   const slot = globalSlots.value.find(s => s.id === slotId)
   if (slot?.status === 'available') {
->>>>>>> main
     selectedSlot.value = slotId
   }
 }
 
 // PERUBAHAN: Memperbaiki teks bulan statis
-<<<<<<< HEAD
-function confirmBooking() {
-  if (selectedSlot.value) {
-    bookSlot(selectedSlot.value, 'John Doe')
-  }
-  showBookingModal.value = false
-  toast.add({
-    title: 'Session Booked!',
-    description: `Your session on ${currentMonthStr.value.split(' ')[0]} ${selectedDate.value}, ${currentDate.value.getFullYear()} at ${selectedSlotDetails.value?.time} has been confirmed.`,
-    icon: 'i-lucide-check-circle',
-    color: 'success'
-  })
-  selectedSlot.value = null
-}
-=======
 
 // PERUBAHAN: Memperbaiki teks bulan statis
 function confirmBooking() {
@@ -273,7 +233,6 @@ function confirmBooking() {
   }
 }
 
->>>>>>> main
 </script>
 
 <template>
@@ -325,13 +284,8 @@ function confirmBooking() {
 
               <template #footer>
                 <div class="flex gap-2">
-<<<<<<< HEAD
-                  <UButton label="Reschedule" variant="outline" color="warning" size="md" icon="i-lucide-calendar-days" />
-                  <UButton label="Cancel" variant="ghost" color="error" size="md" icon="i-lucide-x" />
-=======
                   <UButton label="Reschedule" variant="outline" color="warning" size="md" icon="i-lucide-calendar-days" @click="openRescheduleModal(session)" />
                   <UButton label="Cancel" variant="ghost" color="error" size="md" icon="i-lucide-x" @click="openCancelModal(session)" />
->>>>>>> main
                 </div>
               </template>
             </UCard>
@@ -352,15 +306,9 @@ function confirmBooking() {
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-md font-medium">Select Date</h3>
                 <div class="flex items-center gap-2">
-<<<<<<< HEAD
-                  <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" size="md" />
-                  <span class="text-md font-medium">{{ currentMonth }}</span>
-                  <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" size="md" />
-=======
                   <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" size="md" @click="changeMonth(-1)" />
                   <span class="text-md font-medium">{{ currentMonthStr }}</span>
                   <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" size="md" @click="changeMonth(1)" />
->>>>>>> main
                 </div>
               </div>
               
@@ -502,8 +450,6 @@ function confirmBooking() {
             </div>
           </template>
         </UCard>
-<<<<<<< HEAD
-=======
 
         <!-- Reschedule Modal -->
         <UModal v-model:open="showRescheduleModal" title="Reschedule Session" class="max-w-2xl">
@@ -578,7 +524,6 @@ function confirmBooking() {
             </div>
           </template>
         </UModal>
->>>>>>> main
       </div>
     </template>
   </UDashboardPanel>

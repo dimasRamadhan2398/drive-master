@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"api-gateway/pkg/config"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -67,6 +68,19 @@ func (h *ProxyHandler) proxy(c *gin.Context, target *url.URL, stripPrefix string
 	c.Request.Header.Set("X-User-ID", c.GetString("userID"))
 	c.Request.Header.Set("X-User-Role", c.GetString("userRole"))
 	c.Request.Header.Set("X-Request-ID", c.GetString("requestID"))
+
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		log.Printf("[PROXY] ModifyResponse called for path: %s", c.Request.URL.Path)
+		log.Printf("[PROXY] Headers before delete: %v", resp.Header)
+		// Strip CORS headers from the downstream service to avoid duplication
+		resp.Header.Del("Access-Control-Allow-Origin")
+		resp.Header.Del("Access-Control-Allow-Credentials")
+		resp.Header.Del("Access-Control-Allow-Methods")
+		resp.Header.Del("Access-Control-Allow-Headers")
+		resp.Header.Del("Access-Control-Expose-Headers")
+		log.Printf("[PROXY] Headers after delete: %v", resp.Header)
+		return nil
+	}
 
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		c.JSON(http.StatusBadGateway, gin.H{

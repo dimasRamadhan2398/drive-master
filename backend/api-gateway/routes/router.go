@@ -15,9 +15,6 @@ func Register(r *gin.Engine, cfg *config.Config) {
     // ── PUBLIC routes — no JWT required ──────────────────
     public := r.Group("/api/v1")
     {
-        // auth endpoints — anyone can hit these
-        public.Any("/users/auth/*path", proxy.ToUserService)
-
         // public content — articles, testimonials
         public.GET("/content/articles/*path",     proxy.ToContentService)
         public.GET("/content/testimonials/*path", proxy.ToContentService)
@@ -26,13 +23,34 @@ func Register(r *gin.Engine, cfg *config.Config) {
         public.GET("/catalog/*path", proxy.ToCatalogService)
     }
 
+    // ── MIXED routes — conditional JWT ───────────────────────
+    mixed := r.Group("/api/v1")
+    {
+        mixed.Any("/users/*path", func(c *gin.Context) {
+            importStrings := "strings"
+            _ = importStrings
+            // If the path is an auth endpoint, skip JWT validation
+            if len(c.Param("path")) >= 5 && c.Param("path")[0:6] == "/auth/" {
+                proxy.ToUserService(c)
+                return
+            }
+            if c.Param("path") == "/auth" {
+                proxy.ToUserService(c)
+                return
+            }
+            
+            // Otherwise, validate JWT
+            auth.Authenticate()(c)
+            if !c.IsAborted() {
+                proxy.ToUserService(c)
+            }
+        })
+    }
+
     // ── PROTECTED routes — JWT required ──────────────────
     protected := r.Group("/api/v1")
     protected.Use(auth.Authenticate())
     {
-        // user management
-        protected.Any("/users/*path", proxy.ToUserService)
-
         // booking
         protected.Any("/bookings/*path", proxy.ToBookingService)
 
@@ -51,5 +69,14 @@ func Register(r *gin.Engine, cfg *config.Config) {
         admin.Any("/content/*path",  proxy.ToContentService)
         admin.Any("/catalog/*path",  proxy.ToCatalogService)
         admin.Any("/users/*path",    proxy.ToUserService)
+        admin.Any("/analytics/*path", proxy.ToCoreService)
+    }
+
+    // ── CORE ADMIN routes — routed under /api/v1/core/admin ──
+    coreAdmin := r.Group("/api/v1/core/admin")
+    coreAdmin.Use(auth.Authenticate())
+    coreAdmin.Use(auth.RequireRole("admin"))
+    {
+        coreAdmin.Any("/analytics/*path", proxy.ToCoreService)
     }
 }

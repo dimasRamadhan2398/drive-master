@@ -83,11 +83,7 @@ function getGradient(index: number) {
 }
 
 useSeoMeta({
-<<<<<<< HEAD
-  title: 'Blog - Drive Master Academy',
-=======
   title: 'Articles | Drive Master Academy',
->>>>>>> main
   description: 'Read the latest articles, tips, and updates about EV driving, electric vehicles, and driving education from Drive Master Academy.',
 })
 </script>

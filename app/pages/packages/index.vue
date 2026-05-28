@@ -1,54 +1,4 @@
 <script setup lang="ts">
-<<<<<<< HEAD
-const packages = [
-  {
-    title: '6x',
-    price: 'Rp 1.500.000',
-    // priceNote: 'One-time payment',
-    description: 'Perfect for beginners looking to get started with driving basics.',
-    features: [
-      { text: 'Free Trial', included: true },
-      { text: '6x Sessions', included: true },
-    ],
-    highlight: false,
-    color: 'neutral' as const
-  },
-  {
-    title: '8x',
-    price: 'Rp 1.950.000',
-    // priceNote: 'One-time payment',
-    description: 'Our most popular package for comprehensive learning.',
-    features: [
-      { text: 'Free Trial', included: true },
-      { text: '8x Sessions', included: true },
-    ],
-    highlight: true,
-    color: 'warning' as const
-  },
-  {
-    title: '10x',
-    price: 'Rp 2.250.000',
-    // priceNote: 'One-time payment',
-    description: 'Complete mastery with unlimited support and premium perks.',
-    features: [
-      { text: 'Free Trial', included: true },
-      { text: '10x Sessions', included: true },
-    ],
-    highlight: false,
-    color: 'neutral' as const
-  },
-  {
-    title: '12x',
-    price: 'Rp 2.650.000',
-    // priceNote: 'One-time payment',
-    description: 'Complete mastery with unlimited support and premium perks.',
-    features: [
-      { text: 'Free Trial', included: true },
-      { text: '12x Sessions', included: true },
-    ],
-    highlight: false,
-    color: 'neutral' as const
-=======
 useSeoMeta({
   title: 'Packages | Drive Master Academy',
   description: 'Transparent pricing with no hidden fees. Choose the package that best fits your learning goals and schedule.',
@@ -79,8 +29,10 @@ if (process.client) {
   }, 1000)
 }
 
+const { promoEndDate } = useSettings()
+
 const isPromoActive = computed(() => {
-  const promoEnd = new Date('2026-05-20T23:59:59')
+  const promoEnd = new Date(promoEndDate.value || '2026-05-31T23:59:59')
   return now.value < promoEnd
 })
 
@@ -333,7 +285,6 @@ const plans = [
       'SIM A'
     ],
     highlight: false
->>>>>>> main
   }
 ]
 
@@ -367,67 +318,6 @@ const addOns = [
 
     <!-- Package Cards -->
     <UPageSection :ui="{ headline: 'text-warning' }">
-<<<<<<< HEAD
-      <div class="grid md:grid-cols-4 gap-6 lg:gap-8">
-        <UCard
-          v-for="pkg in packages"
-          :key="pkg.title"
-          :class="[
-            'flex flex-col relative',
-            pkg.highlight ? 'ring-2 ring-warning shadow-xl' : ''
-          ]"
-        >
-          <UBadge 
-            v-if="pkg.highlight" 
-            label="Most Popular" 
-            color="warning" 
-            class="absolute -top-0.5 left-1/2 -translate-x-1/2"
-          />
-
-          <template #header>
-            <div class="text-center pt-2">
-              <h3 class="text-2xl font-bold">{{ pkg.title }}</h3>
-              <div class="mt-4">
-                <span class="text-4xl font-bold text-warning">{{ pkg.price }}</span>
-              </div>
-              <!-- <p class="text-sm text-muted mt-1">{{ pkg.priceNote }}</p> -->
-              <p class="text-muted mt-4">{{ pkg.description }}</p>
-            </div>
-          </template>
-
-          <ul class="space-y-3 flex-1">
-            <li 
-              v-for="feature in pkg.features" 
-              :key="feature.text" 
-              class="flex items-center gap-3"
-              :class="{ 'opacity-50': !feature.included }"
-            >
-              <UIcon 
-                :name="feature.included ? 'i-lucide-check' : 'i-lucide-x'" 
-                :class="feature.included ? 'text-warning' : 'text-muted'" 
-                class="size-5 shrink-0" 
-              />
-              <span class="text-sm">{{ feature.text }}</span>
-            </li>
-          </ul>
-
-          <template #footer>
-            <NuxtLink to="/auth/register" class="w-full">
-              <UButton 
-                :label="pkg.highlight ? 'Get Started' : 'Choose Plan'"
-                :color="pkg.color"
-                :variant="pkg.highlight ? undefined : 'outline'"
-                block
-              />
-            </NuxtLink>
-          </template>
-        </UCard>
-      </div>
-
-      <p class="text-center text-muted mt-8">
-        All packages include access to our member dashboard and digital certificate upon completion.
-      </p>
-=======
       <!-- Premium Promo Banner with Real-time Countdown -->
       <Transition
         enter-active-class="transition duration-500 ease-out"
@@ -572,7 +462,6 @@ const addOns = [
           </label>
         </div>
       </div>
->>>>>>> main
     </UPageSection>
 
     <!-- Comparison Table -->

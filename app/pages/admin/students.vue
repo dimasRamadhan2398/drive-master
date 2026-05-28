@@ -2,21 +2,14 @@
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { computed, ref } from 'vue'
 
-<<<<<<< HEAD
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
-=======
 definePageMeta({ layout: 'admin' })
->>>>>>> main
 
 const toast = useToast()
 const searchQuery = ref('')
 const statusFilter = ref('all')
 const showAddModal = ref(false)
 const showDetailModal = ref(false)
-<<<<<<< HEAD
-=======
 const showEditModal = ref(false)
->>>>>>> main
 
 type Student = {
   id: number
@@ -32,15 +25,6 @@ type Student = {
 }
 
 const selectedStudent = ref<Student | null>(null)
-<<<<<<< HEAD
-
-const students = ref<Student[]>([
-  { id: 1, name: 'John Doe', email: 'john@example.com', phone: '081234567890', package: 'Standard', progress: 40, completedSessions: 4, totalSessions: 10, joinDate: 'Mar 10, 2026', status: 'active' },
-  { id: 2, name: 'Sarah Putri', email: 'sarah@example.com', phone: '081234567891', package: 'Pro', progress: 75, completedSessions: 11, totalSessions: 15, joinDate: 'Feb 20, 2026', status: 'active' },
-  { id: 3, name: 'Budi Santoso', email: 'budi@example.com', phone: '081234567892', package: 'Starter', progress: 100, completedSessions: 5, totalSessions: 5, joinDate: 'Jan 15, 2026', status: 'completed' },
-  { id: 4, name: 'Amanda Chen', email: 'amanda@example.com', phone: '081234567893', package: 'Standard', progress: 20, completedSessions: 2, totalSessions: 10, joinDate: 'Mar 25, 2026', status: 'active' },
-  { id: 5, name: 'Ricky Wijaya', email: 'ricky@example.com', phone: '081234567894', package: 'Standard', progress: 0, completedSessions: 0, totalSessions: 10, joinDate: 'Apr 1, 2026', status: 'pending' }
-=======
 const editingStudent = ref<Student | null>(null)
 
 const newStudent = ref({
@@ -57,7 +41,6 @@ const students = ref<Student[]>([
   { id: 3, name: 'Budi Santoso', email: 'budi@example.com', phone: '081234567892', package: '6x', progress: 100, completedSessions: 5, totalSessions: 5, joinDate: 'Jan 15, 2026', status: 'completed' },
   { id: 4, name: 'Amanda Chen', email: 'amanda@example.com', phone: '081234567893', package: '8x', progress: 20, completedSessions: 2, totalSessions: 10, joinDate: 'Mar 25, 2026', status: 'active' },
   { id: 5, name: 'Ricky Wijaya', email: 'ricky@example.com', phone: '081234567894', package: '8x', progress: 0, completedSessions: 0, totalSessions: 10, joinDate: 'Apr 1, 2026', status: 'pending' }
->>>>>>> main
 ])
 
 const filteredStudents = computed(() => {
@@ -74,13 +57,6 @@ function getInitials(name: string) {
 }
 
 function bookSessionPage(student: Student) {
-<<<<<<< HEAD
-  navigateTo('/admin/schedules')
-}
-
-function issueCertificatePage(student: Student) {
-  navigateTo('/admin/certificates')
-=======
   navigateTo(`/admin/schedules?studentName=${encodeURIComponent(student.name)}`)
 }
 
@@ -95,7 +71,6 @@ function issueCertificatePage(student: Student) {
     return
   }
   navigateTo(`/admin/certificates?issueFor=${student.id}`)
->>>>>>> main
 }
 
 function viewStudent(student: Student) {
@@ -103,22 +78,17 @@ function viewStudent(student: Student) {
   showDetailModal.value = true
 }
 
-<<<<<<< HEAD
-=======
 function openEditModal(student: Student) {
   editingStudent.value = JSON.parse(JSON.stringify(student))
   showDetailModal.value = false // Close detail modal if it was open
   showEditModal.value = true
 }
 
->>>>>>> main
 function deleteStudent(id: number) {
   students.value = students.value.filter(s => s.id !== id)
   toast.add({ title: 'Student Removed', description: 'The student has been removed from the system.', icon: 'i-lucide-trash', color: 'error' })
 }
 
-<<<<<<< HEAD
-=======
 const packageSessionMap: { [key: string]: number } = {
   '6x': 6,
   '8x': 8,
@@ -174,7 +144,6 @@ function saveEditedStudent() {
   editingStudent.value = null
 }
 
->>>>>>> main
 function getStatusColor(status: string) {
   if (status === 'active') return 'info'
   if (status === 'completed') return 'primary'
@@ -188,11 +157,7 @@ function getStatusLabel(status: string) {
 }
 
 function getPackageColor(pkg: string) {
-<<<<<<< HEAD
-  return pkg === 'Pro' ? 'neutral' : 'neutral'
-=======
   return pkg === '8x' ? 'warning' : 'neutral'
->>>>>>> main
 }
 </script>
 
@@ -207,30 +172,6 @@ function getPackageColor(pkg: string) {
             <template #body>
               <div class="space-y-4">
                 <UFormField label="Full Name" required>
-<<<<<<< HEAD
-                  <UInput placeholder="Enter student name" color="warning" class="w-full" icon="i-lucide-user" />
-                </UFormField>
-                <UFormField label="Email" required>
-                  <UInput type="email" placeholder="student@example.com" color="warning" class="w-full" icon="i-lucide-mail" />
-                </UFormField>
-                <UFormField label="Phone Number" required>
-                  <UInput placeholder="081234567890" color="warning" class="w-full" icon="i-lucide-phone" />
-                </UFormField>
-                <UFormField label="Package" required>
-                  <USelect 
-                    :items="[
-                      { label: 'Free Trial', value: 'free' }, 
-                      { label: '6x Training Session', value: '6x' }, 
-                      { label: '8x Training Session', value: '8x' },
-                      { label: '10x Training Session', value: '10x' },
-                      { label: '12x Training Session', value: '12x' }
-                    ]" 
-                    placeholder="Select package" 
-                    class="w-full"
-                    color="warning"
-                  />
-                </UFormField>
-=======
                   <UInput v-model="newStudent.name" placeholder="Enter student name" color="warning" class="w-full" icon="i-lucide-user" />
                 </UFormField>
                 <UFormField label="Email" required>
@@ -266,15 +207,11 @@ function getPackageColor(pkg: string) {
                     />
                   </UFormField>
                 </div>
->>>>>>> main
               </div>
             </template>
             <template #footer>
               <div class="flex justify-end gap-3">
                 <UButton label="Cancel" variant="ghost" color="neutral" @click="showAddModal = false" />
-<<<<<<< HEAD
-                <UButton label="Add Student" color="warning" icon="i-lucide-user-plus" @click="showAddModal = false" />
-=======
                 <UButton label="Create Student" color="warning" @click="addStudent" />
               </div>
             </template>
@@ -322,7 +259,6 @@ function getPackageColor(pkg: string) {
               <div class="flex justify-end gap-3">
                 <UButton label="Cancel" variant="ghost" color="neutral" @click="showEditModal = false" />
                 <UButton label="Save Changes" color="warning" @click="saveEditedStudent" />
->>>>>>> main
               </div>
             </template>
           </UModal>
@@ -346,10 +282,6 @@ function getPackageColor(pkg: string) {
             class="w-40"
             color="warning"
           />
-<<<<<<< HEAD
-          <UButton icon="i-lucide-download" label="Export" color="neutral" variant="outline" />
-=======
->>>>>>> main
         </template>
       </UDashboardToolbar>
     </template>
@@ -402,11 +334,7 @@ function getPackageColor(pkg: string) {
                       :items="[
                         [
                           { label: 'View Details', icon: 'i-lucide-eye', onSelect: () => viewStudent(student) },
-<<<<<<< HEAD
-                          { label: 'Edit', icon: 'i-lucide-pencil' },
-=======
                           { label: 'Edit', icon: 'i-lucide-pencil', onSelect: () => openEditModal(student) },
->>>>>>> main
                           { label: 'Book Session', icon: 'i-lucide-calendar-plus', onSelect: () => bookSessionPage(student) }
                         ],
                         [{ label: 'Issue Certificate', icon: 'i-lucide-award', onSelect: () => issueCertificatePage(student) }],
@@ -461,11 +389,7 @@ function getPackageColor(pkg: string) {
             <template #footer>
               <div class="flex justify-end gap-3">
                 <UButton label="Close" variant="ghost" color="neutral" @click="showDetailModal = false" />
-<<<<<<< HEAD
-                <UButton label="Edit Student" color="warning" icon="i-lucide-pencil" />
-=======
                 <UButton label="Edit Student" color="warning" icon="i-lucide-pencil" @click="openEditModal(selectedStudent!)" />
->>>>>>> main
               </div>
             </template>
           </UModal>

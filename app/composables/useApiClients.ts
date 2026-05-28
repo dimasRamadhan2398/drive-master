@@ -12,15 +12,15 @@ export const useApiClients = () => {
 
   return {
     user: $fetch.create({
-      baseURL: config.public.userApiBase,
+      baseURL: config.public.userApiBase as string,
       headers: getHeaders(),
     }),
     core: $fetch.create({
-      baseURL: config.public.coreApiBase,
+      baseURL: config.public.coreApiBase as string,
       headers: getHeaders(),
     }),
     booking: $fetch.create({
-      baseURL: config.public.bookingApiBase,
+      baseURL: config.public.bookingApiBase as string,
       headers: getHeaders(),
     }),
   };

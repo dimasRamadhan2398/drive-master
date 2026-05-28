@@ -2,12 +2,7 @@
 import { ref, onMounted } from 'vue'
 
 definePageMeta({
-<<<<<<< HEAD
-  layout: 'blank',
-  middleware: ['guest']
-=======
   layout: 'blank'
->>>>>>> main
 })
 
 const route = useRoute()
@@ -136,16 +131,10 @@ const nextSteps = {
               label="Go to Dashboard"
               icon="i-lucide-arrow-right"
               block
-<<<<<<< HEAD
-            />
-          </NuxtLink>
-          <p class="text-xs text-muted text-center">
-=======
               color="warning"
             />
           </NuxtLink>
           <p class="text-xs text-muted text-center py-6">
->>>>>>> main
             Redirecting in 5 seconds...
           </p>
         </div>

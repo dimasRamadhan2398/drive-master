@@ -1,4 +1,4 @@
-export { useScriptTriggerConsent, useScriptEventPage, useScriptTriggerElement, useScript, useScriptGoogleAnalytics, useScriptPlausibleAnalytics, useScriptCrisp, useScriptClarity, useScriptCloudflareWebAnalytics, useScriptFathomAnalytics, useScriptMatomoAnalytics, useScriptGoogleTagManager, useScriptGoogleAdsense, useScriptSegment, useScriptMetaPixel, useScriptXPixel, useScriptIntercom, useScriptHotjar, useScriptStripe, useScriptLemonSqueezy, useScriptVimeoPlayer, useScriptYouTubePlayer, useScriptGoogleMaps, useScriptNpm, useScriptUmamiAnalytics, useScriptSnapchatPixel, useScriptRybbitAnalytics, useScriptDatabuddyAnalytics, useScriptRedditPixel, useScriptPayPal } from '#app/composables/script-stubs';
+export { useScriptTriggerConsent, useScriptEventPage, useScriptTriggerElement, useScript, useScriptGoogleAnalytics, useScriptPlausibleAnalytics, useScriptCrisp, useScriptClarity, useScriptCloudflareWebAnalytics, useScriptVercelAnalytics, useScriptPostHog, useScriptFathomAnalytics, useScriptMatomoAnalytics, useScriptMixpanelAnalytics, useScriptBingUet, useScriptGoogleTagManager, useScriptGoogleAdsense, useScriptGoogleRecaptcha, useScriptGoogleSignIn, useScriptSegment, useScriptMetaPixel, useScriptXPixel, useScriptTikTokPixel, useScriptIntercom, useScriptHotjar, useScriptStripe, useScriptLemonSqueezy, useScriptVimeoPlayer, useScriptYouTubePlayer, useScriptGoogleMaps, useScriptNpm, useScriptUmamiAnalytics, useScriptSnapchatPixel, useScriptRybbitAnalytics, useScriptDatabuddyAnalytics, useScriptRedditPixel, useScriptPayPal, useScriptGravatar } from '#app/composables/script-stubs';
 export { isVue2, isVue3 } from 'vue-demi';
 export { defineNuxtLink } from '#app/components/nuxt-link';
 export { useNuxtApp, tryUseNuxtApp, defineNuxtPlugin, definePayloadPlugin, useRuntimeConfig, defineAppConfig } from '#app/nuxt';
@@ -32,10 +32,12 @@ export { setInterval } from '#app/compat/interval';
 export { definePageMeta, PageMeta } from '#app/composables/pages';
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
 export { useApi } from '../app/composables/useApi';
+export { useApiClients } from '../app/composables/useApiClients';
 export { useAuth } from '../app/composables/useAuth';
 export { useContent, PageSection, Page, BlogPost, Faq } from '../app/composables/useContent';
 export { useSchedules, useSmartAlerts, TimeSlot } from '../app/composables/useSchedules';
 export { useSettings } from '../app/composables/useSettings';
+export { useAuthStore } from '../app/stores/auth';
 export { defineLocale, extendLocale } from '../node_modules/@nuxt/ui/dist/runtime/composables/defineLocale';
 export { defineShortcuts, extractShortcuts } from '../node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts';
 export { useContentSearch } from '../node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch';
@@ -47,5 +49,6 @@ export { useResizable } from '../node_modules/@nuxt/ui/dist/runtime/composables/
 export { useScrollShadow } from '../node_modules/@nuxt/ui/dist/runtime/composables/useScrollShadow';
 export { useScrollspy } from '../node_modules/@nuxt/ui/dist/runtime/composables/useScrollspy';
 export { useToast } from '../node_modules/@nuxt/ui/dist/runtime/composables/useToast';
+export { defineStore, acceptHMRUpdate, usePinia, storeToRefs } from '../node_modules/@pinia/nuxt/dist/runtime/composables';
 export { useNuxtDevTools } from '../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';
 export { useColorMode } from '../node_modules/@nuxtjs/color-mode/dist/runtime/composables';
