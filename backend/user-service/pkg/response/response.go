@@ -45,6 +45,44 @@ func Error(c *gin.Context, statusCode int, code string, message string, details 
 	})
 }
 
+// ErrorFromValidationErrors sends an error response from validation errors (map[string][]string)
+func ErrorFromValidationErrors(c *gin.Context, errs map[string][]string) {
+	c.JSON(http.StatusBadRequest, Response{
+		Success: false,
+		Error: &ErrorDetail{
+			Code:    "VALIDATION_ERROR",
+			Message: "Validation failed",
+			Details: formatValidationErrors(errs),
+		},
+	})
+}
+
+// formatValidationErrors converts validation errors map to a human-readable string
+func formatValidationErrors(errs map[string][]string) string {
+	if len(errs) == 0 {
+		return ""
+	}
+	var messages []string
+	for field, fieldErrs := range errs {
+		for _, msg := range fieldErrs {
+			messages = append(messages, field+": "+msg)
+		}
+	}
+	return joinStrings(messages, "; ")
+}
+
+// joinStrings joins strings with a separator
+func joinStrings(strs []string, sep string) string {
+	if len(strs) == 0 {
+		return ""
+	}
+	result := strs[0]
+	for i := 1; i < len(strs); i++ {
+		result += sep + strs[i]
+	}
+	return result
+}
+
 // ErrorFromAppError sends an error response from an AppError
 func ErrorFromAppError(c *gin.Context, appErr *apperrors.AppError) {
 	c.JSON(appErr.StatusCode, Response{
