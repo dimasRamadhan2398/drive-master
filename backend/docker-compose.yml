@@ -161,10 +161,10 @@ services:
       - CONFIG_PATH=./pkg/config/config.yaml
       - RUN_MIGRATIONS=true
       - RUN_SEEDERS=true
-    # ports:
-    #   - "8001:8001"
     networks:
-      - drive_master_network
+      drive_master_network:
+        aliases:
+          - user-service
 
   # Core Service
   core-service:
@@ -196,10 +196,10 @@ services:
       - CONFIG_PATH=./pkg/config/config.yaml
       - RUN_MIGRATIONS=true
       - RUN_SEEDERS=true
-    # ports:
-    #   - "8002:8002"
     networks:
-      - drive_master_network
+      drive_master_network:
+        aliases:
+          - core-service
 
   # Booking Service
   booking-service:
@@ -231,10 +231,10 @@ services:
       - CONFIG_PATH=./pkg/config/config.yaml
       - RUN_MIGRATIONS=true
       - RUN_SEEDERS=true
-    # ports:
-    #   - "8003:8003"
     networks:
-      - drive_master_network
+      drive_master_network:
+        aliases:
+          - booking-service
 
   # Kong API Gateway (DB-less mode)
   kong-gateway:
@@ -253,17 +253,14 @@ services:
       KONG_ADMIN_ACCESS_LOG: "/dev/stdout"
       KONG_PROXY_ERROR_LOG: "/dev/stderr"
       KONG_ADMIN_ERROR_LOG: "/dev/stderr"
-      KONG_PROXY_LISTEN: "0.0.0.0:8000, 0.0.0.0:8443 ssl"
+      KONG_PROXY_LISTEN: "0.0.0.0:8080, 0.0.0.0:8443 ssl"
       KONG_ADMIN_LISTEN: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
-      KONG_ADMIN_GUI_LISTEN: "0.0.0.0:8002"
-      KONG_ADMIN_GUI_URL: "http://localhost:8002"
       KONG_DECLARATIVE_CONFIG: "/kong/declarative/kong.yml"
       KONG_NGINX_WORKER_PROCESSES: "2"
     ports:
-      - "8000:8000" # Proxy HTTP
+      - "8080:8080" # Proxy HTTP (main API gateway port)
       - "8443:8443" # Proxy HTTPS
       - "8001:8001" # Admin API
-      - "8002:8002" # Kong Manager (Admin UI)
     volumes:
       - ./api-gateway/kong/kong.yml:/kong/declarative/kong.yml:ro
     healthcheck:

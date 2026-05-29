@@ -9,6 +9,7 @@ type Registry struct {
 	repoRegistry   repositories.IRepositoryRegistry
 	eventPublisher *kafka.EventPublisher
 	analyticsSvc   IAnalyticsService
+	cacheSvc       ICacheService
 }
 
 // GetEventService implements [IServiceRegistry].
@@ -18,7 +19,12 @@ func (r *Registry) GetEventService() IEventService {
 
 // GetRegionService implements [IServiceRegistry].
 func (r *Registry) GetRegionService() IRegionService {
-	return NewRegionService(r.repoRegistry.GetRegion())
+	return NewRegionService(r.repoRegistry.GetRegion(), r.cacheSvc)
+}
+
+// GetCacheService implements [IServiceRegistry].
+func (r *Registry) GetCacheService() ICacheService {
+	return r.cacheSvc
 }
 
 // GetCarService implements [IServiceRegistry].
@@ -33,12 +39,12 @@ func (r *Registry) GetPackageService() IPackageService {
 
 // GetTestimonialService implements [IServiceRegistry].
 func (r *Registry) GetTestimonialService() ITestimonialService {
-	return NewTestimonialService(r.repoRegistry.GetTestimonial())
+	return NewTestimonialService(r.repoRegistry.GetTestimonial(), r.eventPublisher)
 }
 
 // GetArticleService implements [IServiceRegistry].
 func (r *Registry) GetArticleService() IArticleService {
-	return NewArticleService(r.repoRegistry.GetArticle())
+	return NewArticleService(r.repoRegistry.GetArticle(), r.eventPublisher)
 }
 
 // GetAnalyticsService implements [IServiceRegistry].
@@ -54,6 +60,7 @@ type IServiceRegistry interface {
 	GetTestimonialService() ITestimonialService
 	GetArticleService() IArticleService
 	GetAnalyticsService() IAnalyticsService
+	GetCacheService() ICacheService
 }
 
 func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPublisher *kafka.EventPublisher) IServiceRegistry {
@@ -61,5 +68,6 @@ func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPubl
 		repoRegistry:   repoRegistry,
 		eventPublisher: eventPublisher,
 		analyticsSvc:   NewAnalyticsService(),
+		cacheSvc:       NewCacheService(repoRegistry.GetCache()),
 	}
 }

@@ -37,17 +37,17 @@ type IRepositoryRegistry interface {
 	GetArticle() IArticleRepository
 }
 
-// GetRegion returns the region repository
-func (r *Registry) GetRegion() IRegionRepository {
-	return NewRegionRepository(r.baseRepo)
-}
-
 // GetCache returns the cache repository
 func (r *Registry) GetCache() ICacheRepository {
 	if r.cacheClient == nil {
 		return nil
 	}
 	return NewCacheRepository(r.cacheClient)
+}
+
+// GetRegion returns the region repository
+func (r *Registry) GetRegion() IRegionRepository {
+	return NewRegionRepository(r.baseRepo, r.GetCache())
 }
 
 // GetEvent returns the event repository

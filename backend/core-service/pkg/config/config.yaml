@@ -39,7 +39,15 @@ kafka:
   enabled: true
   brokers:
     - "kafka:9092"
-  topic: "service-logs"
+  topic: "service-logs"  # Default topic for producer (legacy)
+  topics:  # Topics to consume
+    - "user-events"
+    - "car-events"
+    - "package-events"
+    - "article-events"
+    - "testimonial-events"
+    - "region-events"
+  consumer_group: "core-service-consumer-group"
   service_name: "core-service"
 
 app:

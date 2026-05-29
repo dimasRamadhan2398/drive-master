@@ -61,10 +61,12 @@ type LogConfig struct {
 }
 
 type KafkaConfig struct {
-	Enabled     bool     `mapstructure:"enabled" yaml:"enabled"`
-	Brokers     []string `mapstructure:"brokers" yaml:"brokers"`
-	Topic       string   `mapstructure:"topic" yaml:"topic"`
-	ServiceName string   `mapstructure:"service_name" yaml:"service_name"`
+	Enabled      bool     `mapstructure:"enabled" yaml:"enabled"`
+	Brokers      []string `mapstructure:"brokers" yaml:"brokers"`
+	Topic        string   `mapstructure:"topic" yaml:"topic"` // Default topic for legacy producer
+	Topics       []string `mapstructure:"topics" yaml:"topics"` // Multi-topic consumer topics
+	ConsumerGroup string  `mapstructure:"consumer_group" yaml:"consumer_group"`
+	ServiceName  string   `mapstructure:"service_name" yaml:"service_name"`
 }
 
 type AppConfig struct {

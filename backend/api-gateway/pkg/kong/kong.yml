@@ -1,0 +1,97 @@
+_format_version: "3.0"
+_transform: true
+
+# ==================== Services ====================
+services:
+  # User Service
+  - name: user-service
+    host: user-service
+    port: 8001
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 30000
+    retries: 3
+    routes:
+      - name: user-service-route
+        strip_path: true
+        preserve_host: false
+        paths:
+          - /users
+          - /auth
+          - /v1/auth
+
+  # Core Service
+  - name: core-service
+    host: core-service
+    port: 8002
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 30000
+    retries: 3
+    routes:
+      - name: core-service-route
+        strip_path: true
+        preserve_host: false
+        paths:
+          - /cars
+          - /packages
+          - /articles
+          - /testimonials
+          - /v1/cars
+          - /v1/packages
+          - /v1/articles
+          - /v1/testimonials
+
+  # Booking Service
+  - name: booking-service
+    host: booking-service
+    port: 8003
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 30000
+    retries: 3
+    routes:
+      - name: booking-service-route
+        strip_path: true
+        preserve_host: false
+        paths:
+          - /bookings
+          - /v1/bookings
+
+# ==================== Plugins ====================
+plugins:
+  # CORS Plugin (global)
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - "*"
+      exposed_headers:
+        - "*"
+      credentials: true
+      max_age: 3600
+      preflight_continue: false
+
+  # Request ID
+  - name: request-id
+    config:
+      header_name: X-Request-ID
+      include_in_response: true
+
+  # Response Transformer (add headers)
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - X-Powered-By:Drive-Master-Gateway

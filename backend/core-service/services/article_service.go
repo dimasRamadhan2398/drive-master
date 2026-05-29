@@ -5,6 +5,7 @@ import (
 	"core-service/models"
 	"core-service/models/dto"
 	"core-service/pkg/base"
+	"core-service/pkg/kafka"
 	"core-service/repositories"
 	"encoding/json"
 	"strings"
@@ -37,12 +38,14 @@ type IArticleService interface {
 
 // ArticleService implements IArticleService
 type ArticleService struct {
-	articleRepo repositories.IArticleRepository
+	articleRepo    repositories.IArticleRepository
+	eventPublisher *kafka.EventPublisher
 }
 
-func NewArticleService(articleRepo repositories.IArticleRepository) IArticleService {
+func NewArticleService(articleRepo repositories.IArticleRepository, eventPublisher *kafka.EventPublisher) IArticleService {
 	return &ArticleService{
-		articleRepo: articleRepo,
+		articleRepo:    articleRepo,
+		eventPublisher: eventPublisher,
 	}
 }
 
@@ -96,7 +99,7 @@ func (s *ArticleService) CreateArticle(ctx context.Context, req *dto.CreateArtic
 		MetaTitle:       metaTitle,
 		MetaDescription: metaDescription,
 		MetaKeywords:    req.MetaKeywords,
-		CanonicalURL:     req.CanonicalURL,
+		CanonicalURL:    req.CanonicalURL,
 		OGTitle:         ogTitle,
 		OGDescription:   ogDescription,
 		OGImage:         req.OGImage,
@@ -108,6 +111,11 @@ func (s *ArticleService) CreateArticle(ctx context.Context, req *dto.CreateArtic
 
 	if err := s.articleRepo.Create(ctx, article); err != nil {
 		return nil, err
+	}
+
+	// Publish event (async to not block response)
+	if s.eventPublisher != nil {
+		go s.eventPublisher.PublishArticleCreated(context.Background(), article)
 	}
 
 	return article, nil
@@ -265,6 +273,11 @@ func (s *ArticleService) UpdateArticle(ctx context.Context, id uuid.UUID, req *d
 		return nil, err
 	}
 
+	// Publish event (async to not block response)
+	if s.eventPublisher != nil {
+		go s.eventPublisher.PublishArticleUpdated(context.Background(), article)
+	}
+
 	return article, nil
 }
 
@@ -274,7 +287,17 @@ func (s *ArticleService) DeleteArticle(ctx context.Context, id uuid.UUID) error 
 	if err != nil {
 		return err
 	}
-	return s.articleRepo.Delete(ctx, article)
+
+	if err := s.articleRepo.Delete(ctx, article); err != nil {
+		return err
+	}
+
+	// Publish event (async to not block response)
+	if s.eventPublisher != nil {
+		go s.eventPublisher.PublishArticleDeleted(context.Background(), article.ID.String())
+	}
+
+	return nil
 }
 
 // IncrementViewCount increments the view count of an article
@@ -389,12 +412,33 @@ func (s *ArticleService) GetArticlesByTag(ctx context.Context, tag string, page,
 
 // PublishArticle publishes an article
 func (s *ArticleService) PublishArticle(ctx context.Context, id uuid.UUID) error {
-	return s.articleRepo.Publish(ctx, id)
+	if err := s.articleRepo.Publish(ctx, id); err != nil {
+		return err
+	}
+
+	// Publish event (async to not block response)
+	if s.eventPublisher != nil {
+		article, _ := s.articleRepo.FindByID(ctx, id)
+		if article != nil {
+			go s.eventPublisher.PublishArticlePublished(context.Background(), article)
+		}
+	}
+
+	return nil
 }
 
 // ArchiveArticle archives an article
 func (s *ArticleService) ArchiveArticle(ctx context.Context, id uuid.UUID) error {
-	return s.articleRepo.Archive(ctx, id)
+	if err := s.articleRepo.Archive(ctx, id); err != nil {
+		return err
+	}
+
+	// Publish event (async to not block response)
+	if s.eventPublisher != nil {
+		go s.eventPublisher.PublishArticleArchived(context.Background(), id.String())
+	}
+
+	return nil
 }
 
 // Helper methods

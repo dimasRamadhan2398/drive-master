@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"context"
 	"core-service/controllers"
 	"core-service/database"
+	"core-service/handlers"
 	"core-service/pkg/config"
 	"core-service/pkg/kafka"
 	"core-service/pkg/logger"
@@ -13,6 +15,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"core-service/docs"
@@ -144,6 +149,22 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Initialize services
 	serviceRegistry := services.NewServiceRegistry(repoRegistry, eventPublisher)
 
+	// Initialize and start Kafka consumer if enabled
+	var kafkaConsumer *handlers.KafkaConsumer
+	kafkaCtx, kafkaCancel := context.WithCancel(context.Background())
+	if loadedConfig.Kafka.Enabled && len(loadedConfig.Kafka.Topics) > 0 {
+		kafkaConsumer = handlers.NewKafkaConsumer(
+			loadedConfig.Kafka.Brokers,
+			loadedConfig.Kafka.Topics,
+			loadedConfig.Kafka.ConsumerGroup,
+			serviceRegistry.GetEventService(),
+		)
+		go kafkaConsumer.Consume(kafkaCtx)
+		logger.Info("Kafka consumer started",
+			logger.NewLogField("topics", loadedConfig.Kafka.Topics),
+			logger.NewLogField("group", loadedConfig.Kafka.ConsumerGroup))
+	}
+
 	// Initialize controller
 	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
 
@@ -190,9 +211,29 @@ func runServe(cmd *cobra.Command, args []string) {
 	route := routes.NewRouteRegistry(controllerRegistry, group)
 	route.Serve()
 
+	// Setup graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start server in goroutine
 	addr := fmt.Sprintf("%s:%d", serveHost, loadedConfig.Server.Port)
-	log.Printf("Core Service listening on %s", addr)
-	if err := router.Run(addr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	go func() {
+		logger.Info("Server started", logger.NewLogField("address", addr))
+		if err := router.Run(addr); err != nil {
+			logger.Error("Server error", logger.NewLogField("error", err))
+		}
+	}()
+
+	// Wait for shutdown signal
+	<-quit
+	logger.Info("Shutting down server...")
+
+	// Stop Kafka consumer first
+	if kafkaConsumer != nil {
+		kafkaCancel()
+		kafkaConsumer.Stop()
+		logger.Info("Kafka consumer stopped")
 	}
+
+	logger.Info("Server shutdown complete")
 }

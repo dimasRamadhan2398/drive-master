@@ -14,6 +14,7 @@ type IRegionRepository interface {
 
 type RegionRepository struct {
 	*base.BaseRepository
+	cacheRepo ICacheRepository
 }
 
 // GetDistricts implements [IRegionRepository].
@@ -49,10 +50,10 @@ func (r *RegionRepository) GetRegencies(ctx context.Context, province string) ([
 	if err := r.BaseRepository.FindMany(ctx, &models.Regency{}, &regencies, options); err != nil {
 		return nil, err
 	}
-	
+
 	return regencies, nil
 }
 
-func NewRegionRepository(db *base.BaseRepository) IRegionRepository {
-	return &RegionRepository{BaseRepository: db}
+func NewRegionRepository(db *base.BaseRepository, cache ICacheRepository) IRegionRepository {
+	return &RegionRepository{BaseRepository: db, cacheRepo: cache}
 }
