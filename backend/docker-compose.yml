@@ -15,7 +15,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin_drive} -d ${POSTGRES_DB:-postgres}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-admin_drive} -d ${POSTGRES_DB:-postgres}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,7 +38,8 @@ services:
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-drivemaster123}
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-drivemaster123}", "ping"]
+      test:
+        ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-drivemaster123}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -156,8 +161,8 @@ services:
       - CONFIG_PATH=./pkg/config/config.yaml
       - RUN_MIGRATIONS=true
       - RUN_SEEDERS=true
-    ports:
-      - "8001:8001"
+    # ports:
+    #   - "8001:8001"
     networks:
       - drive_master_network
 
@@ -191,8 +196,8 @@ services:
       - CONFIG_PATH=./pkg/config/config.yaml
       - RUN_MIGRATIONS=true
       - RUN_SEEDERS=true
-    ports:
-      - "8002:8002"
+    # ports:
+    #   - "8002:8002"
     networks:
       - drive_master_network
 
@@ -226,17 +231,15 @@ services:
       - CONFIG_PATH=./pkg/config/config.yaml
       - RUN_MIGRATIONS=true
       - RUN_SEEDERS=true
-    ports:
-      - "8003:8003"
+    # ports:
+    #   - "8003:8003"
     networks:
       - drive_master_network
 
-  # API Gateway
-  api-gateway:
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
-    container_name: drive_master_api_gateway
+  # Kong API Gateway (DB-less mode)
+  kong-gateway:
+    image: kong/kong-gateway:3.6
+    container_name: drive_master_kong_gateway
     depends_on:
       user-service:
         condition: service_started
@@ -245,14 +248,30 @@ services:
       booking-service:
         condition: service_started
     environment:
-      - PORT=8080
-      - GIN_MODE=release
-      - CONFIG_PATH=./pkg/config/config.yaml
-      - USER_SERVICE_URL=http://user-service:8001/api/v1
-      - CORE_SERVICE_URL=http://core-service:8002/api/v1
-      - BOOKING_SERVICE_URL=http://booking-service:8003/api/v1
+      KONG_DATABASE: "off"
+      KONG_PROXY_ACCESS_LOG: "/dev/stdout"
+      KONG_ADMIN_ACCESS_LOG: "/dev/stdout"
+      KONG_PROXY_ERROR_LOG: "/dev/stderr"
+      KONG_ADMIN_ERROR_LOG: "/dev/stderr"
+      KONG_PROXY_LISTEN: "0.0.0.0:8000, 0.0.0.0:8443 ssl"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
+      KONG_ADMIN_GUI_LISTEN: "0.0.0.0:8002"
+      KONG_ADMIN_GUI_URL: "http://localhost:8002"
+      KONG_DECLARATIVE_CONFIG: "/kong/declarative/kong.yml"
+      KONG_NGINX_WORKER_PROCESSES: "2"
     ports:
-      - "8080:8080"
+      - "8000:8000" # Proxy HTTP
+      - "8443:8443" # Proxy HTTPS
+      - "8001:8001" # Admin API
+      - "8002:8002" # Kong Manager (Admin UI)
+    volumes:
+      - ./api-gateway/kong/kong.yml:/kong/declarative/kong.yml:ro
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - drive_master_network
 

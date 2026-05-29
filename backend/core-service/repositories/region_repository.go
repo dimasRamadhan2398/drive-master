@@ -49,6 +49,7 @@ func (r *RegionRepository) GetRegencies(ctx context.Context, province string) ([
 	if err := r.BaseRepository.FindMany(ctx, &models.Regency{}, &regencies, options); err != nil {
 		return nil, err
 	}
+	
 	return regencies, nil
 }
 

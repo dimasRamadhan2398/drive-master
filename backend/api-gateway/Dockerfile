@@ -1,41 +1,27 @@
-# Build stage
-FROM golang:1.25-alpine AS builder
-WORKDIR /app
+# Kong API Gateway Dockerfile
+FROM kong:3.5.0-alpine
 
-# Copy go mod files first for better caching
-COPY go.mod go.sum ./
+# Copy Kong declarative configuration
+COPY kong/kong.yml /etc/kong/declarative/kong.yml
 
-# Download dependencies
-RUN go mod download
+# Set environment variables for Kong
+ENV KONG_DATABASE=off
+ENV KONG_DECLARATIVE_CONFIG=/etc/kong/declarative/kong.yml
+ENV KONG_PROXY_ACCESS_LOG=/dev/stdout
+ENV KONG_ADMIN_ACCESS_LOG=/dev/stdout
+ENV KONG_PROXY_ERROR_LOG=/dev/stderr
+ENV KONG_ADMIN_ERROR_LOG=/dev/stderr
+ENV KONG_ADMIN_LISTEN=0.0.0.0:8001
+ENV KONG_ADMIN_GUI_URL=http://localhost:8002
 
-# Copy source code
-COPY . .
+# Create directory for config if it doesn't exist
+RUN mkdir -p /etc/kong/declarative
 
-# Build the binary with CGO disabled for alpine
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o api-gateway ./cmd/main.go
+# Expose ports
+EXPOSE 8000 8001 8002
 
-# Runtime stage
-FROM alpine:3.19
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD kong health
 
-# Install ca-certificates for HTTPS and dumb-init for proper signal handling
-RUN apk --no-cache add ca-certificates tzdata dumb-init
-
-WORKDIR /app
-
-# Copy binary from builder
-COPY --from=builder /app/api-gateway .
-
-# Copy config file (adjust path based on your actual structure)
-COPY --from=builder /app/pkg/config/config.yaml ./pkg/config/config.yaml
-
-# Alternative if config is at root level:
-# COPY --from=builder /app/config.yaml ./config.yaml
-
-# Set environment variables
-ENV CONFIG_PATH=./pkg/config/config.yaml
-ENV GIN_MODE=release
-
-EXPOSE 8080
-
-ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["sh", "-c", "if [ -n \"${API_GATEWAY_CONFIG}\" ]; then export CONFIG_PATH=\"${API_GATEWAY_CONFIG}\"; fi && exec ./api-gateway"]
+CMD ["kong", "start", "--vv"]

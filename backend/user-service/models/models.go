@@ -181,6 +181,8 @@ type Entitlement struct {
 	BookingID       uuid.UUID           `json:"bookingId" gorm:"type:uuid;index"`           // Reference to booking that created this
 	PackageID       uuid.UUID           `json:"packageId" gorm:"type:uuid"`                // Package ID from core-service
 	PackageName     string              `json:"packageName" gorm:"size:255"`               // Package name (denormalized)
+	IsNightSession	 bool				`json:"isNightSession" gorm:"default:false"`
+	IsWeekendSession bool				`json:"isWeekendSession" gorm:"default:false"`
 	TotalSessions   int                 `json:"totalSessions" gorm:"default:0"`             // Total sessions in package
 	Remaining       int                 `json:"remaining" gorm:"default:0"`                 // Remaining sessions
 	UsedSessions    int                 `json:"usedSessions" gorm:"default:0"`              // Sessions already used
