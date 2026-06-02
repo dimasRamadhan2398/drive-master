@@ -23,6 +23,7 @@ func NewMemberRoute(controller controllers.IControllerRegistry, group *gin.Route
 
 func (m *MemberRoute) Run() {
 	group := m.group.Group("/members")
-	group.GET("/:userId/profile", m.controller.GetMemberController().GetMemberProfile)
+	group.GET("/", m.authMiddleware.Authenticate(), m.controller.GetMemberController().GetMemberLists)
+	group.GET("/:userId/profile", m.authMiddleware.Authenticate(), m.controller.GetMemberController().GetMemberProfile)
 	group.PUT("/:userId/profile", m.authMiddleware.Authenticate(), m.controller.GetMemberController().UpdateMemberProfile)
 }

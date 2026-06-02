@@ -53,13 +53,13 @@ func (s *UserSession) IsExpired() bool {
 
 // MemberProfile represents the member_profiles table
 type MemberProfile struct {
-	ID                uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID            uuid.UUID `json:"userId" gorm:"type:uuid;not null;uniqueIndex"`
-	SessionsCompleted int       `json:"sessionsCompleted" gorm:"default:0"`
-	TrainingTime      int       `json:"trainingTime" gorm:"default:0"` // in minutes
-	AverageRating     float64   `json:"averageRating" gorm:"default:0"`
-	CreatedAt         time.Time `json:"createdAt"`
-	UpdatedAt         time.Time `json:"updatedAt"`
+	ID                     uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID                 uuid.UUID `json:"userId" gorm:"type:uuid;not null;uniqueIndex"`
+	SessionsCompleted      int       `json:"sessionsCompleted" gorm:"default:0"`
+	TrainingTime           int       `json:"trainingTime" gorm:"default:0"` // in minutes
+	AverageRating          float64   `json:"averageRating" gorm:"default:0"`
+	CreatedAt              time.Time `json:"createdAt"`
+	UpdatedAt              time.Time `json:"updatedAt"`
 }
 
 

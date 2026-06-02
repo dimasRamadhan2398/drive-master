@@ -20,15 +20,18 @@ type IEntitlementService interface {
 	ListEntitlements(ctx context.Context, memberID uuid.UUID, page, limit int) (*dto.EntitlementListResponse, error)
 	UseSession(ctx context.Context, memberID, entitlementID uuid.UUID, input dto.UseSessionInput) (*dto.EntitlementResponse, error)
 	SyncEntitlementFromBooking(ctx context.Context, memberID, bookingID uuid.UUID, packageID uuid.UUID, packageName string, totalSessions int) (*dto.EntitlementResponse, error)
+	CalculateTotalAvailableSessions(ctx context.Context, memberID uuid.UUID) (int, error)
 }
 
 type EntitlementService struct {
 	entitlementRepo repositories.IEntitlementRepository
+	memberRepo      repositories.IMemberRepository
 }
 
-func NewEntitlementService(entitlementRepo repositories.IEntitlementRepository) IEntitlementService {
+func NewEntitlementService(entitlementRepo repositories.IEntitlementRepository, memberRepo repositories.IMemberRepository) IEntitlementService {
 	return &EntitlementService{
 		entitlementRepo: entitlementRepo,
+		memberRepo:      memberRepo,
 	}
 }
 
@@ -70,6 +73,12 @@ func (s *EntitlementService) CreateEntitlement(ctx context.Context, memberID uui
 		return nil, err
 	}
 
+	// Update member profile total available sessions
+	if err := s.updateMemberProfileTotalSessions(ctx, memberID); err != nil {
+		// Log error but don't fail the request
+		fmt.Printf("failed to update member profile total sessions: %v\n", err)
+	}
+
 	return toEntitlementResponse(entitlement), nil
 }
 
@@ -98,6 +107,11 @@ func (s *EntitlementService) UpdateEntitlement(ctx context.Context, memberID, en
 		return nil, err
 	}
 
+	// Update member profile total available sessions
+	if err := s.updateMemberProfileTotalSessions(ctx, memberID); err != nil {
+		fmt.Printf("failed to update member profile total sessions: %v\n", err)
+	}
+
 	return toEntitlementResponse(entitlement), nil
 }
 
@@ -106,7 +120,16 @@ func (s *EntitlementService) DeleteEntitlement(ctx context.Context, memberID, en
 	if err != nil {
 		return err
 	}
-	return s.entitlementRepo.Delete(ctx, entitlementID)
+	if err := s.entitlementRepo.Delete(ctx, entitlementID); err != nil {
+		return err
+	}
+
+	// Update member profile total available sessions
+	if err := s.updateMemberProfileTotalSessions(ctx, memberID); err != nil {
+		fmt.Printf("failed to update member profile total sessions: %v\n", err)
+	}
+
+	return nil
 }
 
 func (s *EntitlementService) GetEntitlement(ctx context.Context, memberID, entitlementID uuid.UUID) (*dto.EntitlementResponse, error) {
@@ -181,6 +204,11 @@ func (s *EntitlementService) UseSession(ctx context.Context, memberID, entitleme
 		s.entitlementRepo.Update(ctx, entitlement)
 	}
 
+	// Update member profile total available sessions
+	if err := s.updateMemberProfileTotalSessions(ctx, memberID); err != nil {
+		fmt.Printf("failed to update member profile total sessions: %v\n", err)
+	}
+
 	return toEntitlementResponse(entitlement), nil
 }
 
@@ -200,6 +228,33 @@ func (s *EntitlementService) SyncEntitlementFromBooking(ctx context.Context, mem
 	}
 
 	return s.CreateEntitlement(ctx, memberID, input)
+}
+
+// CalculateTotalAvailableSessions sums up remaining sessions from all active entitlements for a member
+func (s *EntitlementService) CalculateTotalAvailableSessions(ctx context.Context, memberID uuid.UUID) (int, error) {
+	// Get all active entitlements for the member
+	entitlements, _, err := s.entitlementRepo.FindByMemberID(ctx, memberID, 1, 1000)
+	if err != nil {
+		return 0, err
+	}
+
+	total := 0
+	for _, ent := range entitlements {
+		if ent.Status == models.EntitlementStatusActive {
+			total += ent.Remaining
+		}
+	}
+
+	return total, nil
+}
+
+// updateMemberProfileTotalSessions updates the member profile with the calculated total available sessions
+func (s *EntitlementService) updateMemberProfileTotalSessions(ctx context.Context, memberID uuid.UUID) error {
+	total, err := s.CalculateTotalAvailableSessions(ctx, memberID)
+	if err != nil {
+		return err
+	}
+	return s.memberRepo.UpdateTotalAvailableSessions(ctx, memberID, total)
 }
 
 func toEntitlementResponse(ent *models.Entitlement) *dto.EntitlementResponse {

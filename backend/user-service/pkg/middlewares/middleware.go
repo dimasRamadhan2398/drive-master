@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"user-service/models/dto"
 	"user-service/pkg/base"
 	"user-service/pkg/config"
 	"user-service/pkg/constants"
@@ -26,10 +27,8 @@ const (
 )
 
 type Claims struct {
-	UserID   string   `json:"user_id"`
-	Username string   `json:"username"`
-	Roles    []string `json:"roles"`
-	jwt.RegisteredClaims
+	User *dto.GetUserResponse `json:"User"`
+	Exp  int64                 `json:"exp"`
 }
 
 // AuthMiddleware validates JWT tokens
@@ -71,14 +70,10 @@ func (m *AuthMiddleware) Authenticate() gin.HandlerFunc {
 			return
 		}
 
-		// Store token in context for downstream handlers
-		// Parse and validate token
-		newToken, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// Parse and validate token using custom parsing
+		newToken, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return []byte(m.secret), nil
-		})
-		// jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		// 	return []byte(m.secret), nil
-		// })
+		}, jwt.WithValidMethods([]string{"HS256"}))
 
 		if err != nil || !newToken.Valid {
 			response.Unauthorized(c, "Invalid or expired token")

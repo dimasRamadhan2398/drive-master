@@ -18,7 +18,6 @@ type MemberController struct {
 	mediaService  services.IMediaService
 }
 
-
 func NewMemberController(
 	userService services.IUserService,
 	authService services.IAuthService,
@@ -40,6 +39,7 @@ func NewMemberController(
 type IMemberController interface {
 	GetMemberProfile(ctx *gin.Context)
 	UpdateMemberProfile(ctx *gin.Context)
+	GetMemberLists(ctx *gin.Context)
 }
 
 // @Summary Get Member Profile
@@ -106,4 +106,44 @@ func (m *MemberController) UpdateMemberProfile(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Member profile updated successfully", profile)
+}
+
+// @Summary Get All Members
+// @Description Get all members with their profiles (paginated)
+// @Tags Members
+// @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Items per page (default: 10, max: 100)"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /members [get]
+func (m *MemberController) GetMemberLists(ctx *gin.Context) {
+	var query struct {
+		Page  int `form:"page,default=1"`
+		Limit int `form:"limit,default=10"`
+	}
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	// Set defaults
+	if query.Page < 1 {
+		query.Page = 1
+	}
+	if query.Limit < 1 {
+		query.Limit = 10
+	}
+	if query.Limit > 100 {
+		query.Limit = 100
+	}
+
+	result, err := m.memberService.GetMembersWithPagination(ctx.Request.Context(), query.Page, query.Limit)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Members retrieved successfully", result)
 }

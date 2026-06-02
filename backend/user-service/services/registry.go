@@ -53,7 +53,7 @@ func (r *Registry) GetUserService() IUserService {
 }
 
 func (r *Registry) GetMemberService() IMemberService {
-	return NewMemberService(r.repoRegistry.GetMember())
+	return NewMemberService(r.repoRegistry.GetMember(), r.repoRegistry.GetRole())
 }
 
 func (r *Registry) GetInstructorService() IInstructorService {
@@ -95,5 +95,5 @@ func (r *Registry) GetCertificationService() ICertificationService {
 }
 
 func (r *Registry) GetEntitlementService() IEntitlementService {
-	return NewEntitlementService(r.repoRegistry.GetEntitlement())
+	return NewEntitlementService(r.repoRegistry.GetEntitlement(), r.repoRegistry.GetMember())
 }

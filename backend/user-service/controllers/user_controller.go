@@ -25,6 +25,7 @@ type UserController struct {
 	mediaService      services.IMediaService
 }
 
+
 func NewUserController(
 	userService services.IUserService,
 	authService services.IAuthService,

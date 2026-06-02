@@ -17,6 +17,7 @@ type IUserRoute interface {
 	Run()
 }
 
+
 func NewUserRoute(controller controllers.IControllerRegistry, group *gin.RouterGroup, authMiddleware middlewares.IAuthMiddleware) IUserRoute {
 	return &UserRoute{controller: controller, group: group, authMiddleware: authMiddleware}
 }

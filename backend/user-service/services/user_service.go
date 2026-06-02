@@ -20,6 +20,7 @@ type IUserService interface {
 	DeleteUser(ctx context.Context, user *models.User) error
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetInstructorsWithPagination(ctx context.Context, page, limit int) (*dto.InstructorListResponse, error)
+	GetMembersWithPagination(ctx context.Context, page, limit int) (*dto.MemberListResponse, error)
 }
 
 type UserService struct {
@@ -27,6 +28,8 @@ type UserService struct {
 	roleRepo repositories.IRoleRepository
 	repo     repositories.IUserRepository
 }
+
+// GetMembersWithPagination implements [IUserService].
 
 func NewUserService(repo repositories.IUserRepository, roleRepo repositories.IRoleRepository) IUserService {
 	return &UserService{repo: repo, roleRepo: roleRepo, BaseService: base.NewBaseService()}
@@ -159,6 +162,55 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 	}, nil
 }
 
+func (s *UserService) GetMembersWithPagination(ctx context.Context, page int, limit int) (*dto.MemberListResponse, error) {
+	roleModel, err := s.roleRepo.FindRoleByName(ctx, "member")
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.repo.CountByRoleID(ctx, roleModel.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate pagination
+	offset := (page - 1) * limit
+	totalPages := int(total) / limit
+	if int(total)%limit > 0 {
+		totalPages++
+	}
+
+	// Get paginated users
+	users, err := s.repo.FindByRoleIDWithPagination(ctx, roleModel.ID, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to response DTOs
+	data := make([]dto.UserWithProfileResponse, len(users))
+	for i, user := range users {
+		data[i] = dto.UserWithProfileResponse{
+			GetUserResponse: dto.GetUserResponse{
+				UserID:      user.ID,
+				Email:       user.EmailAddress,
+				Username:    user.Username,
+				PhoneNumber: user.PhoneNumber,
+				Image:       user.Image,
+				DateOfBirth: user.DateOfBirth,
+				Address:     user.Address,
+				RoleID:      user.RoleID,
+			},
+		}
+	}
+
+	return &dto.MemberListResponse{
+		Data:       data,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	}, nil
+}
 // Error definitions
 var (
 	ErrEmailAlreadyExists       = &UserServiceError{Message: "email already exists"}

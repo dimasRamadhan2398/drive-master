@@ -26,4 +26,10 @@ func (u *InstructorRoute) Run() {
 	group.GET("/", u.controller.GetInstructorController().GetInstructorLists)
 	group.GET("/:id/profile", u.controller.GetInstructorController().GetInstructorProfile)
 	group.PUT("/:id/profile", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().UpdateInstructorProfile)
+
+	// Media routes with instructor user ID
+	group.POST("/:id/media/upload", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().UploadProfilePic)
+	group.POST("/:id/media/upload-base64", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().UploadBase64Media)
+	group.DELETE("/:id/media", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().DeleteProfilePic)
+	group.GET("/:id/media/metadata", u.controller.GetInstructorController().GetMediaMetadata)
 }
