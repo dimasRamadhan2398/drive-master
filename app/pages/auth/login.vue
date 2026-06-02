@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import { reactive, ref } from 'vue'
-import { useAuth } from '~/composables/useAuth'
+import { reactive, ref, onMounted } from 'vue'
+import { useAuthStore } from '~/stores/auth'
 
 definePageMeta({
   layout: 'blank'
@@ -23,33 +23,49 @@ const state = reactive({
 })
 
 const loading = ref(false)
+const error = ref<string | null>(null)
 
-const { login } = useAuth()
+// Direct cookie access to ensure rehydration works
+const authToken = useCookie('auth_token')
+const userData = useCookie('user_data')
+const refreshToken = useCookie('refresh_token')
 
-async function onSubmit(event: FormSubmitEvent<Schema>) {
-  loading.value = true
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
+const authStore = useAuthStore()
 
-  // Set mock user data
-  const userData = {
-    name: 'John Doe',
-    email: state.email,
-    avatar: 'https://i.pravatar.cc/150?u=johndoe'
+// Rehydrate from cookies on mount if valid cookies exist
+onMounted(() => {
+  if (authToken.value && userData.value) {
+    try {
+      const user = JSON.parse(userData.value)
+      authStore.setAuth(user, authToken.value, refreshToken.value || undefined)
+    } catch {
+      // Invalid cookie data, clear them
+      authToken.value = null
+      userData.value = null
+    }
   }
-  login(userData)
+})
 
-  loading.value = false
+async function onSubmit(_event: FormSubmitEvent<Schema>) {
+  loading.value = true
+  error.value = null
 
-  // Check if email contains 'admin' or is from admin domain to redirect to admin
-  const isAdminUser = state.email.toLowerCase().includes('admin') ||
-                      state.email.toLowerCase().includes('administrator')
+  try {
+    await authStore.login({
+      email: state.email,
+      password: state.password
+    })
 
-  // Navigate based on user type
-  if (isAdminUser) {
-    navigateTo('/admin')
-  } else {
-    navigateTo('/dashboard')
+    // Navigate based on user role after successful login
+    if (authStore.userRole?.toLowerCase().includes('admin')) {
+      navigateTo('/admin')
+    } else {
+      navigateTo('/dashboard')
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Login failed'
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -66,6 +82,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <p class="text-muted mt-2">Sign in to access your member dashboard</p>
         </div>
       </template>
+
+      <UAlert v-if="error" color="error" variant="soft" class="mb-4" :title="error" />
 
       <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
         <UFormField name="email" label="Email Address">

@@ -107,6 +107,40 @@ export const useStudentsStore = defineStore("students", {
   },
 
   actions: {
+    async fetchStudents() {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const response = await fetch("http://localhost:8080/members");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        // Map API response to Student interface
+        this.students = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          email: item.email,
+          phone: item.phone || item.phone_number || "",
+          package: item.package || "8x",
+          progress: item.progress || 0,
+          completedSessions: item.completed_sessions || 0,
+          totalSessions: item.total_sessions || 0,
+          joinDate: item.join_date || new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          status: item.status || "pending",
+        }));
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : "Failed to fetch students";
+        console.error("Error fetching students:", err);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     addStudent(
       data: Omit<Student, "id" | "progress" | "completedSessions" | "joinDate" | "totalSessions">
     ) {
@@ -133,7 +167,21 @@ export const useStudentsStore = defineStore("students", {
     updateStudent(id: number, data: Partial<Student>) {
       const index = this.students.findIndex((s) => s.id === id);
       if (index !== -1) {
-        const updatedData = { ...this.students[index], ...data };
+        const existing = this.students[index];
+        if (!existing) return null;
+
+        const updatedData: Student = {
+          id: existing.id,
+          name: data.name ?? existing.name,
+          email: data.email ?? existing.email,
+          phone: data.phone ?? existing.phone,
+          package: data.package ?? existing.package,
+          progress: data.progress ?? existing.progress,
+          completedSessions: data.completedSessions ?? existing.completedSessions,
+          totalSessions: data.totalSessions ?? existing.totalSessions,
+          joinDate: data.joinDate ?? existing.joinDate,
+          status: data.status ?? existing.status,
+        };
 
         // Update totalSessions if package changed
         if (data.package) {

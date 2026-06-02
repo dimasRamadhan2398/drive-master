@@ -259,13 +259,13 @@ services:
       KONG_PROXY_ERROR_LOG: "/dev/stderr"
       KONG_ADMIN_ERROR_LOG: "/dev/stderr"
       KONG_PROXY_LISTEN: "0.0.0.0:8080, 0.0.0.0:8443 ssl"
-      KONG_ADMIN_LISTEN: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8081, 0.0.0.0:8444 ssl"
       KONG_DECLARATIVE_CONFIG: "/kong/declarative/kong.yml"
       KONG_NGINX_WORKER_PROCESSES: "2"
     ports:
       - "8080:8080" # Proxy HTTP (main API gateway port)
       - "8443:8443" # Proxy HTTPS
-      - "8090:8090" # Admin API
+      - "8081:8081" # Admin API HTTP
     volumes:
       - ./api-gateway/kong/kong.yml:/kong/declarative/kong.yml:ro
     healthcheck:

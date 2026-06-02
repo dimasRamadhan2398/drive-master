@@ -146,6 +146,10 @@ function getStatusLabel(status: string) {
 function getPackageColor(pkg: string) {
   return pkg === "8x" ? "warning" : "neutral";
 }
+
+onMounted(() => {
+  studentsStore.fetchStudents();
+});
 </script>
 
 <template>

@@ -2,7 +2,9 @@ _format_version: "3.0"
 _transform: true
 
 services:
-  # User Service API
+  # ========================
+  # User Service (Port 8001)
+  # ========================
   - name: user-service
     url: http://user-service:8001
     connect_timeout: 5000
@@ -10,16 +12,33 @@ services:
     read_timeout: 30000
     retries: 3
     routes:
-      - name: user-api
+      - name: user-auth-route
         strip_path: false
         preserve_host: false
         paths:
-          - /users
-          - /auth
+          - /api/v1/auth
+
+      - name: user-users-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/users
+
+      - name: user-members-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/members
+
+      - name: user-instructors-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/instructors
 
   # User Service Swagger Docs
   - name: user-service-docs
-    url: http://user-service:8001/swagger/
+    url: http://user-service:8001
     connect_timeout: 5000
     write_timeout: 10000
     read_timeout: 30000
@@ -31,7 +50,9 @@ services:
         paths:
           - /swagger/user-service
 
-  # Core Service API
+  # ========================
+  # Core Service (Port 8002)
+  # ========================
   - name: core-service
     url: http://core-service:8002
     connect_timeout: 5000
@@ -39,22 +60,33 @@ services:
     read_timeout: 30000
     retries: 3
     routes:
-      - name: core-service-route
+      - name: core-cars-route
         strip_path: false
         preserve_host: false
         paths:
-          - /cars
-          - /packages
-          - /articles
-          - /testimonials
-          - /v1/cars
-          - /v1/packages
-          - /v1/articles
-          - /v1/testimonials
+          - /api/v1/cars
+
+      - name: core-packages-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/packages
+
+      - name: core-articles-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/articles
+
+      - name: core-testimonials-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/testimonials
 
   # Core Service Swagger Docs
   - name: core-service-docs
-    url: http://core-service:8002/swagger/
+    url: http://core-service:8002
     connect_timeout: 5000
     write_timeout: 10000
     read_timeout: 30000
@@ -66,7 +98,9 @@ services:
         paths:
           - /swagger/core-service
 
-  # Booking Service API
+  # ========================
+  # Booking Service (Port 8003)
+  # ========================
   - name: booking-service
     url: http://booking-service:8003
     connect_timeout: 5000
@@ -74,16 +108,15 @@ services:
     read_timeout: 30000
     retries: 3
     routes:
-      - name: booking-service-route
-        strip_path: true
+      - name: booking-route
+        strip_path: false
         preserve_host: false
         paths:
-          - /bookings
-          - /v1/bookings
+          - /api/v1/bookings
 
   # Booking Service Swagger Docs
   - name: booking-service-docs
-    url: http://booking-service:8003/swagger/
+    url: http://booking-service:8003
     connect_timeout: 5000
     write_timeout: 10000
     read_timeout: 30000
@@ -94,3 +127,24 @@ services:
         preserve_host: false
         paths:
           - /swagger/booking-service
+
+plugins:
+  # CORS Plugin (global)
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - "*"
+      exposed_headers:
+        - "*"
+      credentials: false
+      max_age: 3600
+      preflight_continue: false

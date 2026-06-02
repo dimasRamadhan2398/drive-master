@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { useContentStore } from '~/stores/content'
 import type { Page, BlogPost, Faq, BlogPostMedia } from '~/stores/content'
 
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
+definePageMeta({ layout: 'admin' })
 
 const toast = useToast()
 const contentStore = useContentStore()

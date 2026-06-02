@@ -4,7 +4,8 @@ _transform: true
 services:
   # User Service
   - name: user-service
-    url: http://user-service:8001
+    host: user-service
+    port: 8080
     connect_timeout: 5000
     write_timeout: 10000
     read_timeout: 30000
@@ -15,6 +16,8 @@ services:
         preserve_host: false
         paths:
           - /users
+          - /instructors
+          - /members
           - /auth
 
   - name: user-service-docs
@@ -39,7 +42,7 @@ services:
   # Core Service
   - name: core-service
     host: core-service
-    port: 8002
+    port: 8080
     protocol: http
     connect_timeout: 5000
     write_timeout: 10000
@@ -82,7 +85,7 @@ services:
   # Booking Service
   - name: booking-service
     host: booking-service
-    port: 8003
+    port: 8080
     protocol: http
     connect_timeout: 5000
     write_timeout: 10000
