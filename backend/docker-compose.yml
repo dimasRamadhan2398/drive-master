@@ -165,6 +165,8 @@ services:
       drive_master_network:
         aliases:
           - user-service
+    ports:
+      - "8001:8001"
 
   # Core Service
   core-service:
@@ -200,7 +202,8 @@ services:
       drive_master_network:
         aliases:
           - core-service
-
+    ports:
+      - "8002:8002"
   # Booking Service
   booking-service:
     build:
@@ -235,6 +238,8 @@ services:
       drive_master_network:
         aliases:
           - booking-service
+    ports:
+      - "8003:8003"
 
   # Kong API Gateway (DB-less mode)
   kong-gateway:
@@ -260,7 +265,7 @@ services:
     ports:
       - "8080:8080" # Proxy HTTP (main API gateway port)
       - "8443:8443" # Proxy HTTPS
-      - "8001:8001" # Admin API
+      - "8090:8090" # Admin API
     volumes:
       - ./api-gateway/kong/kong.yml:/kong/declarative/kong.yml:ro
     healthcheck:

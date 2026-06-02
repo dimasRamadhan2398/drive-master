@@ -1,15 +1,27 @@
 <script setup lang="ts">
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { usePackagesStore } from '~/stores/packages'
+import type { Package, Addon } from '~/stores/packages'
 
 definePageMeta({ layout: 'admin' })
 
 const toast = useToast()
+const packagesStore = usePackagesStore()
+
 const showEditModal = ref(false)
 const showAddModal = ref(false)
 const showAddonModal = ref(false)
 const showEditAddonModal = ref(false)
-const selectedPackage = ref<any>(null)
+const selectedPackage = ref<Package | null>(null)
+
+const packages = computed(() => packagesStore.packages)
+const addOns = computed(() => packagesStore.addons)
+
+// Stats computed from store
+const totalPackages = computed(() => packagesStore.totalPackages)
+const totalSold = computed(() => packagesStore.totalSold)
+const totalRevenue = computed(() => packagesStore.totalRevenue)
 
 const newPackage = ref({
   name: '',
@@ -27,282 +39,27 @@ const newAddon = ref({
   description: ''
 })
 
-const editingAddon = ref<any>(null)
-
-// Mock data paket - Di aplikasi nyata, ini akan berasal dari API
-const packages = ref([
-  {
-    id: 1,
-    name: '6x',
-    price: 1750000,
-    sessions: 6,
-    duration: 60,
-    description: 'Our most popular package for comprehensive learning',
-    features: [
-      'Free Trial',
-      '6x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 89
-  },
-  {
-    id: 2,
-    name: '6x + Night Session',
-    price: 1850000,
-    sessions: 6,
-    duration: 60,
-    description: 'Our most popular package for comprehensive learning',
-    features: [
-      'Free Trial',
-      '6x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 89
-  },
-  {
-    id: 3,
-    name: '6x + Weekend Session',
-    price: 1850000,
-    sessions: 6,
-    duration: 60,
-    description: 'Our most popular package for comprehensive learning',
-    features: [
-      'Free Trial',
-      '6x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 89
-  },
-  {
-    id: 4,
-    name: '6x + Weekend & Night Session',
-    price: 1950000,
-    sessions: 6,
-    duration: 60,
-    description: 'Our most popular package for comprehensive learning',
-    features: [
-      'Free Trial',
-      '6x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 89
-  },
-  {
-    id: 5,
-    name: '8x',
-    price: 1950000,
-    sessions: 8,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '8x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    isPopular: true,
-    totalSold: 22
-  },
-  {
-    id: 6,
-    name: '8x + Night Session',
-    price: 2100000,
-    sessions: 8,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '8x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    isPopular: true,
-    totalSold: 22
-  },
-  {
-    id: 7,
-    name: '8x + Weekend Session',
-    price: 2100000,
-    sessions: 8,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '8x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    isPopular: true,
-    totalSold: 22
-  },
-  {
-    id: 8,
-    name: '8x + Weekend & Night Session',
-    price: 2250000,
-    sessions: 8,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '8x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    isPopular: true,
-    totalSold: 22
-  },
-  {
-    id: 9,
-    name: '10x',
-    price: 2250000,
-    sessions: 10,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '10x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 22
-  },
-  {
-    id: 10,
-    name: '10x + Night Session',
-    price: 2450000,
-    sessions: 10,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '10x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 22
-  },
-  {
-    id: 11,
-    name: '10x + Weekend Session',
-    price: 2450000,
-    sessions: 10,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '10x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 22
-  },
-  {
-    id: 12,
-    name: '10x + Weekend & Night Session',
-    price: 2650000,
-    sessions: 10,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '10x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 22
-  },
-  {
-    id: 13,
-    name: '12x',
-    price: 2650000,
-    sessions: 12,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '12x Sessions',
-    ],
-    isActive: true,
-    totalSold: 22
-  },
-  {
-    id: 14,
-    name: '12x + Night Session',
-    price: 2900000,
-    sessions: 12,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '12x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 22
-  },
-  {
-    id: 15,
-    name: '12x + Weekend Session',
-    price: 2900000,
-    sessions: 12,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '12x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 22
-  },
-  {
-    id: 16,
-    name: '12x + Weekend & Night Session',
-    price: 3150000,
-    sessions: 12,
-    duration: 60,
-    description: 'Complete mastery with unlimited support',
-    features: [
-      'Free Trial',
-      '12x Sessions',
-      'SIM A'
-    ],
-    isActive: true,
-    totalSold: 22
-  }
-])
-
-// Mock add-ons data
-const addOns = ref([
-  { id: 1, name: 'Extra Session', price: 350000, description: 'Additional training session', sold: 34 },
-])
+const editingAddon = ref<Addon | null>(null)
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(price)
 }
 
-function editPackage(pkg: any) {
-  // Buat salinan dan ubah array fitur menjadi string untuk textarea
+function editPackage(pkg: Package) {
   selectedPackage.value = {
     ...pkg,
-    // Pastikan fitur adalah array sebelum join, untuk menghindari error jika data tidak konsisten
     features: Array.isArray(pkg.features) ? pkg.features.join('\n') : ''
   }
   showEditModal.value = true
 }
 
 function togglePackageStatus(pkgId: number) {
-  const pkg = packages.value.find(p => p.id === pkgId)
-  if (pkg) {
-    pkg.isActive = !pkg.isActive
+  const isActive = packagesStore.togglePackageStatus(pkgId)
+  if (isActive !== null) {
     toast.add({
-      title: pkg.isActive ? 'Package Activated' : 'Package Deactivated',
-      icon: pkg.isActive ? 'i-lucide-check-circle' : 'i-lucide-x-circle',
-      color: pkg.isActive ? 'success' : 'warning'
+      title: isActive ? 'Package Activated' : 'Package Deactivated',
+      icon: isActive ? 'i-lucide-check-circle' : 'i-lucide-x-circle',
+      color: isActive ? 'success' : 'warning'
     })
   }
 }
@@ -313,24 +70,20 @@ function saveNewPackage() {
     return
   }
 
-  const newPkg = {
-    id: Math.max(...packages.value.map(p => p.id), 0) + 1,
+  packagesStore.addPackage({
     name: newPackage.value.name,
     price: newPackage.value.price,
     sessions: newPackage.value.sessions,
     duration: newPackage.value.duration,
     description: newPackage.value.description,
     features: newPackage.value.features.split('\n').filter(f => f.trim() !== ''),
-    isActive: true, // Paket baru aktif secara default
+    isActive: true,
     isPopular: newPackage.value.isPopular,
-    totalSold: 0
-  }
+  })
 
-  packages.value.push(newPkg)
-  toast.add({ title: 'Paket Ditambahkan', description: `"${newPkg.name}" telah dibuat.`, color: 'success' })
+  toast.add({ title: 'Paket Ditambahkan', description: `"${newPackage.value.name}" telah dibuat.`, color: 'success' })
 
   showAddModal.value = false
-  // Reset form untuk penggunaan berikutnya
   newPackage.value = {
     name: '',
     price: 0,
@@ -345,51 +98,34 @@ function saveNewPackage() {
 function saveEditedPackage() {
   if (!selectedPackage.value) return
 
-  const pkgIndex = packages.value.findIndex(p => p.id === selectedPackage.value.id)
-  if (pkgIndex === -1) {
-    toast.add({ title: 'Error', description: 'Package not found.', color: 'error' })
-    return
-  }
+  packagesStore.updatePackage(selectedPackage.value.id, {
+    name: selectedPackage.value.name,
+    price: selectedPackage.value.price,
+    sessions: selectedPackage.value.sessions,
+    duration: selectedPackage.value.duration,
+    description: selectedPackage.value.description,
+    features: selectedPackage.value.features.split('\n').filter((f: string) => f.trim() !== ''),
+    isPopular: selectedPackage.value.isPopular,
+  })
 
-  // Buat objek yang diperbarui, ubah string fitur kembali menjadi array
-  const updatedPackageData = {
-    ...selectedPackage.value,
-    features: selectedPackage.value.features.split('\n').filter((f: string) => f.trim() !== '')
-  }
-
-  // Perbarui paket dalam array
-  packages.value[pkgIndex] = updatedPackageData
-
-  toast.add({ title: 'Package Updated', description: `"${updatedPackageData.name}" has been saved.`, color: 'success' })
+  toast.add({ title: 'Package Updated', description: `"${selectedPackage.value.name}" has been saved.`, color: 'success' })
   showEditModal.value = false
   selectedPackage.value = null
 }
 
-function duplicatePackage(pkg: any) {
-  const newPkg = {
-    ...pkg,
-    id: Math.max(...packages.value.map(p => p.id), 0) + 1,
-    name: `${pkg.name} (Copy)`,
-    isPopular: false,
-    isActive: true, // Paket duplikat aktif secara default
-    totalSold: 0,
-  };
-
-  packages.value.push(newPkg);
+function duplicatePackage(pkg: Package) {
+  packagesStore.duplicatePackage(pkg.id)
   toast.add({ title: 'Package Duplicated', description: `Salinan dari "${pkg.name}" telah dibuat.`, color: 'success' });
 }
 
 function deletePackage(pkgId: number) {
   if (confirm(`Anda yakin ingin menghapus paket ini? Aksi ini tidak dapat dibatalkan.`)) {
-    const pkgIndex = packages.value.findIndex(p => p.id === pkgId);
-    if (pkgIndex > -1) {
-      packages.value.splice(pkgIndex, 1);
-      toast.add({ title: 'Package Deleted', description: `Paket telah dihapus.`, color: 'error', icon: 'i-lucide-trash' });
-    }
+    packagesStore.deletePackage(pkgId)
+    toast.add({ title: 'Package Deleted', description: `Paket telah dihapus.`, color: 'error', icon: 'i-lucide-trash' });
   }
 }
 
-function viewPackageSales(pkg: any) {
+function viewPackageSales(pkg: Package) {
   navigateTo(`/admin/sales?packageId=${pkg.id}`);
 }
 
@@ -399,33 +135,28 @@ function saveNewAddon() {
     return
   }
 
-  const newAddonData = {
-    id: Math.max(...addOns.value.map(a => a.id), 0) + 1,
+  packagesStore.addAddon({
     name: newAddon.value.name,
     price: newAddon.value.price,
     description: newAddon.value.description,
-    sold: 0
-  }
+  })
 
-  addOns.value.push(newAddonData)
-  toast.add({ title: 'Add-on Ditambahkan', description: `"${newAddonData.name}" telah dibuat.`, color: 'success' })
+  toast.add({ title: 'Add-on Ditambahkan', description: `"${newAddon.value.name}" telah dibuat.`, color: 'success' })
 
   showAddonModal.value = false
-  // Reset form
   newAddon.value = { name: '', price: 0, description: '' }
 }
 
-function openEditAddonModal(addon: any) {
-  editingAddon.value = { ...addon } // Create a copy to avoid reactive changes before saving
+function openEditAddonModal(addon: Addon) {
+  editingAddon.value = { ...addon }
   showEditAddonModal.value = true
 }
 
 function saveEditedAddon() {
   if (!editingAddon.value) return
 
-  const addonIndex = addOns.value.findIndex(a => a.id === editingAddon.value.id)
-  if (addonIndex !== -1) {
-    addOns.value[addonIndex] = editingAddon.value
+  const updated = packagesStore.updateAddon(editingAddon.value.id, editingAddon.value)
+  if (updated) {
     toast.add({ title: 'Add-on Updated', description: `"${editingAddon.value.name}" has been saved.`, color: 'success' })
   } else {
     toast.add({ title: 'Error', description: 'Add-on not found.', color: 'error' })
@@ -458,7 +189,7 @@ function saveEditedAddon() {
                 <UIcon name="i-lucide-package" class="size-6 text-info" />
               </div>
               <div>
-                <p class="text-2xl font-bold">{{ packages.length }}</p>
+                <p class="text-2xl font-bold">{{ totalPackages }}</p>
                 <p class="text-md text-muted">Total Packages</p>
               </div>
             </div>
@@ -469,7 +200,7 @@ function saveEditedAddon() {
                 <UIcon name="i-lucide-shopping-cart" class="size-6 text-green-500" />
               </div>
               <div>
-                <p class="text-2xl font-bold">{{ packages.reduce((sum, p) => sum + p.totalSold, 0) }}</p>
+                <p class="text-2xl font-bold">{{ totalSold }}</p>
                 <p class="text-md text-muted">Total Sold</p>
               </div>
             </div>
@@ -480,7 +211,7 @@ function saveEditedAddon() {
                 <UIcon name="i-lucide-banknote" class="size-6 text-amber-500" />
               </div>
               <div>
-                <p class="text-2xl font-bold">{{ formatPrice(packages.reduce((sum, p) => sum + (p.price * p.totalSold), 0)) }}</p>
+                <p class="text-2xl font-bold">{{ formatPrice(totalRevenue) }}</p>
                 <p class="text-md text-muted">Total Revenue</p>
               </div>
             </div>

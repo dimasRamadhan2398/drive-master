@@ -30,18 +30,27 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   loading.value = true
   // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 1000))
-  
+
   // Set mock user data
-  login({
+  const userData = {
     name: 'John Doe',
     email: state.email,
     avatar: 'https://i.pravatar.cc/150?u=johndoe'
-  })
-  
+  }
+  login(userData)
+
   loading.value = false
-  
-  // Navigate to dashboard
-  navigateTo('/dashboard')
+
+  // Check if email contains 'admin' or is from admin domain to redirect to admin
+  const isAdminUser = state.email.toLowerCase().includes('admin') ||
+                      state.email.toLowerCase().includes('administrator')
+
+  // Navigate based on user type
+  if (isAdminUser) {
+    navigateTo('/admin')
+  } else {
+    navigateTo('/dashboard')
+  }
 }
 </script>
 

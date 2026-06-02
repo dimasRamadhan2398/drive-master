@@ -167,7 +167,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.Title = "User Service API"
 	docs.SwaggerInfo.Description = "API documentation for User Service"
-	docs.SwaggerInfo.Host = "localhost:8080"
+	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%d", loadedConfig.Server.Port)
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	target := `"securityDefinitions"`
     security := `"security":[{"BearerAuth":[], "XApiKey":[],"XRequestAt":[],"XServiceName":[]}],`

@@ -103,6 +103,7 @@ declare global {
   const tryUseNuxtApp: typeof import('../../node_modules/nuxt/dist/app/nuxt').tryUseNuxtApp
   const unref: typeof import('vue').unref
   const updateAppConfig: typeof import('../../node_modules/nuxt/dist/app/config').updateAppConfig
+  const useAnalyticsStore: typeof import('../../app/stores/analytics').useAnalyticsStore
   const useAnnouncer: typeof import('../../node_modules/nuxt/dist/app/composables/announcer').useAnnouncer
   const useApi: typeof import('../../app/composables/useApi').useApi
   const useApiClients: typeof import('../../app/composables/useApiClients').useApiClients
@@ -114,6 +115,7 @@ declare global {
   const useColorMode: typeof import('../../node_modules/@nuxtjs/color-mode/dist/runtime/composables').useColorMode
   const useContent: typeof import('../../app/composables/useContent').useContent
   const useContentSearch: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch').useContentSearch
+  const useContentStore: typeof import('../../app/stores/content').useContentStore
   const useCookie: typeof import('../../node_modules/nuxt/dist/app/composables/cookie').useCookie
   const useCssModule: typeof import('vue').useCssModule
   const useCssVars: typeof import('vue').useCssVars
@@ -135,6 +137,7 @@ declare global {
   const useNuxtData: typeof import('../../node_modules/nuxt/dist/app/composables/asyncData').useNuxtData
   const useNuxtDevTools: typeof import('../../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools').useNuxtDevTools
   const useOverlay: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useOverlay').useOverlay
+  const usePackagesStore: typeof import('../../app/stores/packages').usePackagesStore
   const usePinia: typeof import('../../node_modules/@pinia/nuxt/dist/runtime/composables').usePinia
   const usePreviewMode: typeof import('../../node_modules/nuxt/dist/app/composables/preview').usePreviewMode
   const useRequestEvent: typeof import('../../node_modules/nuxt/dist/app/composables/ssr').useRequestEvent
@@ -149,6 +152,7 @@ declare global {
   const useRouter: typeof import('../../node_modules/nuxt/dist/app/composables/router').useRouter
   const useRuntimeConfig: typeof import('../../node_modules/nuxt/dist/app/nuxt').useRuntimeConfig
   const useRuntimeHook: typeof import('../../node_modules/nuxt/dist/app/composables/runtime-hook').useRuntimeHook
+  const useSalesStore: typeof import('../../app/stores/sales').useSalesStore
   const useSchedules: typeof import('../../app/composables/useSchedules').useSchedules
   const useScript: typeof import('../../node_modules/nuxt/dist/app/composables/script-stubs').useScript
   const useScriptBingUet: typeof import('../../node_modules/nuxt/dist/app/composables/script-stubs').useScriptBingUet
@@ -199,6 +203,7 @@ declare global {
   const useSlots: typeof import('vue').useSlots
   const useSmartAlerts: typeof import('../../app/composables/useSchedules').useSmartAlerts
   const useState: typeof import('../../node_modules/nuxt/dist/app/composables/state').useState
+  const useStudentsStore: typeof import('../../app/stores/students').useStudentsStore
   const useTemplateRef: typeof import('vue').useTemplateRef
   const useToast: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useToast').useToast
   const useTransitionState: typeof import('vue').useTransitionState
@@ -222,11 +227,23 @@ declare global {
   export type { PageMeta } from '../../node_modules/nuxt/dist/app/composables/pages'
   import('../../node_modules/nuxt/dist/app/composables/pages')
   // @ts-ignore
-  export type { PageSection, Page, BlogPost, Faq } from '../../app/composables/useContent'
-  import('../../app/composables/useContent')
-  // @ts-ignore
   export type { TimeSlot } from '../../app/composables/useSchedules'
   import('../../app/composables/useSchedules')
+  // @ts-ignore
+  export type { GAOverviewItem, GAFunnelStep, FunnelLabels } from '../../app/stores/analytics'
+  import('../../app/stores/analytics')
+  // @ts-ignore
+  export type { PageSection, Page, BlogPostMedia, BlogPost, Faq } from '../../app/stores/content'
+  import('../../app/stores/content')
+  // @ts-ignore
+  export type { Package, Addon } from '../../app/stores/packages'
+  import('../../app/stores/packages')
+  // @ts-ignore
+  export type { Transaction, PackageSummary } from '../../app/stores/sales'
+  import('../../app/stores/sales')
+  // @ts-ignore
+  export type { Student } from '../../app/stores/students'
+  import('../../app/stores/students')
 }
 // for vue template auto import
 import { UnwrapRef } from 'vue'
@@ -334,6 +351,7 @@ declare module 'vue' {
     readonly tryUseNuxtApp: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/nuxt')['tryUseNuxtApp']>
     readonly unref: UnwrapRef<typeof import('vue')['unref']>
     readonly updateAppConfig: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/config')['updateAppConfig']>
+    readonly useAnalyticsStore: UnwrapRef<typeof import('../../app/stores/analytics')['useAnalyticsStore']>
     readonly useAnnouncer: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/announcer')['useAnnouncer']>
     readonly useApi: UnwrapRef<typeof import('../../app/composables/useApi')['useApi']>
     readonly useApiClients: UnwrapRef<typeof import('../../app/composables/useApiClients')['useApiClients']>
@@ -345,6 +363,7 @@ declare module 'vue' {
     readonly useColorMode: UnwrapRef<typeof import('../../node_modules/@nuxtjs/color-mode/dist/runtime/composables')['useColorMode']>
     readonly useContent: UnwrapRef<typeof import('../../app/composables/useContent')['useContent']>
     readonly useContentSearch: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch')['useContentSearch']>
+    readonly useContentStore: UnwrapRef<typeof import('../../app/stores/content')['useContentStore']>
     readonly useCookie: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/cookie')['useCookie']>
     readonly useCssModule: UnwrapRef<typeof import('vue')['useCssModule']>
     readonly useCssVars: UnwrapRef<typeof import('vue')['useCssVars']>
@@ -366,6 +385,7 @@ declare module 'vue' {
     readonly useNuxtData: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/asyncData')['useNuxtData']>
     readonly useNuxtDevTools: UnwrapRef<typeof import('../../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools')['useNuxtDevTools']>
     readonly useOverlay: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useOverlay')['useOverlay']>
+    readonly usePackagesStore: UnwrapRef<typeof import('../../app/stores/packages')['usePackagesStore']>
     readonly usePinia: UnwrapRef<typeof import('../../node_modules/@pinia/nuxt/dist/runtime/composables')['usePinia']>
     readonly usePreviewMode: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/preview')['usePreviewMode']>
     readonly useRequestEvent: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/ssr')['useRequestEvent']>
@@ -380,6 +400,7 @@ declare module 'vue' {
     readonly useRouter: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/router')['useRouter']>
     readonly useRuntimeConfig: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/nuxt')['useRuntimeConfig']>
     readonly useRuntimeHook: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/runtime-hook')['useRuntimeHook']>
+    readonly useSalesStore: UnwrapRef<typeof import('../../app/stores/sales')['useSalesStore']>
     readonly useSchedules: UnwrapRef<typeof import('../../app/composables/useSchedules')['useSchedules']>
     readonly useScript: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/script-stubs')['useScript']>
     readonly useScriptBingUet: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/script-stubs')['useScriptBingUet']>
@@ -430,6 +451,7 @@ declare module 'vue' {
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useSmartAlerts: UnwrapRef<typeof import('../../app/composables/useSchedules')['useSmartAlerts']>
     readonly useState: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/state')['useState']>
+    readonly useStudentsStore: UnwrapRef<typeof import('../../app/stores/students')['useStudentsStore']>
     readonly useTemplateRef: UnwrapRef<typeof import('vue')['useTemplateRef']>
     readonly useToast: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useToast')['useToast']>
     readonly useTransitionState: UnwrapRef<typeof import('vue')['useTransitionState']>

@@ -2,7 +2,7 @@ _format_version: "3.0"
 _transform: true
 
 services:
-  # User Service
+  # User Service API
   - name: user-service
     url: http://user-service:8001
     connect_timeout: 5000
@@ -17,30 +17,23 @@ services:
           - /users
           - /auth
 
+  # User Service Swagger Docs
   - name: user-service-docs
-    service: user-service
+    url: http://user-service:8001/swagger/
     connect_timeout: 5000
     write_timeout: 10000
     read_timeout: 30000
     retries: 3
     routes:
       - name: user-swagger-ui
-        strip_path: false
+        strip_path: true
         preserve_host: false
         paths:
           - /swagger/user-service
-    plugins:
-      - name: ip-restriction
-        config:
-          allow:
-            - 127.0.0.1 # your own machine (localhost)
-            - 192.168.1.0/24
 
-  # Core Service
+  # Core Service API
   - name: core-service
-    host: core-service
-    port: 8002
-    protocol: http
+    url: http://core-service:8002
     connect_timeout: 5000
     write_timeout: 10000
     read_timeout: 30000
@@ -59,31 +52,23 @@ services:
           - /v1/articles
           - /v1/testimonials
 
+  # Core Service Swagger Docs
   - name: core-service-docs
-    service: core-service
+    url: http://core-service:8002/swagger/
     connect_timeout: 5000
     write_timeout: 10000
     read_timeout: 30000
     retries: 3
     routes:
       - name: core-swagger-ui
-        strip_path: false
+        strip_path: true
         preserve_host: false
         paths:
           - /swagger/core-service
 
-    plugins:
-      - name: ip-restriction
-        config:
-          allow:
-            - 127.0.0.1 # your own machine (localhost)
-            - 192.168.1.0/24
-
-  # Booking Service
+  # Booking Service API
   - name: booking-service
-    host: booking-service
-    port: 8003
-    protocol: http
+    url: http://booking-service:8003
     connect_timeout: 5000
     write_timeout: 10000
     read_timeout: 30000
@@ -96,55 +81,16 @@ services:
           - /bookings
           - /v1/bookings
 
+  # Booking Service Swagger Docs
   - name: booking-service-docs
-    service: booking-service
+    url: http://booking-service:8003/swagger/
     connect_timeout: 5000
     write_timeout: 10000
     read_timeout: 30000
     retries: 3
     routes:
       - name: booking-swagger-ui
-        strip_path: false
+        strip_path: true
         preserve_host: false
         paths:
           - /swagger/booking-service
-    plugins:
-      - name: ip-restriction
-        config:
-          allow:
-            - 127.0.0.1 # your own machine (localhost)
-            - 192.168.1.0/24
-
-plugins:
-  # CORS Plugin (global)
-  - name: cors
-    config:
-      origins:
-        - "*"
-      methods:
-        - GET
-        - POST
-        - PUT
-        - PATCH
-        - DELETE
-        - OPTIONS
-      headers:
-        - "*"
-      exposed_headers:
-        - "*"
-      credentials: false
-      max_age: 3600
-      preflight_continue: false
-
-  # Request ID
-  - name: request-id
-    config:
-      header_name: X-Request-ID
-      include_in_response: true
-
-  # Response Transformer (add headers)
-  - name: response-transformer
-    config:
-      add:
-        headers:
-          - X-Powered-By:Drive-Master-Gateway

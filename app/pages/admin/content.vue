@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { ref } from 'vue'
+import { useContentStore } from '~/stores/content'
+import type { Page, BlogPost, Faq, BlogPostMedia } from '~/stores/content'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const toast = useToast()
+const contentStore = useContentStore()
 const activeTab = ref('pages')
 
 // ==================== MODAL STATES ====================
@@ -15,10 +18,14 @@ const isEditing = ref(false)
 
 // ==================== FORM DATA ====================
 const pageForm = ref({ id: 0, title: '', slug: '', status: 'draft' })
-const postForm = ref({ id: 0, title: '', author: 'Admin', content: '', status: 'draft', media: [] as { name: string, type: string, size: string, url: string, fileType: 'image' | 'video' }[] })
+const postForm = ref({ id: 0, title: '', author: 'Admin', content: '', status: 'draft', media: [] as BlogPostMedia[] })
 const faqForm = ref({ id: 0, question: '', answer: '', order: 0 })
 
-const { pages, blogPosts, faqs } = useContent()
+// Get data from store
+const pages = computed(() => contentStore.pages)
+const blogPosts = computed(() => contentStore.blogPosts)
+const faqs = computed(() => contentStore.sortedFaqs)
+
 const tabs = [
   { label: 'Pages', value: 'pages', icon: 'i-lucide-file-text' },
   { label: 'Blog Posts', value: 'blog', icon: 'i-lucide-newspaper' },
@@ -26,26 +33,19 @@ const tabs = [
 ]
 
 // ==================== HELPER ====================
-function todayFormatted() {
-  return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
 function generateSlug(title: string) {
-  return '/' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return contentStore.generateSlug(title)
 }
 
 // ==================== PAGES CRUD ====================
-const currentEditingPage = ref<any>(null)
+const currentEditingPage = ref<Page | null>(null)
 
-function openPageBuilder(page: any) {
+function openPageBuilder(page: Page) {
   currentEditingPage.value = page
 }
 
-function savePageBuilder(updatedPage: any) {
-  const idx = pages.value.findIndex(p => p.id === updatedPage.id)
-  if (idx !== -1) {
-    pages.value[idx] = { ...updatedPage, lastUpdated: todayFormatted() }
-  }
+function savePageBuilder(updatedPage: Page) {
+  contentStore.updatePage(updatedPage.id, updatedPage)
   currentEditingPage.value = null
 }
 
@@ -55,7 +55,7 @@ function openNewPage() {
   showPageModal.value = true
 }
 
-function openEditPage(page: any) {
+function openEditPage(page: Page) {
   isEditing.value = true
   pageForm.value = { id: page.id, title: page.title, slug: page.slug, status: page.status }
   showPageModal.value = true
@@ -68,34 +68,21 @@ async function savePage() {
   }
 
   const isEditingMode = isEditing.value
-  // Konsep: endpoint API akan berbeda untuk membuat (POST) dan mengedit (PUT)
-  const endpoint = isEditingMode ? `/api/pages/${pageForm.value.id}` : '/api/pages'
-  const method = isEditingMode ? 'PUT' : 'POST'
 
   try {
-    // Konsep: data ini akan dikirim ke backend
     const pageData = {
       title: pageForm.value.title,
       slug: pageForm.value.slug || generateSlug(pageForm.value.title),
-      status: pageForm.value.status,
+      status: pageForm.value.status as 'published' | 'draft',
     }
 
-    // Konsep: ganti bagian ini dengan panggilan API sesungguhnya, contohnya:
-    // const savedPage = await $fetch(endpoint, { method, body: pageData })
-    
-    // Untuk demonstrasi, kita akan simulasikan respons dari backend
-    const savedPage = { ...pageData, id: isEditingMode ? pageForm.value.id : Math.max(...pages.value.map(p => p.id), 0) + 1 }
-
-    // Setelah berhasil, perbarui state lokal
     if (isEditingMode) {
-      const idx = pages.value.findIndex(p => p.id === savedPage.id)
-      if (idx !== -1) pages.value[idx] = { ...pages.value[idx], ...savedPage, lastUpdated: todayFormatted() }
+      contentStore.updatePage(pageForm.value.id, pageData)
     } else {
-      // Menambahkan properti `sections` agar sesuai dengan struktur data yang ada
-      pages.value.push({ ...savedPage, lastUpdated: todayFormatted(), sections: [] })
+      contentStore.addPage(pageData)
     }
 
-    toast.add({ title: isEditingMode ? 'Page Updated' : 'Page Created', description: `"${savedPage.title}" has been saved.`, color: 'success' })
+    toast.add({ title: isEditingMode ? 'Page Updated' : 'Page Created', description: `"${pageData.title}" has been saved.`, color: 'success' })
     showPageModal.value = false
   } catch (error) {
     console.error('Failed to save page:', error)
@@ -103,7 +90,7 @@ async function savePage() {
   }
 }
 
-function previewPage(page: any) {
+function previewPage(page: Page) {
   toast.add({ title: 'Preview', description: `Opening preview for "${page.title}" (${page.slug})...`, color: 'info' })
   if (!page.slug || page.slug === '/') {
     return window.open('/', 'noopener,noreferrer');
@@ -116,21 +103,19 @@ function previewPage(page: any) {
   window.open(targetUrl, '_blank', 'noopener,noreferrer');
 }
 
-function deletePage(page: any) {
-  pages.value = pages.value.filter(p => p.id !== page.id)
+function deletePage(page: Page) {
+  contentStore.deletePage(page.id)
   toast.add({ title: 'Page Deleted', description: `"${page.title}" has been removed.`, color: 'error' })
 }
 
-function togglePageStatus(page: any) {
-  const p = pages.value.find(pg => pg.id === page.id)
-  if (p) {
-    p.status = p.status === 'published' ? 'draft' : 'published'
-    p.lastUpdated = todayFormatted()
-    toast.add({ title: 'Status Updated', description: `"${p.title}" is now ${p.status}.`, color: 'success' })
+function togglePageStatus(page: Page) {
+  const newStatus = contentStore.togglePageStatus(page.id)
+  if (newStatus) {
+    toast.add({ title: 'Status Updated', description: `"${page.title}" is now ${newStatus}.`, color: 'success' })
   }
 }
 
-function getPageActions(page: any) {
+function getPageActions(page: Page) {
   return [
     [
       { label: 'Edit Content', icon: 'i-lucide-layout-template', onSelect: () => openPageBuilder(page) },
@@ -151,7 +136,7 @@ function openNewPost() {
   showPostModal.value = true
 }
 
-function openEditPost(post: any) {
+function openEditPost(post: BlogPost) {
   isEditing.value = true
   postForm.value = { id: post.id, title: post.title, author: post.author, content: post.content || '', status: post.status, media: post.media ? [...post.media] : [] }
   showPostModal.value = true
@@ -163,21 +148,20 @@ function savePost() {
     return
   }
   if (isEditing.value) {
-    const idx = blogPosts.value.findIndex(p => p.id === postForm.value.id)
-    if (idx !== -1) {
-      blogPosts.value[idx] = { ...blogPosts.value[idx], title: postForm.value.title, author: postForm.value.author, content: postForm.value.content, status: postForm.value.status, media: [...postForm.value.media], date: todayFormatted() }
-      toast.add({ title: 'Post Updated', description: `"${postForm.value.title}" has been updated.`, color: 'success' })
-    }
-  } else {
-    const newId = Math.max(...blogPosts.value.map(p => p.id), 0) + 1
-    blogPosts.value.push({
-      id: newId,
+    contentStore.updatePost(postForm.value.id, {
       title: postForm.value.title,
       author: postForm.value.author,
       content: postForm.value.content,
-      date: todayFormatted(),
-      status: postForm.value.status,
-      views: 0,
+      status: postForm.value.status as 'published' | 'draft',
+      media: [...postForm.value.media]
+    })
+    toast.add({ title: 'Post Updated', description: `"${postForm.value.title}" has been updated.`, color: 'success' })
+  } else {
+    contentStore.addPost({
+      title: postForm.value.title,
+      author: postForm.value.author,
+      content: postForm.value.content,
+      status: postForm.value.status as 'published' | 'draft',
       media: [...postForm.value.media]
     })
     toast.add({ title: 'Post Created', description: `"${postForm.value.title}" has been created.`, color: 'success' })
@@ -246,34 +230,27 @@ function removeMedia(index: number) {
   postForm.value.media.splice(index, 1)
 }
 
-function previewPost(post: any) {
+function previewPost(post: BlogPost) {
   toast.add({ title: 'Preview', description: `Opening preview for "${post.title}"...`, color: 'info' })
-  if (!post.slug || post.slug === '/') {
+  if (!post.date || post.date === '/') {
     return window.open('/', 'noopener,noreferrer');
   }
-
-  const targetUrl = post.slug.startsWith('/')
-    ? post.slug
-    : `/${post.slug}`;
-
-  window.open(targetUrl, '_blank', 'noopener,noreferrer');
+  window.open(post.date, '_blank', 'noopener,noreferrer');
 }
 
-function deletePost(post: any) {
-  blogPosts.value = blogPosts.value.filter(p => p.id !== post.id)
+function deletePost(post: BlogPost) {
+  contentStore.deletePost(post.id)
   toast.add({ title: 'Post Deleted', description: `"${post.title}" has been removed.`, color: 'error' })
 }
 
-function togglePostStatus(post: any) {
-  const p = blogPosts.value.find(bp => bp.id === post.id)
-  if (p) {
-    p.status = p.status === 'published' ? 'draft' : 'published'
-    p.date = todayFormatted()
-    toast.add({ title: 'Status Updated', description: `"${p.title}" is now ${p.status}.`, color: 'success' })
+function togglePostStatus(post: BlogPost) {
+  const newStatus = contentStore.togglePostStatus(post.id)
+  if (newStatus) {
+    toast.add({ title: 'Status Updated', description: `"${post.title}" is now ${newStatus}.`, color: 'success' })
   }
 }
 
-function getPostActions(post: any) {
+function getPostActions(post: BlogPost) {
   return [
     [
       { label: 'Edit', icon: 'i-lucide-pencil', onSelect: () => openEditPost(post) },
@@ -293,7 +270,7 @@ function openNewFaq() {
   showFaqModal.value = true
 }
 
-function openEditFaq(faq: any) {
+function openEditFaq(faq: Faq) {
   isEditing.value = true
   faqForm.value = { id: faq.id, question: faq.question, answer: faq.answer, order: faq.order }
   showFaqModal.value = true
@@ -305,27 +282,23 @@ function saveFaq() {
     return
   }
   if (isEditing.value) {
-    const idx = faqs.value.findIndex(f => f.id === faqForm.value.id)
-    if (idx !== -1) {
-      faqs.value[idx] = { ...faqForm.value }
-      toast.add({ title: 'FAQ Updated', description: 'FAQ has been updated.', color: 'success' })
-    }
-  } else {
-    const newId = Math.max(...faqs.value.map(f => f.id), 0) + 1
-    faqs.value.push({
-      id: newId,
+    contentStore.updateFaq(faqForm.value.id, {
       question: faqForm.value.question,
-      answer: faqForm.value.answer,
-      order: faqs.value.length + 1
+      answer: faqForm.value.answer
+    })
+    toast.add({ title: 'FAQ Updated', description: 'FAQ has been updated.', color: 'success' })
+  } else {
+    contentStore.addFaq({
+      question: faqForm.value.question,
+      answer: faqForm.value.answer
     })
     toast.add({ title: 'FAQ Created', description: 'New FAQ has been added.', color: 'success' })
   }
   showFaqModal.value = false
 }
 
-function deleteFaq(faq: any) {
-  faqs.value = faqs.value.filter(f => f.id !== faq.id)
-  faqs.value.forEach((f, i) => f.order = i + 1)
+function deleteFaq(faq: Faq) {
+  contentStore.deleteFaq(faq.id)
   toast.add({ title: 'FAQ Deleted', description: 'FAQ has been removed.', color: 'error' })
 }
 
@@ -348,9 +321,7 @@ function onDragOver(event: DragEvent) {
 
 function onDrop(targetIndex: number) {
   if (dragIndex.value === null || dragIndex.value === targetIndex) return
-  const item = faqs.value.splice(dragIndex.value, 1)[0]
-  faqs.value.splice(targetIndex, 0, item)
-  faqs.value.forEach((f, i) => f.order = i + 1)
+  contentStore.reorderFaqs(dragIndex.value, targetIndex)
   dragIndex.value = null
   toast.add({ title: 'Reordered', description: 'FAQ order has been updated.', color: 'success' })
 }

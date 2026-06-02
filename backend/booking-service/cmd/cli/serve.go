@@ -45,6 +45,7 @@ func init() {
 
 	serveCmd.Flags().StringVarP(&servePort, "port", "p", "8003", "Port to listen on")
 	serveCmd.Flags().StringVar(&serveHost, "host", "0.0.0.0", "Host to bind to")
+	serveCmd.Flags().BoolVar(&serveSwagger, "swagger", true, "Enable Swagger documentation")
 	serveCmd.Flags().BoolVar(&serveMigrate, "migrate", true, "Run database migrations on startup")
 	serveCmd.Flags().BoolVar(&serveSeed, "seed", false, "Run database seeders on startup")
 }
@@ -139,14 +140,6 @@ func runServe(cmd *cobra.Command, args []string) {
 	if serveSwagger {
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
-
-	// Health check endpoint
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "healthy",
-			"service": "user-service",
-		})
-	})
 
 	// Setup routes
 	group := router.Group("/api/v1")
