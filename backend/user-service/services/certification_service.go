@@ -136,17 +136,9 @@ func (s *CertificationService) ListCertifications(ctx context.Context, instructo
 		responses[i] = *toCertificationResponse(&cert)
 	}
 
-	totalPages := int(total) / limit
-	if int(total)%limit > 0 {
-		totalPages++
-	}
-
 	return &dto.CertificationListResponse{
 		Data:       responses,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Pagination: dto.NewPaginationMeta(total, page, limit),
 	}, nil
 }
 

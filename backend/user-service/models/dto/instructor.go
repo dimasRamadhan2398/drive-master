@@ -39,13 +39,7 @@ type UpdateInstructorProfileInput struct {
 	YearsOfExperience *int     `json:"yearsOfExperience" binding:"omitempty,min=0"`
 }
 
-type InstructorListResponse struct {
-	Data       []UserWithProfileResponse `json:"data"`
-	Total      int64                     `json:"total"`
-	Page       int                       `json:"page"`
-	Limit      int                       `json:"limit"`
-	TotalPages int                       `json:"totalPages"`
-}
+type InstructorListResponse = PagedData[UserWithProfileResponse]
 
 // CoverageAreaResponse represents a coverage area in responses
 type CoverageAreaResponse struct {
@@ -116,13 +110,7 @@ type CertificationResponse struct {
 }
 
 // CertificationListResponse represents a paginated list of certifications
-type CertificationListResponse struct {
-	Data       []CertificationResponse `json:"data"`
-	Total      int64                   `json:"total"`
-	Page       int                     `json:"page"`
-	Limit      int                     `json:"limit"`
-	TotalPages int                     `json:"totalPages"`
-}
+type CertificationListResponse = PagedData[CertificationResponse]
 
 // ============================================================
 // Entitlement DTOs
@@ -168,10 +156,4 @@ type EntitlementResponse struct {
 }
 
 // EntitlementListResponse represents a paginated list of entitlements
-type EntitlementListResponse struct {
-	Data       []EntitlementResponse `json:"data"`
-	Total      int64                 `json:"total"`
-	Page       int                   `json:"page"`
-	Limit      int                   `json:"limit"`
-	TotalPages int                   `json:"totalPages"`
-}
+type EntitlementListResponse = PagedData[EntitlementResponse]

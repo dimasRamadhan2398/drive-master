@@ -52,6 +52,11 @@ func (r *Registry) GetAnalyticsService() IAnalyticsService {
 	return r.analyticsSvc
 }
 
+// GetSalesService implements [IServiceRegistry].
+func (r *Registry) GetSalesService() ISalesService {
+	return NewSalesService(r.repoRegistry.GetSales())
+}
+
 type IServiceRegistry interface {
 	GetEventService() IEventService
 	GetRegionService() IRegionService
@@ -61,6 +66,7 @@ type IServiceRegistry interface {
 	GetArticleService() IArticleService
 	GetAnalyticsService() IAnalyticsService
 	GetCacheService() ICacheService
+	GetSalesService() ISalesService
 }
 
 func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPublisher *kafka.EventPublisher) IServiceRegistry {

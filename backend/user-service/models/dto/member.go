@@ -10,10 +10,4 @@ type MemberProfileResponse struct {
 	TotalAvailableSessions int       `json:"totalAvailableSessions"`
 }
 
-type MemberListResponse struct {
-	Data       []UserWithProfileResponse `json:"data"`
-	Total      int64                     `json:"total"`
-	Page       int                       `json:"page"`
-	Limit      int                       `json:"limit"`
-	TotalPages int                       `json:"totalPages"`
-}
+type MemberListResponse = PagedData[UserWithProfileResponse]

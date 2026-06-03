@@ -21,6 +21,11 @@ func Migrate(db *gorm.DB) error {
 		// Package tables
 		&models.Package{},
 		&models.PackageBenefit{},
+
+		// Sales tables
+		&models.Sale{},
+		&models.SaleItem{},
+		&models.MonthlySales{},
 	)
 }
 
@@ -46,6 +51,15 @@ func MigratePackages(db *gorm.DB) error {
 	)
 }
 
+// MigrateSales runs sales-specific migrations
+func MigrateSales(db *gorm.DB) error {
+	return db.AutoMigrate(
+		&models.Sale{},
+		&models.SaleItem{},
+		&models.MonthlySales{},
+	)
+}
+
 // RunMigration runs a specific migration by name
 func RunMigration(db *gorm.DB, name string) error {
 	switch name {
@@ -55,6 +69,8 @@ func RunMigration(db *gorm.DB, name string) error {
 		return MigrateCars(db)
 	case "packages":
 		return MigratePackages(db)
+	case "sales":
+		return MigrateSales(db)
 	case "all":
 		return Migrate(db)
 	default:

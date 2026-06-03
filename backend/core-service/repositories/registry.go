@@ -35,6 +35,7 @@ type IRepositoryRegistry interface {
 	GetPackage() IPackageRepository
 	GetTestimonial() ITestimonialRepository
 	GetArticle() IArticleRepository
+	GetSales() ISalesRepository
 }
 
 // GetCache returns the cache repository
@@ -73,4 +74,9 @@ func (r *Registry) GetTestimonial() ITestimonialRepository {
 // GetArticle returns the article repository
 func (r *Registry) GetArticle() IArticleRepository {
 	return NewArticleRepository(r.baseRepo)
+}
+
+// GetSales returns the sales repository
+func (r *Registry) GetSales() ISalesRepository {
+	return NewSalesRepository(r.baseRepo)
 }

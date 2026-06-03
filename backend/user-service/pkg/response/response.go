@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"user-service/models/dto"
 	apperrors "user-service/pkg/errors"
 
 	"github.com/gin-gonic/gin"
@@ -12,10 +13,11 @@ import (
 )
 
 type Response struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   *ErrorDetail `json:"error,omitempty"`
+	Success    bool        `json:"success"`
+	Message    string      `json:"message,omitempty"`
+	Data       interface{} `json:"data,omitempty"`
+	Pagination *dto.PaginationMeta `json:"pagination,omitempty"`
+	Error      *ErrorDetail `json:"error,omitempty"`
 }
 
 type ErrorDetail struct {
@@ -24,7 +26,17 @@ type ErrorDetail struct {
 	Details string `json:"details,omitempty"`
 }
 
-// Success sends a successful response
+// Paginated sends a successful response with data and pagination at same level
+func Paginated(c *gin.Context, statusCode int, message string, data interface{}, pagination *dto.PaginationMeta) {
+	c.JSON(statusCode, Response{
+		Success:    true,
+		Message:    message,
+		Data:       data,
+		Pagination: pagination,
+	})
+}
+
+// Success sends a successful response (without pagination)
 func Success(c *gin.Context, statusCode int, message string, data interface{}) {
 	c.JSON(statusCode, Response{
 		Success: true,

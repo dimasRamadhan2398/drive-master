@@ -168,19 +168,28 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Initialize controller
 	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
 
-	router := gin.Default()
+	// Use gin.New() instead of gin.Default() to have full control
+	router := gin.New()
 
-	// CORS middleware - MUST be added BEFORE routes
-	router.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
-		c.Next()
-	})
+	// Add logger and recovery middleware
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+
+	// Explicitly disable trailing slash redirect to prevent CORS issues on redirects
+	router.RedirectTrailingSlash = false
+	router.RedirectFixedPath = false
+
+	// // CORS middleware - MUST be added BEFORE routes
+	// router.Use(func(c *gin.Context) {
+	// 	c.Header("Access-Control-Allow-Origin", "*")
+	// 	c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	// 	c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+	// 	if c.Request.Method == "OPTIONS" {
+	// 		c.AbortWithStatus(http.StatusNoContent)
+	// 		return
+	// 	}
+	// 	c.Next()
+	// })
 
 	maxRequests := float64(loadedConfig.App.RateLimiterMax)
 	expirationTTL := time.Duration(loadedConfig.App.RateLimiterTime) * time.Second

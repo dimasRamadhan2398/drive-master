@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log"
 	"user-service/controllers"
 	"user-service/pkg/middlewares"
 
@@ -23,7 +24,19 @@ func NewMemberRoute(controller controllers.IControllerRegistry, group *gin.Route
 
 func (m *MemberRoute) Run() {
 	group := m.group.Group("/members")
-	group.GET("/", m.authMiddleware.Authenticate(), m.controller.GetMemberController().GetMemberLists)
+	log.Printf("[MemberRoute] Registered routes under /api/v1/members:")
+	log.Printf("  GET /api/v1/members/all")
+	log.Printf("  GET /api/v1/members/:userId/profile")
+	log.Printf("  PUT /api/v1/members/:userId/profile")
+
+	group.GET("/all", func(c *gin.Context) {
+		log.Printf("[MemberRoute] GET /api/v1/members/all called - Path: %s, Query: %v", c.Request.URL.Path, c.Request.URL.Query())
+		m.authMiddleware.Authenticate()(c)
+		if c.IsAborted() {
+			return
+		}
+		m.controller.GetMemberController().GetMemberLists(c)
+	})
 	group.GET("/:userId/profile", m.authMiddleware.Authenticate(), m.controller.GetMemberController().GetMemberProfile)
 	group.PUT("/:userId/profile", m.authMiddleware.Authenticate(), m.controller.GetMemberController().UpdateMemberProfile)
 }

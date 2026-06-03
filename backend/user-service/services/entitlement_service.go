@@ -158,17 +158,9 @@ func (s *EntitlementService) ListEntitlements(ctx context.Context, memberID uuid
 		responses[i] = *toEntitlementResponse(&ent)
 	}
 
-	totalPages := int(total) / limit
-	if int(total)%limit > 0 {
-		totalPages++
-	}
-
 	return &dto.EntitlementListResponse{
 		Data:       responses,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Pagination: dto.NewPaginationMeta(total, page, limit),
 	}, nil
 }
 

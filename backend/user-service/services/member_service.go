@@ -18,12 +18,17 @@ type IMemberService interface {
 }
 
 type MemberService struct {
-	repo     repositories.IMemberRepository
-	roleRepo repositories.IRoleRepository
+	repo            repositories.IMemberRepository
+	roleRepo        repositories.IRoleRepository
+	entitlementRepo repositories.IEntitlementRepository
 }
 
-func NewMemberService(repo repositories.IMemberRepository, roleRepo repositories.IRoleRepository) IMemberService {
-	return &MemberService{repo: repo, roleRepo: roleRepo}
+func NewMemberService(repo repositories.IMemberRepository, roleRepo repositories.IRoleRepository, entitlementRepo repositories.IEntitlementRepository) IMemberService {
+	return &MemberService{
+		repo:            repo,
+		roleRepo:        roleRepo,
+		entitlementRepo: entitlementRepo,
+	}
 }
 
 // GetMemberProfile retrieves a member profile by user ID
@@ -56,6 +61,7 @@ func (s *MemberService) DeleteMemberProfile(ctx context.Context, userID uuid.UUI
 }
 
 // GetMembersWithPagination returns paginated list of members with their profiles
+// Calculates totalAvailableSessions dynamically from active entitlements
 func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limit int) (*dto.MemberListResponse, error) {
 	// Find the "member" role
 	roleModel, err := s.roleRepo.FindRoleByName(ctx, "member")
@@ -82,6 +88,21 @@ func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limi
 		return nil, err
 	}
 
+	// Collect member IDs for bulk entitlements query
+	memberIDs := make([]uuid.UUID, 0, len(users))
+	for _, user := range users {
+		if user.MemberProfile != nil {
+			memberIDs = append(memberIDs, user.ID)
+		}
+	}
+
+	// Get total available sessions from active entitlements for all members
+	availableSessions, err := s.entitlementRepo.FindActiveByMemberIDs(ctx, memberIDs)
+	if err != nil {
+		// Log but don't fail - just set available sessions to 0
+		availableSessions = make(map[uuid.UUID]int)
+	}
+
 	// Convert to response DTOs
 	data := make([]dto.UserWithProfileResponse, len(users))
 	for i, user := range users {
@@ -92,6 +113,7 @@ func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limi
 				SessionsCompleted:      user.MemberProfile.SessionsCompleted,
 				TrainingTime:           user.MemberProfile.TrainingTime,
 				AverageRating:          user.MemberProfile.AverageRating,
+				TotalAvailableSessions: availableSessions[user.ID], // Dynamically calculated from active entitlements
 			}
 		}
 
@@ -107,6 +129,10 @@ func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limi
 				DateOfBirth: user.DateOfBirth,
 				Address:     user.Address,
 				RoleID:      user.RoleID,
+				Role: dto.RoleResponse{
+					ID: user.RoleID,
+					Name: user.Role.Name,
+				},
 			},
 			MemberProfile: memberProfile,
 		}
@@ -114,9 +140,6 @@ func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limi
 
 	return &dto.MemberListResponse{
 		Data:       data,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Pagination: dto.NewPaginationMeta(total, page, limit),
 	}, nil
 }

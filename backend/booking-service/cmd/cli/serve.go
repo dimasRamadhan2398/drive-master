@@ -114,7 +114,15 @@ func runServe(cmd *cobra.Command, args []string) {
 	authMiddleware := middlewares.NewAuthMiddleware(getEnv("JWT_SECRET", "your_jwt_secret_here"))
 
 	// Setup Gin router
-	router := gin.Default()
+	router := gin.New()
+
+	// Add logger and recovery middleware
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+
+	// Explicitly disable trailing slash redirect to prevent CORS issues on redirects
+	router.RedirectTrailingSlash = false
+	router.RedirectFixedPath = false
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {

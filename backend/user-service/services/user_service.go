@@ -125,10 +125,6 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 
 	// Calculate pagination
 	offset := (page - 1) * limit
-	totalPages := int(total) / limit
-	if int(total)%limit > 0 {
-		totalPages++
-	}
 
 	// Get paginated users
 	users, err := s.repo.FindByRoleIDWithPagination(ctx, roleModel.ID, offset, limit)
@@ -155,10 +151,7 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 
 	return &dto.InstructorListResponse{
 		Data:       data,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Pagination: dto.NewPaginationMeta(total, page, limit),
 	}, nil
 }
 
@@ -175,10 +168,6 @@ func (s *UserService) GetMembersWithPagination(ctx context.Context, page int, li
 
 	// Calculate pagination
 	offset := (page - 1) * limit
-	totalPages := int(total) / limit
-	if int(total)%limit > 0 {
-		totalPages++
-	}
 
 	// Get paginated users
 	users, err := s.repo.FindByRoleIDWithPagination(ctx, roleModel.ID, offset, limit)
@@ -205,10 +194,7 @@ func (s *UserService) GetMembersWithPagination(ctx context.Context, page int, li
 
 	return &dto.MemberListResponse{
 		Data:       data,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Pagination: dto.NewPaginationMeta(total, page, limit),
 	}, nil
 }
 // Error definitions

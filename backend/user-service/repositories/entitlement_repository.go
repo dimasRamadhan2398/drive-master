@@ -17,6 +17,7 @@ type IEntitlementRepository interface {
 	FindByMemberID(ctx context.Context, memberID uuid.UUID, page, limit int) ([]models.Entitlement, int64, error)
 	FindByMemberAndID(ctx context.Context, memberID, entitlementID uuid.UUID) (*models.Entitlement, error)
 	FindByBookingID(ctx context.Context, bookingID uuid.UUID) (*models.Entitlement, error)
+	FindActiveByMemberIDs(ctx context.Context, memberIDs []uuid.UUID) (map[uuid.UUID]int, error) // Returns total remaining sessions per memberID
 	CountByMemberID(ctx context.Context, memberID uuid.UUID) (int64, error)
 	DecrementRemaining(ctx context.Context, id uuid.UUID) error
 }
@@ -110,4 +111,40 @@ func (r *EntitlementRepository) CountByMemberID(ctx context.Context, memberID uu
 func (r *EntitlementRepository) DecrementRemaining(ctx context.Context, id uuid.UUID) error {
 	// Use raw SQL for atomic decrement
 	return r.BaseRepository.Exec("UPDATE entitlements SET remaining = remaining - 1, used_sessions = used_sessions + 1 WHERE id = ? AND remaining > 0", id)
+}
+
+// FindActiveByMemberIDs calculates total remaining sessions from active entitlements for multiple members
+// Returns a map of memberID -> total remaining sessions
+func (r *EntitlementRepository) FindActiveByMemberIDs(ctx context.Context, memberIDs []uuid.UUID) (map[uuid.UUID]int, error) {
+	result := make(map[uuid.UUID]int)
+
+	if len(memberIDs) == 0 {
+		return result, nil
+	}
+
+	// Build the query with IN clause
+	// Use raw query to properly handle IN clause with UUIDs
+	query := `
+		SELECT member_id, SUM(remaining) as total_remaining
+		FROM entitlements
+		WHERE member_id = ANY($1) AND status = 'active'
+		GROUP BY member_id
+	`
+
+	rows, err := r.DB.Raw(query, memberIDs).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var memberID uuid.UUID
+		var totalRemaining int
+		if err := rows.Scan(&memberID, &totalRemaining); err != nil {
+			return nil, err
+		}
+		result[memberID] = totalRemaining
+	}
+
+	return result, nil
 }

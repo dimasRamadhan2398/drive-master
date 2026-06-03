@@ -53,7 +53,7 @@ func (r *Registry) GetUserService() IUserService {
 }
 
 func (r *Registry) GetMemberService() IMemberService {
-	return NewMemberService(r.repoRegistry.GetMember(), r.repoRegistry.GetRole())
+	return NewMemberService(r.repoRegistry.GetMember(), r.repoRegistry.GetRole(), r.repoRegistry.GetEntitlement())
 }
 
 func (r *Registry) GetInstructorService() IInstructorService {

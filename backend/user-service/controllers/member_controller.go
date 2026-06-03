@@ -145,5 +145,6 @@ func (m *MemberController) GetMemberLists(ctx *gin.Context) {
 		return
 	}
 
-	responseRes.Success(ctx, http.StatusOK, "Members retrieved successfully", result)
+	// Use Paginated helper for consistent response format
+	responseRes.Paginated(ctx, http.StatusOK, "Members retrieved successfully", result.Data, &result.Pagination)
 }

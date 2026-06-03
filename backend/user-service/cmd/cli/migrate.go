@@ -50,7 +50,7 @@ func runMigrate(cmd *cobra.Command, args []string) {
 		log.Println("Would run migrations for the following models:")
 		modelsList := []string{
 			"User", "Role", "MemberProfile", "InstructorProfile",
-			"WorkExperience", "InstructorArea",
+			"WorkExperience", "InstructorArea", "Entitlement",
 		}
 		for _, m := range modelsList {
 			log.Printf("  - %s", m)
@@ -75,6 +75,7 @@ func runMigrate(cmd *cobra.Command, args []string) {
 		&models.InstructorProfile{},
 		&models.WorkExperience{},
 		&models.InstructorArea{},
+		&models.Entitlement{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
