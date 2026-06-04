@@ -20,19 +20,19 @@ type IUserService interface {
 	DeleteUser(ctx context.Context, user *models.User) error
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetInstructorsWithPagination(ctx context.Context, page, limit int) (*dto.InstructorListResponse, error)
-	GetMembersWithPagination(ctx context.Context, page, limit int) (*dto.MemberListResponse, error)
 }
 
 type UserService struct {
 	*base.BaseService
-	roleRepo repositories.IRoleRepository
-	repo     repositories.IUserRepository
+	roleRepo      repositories.IRoleRepository
+	repo          repositories.IUserRepository
+	instructorSvc IInstructorService
 }
 
 // GetMembersWithPagination implements [IUserService].
 
-func NewUserService(repo repositories.IUserRepository, roleRepo repositories.IRoleRepository) IUserService {
-	return &UserService{repo: repo, roleRepo: roleRepo, BaseService: base.NewBaseService()}
+func NewUserService(repo repositories.IUserRepository, roleRepo repositories.IRoleRepository, instructorSvc IInstructorService) IUserService {
+	return &UserService{repo: repo, roleRepo: roleRepo, instructorSvc: instructorSvc, BaseService: base.NewBaseService()}
 }
 
 func (s *UserService) CreateUser(ctx context.Context, input dto.CreateUserRequest) (*models.User, error) {
@@ -132,11 +132,22 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 		return nil, err
 	}
 
+	instructors := make([]dto.InstructorProfileResponse, len(users))
+	for i, user := range users {
+		profile, err := s.instructorSvc.GetInstructorProfile(ctx, user.ID)
+		if err != nil {
+			return nil, err
+		}
+		instructors[i] = *profile
+	}
+
 	// Convert to response DTOs
 	data := make([]dto.UserWithProfileResponse, len(users))
 	for i, user := range users {
 		data[i] = dto.UserWithProfileResponse{
 			GetUserResponse: dto.GetUserResponse{
+				FirstName:   user.FirstName,
+				LastName:    user.LastName,
 				UserID:      user.ID,
 				Email:       user.EmailAddress,
 				Username:    user.Username,
@@ -146,6 +157,7 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 				Address:     user.Address,
 				RoleID:      user.RoleID,
 			},
+			InstructorProfile: &instructors[i],
 		}
 	}
 
@@ -155,48 +167,6 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 	}, nil
 }
 
-func (s *UserService) GetMembersWithPagination(ctx context.Context, page int, limit int) (*dto.MemberListResponse, error) {
-	roleModel, err := s.roleRepo.FindRoleByName(ctx, "member")
-	if err != nil {
-		return nil, err
-	}
-
-	total, err := s.repo.CountByRoleID(ctx, roleModel.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Calculate pagination
-	offset := (page - 1) * limit
-
-	// Get paginated users
-	users, err := s.repo.FindByRoleIDWithPagination(ctx, roleModel.ID, offset, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert to response DTOs
-	data := make([]dto.UserWithProfileResponse, len(users))
-	for i, user := range users {
-		data[i] = dto.UserWithProfileResponse{
-			GetUserResponse: dto.GetUserResponse{
-				UserID:      user.ID,
-				Email:       user.EmailAddress,
-				Username:    user.Username,
-				PhoneNumber: user.PhoneNumber,
-				Image:       user.Image,
-				DateOfBirth: user.DateOfBirth,
-				Address:     user.Address,
-				RoleID:      user.RoleID,
-			},
-		}
-	}
-
-	return &dto.MemberListResponse{
-		Data:       data,
-		Pagination: dto.NewPaginationMeta(total, page, limit),
-	}, nil
-}
 // Error definitions
 var (
 	ErrEmailAlreadyExists       = &UserServiceError{Message: "email already exists"}

@@ -13,6 +13,7 @@ import (
 
 type IUserRepository interface {
 	Create(ctx context.Context, user *dto.RegisterRequest) (*models.User, error)
+	CreateTx(tx *gorm.DB, user *dto.RegisterRequest) (*models.User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*models.User, error)
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
 	FindByUsername(ctx context.Context, username string) (*models.User, error)
@@ -56,6 +57,30 @@ func (r *UserRepository) Create(ctx context.Context, user *dto.RegisterRequest) 
 	}
 
 	if err := r.BaseRepository.Create(&userModel); err != nil {
+		return nil, err
+	}
+
+	return &userModel, nil
+}
+
+// CreateTx creates a user within a transaction
+func (r *UserRepository) CreateTx(tx *gorm.DB, user *dto.RegisterRequest) (*models.User, error) {
+	t, err := time.Parse(user.DateOfBirth, "2006-01-02")
+	if err != nil {
+		t = time.Now()
+	}
+	userModel := models.User{
+		FirstName:    user.FirstName,
+		Username:     user.Username,
+		EmailAddress: user.Email,
+		PhoneNumber:  user.PhoneNumber,
+		PasswordHash: user.Password,
+		DateOfBirth:  t,
+		RoleID:       user.RoleID,
+		IsActive:     true,
+	}
+
+	if err := tx.Create(&userModel).Error; err != nil {
 		return nil, err
 	}
 

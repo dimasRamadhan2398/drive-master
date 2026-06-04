@@ -79,8 +79,11 @@ type InstructorProfile struct {
 	SessionsCompleted        int              `json:"sessionsCompleted" gorm:"default:0"`
 	AverageRating            float64          `json:"averageRating" gorm:"default:0"`
 	WorkExperiences          []WorkExperience `json:"workExperiences" gorm:"foreignKey:InstructorID"`
+	Description       		 string                   `json:"description" gorm:"size:500"`
+	Specialization    		 string                   `json:"specialization" gorm:"size:50"`
 	CreatedAt                time.Time        `json:"createdAt"`
 	UpdatedAt                time.Time        `json:"updatedAt"`
+	
 }
 
 // WorkExperience represents the work_experiences table

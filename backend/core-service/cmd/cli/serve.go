@@ -53,7 +53,7 @@ func init() {
 	serveCmd.Flags().StringVar(&serveHost, "host", "0.0.0.0", "Host to bind to")
 	serveCmd.Flags().BoolVar(&serveSwagger, "swagger", true, "Enable Swagger documentation")
 	serveCmd.Flags().BoolVar(&serveMigrate, "migrate", true, "Run database migrations on startup")
-	serveCmd.Flags().BoolVar(&serveSeed, "seed", false, "Run database seeders on startup")
+	serveCmd.Flags().BoolVar(&serveSeed, "seed", true, "Run database seeders on startup")
 }
 
 func runServe(cmd *cobra.Command, args []string) {

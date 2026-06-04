@@ -12,7 +12,7 @@ import (
 func RunCarSeeder(db *gorm.DB) error {
 	cars := []models.Car{
 		{
-			ID:           uuid.New(),
+			ID:           uuid.MustParse("c0000001-0000-0000-0000-000000000001"),
 			Brand:        "Toyota",
 			Model:        "Vios",
 			Year:         2023,
@@ -27,7 +27,7 @@ func RunCarSeeder(db *gorm.DB) error {
 			UpdatedAt:    time.Now(),
 		},
 		{
-			ID:           uuid.New(),
+			ID:           uuid.MustParse("c0000001-0000-0000-0000-000000000002"),
 			Brand:        "Honda",
 			Model:        "Civic",
 			Year:         2022,
@@ -42,7 +42,7 @@ func RunCarSeeder(db *gorm.DB) error {
 			UpdatedAt:    time.Now(),
 		},
 		{
-			ID:           uuid.New(),
+			ID:           uuid.MustParse("c0000001-0000-0000-0000-000000000003"),
 			Brand:        "Suzuki",
 			Model:        "Baleno",
 			Year:         2023,
@@ -57,7 +57,7 @@ func RunCarSeeder(db *gorm.DB) error {
 			UpdatedAt:    time.Now(),
 		},
 		{
-			ID:           uuid.New(),
+			ID:           uuid.MustParse("c0000001-0000-0000-0000-000000000004"),
 			Brand:        "Toyota",
 			Model:        "Yaris",
 			Year:         2021,
@@ -72,7 +72,7 @@ func RunCarSeeder(db *gorm.DB) error {
 			UpdatedAt:    time.Now(),
 		},
 		{
-			ID:           uuid.New(),
+			ID:           uuid.MustParse("c0000001-0000-0000-0000-000000000005"),
 			Brand:        "Honda",
 			Model:        "City",
 			Year:         2024,
@@ -87,7 +87,7 @@ func RunCarSeeder(db *gorm.DB) error {
 			UpdatedAt:    time.Now(),
 		},
 		{
-			ID:           uuid.New(),
+			ID:           uuid.MustParse("c0000001-0000-0000-0000-000000000006"),
 			Brand:        "Mitsubishi",
 			Model:        "Mirage",
 			Year:         2022,
@@ -102,7 +102,7 @@ func RunCarSeeder(db *gorm.DB) error {
 			UpdatedAt:    time.Now(),
 		},
 		{
-			ID:           uuid.New(),
+			ID:           uuid.MustParse("c0000001-0000-0000-0000-000000000007"),
 			Brand:        "Toyota",
 			Model:        "Avanza",
 			Year:         2023,
@@ -117,7 +117,7 @@ func RunCarSeeder(db *gorm.DB) error {
 			UpdatedAt:    time.Now(),
 		},
 		{
-			ID:           uuid.New(),
+			ID:           uuid.MustParse("c0000001-0000-0000-0000-000000000008"),
 			Brand:        "Honda",
 			Model:        "HR-V",
 			Year:         2024,
@@ -134,7 +134,13 @@ func RunCarSeeder(db *gorm.DB) error {
 	}
 
 	for _, car := range cars {
-		result := db.Where("license_plate = ?", car.LicensePlate).FirstOrCreate(&car)
+		// Check if car with this license plate already exists
+		var existing models.Car
+		if err := db.Where("license_plate = ?", car.LicensePlate).First(&existing).Error; err == nil {
+			// Car exists, skip
+			continue
+		}
+		result := db.Create(&car)
 		if result.Error != nil {
 			return result.Error
 		}

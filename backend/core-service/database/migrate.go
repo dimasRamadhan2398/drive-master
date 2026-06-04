@@ -26,6 +26,13 @@ func Migrate(db *gorm.DB) error {
 		&models.Sale{},
 		&models.SaleItem{},
 		&models.MonthlySales{},
+
+		// Article tables
+		&models.Article{},
+		&models.Category{},
+		&models.Tag{},
+		&models.ArticleTag{},
+		&models.RelatedArticle{},
 	)
 }
 
@@ -51,6 +58,14 @@ func MigratePackages(db *gorm.DB) error {
 	)
 }
 
+func MigrateArticles(db *gorm.DB) error {
+	return db.AutoMigrate(
+		&models.Article{},
+	)
+}
+
+
+
 // MigrateSales runs sales-specific migrations
 func MigrateSales(db *gorm.DB) error {
 	return db.AutoMigrate(
@@ -69,6 +84,8 @@ func RunMigration(db *gorm.DB, name string) error {
 		return MigrateCars(db)
 	case "packages":
 		return MigratePackages(db)
+	case "articles":
+		return MigrateArticles(db)
 	case "sales":
 		return MigrateSales(db)
 	case "all":
@@ -87,6 +104,9 @@ func GetMigrationStatus(db *gorm.DB) ([]models.TableStatus, error) {
 		"cars",
 		"packages",
 		"package_benefits",
+		"articles",
+		"categories",
+		"tags",
 	}
 
 	var status []models.TableStatus

@@ -184,7 +184,7 @@ func Load(path string) (*Config, error) {
     _ = viper.BindEnv("midtrans.merchant_id", "MIDTRANS_MERCHANT_ID")
     _ = viper.BindEnv("midtrans.base_url", "MIDTRANS_BASE_URL")
     _ = viper.BindEnv("midtrans.snap_url", "MIDTRANS_SNAP_URL")
-    _ = viper.BindEnv("midtrans.enabled", "MIDTRANS_SNAP_URL")
+    _ = viper.BindEnv("midtrans.enabled", "MIDTRANS_ENABLED")
     _ = viper.BindEnv("midtrans.notification_url", "MIDTRANS_NOTIFICATION_URL")
 
 	if err := viper.ReadInConfig(); err != nil {

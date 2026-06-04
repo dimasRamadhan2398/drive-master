@@ -1,6 +1,10 @@
 package dto
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // Enrollment DTOs (represents package purchase/enrollment)
 
@@ -226,8 +230,8 @@ type ListParams struct {
 type CreateScheduleRequest struct {
 	Date         string `json:"date" binding:"required"`                   // YYYY-MM-DD format
 	Time         string `json:"time" binding:"required"`                  // HH:MM format
-	Duration     int    `json:"duration" binding:"omitempty"`             // in minutes, default 60
-	InstructorID uint   `json:"instructorId" binding:"required"`
+	Duration     int    `json:"duration" binding:"omitempty"`             // in minutes, default 90
+	InstructorID uuid.UUID `json:"instructorId" binding:"required"`
 	CarID        uint   `json:"carId" binding:"required"`
 	Notes        string `json:"notes"`
 }
@@ -236,7 +240,7 @@ type UpdateScheduleRequest struct {
 	Date         *string `json:"date" binding:"omitempty"`    // YYYY-MM-DD format
 	Time         *string `json:"time" binding:"omitempty"`     // HH:MM format
 	Duration     *int    `json:"duration" binding:"omitempty"`
-	InstructorID *uint   `json:"instructorId" binding:"omitempty"`
+	InstructorID *uuid.UUID `json:"instructorId" binding:"omitempty"`
 	CarID        *uint   `json:"carId" binding:"omitempty"`
 	Notes        *string `json:"notes" binding:"omitempty"`
 	Status       *string `json:"status" binding:"omitempty"`  // update slot status
@@ -247,7 +251,7 @@ type ScheduleResponse struct {
 	Date         string    `json:"date"`         // YYYY-MM-DD format
 	Time         string    `json:"time"`         // HH:MM format
 	Duration     int       `json:"duration"`     // in minutes
-	InstructorID uint      `json:"instructorId"`
+	InstructorID uuid.UUID `json:"instructorId"`
 	CarID        uint      `json:"carId"`
 	UserID       *uint     `json:"userId"`        // nullable
 	BookingID    *uint     `json:"bookingId"`     // nullable
@@ -277,7 +281,7 @@ type ScheduleFilterParams struct {
 	Date         string `form:"date"`          // YYYY-MM-DD format
 	StartDate    string `form:"startDate"`      // YYYY-MM-DD format
 	EndDate      string `form:"endDate"`        // YYYY-MM-DD format
-	InstructorID uint   `form:"instructorId"`
+	InstructorID string `form:"instructorId"`
 	CarID        uint   `form:"carId"`
 	Status       string `form:"status"`
 }

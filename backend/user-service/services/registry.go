@@ -50,7 +50,7 @@ func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgK
 }
 
 func (r *Registry) GetUserService() IUserService {
-	return NewUserService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole())
+	return NewUserService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole(), r.GetInstructorService())
 }
 
 func (r *Registry) GetMemberService() IMemberService {
@@ -58,7 +58,13 @@ func (r *Registry) GetMemberService() IMemberService {
 }
 
 func (r *Registry) GetInstructorService() IInstructorService {
-	return NewInstructorService(r.repoRegistry.GetInstructor())
+	return NewInstructorService(
+		r.repoRegistry.GetInstructor(),
+		r.repoRegistry.GetUser(),
+		r.repoRegistry.GetRole(),
+		r.GetEmailService(),
+		r.redisClient,
+	)
 }
 
 func (r *Registry) GetRoleService() IRoleService {

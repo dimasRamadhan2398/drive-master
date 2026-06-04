@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // EnrollmentStatus represents the lifecycle of an enrollment (package purchase)
@@ -135,11 +137,11 @@ type Schedule struct {
 	ID           uint           `json:"id" gorm:"primaryKey"`
 	Date         time.Time      `json:"date" gorm:"type:date;not null;index"`
 	Time         string         `json:"time" gorm:"size:10;not null"` // HH:MM format
-	Duration     int            `json:"duration" gorm:"default:60"`  // duration in minutes
-	InstructorID uint           `json:"instructorId" gorm:"not null;index"` // ref: user-service
-	CarID        uint           `json:"carId" gorm:"not null;index"`           // ref: core-service (car)
-	UserID       *uint          `json:"userId" gorm:"index"`                  // ref: user-service (nullable, assigned when booked)
-	EnrollmentID *uint          `json:"enrollmentId" gorm:"index"`            // ref: Enrollment (nullable)
+	Duration     int            `json:"duration" gorm:"default:90"`   // duration in minutes
+	InstructorID uuid.UUID      `json:"instructorId" gorm:"type:uuid;not null;index"` // ref: user-service (UUID)
+	CarID        uint           `json:"carId" gorm:"not null;index"`             // ref: core-service (car)
+	UserID       *uint          `json:"userId" gorm:"index"`                    // ref: user-service (nullable, assigned when booked)
+	EnrollmentID *uint          `json:"enrollmentId" gorm:"index"`             // ref: Enrollment (nullable)
 	Status       ScheduleStatus `json:"status" gorm:"type:varchar(20);default:'available'"`
 	Notes        string         `json:"notes" gorm:"type:text"`
 	CreatedAt    time.Time      `json:"createdAt"`

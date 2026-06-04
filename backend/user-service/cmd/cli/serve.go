@@ -188,7 +188,7 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	// Swagger documentation
 	if serveSwagger {
-		router.GET("/swagger/user-service/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		router.GET("/swagger/user-service/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/user-service/doc.json")))
 	}
 
 	// Health check endpoint

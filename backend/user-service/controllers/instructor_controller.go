@@ -27,6 +27,8 @@ type IInstructorController interface {
 	GetInstructorProfile(ctx *gin.Context)
 	UpdateInstructorProfile(ctx *gin.Context)
 	GetInstructorLists(ctx *gin.Context)
+	CreateInstructorProfile(ctx *gin.Context)
+	RegisterInstructor(ctx *gin.Context)
 	UploadProfilePic(ctx *gin.Context)
 	DeleteProfilePic(ctx *gin.Context)
 	UploadBase64Media(ctx *gin.Context)
@@ -86,7 +88,83 @@ func (c *InstructorController) GetInstructorLists(ctx *gin.Context) {
 		return
 	}
 
-	responseRes.Success(ctx, http.StatusOK, "Instructors retrieved successfully", result)
+	responseRes.Paginated(ctx, http.StatusOK, "Instructors retrieved successfully", result.Data, &result.Pagination)
+}
+
+// @Summary Create Instructor Profile
+// @Description Create an instructor profile for a user with optional data
+// @Tags Instructors
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID (UUID)"
+// @Param request body dto.InstructorProfileRequest false "Instructor profile data (optional)"
+// @Success 201 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /instructors [post]
+func (c *InstructorController) CreateInstructorProfile(ctx *gin.Context) {
+	userID, err := getUserIDFromPath(ctx, "id")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	var req dto.InstructorProfileRequest
+	// BindJSON will succeed even if body is empty (all fields are optional)
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		// If binding fails completely (e.g., invalid JSON), still allow creation with defaults
+		// Only return error if it's a syntax issue
+		if ctx.Request.ContentLength > 0 {
+			responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+			return
+		}
+	}
+
+	var result *dto.InstructorProfileResponse
+
+	// Check if any field was provided in the request
+	hasInput := req.LicenseNumber != nil || req.LicenseExpiry.Unix() > 0 ||
+		req.BNSPCertificateNumber != nil || req.Description != nil ||
+		req.YearsOfExperience != nil
+
+	if hasInput {
+		result, err = c.instructorService.CreateInstructorProfileWithInput(ctx.Request.Context(), userID, req)
+	} else {
+		result, err = c.instructorService.CreateInstructorProfile(ctx.Request.Context(), userID)
+	}
+
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusCreated, "Instructor profile created successfully", result)
+}
+
+// @Summary Register Instructor
+// @Description Register a new instructor with user account and instructor profile in a single transaction
+// @Tags Instructors
+// @Accept json
+// @Produce json
+// @Param request body dto.CreateInstructorWithUserRequest true "Instructor registration data"
+// @Success 201 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 409 {object} response.Response
+// @Router /instructors/register [post]
+func (c *InstructorController) RegisterInstructor(ctx *gin.Context) {
+	var req dto.CreateInstructorWithUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	result, err := c.instructorService.CreateInstructorWithUser(ctx.Request.Context(), req)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusCreated, "Instructor registered successfully", result)
 }
 
 // @Summary Get Instructor Profile

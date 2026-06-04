@@ -7,21 +7,22 @@ import (
 )
 
 type InstructorProfileRequest struct {
+	Specialization       *string  `json:"specialization"       binding:"omitempty,max=255"`
 	Description       *string  `json:"description"       binding:"omitempty"`
 	LicenseNumber     *string  `json:"licenseNumber"     binding:"omitempty,min=5"`
 	LicenseExpiry     time.Time  `json:"licenseExpiry"     binding:"omitempty"`
 	BNSPCertificateNumber *string `json:"bnspCertificateNumber" binding:"omitempty,min=10"`
 	YearsOfExperience *int     `json:"yearsOfExperience" binding:"omitempty,min=0"`
-
 }
 
 type InstructorProfileResponse struct {
-	UserID            uuid.UUID                    `json:"userId"`
-	BNSPCertificateNumber string                   `json:"bnspCertificateNumber"`
+	UserID            uuid.UUID                `json:"userId"`
+	BNSPCertificateNumber string               `json:"bnspCertificateNumber"`
 	NumberOfStudents  int                      `json:"numberOfStudents"`
 	SessionsCompleted int                      `json:"sessionsCompleted"`
 	AverageRating     float64                  `json:"averageRating"`
 	Description       string                   `json:"description"`
+	Specialization    string                   `json:"specialization"`
 	LicenseNumber     string                   `json:"licenseNumber"`
 	YearsOfExperience int                      `json:"yearsOfExperience"`
 	LicenseExpiry     time.Time                `json:"licenseExpiry"`
@@ -162,6 +163,34 @@ type EntitlementResponse struct {
 	Status        string    `json:"status"`
 	CreatedAt     string    `json:"createdAt"`
 	UpdatedAt     string    `json:"updatedAt"`
+}
+
+// CreateInstructorWithUserRequest is used for POST /instructors/register
+// Creates both a user and an instructor profile in a single transaction
+type CreateInstructorWithUserRequest struct {
+	// User fields
+	FirstName    string `json:"firstName" binding:"required,min=2"`
+	LastName     string `json:"lastName" binding:"required,min=2"`
+	Username     string `json:"username" binding:"required,min=2"`
+	Password     string `json:"password" binding:"required,min=8"`
+	Email        string `json:"email" binding:"required,email"`
+	PhoneNumber  string `json:"phoneNumber" binding:"required,min=10"`
+	DateOfBirth  string `json:"dateOfBirth"` // Format: YYYY-MM-DD
+	Address      string `json:"address"`
+
+	// Instructor profile fields
+	LicenseNumber          *string `json:"licenseNumber" binding:"omitempty,min=5"`
+	LicenseExpiry          *string `json:"licenseExpiry"` // Format: DD/MM/YYYY
+	BNSPCertificateNumber *string `json:"bnspCertificateNumber" binding:"omitempty,min=10"`
+	YearsOfExperience      *int    `json:"yearsOfExperience" binding:"omitempty,min=0"`
+	Specialization         *string `json:"specialization" binding:"omitempty,max=255"`
+	Description            *string `json:"description"`
+}
+
+// CreateInstructorWithUserResponse returns the created user and instructor profile
+type CreateInstructorWithUserResponse struct {
+	User    CreateUserResponse          `json:"user"`
+	Profile *InstructorProfileResponse `json:"instructorProfile"`
 }
 
 // EntitlementListResponse represents a paginated list of entitlements

@@ -1,16 +1,18 @@
 # Build stage
 FROM golang:1.25-alpine AS builder
-
 WORKDIR /app
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
 
-# Copy go.mod and go.sum first for better layer caching
+# Copy go mod files
 COPY go.mod go.sum ./
 
+# Copy vendor and source
 COPY vendor ./vendor
 COPY . .
+
+# Build the binary
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -ldflags="-w -s" -o booking-service ./cmd
 
 # Runtime stage
@@ -21,14 +23,16 @@ RUN apk --no-cache add ca-certificates tzdata dumb-init
 
 WORKDIR /app
 
-# Create non-root user for security
+# Create non-root user
 RUN addgroup -g 1000 appgroup && adduser -u 1000 -G appgroup -s /bin/sh -D appuser
 
 # Copy binary
 COPY --from=builder /app/booking-service .
+
+# Copy config file
 COPY --from=builder /app/pkg/config/config.yaml ./pkg/config/config.yaml
 
-# Set config path environment variable
+# Set config path
 ENV CONFIG_PATH=./pkg/config/config.yaml
 
 # Switch to non-root user

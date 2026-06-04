@@ -24,9 +24,9 @@ func NewUserRoute(controller controllers.IControllerRegistry, group *gin.RouterG
 
 func (u *UserRoute) Run() {
 	group := u.group.Group("/users")
-	group.GET("/", u.authMiddleware.Authenticate(), u.controller.GetUserController().GetAllUsers)
+	group.GET("/all", u.authMiddleware.Authenticate(), u.controller.GetUserController().GetAllUsers)
 	group.GET("/:id", u.authMiddleware.Authenticate(), u.controller.GetUserController().GetUserByID)
 	group.PUT("/:id", u.authMiddleware.Authenticate(), u.controller.GetUserController().UpdateUser)
 	group.DELETE("/:id", u.authMiddleware.Authenticate(), u.controller.GetUserController().DeleteUser)
-	group.POST("/", u.authMiddleware.Authenticate(), u.controller.GetUserController().CreateUser)
+	group.POST("/new", u.authMiddleware.Authenticate(), u.controller.GetUserController().CreateUser)
 }

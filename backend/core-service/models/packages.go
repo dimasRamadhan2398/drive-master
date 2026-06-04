@@ -1,9 +1,11 @@
 package models
 
 import (
+	"database/sql/driver"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // PackageType represents the type of package
@@ -24,6 +26,22 @@ const (
 	PackageStatusInactive PackageStatus = "inactive"
 )
 
+// StringArray is a custom type for PostgreSQL text arrays
+type StringArray []string
+
+// Value implements driver.Valuer for database serialization
+func (a StringArray) Value() (driver.Value, error) {
+	if a == nil {
+		return nil, nil
+	}
+	return pq.Array(a).Value()
+}
+
+// Scan implements sql.Scanner for database deserialization
+func (a *StringArray) Scan(src interface{}) error {
+	return (*pq.StringArray)(a).Scan(src)
+}
+
 // Package represents the packages table
 type Package struct {
 	ID              uuid.UUID       `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
@@ -34,9 +52,11 @@ type Package struct {
 	DiscountPrice   float64         `json:"discountPrice" gorm:"type:decimal(10,2);default:0"`
 	DurationMinutes int             `json:"durationMinutes" gorm:"default:60"`        // Duration in minutes
 	TotalSessions   int             `json:"totalSessions" gorm:"default:1"`           // Number of sessions included
+	Features        StringArray     `json:"features" gorm:"type:text[]"`              // Array of feature strings
+	Highlight       bool            `json:"highlight" gorm:"default:false"`           // Whether package is highlighted
 	Status          PackageStatus   `json:"status" gorm:"size:20;not null;default:'active'"`
 	ImageURL        string          `json:"imageUrl" gorm:"size:500"`                // Package image URL
-	Benefits        []PackageBenefit `json:"benefits,omitempty" gorm:"foreignKey:PackageID"`
+	Benefits        []PackageBenefit `json:"benefits,omitempty" gorm:"-"`           // Excluded from auto-migrate, managed separately
 	CreatedAt       time.Time       `json:"createdAt"`
 	UpdatedAt       time.Time       `json:"updatedAt"`
 }
@@ -45,7 +65,6 @@ type Package struct {
 type PackageBenefit struct {
 	ID          uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	PackageID   uuid.UUID `json:"packageId" gorm:"type:uuid;not null"`
-	Package     Package   `json:"package" gorm:"foreignKey:PackageID"`
 	Title       string    `json:"title" gorm:"size:255;not null"`  // e.g., "10 Sessions with Instructor"
 	Description string    `json:"description" gorm:"size:500"`      // Detailed description
 	Icon        string    `json:"icon" gorm:"size:100"`            // Icon name or URL

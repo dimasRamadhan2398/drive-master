@@ -53,6 +53,11 @@ upstreams:
       - target: booking-service:8003
         weight: 100
 
+  - name: payment-service-upstream
+    targets:
+      - target: payment-service:8004
+        weight: 100
+
 services:
   # ========================
   # User Service (Port 8001)
@@ -202,4 +207,35 @@ services:
         preserve_host: false
         paths:
           - /swagger/booking-service
+        protocols: [http, https]
+
+  # ========================
+  # Payment Service (Port 8004)
+  # ========================
+  - name: payment-service
+    url: http://payment-service-upstream
+    routes:
+      - name: payment-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/payments
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: payment-notifications-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /notifications
+        protocols: [http, https]
+
+  - name: payment-service-docs-service
+    url: http://payment-service-upstream
+    routes:
+      - name: payment-swagger-ui
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /swagger/payment-service
         protocols: [http, https]
