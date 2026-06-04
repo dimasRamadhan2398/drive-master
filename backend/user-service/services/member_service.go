@@ -20,14 +20,14 @@ type IMemberService interface {
 type MemberService struct {
 	repo            repositories.IMemberRepository
 	roleRepo        repositories.IRoleRepository
-	entitlementRepo repositories.IEntitlementRepository
+	entitlementSvc  IEntitlementService
 }
 
-func NewMemberService(repo repositories.IMemberRepository, roleRepo repositories.IRoleRepository, entitlementRepo repositories.IEntitlementRepository) IMemberService {
+func NewMemberService(repo repositories.IMemberRepository, roleRepo repositories.IRoleRepository, entitlementSvc IEntitlementService) IMemberService {
 	return &MemberService{
 		repo:            repo,
 		roleRepo:        roleRepo,
-		entitlementRepo: entitlementRepo,
+		entitlementSvc:  entitlementSvc,
 	}
 }
 
@@ -96,11 +96,11 @@ func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limi
 		}
 	}
 
-	// Get total available sessions from active entitlements for all members
-	availableSessions, err := s.entitlementRepo.FindActiveByMemberIDs(ctx, memberIDs)
+	// Get active entitlements for all members
+	entitlements, err := s.entitlementSvc.FindSessionsStatsByMemberIDs(ctx, memberIDs)
 	if err != nil {
 		// Log but don't fail - just set available sessions to 0
-		availableSessions = make(map[uuid.UUID]int)
+		entitlements = make(map[uuid.UUID][]models.Entitlement)
 	}
 
 	// Convert to response DTOs
@@ -108,12 +108,21 @@ func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limi
 	for i, user := range users {
 		var memberProfile *dto.MemberProfileResponse
 		if user.MemberProfile != nil {
+			// Calculate total remaining sessions from active entitlements
+			totalRemaining := 0
+			if ents, ok := entitlements[user.ID]; ok {
+				for _, ent := range ents {
+					totalRemaining += ent.Remaining
+				}
+			}
+
 			memberProfile = &dto.MemberProfileResponse{
 				UserID:                 user.MemberProfile.UserID,
 				SessionsCompleted:      user.MemberProfile.SessionsCompleted,
 				TrainingTime:           user.MemberProfile.TrainingTime,
 				AverageRating:          user.MemberProfile.AverageRating,
-				TotalAvailableSessions: availableSessions[user.ID], // Dynamically calculated from active entitlements
+				TotalAvailableSessions: totalRemaining,
+				Entitlements:           entitlements[user.ID],
 			}
 		}
 

@@ -17,7 +17,7 @@ type IEntitlementRepository interface {
 	FindByMemberID(ctx context.Context, memberID uuid.UUID, page, limit int) ([]models.Entitlement, int64, error)
 	FindByMemberAndID(ctx context.Context, memberID, entitlementID uuid.UUID) (*models.Entitlement, error)
 	FindByBookingID(ctx context.Context, bookingID uuid.UUID) (*models.Entitlement, error)
-	FindActiveByMemberIDs(ctx context.Context, memberIDs []uuid.UUID) (map[uuid.UUID]int, error) // Returns total remaining sessions per memberID
+	FindActiveByMemberIDs(ctx context.Context, memberIDs []uuid.UUID) (map[uuid.UUID][]models.Entitlement, error)
 	CountByMemberID(ctx context.Context, memberID uuid.UUID) (int64, error)
 	DecrementRemaining(ctx context.Context, id uuid.UUID) error
 }
@@ -113,37 +113,33 @@ func (r *EntitlementRepository) DecrementRemaining(ctx context.Context, id uuid.
 	return r.BaseRepository.Exec("UPDATE entitlements SET remaining = remaining - 1, used_sessions = used_sessions + 1 WHERE id = ? AND remaining > 0", id)
 }
 
-// FindActiveByMemberIDs calculates total remaining sessions from active entitlements for multiple members
-// Returns a map of memberID -> total remaining sessions
-func (r *EntitlementRepository) FindActiveByMemberIDs(ctx context.Context, memberIDs []uuid.UUID) (map[uuid.UUID]int, error) {
-	result := make(map[uuid.UUID]int)
+
+// FindActiveByMemberIDs returns active entitlements for multiple members
+func (r *EntitlementRepository) FindActiveByMemberIDs(ctx context.Context, memberIDs []uuid.UUID) (map[uuid.UUID][]models.Entitlement, error) {
+	result := make(map[uuid.UUID][]models.Entitlement)
 
 	if len(memberIDs) == 0 {
 		return result, nil
 	}
 
-	// Build the query with IN clause
-	// Use raw query to properly handle IN clause with UUIDs
-	query := `
-		SELECT member_id, SUM(remaining) as total_remaining
-		FROM entitlements
-		WHERE member_id = ANY($1) AND status = 'active'
-		GROUP BY member_id
-	`
+	// Initialize empty slices for all member IDs
+	for _, id := range memberIDs {
+		result[id] = []models.Entitlement{}
+	}
 
-	rows, err := r.DB.Raw(query, memberIDs).Rows()
-	if err != nil {
+	var entitlements []models.Entitlement
+	if err := r.BaseRepository.FindWithOptions(&models.Entitlement{}, &entitlements, &base.QueryOptions{
+		Where: map[string]interface{}{
+			"member_id IN": memberIDs,
+			"status":       models.EntitlementStatusActive,
+		},
+	}); err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var memberID uuid.UUID
-		var totalRemaining int
-		if err := rows.Scan(&memberID, &totalRemaining); err != nil {
-			return nil, err
-		}
-		result[memberID] = totalRemaining
+	// Group entitlements by member ID
+	for _, ent := range entitlements {
+		result[ent.MemberID] = append(result[ent.MemberID], ent)
 	}
 
 	return result, nil

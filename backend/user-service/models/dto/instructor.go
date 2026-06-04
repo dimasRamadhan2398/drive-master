@@ -92,6 +92,15 @@ type VerifyCertificationInput struct {
 	Notes string `json:"notes" binding:"omitempty,max=500"`
 }
 
+// IssueCertificationInput is used when issuing certification upon entitlement completion
+type IssueCertificationInput struct {
+	MemberID      uuid.UUID `json:"memberId"`
+	EntitlementID uuid.UUID `json:"entitlementId"`
+	PackageID     uuid.UUID `json:"packageId"`
+	PackageName   string    `json:"packageName"`
+	IssuedAt      time.Time `json:"issuedAt"`
+}
+
 // CertificationResponse represents a certification in API responses
 type CertificationResponse struct {
 	ID            uuid.UUID `json:"id"`

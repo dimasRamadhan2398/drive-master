@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -148,6 +149,7 @@ const (
 // Certification represents an instructor's certification (e.g., BNSP certificate)
 type Certification struct {
 	ID              uuid.UUID            `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	MemberID    	uuid.UUID            `json:"memberId" gorm:"type:uuid;not null;index"`
 	InstructorID    uuid.UUID            `json:"instructorId" gorm:"type:uuid;not null;index"`
 	CertType        string               `json:"certType" gorm:"size:50;not null"`        // e.g., "BNSP", "SIM", "AWS"
 	CertNumber      string               `json:"certNumber" gorm:"size:100;not null"`     // Certificate number
@@ -191,4 +193,19 @@ type Entitlement struct {
 	Status          EntitlementStatus   `json:"status" gorm:"type:varchar(20);default:'active'"`
 	CreatedAt       time.Time           `json:"createdAt"`
 	UpdatedAt       time.Time           `json:"updatedAt"`
+}
+
+func (e *Entitlement) IsComplete() bool {
+    return e.Remaining == 0 && e.UsedSessions == e.TotalSessions
+}
+
+// always call this before saving to catch inconsistencies
+func (e *Entitlement) ValidateSessionCount() error {
+    if e.Remaining + e.UsedSessions != e.TotalSessions {
+        return fmt.Errorf(
+            "session count mismatch: remaining(%d) + used(%d) != total(%d)",
+            e.Remaining, e.UsedSessions, e.TotalSessions,
+        )
+    }
+    return nil
 }

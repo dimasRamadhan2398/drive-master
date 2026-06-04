@@ -3,11 +3,13 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"user-service/models"
 	"user-service/models/dto"
 	"user-service/repositories"
+	"user-service/services/listeners"
 
 	"github.com/google/uuid"
 )
@@ -21,17 +23,30 @@ type IEntitlementService interface {
 	UseSession(ctx context.Context, memberID, entitlementID uuid.UUID, input dto.UseSessionInput) (*dto.EntitlementResponse, error)
 	SyncEntitlementFromBooking(ctx context.Context, memberID, bookingID uuid.UUID, packageID uuid.UUID, packageName string, totalSessions int) (*dto.EntitlementResponse, error)
 	CalculateTotalAvailableSessions(ctx context.Context, memberID uuid.UUID) (int, error)
+	FindSessionsStatsByMemberIDs(ctx context.Context, memberIDs []uuid.UUID) (map[uuid.UUID][]models.Entitlement, error)
 }
 
 type EntitlementService struct {
 	entitlementRepo repositories.IEntitlementRepository
 	memberRepo      repositories.IMemberRepository
+	certService     ICertificationService
+	eventPublisher  listeners.EventPublisherInterface
+	listener        listeners.IEntitlementCompletedListener
 }
 
-func NewEntitlementService(entitlementRepo repositories.IEntitlementRepository, memberRepo repositories.IMemberRepository) IEntitlementService {
+func NewEntitlementService(
+	entitlementRepo repositories.IEntitlementRepository,
+	memberRepo repositories.IMemberRepository,
+	certService ICertificationService,
+	eventPublisher listeners.EventPublisherInterface,
+	listener listeners.IEntitlementCompletedListener,
+) IEntitlementService {
 	return &EntitlementService{
 		entitlementRepo: entitlementRepo,
 		memberRepo:      memberRepo,
+		certService:     certService,
+		eventPublisher:  eventPublisher,
+		listener:        listener,
 	}
 }
 
@@ -189,11 +204,28 @@ func (s *EntitlementService) UseSession(ctx context.Context, memberID, entitleme
 		return nil, err
 	}
 
+	if err := entitlement.ValidateSessionCount(); err != nil {
+        // log critical error — data is inconsistent
+        log.Printf("[CRITICAL] entitlement %s failed integrity check: %v",
+            entitlementID, err)
+        return nil, err
+    }
+
 	// Update status if no remaining sessions
 	if entitlement.Remaining == 0 {
 		entitlement.Status = models.EntitlementStatusUsed
 		entitlement.UpdatedAt = time.Now()
-		s.entitlementRepo.Update(ctx, entitlement)
+		if err := s.entitlementRepo.Update(ctx, entitlement); err != nil {
+			return nil, err
+		}
+
+		// Trigger completion listener: issue certification and publish event
+		if s.listener != nil {
+			if err := s.listener.OnEntitlementCompleted(ctx, entitlement); err != nil {
+				// Log but don't fail the request - certification can be issued later
+				log.Printf("[WARN] failed to trigger entitlement completion listener: %v", err)
+			}
+		}
 	}
 
 	// Update member profile total available sessions
@@ -238,6 +270,11 @@ func (s *EntitlementService) CalculateTotalAvailableSessions(ctx context.Context
 	}
 
 	return total, nil
+}
+
+// FindSessionsStatsByMemberIDs returns active entitlements for multiple members
+func (s *EntitlementService) FindSessionsStatsByMemberIDs(ctx context.Context, memberIDs []uuid.UUID) (map[uuid.UUID][]models.Entitlement, error) {
+	return s.entitlementRepo.FindActiveByMemberIDs(ctx, memberIDs)
 }
 
 // updateMemberProfileTotalSessions updates the member profile with the calculated total available sessions
