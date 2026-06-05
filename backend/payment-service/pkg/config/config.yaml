@@ -4,11 +4,11 @@ server:
   read_timeout: 60
 
 database:
-  host: localhost
-  port: 5432
-  username: admin_drive
-  password: drivemaster123
-  name: drivemaster_payment_service
+  host: ${POSTGRES_HOST:-localhost}
+  port: ${POSTGRES_PORT:-5432}
+  username: ${POSTGRES_USER:-admin_drive}
+  password: ${POSTGRES_PASSWORD:-drivemaster123}
+  name: ${POSTGRES_DB:-drivemaster_payment_service}
   sslmode: disable
   max_open_connections: 10
   max_life_time_connection: 10
@@ -16,9 +16,9 @@ database:
   max_idle_time: 10
 
 redis:
-  host: localhost
-  port: 6379
-  password: ""
+  host: ${REDIS_HOST:-localhost}
+  port: ${REDIS_PORT:-6379}
+  password: ${REDIS_PASSWORD:-}
   db: 0
 
 jwt:
@@ -45,12 +45,12 @@ app:
   rate_limiter_time: 1
 
 midtrans:
-  server_key: "${MIDTRANS_SERVER_KEY}"
-  client_key: "${MIDTRANS_CLIENT_KEY}"
-  environment: sandbox
+  server_key: ${MIDTRANS_SERVER_KEY}
+  client_key: ${MIDTRANS_CLIENT_KEY}
+  environment: ${MIDTRANS_ENVIRONMENT:-sandbox}
   merchant_id: "M243240030"
-  base_url: https://api.sandbox.midtrans.com
-  snap_url: https://app.sandbox.midtrans.com/snap/snap.js
+  base_url: https://api.midtrans.com
+  snap_url: https://app.midtrans.com/snap/snap.js
   enabled: true
-  notification_url: http://localhost:8004/notifications
+  notification_url: ${MIDTRANS_NOTIFICATION_URL:-http://localhost:8080/notifications}
   timeout_seconds: 30

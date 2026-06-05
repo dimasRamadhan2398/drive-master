@@ -7,21 +7,22 @@ import (
 )
 
 type InstructorProfileRequest struct {
+	Specialization       *string  `json:"specialization"       binding:"omitempty,max=255"`
 	Description       *string  `json:"description"       binding:"omitempty"`
 	LicenseNumber     *string  `json:"licenseNumber"     binding:"omitempty,min=5"`
 	LicenseExpiry     time.Time  `json:"licenseExpiry"     binding:"omitempty"`
 	BNSPCertificateNumber *string `json:"bnspCertificateNumber" binding:"omitempty,min=10"`
 	YearsOfExperience *int     `json:"yearsOfExperience" binding:"omitempty,min=0"`
-
 }
 
 type InstructorProfileResponse struct {
-	UserID            uuid.UUID                    `json:"userId"`
-	BNSPCertificateNumber string                   `json:"bnspCertificateNumber"`
+	UserID            uuid.UUID                `json:"userId"`
+	BNSPCertificateNumber string               `json:"bnspCertificateNumber"`
 	NumberOfStudents  int                      `json:"numberOfStudents"`
 	SessionsCompleted int                      `json:"sessionsCompleted"`
 	AverageRating     float64                  `json:"averageRating"`
 	Description       string                   `json:"description"`
+	Specialization    string                   `json:"specialization"`
 	LicenseNumber     string                   `json:"licenseNumber"`
 	YearsOfExperience int                      `json:"yearsOfExperience"`
 	LicenseExpiry     time.Time                `json:"licenseExpiry"`
@@ -39,13 +40,7 @@ type UpdateInstructorProfileInput struct {
 	YearsOfExperience *int     `json:"yearsOfExperience" binding:"omitempty,min=0"`
 }
 
-type InstructorListResponse struct {
-	Data       []UserWithProfileResponse `json:"data"`
-	Total      int64                     `json:"total"`
-	Page       int                       `json:"page"`
-	Limit      int                       `json:"limit"`
-	TotalPages int                       `json:"totalPages"`
-}
+type InstructorListResponse = PagedData[UserWithProfileResponse]
 
 // CoverageAreaResponse represents a coverage area in responses
 type CoverageAreaResponse struct {
@@ -98,6 +93,15 @@ type VerifyCertificationInput struct {
 	Notes string `json:"notes" binding:"omitempty,max=500"`
 }
 
+// IssueCertificationInput is used when issuing certification upon entitlement completion
+type IssueCertificationInput struct {
+	MemberID      uuid.UUID `json:"memberId"`
+	EntitlementID uuid.UUID `json:"entitlementId"`
+	PackageID     uuid.UUID `json:"packageId"`
+	PackageName   string    `json:"packageName"`
+	IssuedAt      time.Time `json:"issuedAt"`
+}
+
 // CertificationResponse represents a certification in API responses
 type CertificationResponse struct {
 	ID            uuid.UUID `json:"id"`
@@ -116,13 +120,7 @@ type CertificationResponse struct {
 }
 
 // CertificationListResponse represents a paginated list of certifications
-type CertificationListResponse struct {
-	Data       []CertificationResponse `json:"data"`
-	Total      int64                   `json:"total"`
-	Page       int                     `json:"page"`
-	Limit      int                     `json:"limit"`
-	TotalPages int                     `json:"totalPages"`
-}
+type CertificationListResponse = PagedData[CertificationResponse]
 
 // ============================================================
 // Entitlement DTOs
@@ -167,11 +165,33 @@ type EntitlementResponse struct {
 	UpdatedAt     string    `json:"updatedAt"`
 }
 
-// EntitlementListResponse represents a paginated list of entitlements
-type EntitlementListResponse struct {
-	Data       []EntitlementResponse `json:"data"`
-	Total      int64                 `json:"total"`
-	Page       int                   `json:"page"`
-	Limit      int                   `json:"limit"`
-	TotalPages int                   `json:"totalPages"`
+// CreateInstructorWithUserRequest is used for POST /instructors/register
+// Creates both a user and an instructor profile in a single transaction
+type CreateInstructorWithUserRequest struct {
+	// User fields
+	FirstName    string `json:"firstName" binding:"required,min=2"`
+	LastName     string `json:"lastName" binding:"required,min=2"`
+	Username     string `json:"username" binding:"required,min=2"`
+	Password     string `json:"password" binding:"required,min=8"`
+	Email        string `json:"email" binding:"required,email"`
+	PhoneNumber  string `json:"phoneNumber" binding:"required,min=10"`
+	DateOfBirth  string `json:"dateOfBirth"` // Format: YYYY-MM-DD
+	Address      string `json:"address"`
+
+	// Instructor profile fields
+	LicenseNumber          *string `json:"licenseNumber" binding:"omitempty,min=5"`
+	LicenseExpiry          *string `json:"licenseExpiry"` // Format: DD/MM/YYYY
+	BNSPCertificateNumber *string `json:"bnspCertificateNumber" binding:"omitempty,min=10"`
+	YearsOfExperience      *int    `json:"yearsOfExperience" binding:"omitempty,min=0"`
+	Specialization         *string `json:"specialization" binding:"omitempty,max=255"`
+	Description            *string `json:"description"`
 }
+
+// CreateInstructorWithUserResponse returns the created user and instructor profile
+type CreateInstructorWithUserResponse struct {
+	User    CreateUserResponse          `json:"user"`
+	Profile *InstructorProfileResponse `json:"instructorProfile"`
+}
+
+// EntitlementListResponse represents a paginated list of entitlements
+type EntitlementListResponse = PagedData[EntitlementResponse]

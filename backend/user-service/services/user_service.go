@@ -24,12 +24,15 @@ type IUserService interface {
 
 type UserService struct {
 	*base.BaseService
-	roleRepo repositories.IRoleRepository
-	repo     repositories.IUserRepository
+	roleRepo      repositories.IRoleRepository
+	repo          repositories.IUserRepository
+	instructorSvc IInstructorService
 }
 
-func NewUserService(repo repositories.IUserRepository, roleRepo repositories.IRoleRepository) IUserService {
-	return &UserService{repo: repo, roleRepo: roleRepo, BaseService: base.NewBaseService()}
+// GetMembersWithPagination implements [IUserService].
+
+func NewUserService(repo repositories.IUserRepository, roleRepo repositories.IRoleRepository, instructorSvc IInstructorService) IUserService {
+	return &UserService{repo: repo, roleRepo: roleRepo, instructorSvc: instructorSvc, BaseService: base.NewBaseService()}
 }
 
 func (s *UserService) CreateUser(ctx context.Context, input dto.CreateUserRequest) (*models.User, error) {
@@ -122,10 +125,6 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 
 	// Calculate pagination
 	offset := (page - 1) * limit
-	totalPages := int(total) / limit
-	if int(total)%limit > 0 {
-		totalPages++
-	}
 
 	// Get paginated users
 	users, err := s.repo.FindByRoleIDWithPagination(ctx, roleModel.ID, offset, limit)
@@ -133,11 +132,22 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 		return nil, err
 	}
 
+	instructors := make([]dto.InstructorProfileResponse, len(users))
+	for i, user := range users {
+		profile, err := s.instructorSvc.GetInstructorProfile(ctx, user.ID)
+		if err != nil {
+			return nil, err
+		}
+		instructors[i] = *profile
+	}
+
 	// Convert to response DTOs
 	data := make([]dto.UserWithProfileResponse, len(users))
 	for i, user := range users {
 		data[i] = dto.UserWithProfileResponse{
 			GetUserResponse: dto.GetUserResponse{
+				FirstName:   user.FirstName,
+				LastName:    user.LastName,
 				UserID:      user.ID,
 				Email:       user.EmailAddress,
 				Username:    user.Username,
@@ -147,15 +157,13 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 				Address:     user.Address,
 				RoleID:      user.RoleID,
 			},
+			InstructorProfile: &instructors[i],
 		}
 	}
 
 	return &dto.InstructorListResponse{
 		Data:       data,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Pagination: dto.NewPaginationMeta(total, page, limit),
 	}, nil
 }
 

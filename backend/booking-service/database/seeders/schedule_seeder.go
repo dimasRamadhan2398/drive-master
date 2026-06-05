@@ -6,10 +6,11 @@ import (
 
 	"booking-service/models"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// ScheduleSeeder seeds sample schedules for testing
+// ScheduleSeeder seeds sample schedules for instructors
 type ScheduleSeeder struct{}
 
 // Name returns the seeder name
@@ -29,36 +30,89 @@ func (s *ScheduleSeeder) Run(db *gorm.DB) error {
 		return nil
 	}
 
-	// Generate schedules for the next 7 days
-	today := time.Now()
+	// Get active instructors from user-service
+	var instructorIDs []uuid.UUID
+	if err := db.Raw(`
+		SELECT ip.user_id
+		FROM instructor_profiles ip
+		JOIN users u ON u.id = ip.user_id
+		WHERE ip.is_active = true
+		LIMIT 10
+	`).Scan(&instructorIDs).Error; err != nil {
+		log.Printf("Warning: Could not fetch instructors, using defaults: %v", err)
+		// Fallback: use default instructor UUIDs
+		instructorIDs = []uuid.UUID{
+			uuid.MustParse("22222222-2222-2222-2222-222222222201"),
+			uuid.MustParse("22222222-2222-2222-2222-222222222202"),
+			uuid.MustParse("22222222-2222-2222-2222-222222222203"),
+		}
+	}
+
+	if len(instructorIDs) == 0 {
+		log.Println("No instructors found, skipping schedule seeder...")
+		return nil
+	}
+
+	// Get available cars from core-service
+	var carIDs []uint
+	if err := db.Raw(`
+		SELECT id::integer as id
+		FROM cars
+		WHERE status = 'available'
+		LIMIT 5
+	`).Scan(&carIDs).Error; err != nil {
+		log.Printf("Warning: Could not fetch cars, using defaults: %v", err)
+		carIDs = []uint{1, 2, 3}
+	}
+
+	if len(carIDs) == 0 {
+		log.Println("No cars found, skipping schedule seeder...")
+		return nil
+	}
+
+	// Generate schedules for the next 14 days
+	today := time.Now().Truncate(24 * time.Hour)
 	schedules := []models.Schedule{}
 
-	// Time slots
-	timeSlots := []string{"08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"}
+	// Time slots (Morning and Afternoon sessions)
+	timeSlots := []struct {
+		Time     string
+		Duration int
+	}{
+		{"08:00", 90},
+		{"10:00", 90},
+		{"13:00", 90},
+		{"15:00", 90},
+		{"18:00", 90}, // Night session
+	}
 
-	// Generate for multiple instructors and cars
-	instructors := []uint{1, 2, 3}
-	cars := []uint{1, 2, 3}
-
-	for dayOffset := 0; dayOffset < 7; dayOffset++ {
+	// Generate for each instructor
+	for dayOffset := 0; dayOffset < 14; dayOffset++ {
 		date := today.AddDate(0, 0, dayOffset)
-		for _, instructorID := range instructors {
-			for _, carID := range cars {
-				for _, timeSlot := range timeSlots {
-					// Randomly make some slots available and some booked
+		dayOfWeek := date.Weekday()
+
+		for _, instructorID := range instructorIDs {
+			for _, carID := range carIDs {
+				for _, slot := range timeSlots {
+					// Skip night sessions on weekends (or keep them based on business rules)
+					// Here we allow night sessions but could restrict based on instructor preferences
+
 					schedule := models.Schedule{
 						Date:         date,
-						Time:         timeSlot,
-						Duration:     60,
+						Time:         slot.Time,
+						Duration:     slot.Duration,
 						InstructorID: instructorID,
 						CarID:        carID,
 						UserID:       nil,
+						EnrollmentID: nil,
 						Status:       models.ScheduleStatusAvailable,
-						Notes:        "",
+						Notes:        generateScheduleNotes(slot.Time, dayOfWeek),
 					}
 
-					// Make some slots booked (every 4th slot)
-					if (dayOffset+int(instructorID)+int(carID))%4 == 0 {
+					// Make some slots booked (simulate bookings)
+					// Every 5th slot per instructor per day is booked
+					slotIndex := dayOffset%5 + 1
+					if slotIndex%3 == 0 {
 						userID := uint(1)
 						schedule.UserID = &userID
 						schedule.Status = models.ScheduleStatusBooked
@@ -70,12 +124,33 @@ func (s *ScheduleSeeder) Run(db *gorm.DB) error {
 		}
 	}
 
-	for _, schedule := range schedules {
-		if err := db.Create(&schedule).Error; err != nil {
+	// Batch insert schedules
+	for i := 0; i < len(schedules); i += 100 {
+		end := i + 100
+		if end > len(schedules) {
+			end = len(schedules)
+		}
+		batch := schedules[i:end]
+		if err := db.CreateInBatches(&batch, 100).Error; err != nil {
+			log.Printf("Error seeding batch %d-%d: %v", i, end, err)
 			return err
 		}
 	}
 
-	log.Printf("Seeded %d schedules", len(schedules))
+	log.Printf("Seeded %d schedules for %d instructors and %d cars over 14 days",
+		len(schedules), len(instructorIDs), len(carIDs))
 	return nil
+}
+
+// generateScheduleNotes generates helpful notes based on time slot
+func generateScheduleNotes(timeStr string, dayOfWeek time.Weekday) string {
+	switch timeStr {
+	case "18:00":
+		return "Night session - runs 18:00-19:30"
+	default:
+		if dayOfWeek == time.Saturday || dayOfWeek == time.Sunday {
+			return "Weekend session"
+		}
+		return "Regular session"
+	}
 }

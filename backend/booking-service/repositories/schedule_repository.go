@@ -7,6 +7,7 @@ import (
 	"booking-service/models"
 	"booking-service/models/dto"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -93,7 +94,7 @@ func (r *ScheduleRepository) ListFiltered(ctx context.Context, params dto.Schedu
 		}
 	}
 
-	if params.InstructorID != 0 {
+	if params.InstructorID != "" {
 		query = query.Where("instructor_id = ?", params.InstructorID)
 	}
 
@@ -120,7 +121,7 @@ func (r *ScheduleRepository) ListFiltered(ctx context.Context, params dto.Schedu
 	return schedules, total, nil
 }
 
-func (r *ScheduleRepository) GetByDateAndInstructor(ctx context.Context, date time.Time, instructorID uint) ([]models.Schedule, error) {
+func (r *ScheduleRepository) GetByDateAndInstructor(ctx context.Context, date time.Time, instructorID uuid.UUID) ([]models.Schedule, error) {
 	var schedules []models.Schedule
 	if err := r.db.WithContext(ctx).
 		Where("date = ? AND instructor_id = ?", date, instructorID).
@@ -131,7 +132,7 @@ func (r *ScheduleRepository) GetByDateAndInstructor(ctx context.Context, date ti
 	return schedules, nil
 }
 
-func (r *ScheduleRepository) GetByDateAndTime(ctx context.Context, date time.Time, time string, instructorID, carID uint) (*models.Schedule, error) {
+func (r *ScheduleRepository) GetByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uint) (*models.Schedule, error) {
 	var schedule models.Schedule
 	if err := r.db.WithContext(ctx).
 		Where("date = ? AND time = ? AND instructor_id = ? AND car_id = ?", date, time, instructorID, carID).

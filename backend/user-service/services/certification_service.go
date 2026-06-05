@@ -8,6 +8,7 @@ import (
 	"user-service/models"
 	"user-service/models/dto"
 	"user-service/repositories"
+	"user-service/services/listeners"
 
 	"github.com/google/uuid"
 )
@@ -19,15 +20,17 @@ type ICertificationService interface {
 	GetCertification(ctx context.Context, instructorID, certID uuid.UUID) (*dto.CertificationResponse, error)
 	ListCertifications(ctx context.Context, instructorID uuid.UUID, page, limit int) (*dto.CertificationListResponse, error)
 	VerifyCertification(ctx context.Context, instructorID, certID, verifiedBy uuid.UUID, input dto.VerifyCertificationInput) (*dto.CertificationResponse, error)
+	IssueCertification(ctx context.Context, input dto.IssueCertificationInput) (*dto.CertificationResponse, error)
 }
 
 type CertificationService struct {
-	certificationRepo repositories.ICertificationRepository
+	repo repositories.ICertificationRepository
+	listener listeners.IEntitlementCompletedListener
 }
 
-func NewCertificationService(certificationRepo repositories.ICertificationRepository) ICertificationService {
+func NewCertificationService(repo repositories.ICertificationRepository) ICertificationService {
 	return &CertificationService{
-		certificationRepo: certificationRepo,
+		repo: repo,
 	}
 }
 
@@ -58,7 +61,7 @@ func (s *CertificationService) CreateCertification(ctx context.Context, instruct
 		}
 	}
 
-	if err := s.certificationRepo.Create(ctx, cert); err != nil {
+	if err := s.repo.Create(ctx, cert); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +69,7 @@ func (s *CertificationService) CreateCertification(ctx context.Context, instruct
 }
 
 func (s *CertificationService) UpdateCertification(ctx context.Context, instructorID, certID uuid.UUID, input dto.UpdateCertificationInput) (*dto.CertificationResponse, error) {
-	cert, err := s.certificationRepo.FindByInstructorAndID(ctx, instructorID, certID)
+	cert, err := s.repo.FindByInstructorAndID(ctx, instructorID, certID)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +98,7 @@ func (s *CertificationService) UpdateCertification(ctx context.Context, instruct
 
 	cert.UpdatedAt = time.Now()
 
-	if err := s.certificationRepo.Update(ctx, cert); err != nil {
+	if err := s.repo.Update(ctx, cert); err != nil {
 		return nil, err
 	}
 
@@ -103,15 +106,15 @@ func (s *CertificationService) UpdateCertification(ctx context.Context, instruct
 }
 
 func (s *CertificationService) DeleteCertification(ctx context.Context, instructorID, certID uuid.UUID) error {
-	_, err := s.certificationRepo.FindByInstructorAndID(ctx, instructorID, certID)
+	_, err := s.repo.FindByInstructorAndID(ctx, instructorID, certID)
 	if err != nil {
 		return err
 	}
-	return s.certificationRepo.Delete(ctx, certID)
+	return s.repo.Delete(ctx, certID)
 }
 
 func (s *CertificationService) GetCertification(ctx context.Context, instructorID, certID uuid.UUID) (*dto.CertificationResponse, error) {
-	cert, err := s.certificationRepo.FindByInstructorAndID(ctx, instructorID, certID)
+	cert, err := s.repo.FindByInstructorAndID(ctx, instructorID, certID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +129,7 @@ func (s *CertificationService) ListCertifications(ctx context.Context, instructo
 		limit = 10
 	}
 
-	certs, total, err := s.certificationRepo.FindByInstructorID(ctx, instructorID, page, limit)
+	certs, total, err := s.repo.FindByInstructorID(ctx, instructorID, page, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -136,22 +139,14 @@ func (s *CertificationService) ListCertifications(ctx context.Context, instructo
 		responses[i] = *toCertificationResponse(&cert)
 	}
 
-	totalPages := int(total) / limit
-	if int(total)%limit > 0 {
-		totalPages++
-	}
-
 	return &dto.CertificationListResponse{
 		Data:       responses,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Pagination: dto.NewPaginationMeta(total, page, limit),
 	}, nil
 }
 
 func (s *CertificationService) VerifyCertification(ctx context.Context, instructorID, certID, verifiedBy uuid.UUID, input dto.VerifyCertificationInput) (*dto.CertificationResponse, error) {
-	cert, err := s.certificationRepo.FindByInstructorAndID(ctx, instructorID, certID)
+	cert, err := s.repo.FindByInstructorAndID(ctx, instructorID, certID)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +161,34 @@ func (s *CertificationService) VerifyCertification(ctx context.Context, instruct
 		cert.Notes = input.Notes
 	}
 
-	if err := s.certificationRepo.Update(ctx, cert); err != nil {
+	if err := s.repo.Update(ctx, cert); err != nil {
+		return nil, err
+	}
+
+	return toCertificationResponse(cert), nil
+}
+
+// IssueCertification creates a certification for a member when their entitlement is completed
+// This is called automatically by the entitlement service when all sessions are used
+func (s *CertificationService) IssueCertification(ctx context.Context, input dto.IssueCertificationInput) (*dto.CertificationResponse, error) {
+	// Generate a certificate number based on package and member
+	certNumber := fmt.Sprintf("CERT-%s-%s", input.PackageID.String()[:8], input.MemberID.String()[:8])
+
+	cert := &models.Certification{
+		ID:           uuid.New(),
+		InstructorID: input.MemberID, // Use member ID as instructor for member-issued certs
+		CertType:     "package_completion",
+		CertNumber:   certNumber,
+		IssuedBy:     "System - " + input.PackageName,
+		IssuedDate:   input.IssuedAt,
+		Status:       models.CertificationStatusVerified, // Auto-verify for completed packages
+		Notes:        fmt.Sprintf("Issued upon completion of package: %s (Entitlement: %s)", input.PackageName, input.EntitlementID.String()),
+		VerifiedAt:   &input.IssuedAt, // Auto-verified by system
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	if err := s.repo.Create(ctx, cert); err != nil {
 		return nil, err
 	}
 

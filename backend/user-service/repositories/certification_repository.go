@@ -15,6 +15,7 @@ type ICertificationRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	FindByID(ctx context.Context, id uuid.UUID) (*models.Certification, error)
 	FindByInstructorID(ctx context.Context, instructorID uuid.UUID, page, limit int) ([]models.Certification, int64, error)
+	FindByMemberID(ctx context.Context, memberID uuid.UUID, page, limit int) (*models.Certification, error)
 	FindByInstructorAndID(ctx context.Context, instructorID, certID uuid.UUID) (*models.Certification, error)
 	CountByInstructorID(ctx context.Context, instructorID uuid.UUID) (int64, error)
 }
@@ -47,13 +48,32 @@ func (r *CertificationRepository) FindByID(ctx context.Context, id uuid.UUID) (*
 	return &cert, nil
 }
 
+func (r *CertificationRepository) FindByMemberID(ctx context.Context, memberID uuid.UUID, page int, limit int) (*models.Certification, error) {
+	var cert models.Certification
+	offset := (page - 1) * limit
+
+	if err := r.BaseRepository.FindOne(&models.Certification{}, &cert, &base.QueryOptions{
+		Where: map[string]interface{}{
+			"memberId": memberID,
+		},
+		Order:  "created_at DESC",
+		Limit:  limit,
+		Offset: offset,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &cert, nil
+}
+
+
 func (r *CertificationRepository) FindByInstructorID(ctx context.Context, instructorID uuid.UUID, page, limit int) ([]models.Certification, int64, error) {
 	var certs []models.Certification
 	offset := (page - 1) * limit
 
 	if err := r.BaseRepository.FindWithOptions(&models.Certification{}, &certs, &base.QueryOptions{
 		Where: map[string]interface{}{
-			"instructor_id": instructorID,
+			"instructorId": instructorID,
 		},
 		Order:  "created_at DESC",
 		Limit:  limit,
@@ -74,7 +94,7 @@ func (r *CertificationRepository) FindByInstructorAndID(ctx context.Context, ins
 	var cert models.Certification
 	if err := r.BaseRepository.FindWithOptions(&models.Certification{}, &cert, &base.QueryOptions{
 		Where: map[string]interface{}{
-			"id":             certID,
+			"id":            certID,
 			"instructor_id": instructorID,
 		},
 		Limit: 1,

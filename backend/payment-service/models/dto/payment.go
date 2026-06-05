@@ -103,8 +103,8 @@ type ListPaymentsResponse struct {
 // PaginationDTO is the DTO for pagination
 type PaginationDTO struct {
 	Page       int   `json:"page"`
-	PageSize   int   `json:"pageSize"`
-	TotalItems int64 `json:"totalItems"`
+	Limit      int   `json:"limit"`
+	Total 	   int64 `json:"total"`
 	TotalPages int   `json:"totalPages"`
 }
 

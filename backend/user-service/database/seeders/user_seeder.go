@@ -85,6 +85,8 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				YearsOfExperience:      10,
 				SessionsCompleted:      500,
 				AverageRating:          4.8,
+				Description:           "Mantan Pembalap WRC & WGTC pada 2002-2007",
+				Specialization:        "Urban Driving & Parking Expert",
 			},
 		},
 		{
@@ -110,6 +112,8 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				IsActive:               true,
 				NumberOfStudents:      85,
 				YearsOfExperience:     5,
+				Description:           "Saya adalah pengendara mobil handal",
+				Specialization:        "Advanced Safety & Highway Driving",
 				SessionsCompleted:      300,
 				AverageRating:         4.6,
 			},

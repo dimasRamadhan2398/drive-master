@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"context"
 	"core-service/controllers"
 	"core-service/database"
+	"core-service/handlers"
 	"core-service/pkg/config"
 	"core-service/pkg/kafka"
 	"core-service/pkg/logger"
@@ -13,6 +15,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"core-service/docs"
@@ -48,7 +53,7 @@ func init() {
 	serveCmd.Flags().StringVar(&serveHost, "host", "0.0.0.0", "Host to bind to")
 	serveCmd.Flags().BoolVar(&serveSwagger, "swagger", true, "Enable Swagger documentation")
 	serveCmd.Flags().BoolVar(&serveMigrate, "migrate", true, "Run database migrations on startup")
-	serveCmd.Flags().BoolVar(&serveSeed, "seed", false, "Run database seeders on startup")
+	serveCmd.Flags().BoolVar(&serveSeed, "seed", true, "Run database seeders on startup")
 }
 
 func runServe(cmd *cobra.Command, args []string) {
@@ -144,22 +149,47 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Initialize services
 	serviceRegistry := services.NewServiceRegistry(repoRegistry, eventPublisher)
 
+	// Initialize and start Kafka consumer if enabled
+	var kafkaConsumer *handlers.KafkaConsumer
+	kafkaCtx, kafkaCancel := context.WithCancel(context.Background())
+	if loadedConfig.Kafka.Enabled && len(loadedConfig.Kafka.Topics) > 0 {
+		kafkaConsumer = handlers.NewKafkaConsumer(
+			loadedConfig.Kafka.Brokers,
+			loadedConfig.Kafka.Topics,
+			loadedConfig.Kafka.ConsumerGroup,
+			serviceRegistry.GetEventService(),
+		)
+		go kafkaConsumer.Consume(kafkaCtx)
+		logger.Info("Kafka consumer started",
+			logger.NewLogField("topics", loadedConfig.Kafka.Topics),
+			logger.NewLogField("group", loadedConfig.Kafka.ConsumerGroup))
+	}
+
 	// Initialize controller
 	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
 
-	router := gin.Default()
+	// Use gin.New() instead of gin.Default() to have full control
+	router := gin.New()
 
-	// CORS middleware - MUST be added BEFORE routes
-	router.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
-		c.Next()
-	})
+	// Add logger and recovery middleware
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+
+	// Explicitly disable trailing slash redirect to prevent CORS issues on redirects
+	router.RedirectTrailingSlash = false
+	router.RedirectFixedPath = false
+
+	// // CORS middleware - MUST be added BEFORE routes
+	// router.Use(func(c *gin.Context) {
+	// 	c.Header("Access-Control-Allow-Origin", "*")
+	// 	c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	// 	c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+	// 	if c.Request.Method == "OPTIONS" {
+	// 		c.AbortWithStatus(http.StatusNoContent)
+	// 		return
+	// 	}
+	// 	c.Next()
+	// })
 
 	maxRequests := float64(loadedConfig.App.RateLimiterMax)
 	expirationTTL := time.Duration(loadedConfig.App.RateLimiterTime) * time.Second
@@ -190,9 +220,29 @@ func runServe(cmd *cobra.Command, args []string) {
 	route := routes.NewRouteRegistry(controllerRegistry, group)
 	route.Serve()
 
+	// Setup graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start server in goroutine
 	addr := fmt.Sprintf("%s:%d", serveHost, loadedConfig.Server.Port)
-	log.Printf("Core Service listening on %s", addr)
-	if err := router.Run(addr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	go func() {
+		logger.Info("Server started", logger.NewLogField("address", addr))
+		if err := router.Run(addr); err != nil {
+			logger.Error("Server error", logger.NewLogField("error", err))
+		}
+	}()
+
+	// Wait for shutdown signal
+	<-quit
+	logger.Info("Shutting down server...")
+
+	// Stop Kafka consumer first
+	if kafkaConsumer != nil {
+		kafkaCancel()
+		kafkaConsumer.Stop()
+		logger.Info("Kafka consumer stopped")
 	}
+
+	logger.Info("Server shutdown complete")
 }

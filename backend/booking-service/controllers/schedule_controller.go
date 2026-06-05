@@ -204,9 +204,7 @@ func (c *ScheduleController) ListSchedulesFiltered(ctx *gin.Context) {
 	params.StartDate = ctx.Query("startDate")
 	params.EndDate = ctx.Query("endDate")
 
-	if instructorID, err := strconv.Atoi(ctx.Query("instructorId")); err == nil {
-		params.InstructorID = uint(instructorID)
-	}
+	params.InstructorID = ctx.Query("instructorId")
 	if carID, err := strconv.Atoi(ctx.Query("carId")); err == nil {
 		params.CarID = uint(carID)
 	}

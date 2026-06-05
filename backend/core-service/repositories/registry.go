@@ -35,11 +35,7 @@ type IRepositoryRegistry interface {
 	GetPackage() IPackageRepository
 	GetTestimonial() ITestimonialRepository
 	GetArticle() IArticleRepository
-}
-
-// GetRegion returns the region repository
-func (r *Registry) GetRegion() IRegionRepository {
-	return NewRegionRepository(r.baseRepo)
+	GetSales() ISalesRepository
 }
 
 // GetCache returns the cache repository
@@ -48,6 +44,11 @@ func (r *Registry) GetCache() ICacheRepository {
 		return nil
 	}
 	return NewCacheRepository(r.cacheClient)
+}
+
+// GetRegion returns the region repository
+func (r *Registry) GetRegion() IRegionRepository {
+	return NewRegionRepository(r.baseRepo, r.GetCache())
 }
 
 // GetEvent returns the event repository
@@ -73,4 +74,9 @@ func (r *Registry) GetTestimonial() ITestimonialRepository {
 // GetArticle returns the article repository
 func (r *Registry) GetArticle() IArticleRepository {
 	return NewArticleRepository(r.baseRepo)
+}
+
+// GetSales returns the sales repository
+func (r *Registry) GetSales() ISalesRepository {
+	return NewSalesRepository(r.baseRepo)
 }

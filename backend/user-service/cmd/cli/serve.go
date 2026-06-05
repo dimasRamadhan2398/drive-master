@@ -152,15 +152,23 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Initialize auth middleware with JWT secret
 	authMiddleware := middlewares.NewAuthMiddleware(loadedConfig.JWT.Secret)
 
-	router := gin.Default()
+	// Use gin.New() instead of gin.Default() to disable automatic trailing slash redirect
+	router := gin.New()
 
+	// Add logger and recovery middleware manually
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+
+	// Explicitly disable trailing slash redirect to prevent CORS issues on redirects
+	router.RedirectTrailingSlash = false
+	router.RedirectFixedPath = false
 
 	// Rate limiter configuration
 	maxRequests := float64(loadedConfig.App.RateLimiterMax)
 	expirationTTL := time.Duration(loadedConfig.App.RateLimiterTime) * time.Second
 
-	// CORS and rate limiter middleware - MUST be added BEFORE routes
-	router.Use(middlewares.CORSMiddleware())
+	// CORS middleware - essential for browser requests
+	// router.Use(middlewares.CORSMiddleware())
 	router.Use(middlewares.RateLimiter(maxRequests, expirationTTL))
 
 	// Initialize Swagger docs
@@ -180,7 +188,7 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	// Swagger documentation
 	if serveSwagger {
-		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		router.GET("/swagger/user-service/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/user-service/doc.json")))
 	}
 
 	// Health check endpoint
@@ -213,6 +221,7 @@ func runMigrations(db *gorm.DB) {
 		&models.InstructorProfile{},
 		&models.WorkExperience{},
 		&models.InstructorArea{},
+		&models.Entitlement{},
 	); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}

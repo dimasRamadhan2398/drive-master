@@ -3,10 +3,11 @@ package services
 import (
 	"user-service/clients"
 	"user-service/clients/region"
+	"user-service/pkg/config"
 	pkgKafka "user-service/pkg/kafka"
 	"user-service/pkg/redis"
-	"user-service/pkg/config"
 	"user-service/repositories"
+	"user-service/services/listeners"
 )
 
 type Registry struct {
@@ -49,15 +50,21 @@ func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgK
 }
 
 func (r *Registry) GetUserService() IUserService {
-	return NewUserService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole())
+	return NewUserService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole(), r.GetInstructorService())
 }
 
 func (r *Registry) GetMemberService() IMemberService {
-	return NewMemberService(r.repoRegistry.GetMember())
+	return NewMemberService(r.repoRegistry.GetMember(), r.repoRegistry.GetRole(), r.GetEntitlementService())
 }
 
 func (r *Registry) GetInstructorService() IInstructorService {
-	return NewInstructorService(r.repoRegistry.GetInstructor())
+	return NewInstructorService(
+		r.repoRegistry.GetInstructor(),
+		r.repoRegistry.GetUser(),
+		r.repoRegistry.GetRole(),
+		r.GetEmailService(),
+		r.redisClient,
+	)
 }
 
 func (r *Registry) GetRoleService() IRoleService {
@@ -95,5 +102,14 @@ func (r *Registry) GetCertificationService() ICertificationService {
 }
 
 func (r *Registry) GetEntitlementService() IEntitlementService {
-	return NewEntitlementService(r.repoRegistry.GetEntitlement())
+	certService := r.GetCertificationService()
+	// Initialize the completion listener
+	listener := listeners.NewEntitlementCompletedListener(certService, r.eventPublisher)
+	return NewEntitlementService(
+		r.repoRegistry.GetEntitlement(),
+		r.repoRegistry.GetMember(),
+		certService,
+		r.eventPublisher,
+		listener,
+	)
 }

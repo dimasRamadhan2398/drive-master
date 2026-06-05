@@ -4,6 +4,7 @@ import (
 	"context"
 	"core-service/models"
 	"core-service/pkg/base"
+	"time"
 )
 
 type IRegionRepository interface {
@@ -14,6 +15,7 @@ type IRegionRepository interface {
 
 type RegionRepository struct {
 	*base.BaseRepository
+	cacheRepo ICacheRepository
 }
 
 // GetDistricts implements [IRegionRepository].
@@ -25,6 +27,7 @@ func (r *RegionRepository) GetDistricts(ctx context.Context, province string, re
 	if err := r.BaseRepository.FindMany(ctx, &models.District{}, &districts, options); err != nil {
 		return nil, err
 	}
+	r.cacheRepo.Set(ctx, "districts", districts, time.Hour)
 	return districts, nil
 }
 
@@ -37,6 +40,7 @@ func (r *RegionRepository) GetProvinces(ctx context.Context) ([]models.Province,
 	if err := r.BaseRepository.FindMany(ctx, &models.Province{}, &provinces, options); err != nil {
 		return nil, err
 	}
+	r.cacheRepo.Set(ctx, "provinces", provinces, time.Hour)
 	return provinces, nil
 }
 
@@ -49,9 +53,12 @@ func (r *RegionRepository) GetRegencies(ctx context.Context, province string) ([
 	if err := r.BaseRepository.FindMany(ctx, &models.Regency{}, &regencies, options); err != nil {
 		return nil, err
 	}
+
+	r.cacheRepo.Set(ctx, "regencies", regencies, time.Hour)
+
 	return regencies, nil
 }
 
-func NewRegionRepository(db *base.BaseRepository) IRegionRepository {
-	return &RegionRepository{BaseRepository: db}
+func NewRegionRepository(db *base.BaseRepository, cache ICacheRepository) IRegionRepository {
+	return &RegionRepository{BaseRepository: db, cacheRepo: cache}
 }

@@ -27,6 +27,8 @@ type IInstructorController interface {
 	GetInstructorProfile(ctx *gin.Context)
 	UpdateInstructorProfile(ctx *gin.Context)
 	GetInstructorLists(ctx *gin.Context)
+	CreateInstructorProfile(ctx *gin.Context)
+	RegisterInstructor(ctx *gin.Context)
 	UploadProfilePic(ctx *gin.Context)
 	DeleteProfilePic(ctx *gin.Context)
 	UploadBase64Media(ctx *gin.Context)
@@ -86,7 +88,83 @@ func (c *InstructorController) GetInstructorLists(ctx *gin.Context) {
 		return
 	}
 
-	responseRes.Success(ctx, http.StatusOK, "Instructors retrieved successfully", result)
+	responseRes.Paginated(ctx, http.StatusOK, "Instructors retrieved successfully", result.Data, &result.Pagination)
+}
+
+// @Summary Create Instructor Profile
+// @Description Create an instructor profile for a user with optional data
+// @Tags Instructors
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID (UUID)"
+// @Param request body dto.InstructorProfileRequest false "Instructor profile data (optional)"
+// @Success 201 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /instructors [post]
+func (c *InstructorController) CreateInstructorProfile(ctx *gin.Context) {
+	userID, err := getUserIDFromPath(ctx, "id")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	var req dto.InstructorProfileRequest
+	// BindJSON will succeed even if body is empty (all fields are optional)
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		// If binding fails completely (e.g., invalid JSON), still allow creation with defaults
+		// Only return error if it's a syntax issue
+		if ctx.Request.ContentLength > 0 {
+			responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+			return
+		}
+	}
+
+	var result *dto.InstructorProfileResponse
+
+	// Check if any field was provided in the request
+	hasInput := req.LicenseNumber != nil || req.LicenseExpiry.Unix() > 0 ||
+		req.BNSPCertificateNumber != nil || req.Description != nil ||
+		req.YearsOfExperience != nil
+
+	if hasInput {
+		result, err = c.instructorService.CreateInstructorProfileWithInput(ctx.Request.Context(), userID, req)
+	} else {
+		result, err = c.instructorService.CreateInstructorProfile(ctx.Request.Context(), userID)
+	}
+
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusCreated, "Instructor profile created successfully", result)
+}
+
+// @Summary Register Instructor
+// @Description Register a new instructor with user account and instructor profile in a single transaction
+// @Tags Instructors
+// @Accept json
+// @Produce json
+// @Param request body dto.CreateInstructorWithUserRequest true "Instructor registration data"
+// @Success 201 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 409 {object} response.Response
+// @Router /instructors/register [post]
+func (c *InstructorController) RegisterInstructor(ctx *gin.Context) {
+	var req dto.CreateInstructorWithUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	result, err := c.instructorService.CreateInstructorWithUser(ctx.Request.Context(), req)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusCreated, "Instructor registered successfully", result)
 }
 
 // @Summary Get Instructor Profile
@@ -190,17 +268,24 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 }
 
 // @Summary Upload Media
-// @Description Upload a file
+// @Description Upload a profile picture for an instructor
 // @Tags Media
 // @Accept multipart/form-data
 // @Produce json
+// @Param id path string true "User ID (UUID)"
 // @Param file formData file true "File to upload"
 // @Param fileName formData string false "File name"
 // @Param folder formData string false "Folder path"
 // @Success 200 {object} response.Response
 // @Failure 400 {object} response.Response
-// @Router /media/upload [post]
+// @Router /instructors/{id}/media/upload [post]
 func (c *InstructorController) UploadProfilePic(ctx *gin.Context) {
+	userID, err := getUserIDFromPath(ctx, "id")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
 	file, _, err := ctx.Request.FormFile("file")
 	if err != nil {
 		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
@@ -230,19 +315,53 @@ func (c *InstructorController) UploadProfilePic(ctx *gin.Context) {
 		return
 	}
 
+	// Update instructor profile with the new photo URL
+	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Construct model from DTO response
+	profileModel := &models.InstructorProfile{
+		UserID:                profile.UserID,
+		LicenseNumber:         profile.LicenseNumber,
+		YearsOfExperience:     profile.YearsOfExperience,
+		Bio:                   profile.Bio,
+		LicenseExpiry:         profile.LicenseExpiry,
+		PhotoURL:              resp.URL,
+		IsActive:              profile.IsActive,
+		NumberOfStudents:      profile.NumberOfStudents,
+		SessionsCompleted:     profile.SessionsCompleted,
+		AverageRating:         profile.AverageRating,
+		BNSPCertificateNumber: profile.BNSPCertificateNumber,
+	}
+
+	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel); err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
 	responseRes.Success(ctx, http.StatusOK, "Media uploaded successfully", resp)
 }
 
 // @Summary Upload Base64 Media
-// @Description Upload a file from base64 encoded data
+// @Description Upload a file from base64 encoded data for an instructor
 // @Tags Media
 // @Accept json
 // @Produce json
+// @Param id path string true "User ID (UUID)"
 // @Param request body dto.UploadBase64MediaRequest true "Base64 encoded file data"
 // @Success 200 {object} response.Response
 // @Failure 400 {object} response.Response
-// @Router /media/upload-base64 [post]
+// @Router /instructors/{id}/media/upload-base64 [post]
 func (c *InstructorController) UploadBase64Media(ctx *gin.Context) {
+	userID, err := getUserIDFromPath(ctx, "id")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
 	var input dto.UploadBase64MediaRequest
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
@@ -260,26 +379,83 @@ func (c *InstructorController) UploadBase64Media(ctx *gin.Context) {
 		return
 	}
 
-	responseRes.Success(ctx, http.StatusOK, "Media uploaded successfully", resp)
-}
-
-// @Summary Delete Media
-// @Description Delete a media file by ID
-// @Tags Media
-// @Produce json
-// @Param fileId path string true "File ID"
-// @Success 200 {object} response.Response
-// @Failure 400 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Router /media/{fileId} [delete]
-func (c *InstructorController) DeleteProfilePic(ctx *gin.Context) {
-	fileID := ctx.Param("fileId")
-	if fileID == "" {
-		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+	// Update instructor profile with the new photo URL
+	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
 
-	if err := c.mediaService.DeleteMedia(ctx.Request.Context(), fileID); err != nil {
+	profileModel := &models.InstructorProfile{
+		UserID:                profile.UserID,
+		LicenseNumber:         profile.LicenseNumber,
+		YearsOfExperience:     profile.YearsOfExperience,
+		Bio:                   profile.Bio,
+		LicenseExpiry:         profile.LicenseExpiry,
+		PhotoURL:              resp.URL,
+		IsActive:              profile.IsActive,
+		NumberOfStudents:      profile.NumberOfStudents,
+		SessionsCompleted:     profile.SessionsCompleted,
+		AverageRating:         profile.AverageRating,
+		BNSPCertificateNumber: profile.BNSPCertificateNumber,
+	}
+
+	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel); err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Media uploaded successfully", resp)
+}
+
+
+// @Summary Delete Media
+// @Description Delete a media file and clear instructor photo URL
+// @Tags Media
+// @Produce json
+// @Param id path string true "User ID (UUID)"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /instructors/{id}/media [delete]
+func (c *InstructorController) DeleteProfilePic(ctx *gin.Context) {
+	userID, err := getUserIDFromPath(ctx, "id")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Get the current profile to get the photo URL
+	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Delete from media service if there's a photo
+	if profile.PhotoURL != "" {
+		if err := c.mediaService.DeleteMedia(ctx.Request.Context(), profile.PhotoURL); err != nil {
+			responseRes.ErrorFromGeneric(ctx, err)
+			return
+		}
+	}
+
+	// Clear the photo URL in the instructor profile
+	profileModel := &models.InstructorProfile{
+		UserID:                profile.UserID,
+		LicenseNumber:         profile.LicenseNumber,
+		YearsOfExperience:     profile.YearsOfExperience,
+		Bio:                   profile.Bio,
+		LicenseExpiry:         profile.LicenseExpiry,
+		PhotoURL:              "",
+		IsActive:              profile.IsActive,
+		NumberOfStudents:      profile.NumberOfStudents,
+		SessionsCompleted:     profile.SessionsCompleted,
+		AverageRating:         profile.AverageRating,
+		BNSPCertificateNumber: profile.BNSPCertificateNumber,
+	}
+
+	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
@@ -291,19 +467,31 @@ func (c *InstructorController) DeleteProfilePic(ctx *gin.Context) {
 // @Description Get metadata for a media file
 // @Tags Media
 // @Produce json
-// @Param fileId path string true "File ID"
+// @Param id path string true "User ID (UUID)"
 // @Success 200 {object} response.Response
 // @Failure 400 {object} response.Response
 // @Failure 404 {object} response.Response
-// @Router /media/{fileId}/metadata [get]
+// @Router /instructors/{id}/media/metadata [get]
 func (c *InstructorController) GetMediaMetadata(ctx *gin.Context) {
-	fileID := ctx.Param("fileId")
-	if fileID == "" {
-		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+	userID, err := getUserIDFromPath(ctx, "id")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
 
-	resp, err := c.mediaService.GetMediaMetadata(ctx.Request.Context(), fileID)
+	// Get the current profile to get the photo URL
+	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	if profile.PhotoURL == "" {
+		responseRes.Error(ctx, http.StatusNotFound, "No media found", "Instructor has no profile photo", "")
+		return
+	}
+
+	resp, err := c.mediaService.GetMediaMetadata(ctx.Request.Context(), profile.PhotoURL)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return

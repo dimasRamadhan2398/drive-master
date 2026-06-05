@@ -35,7 +35,7 @@ func (c *AnalyticsController) GetOverview(ctx *gin.Context) {
 	startDate := ctx.DefaultQuery("start_date", "30daysAgo")
 	endDate := ctx.DefaultQuery("end_date", "today")
 
-	data, err := c.analyticsService.GetOverviewReport(startDate, endDate)
+	data, err := c.analyticsService.GetOverviewReport(ctx, startDate, endDate)
 	if err != nil {
 		response.InternalServerError(ctx, "Failed to fetch GA4 overview report: "+err.Error())
 		return
@@ -52,7 +52,7 @@ func (c *AnalyticsController) GetOverview(ctx *gin.Context) {
 // @Success 200 {object} response.Response
 // @Router /admin/analytics/funnel [get]
 func (c *AnalyticsController) GetFunnel(ctx *gin.Context) {
-	data, err := c.analyticsService.GetFunnelReport()
+	data, err := c.analyticsService.GetFunnelReport(ctx)
 	if err != nil {
 		response.InternalServerError(ctx, "Failed to fetch GA4 funnel report: "+err.Error())
 		return

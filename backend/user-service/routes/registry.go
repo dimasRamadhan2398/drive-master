@@ -26,6 +26,8 @@ func (r *Registry) Serve() {
 	r.GetAuthRoute().Run()
 	r.GetMemberRoute().Run()
 	r.GetInstructorRoute().Run()
+	r.GetCertificationRoute().Run()
+	r.GetEntitlementRoute().Run()
 	r.GetWorkExperienceRoute().Run()
 	r.GetCoverageAreaRoute().Run()
 }
@@ -52,4 +54,12 @@ func (r *Registry) GetWorkExperienceRoute() IWorkExperienceRoute {
 
 func (r *Registry) GetCoverageAreaRoute() ICoverageAreaRoute {
 	return NewCoverageAreaRoute(r.controller, r.group, r.authMiddleware)
+}
+
+func (r *Registry) GetCertificationRoute() ICertificationRoute {
+	return NewCertificationRoute(r.controller, r.group, r.authMiddleware)
+}
+
+func (r *Registry) GetEntitlementRoute() IEntitlementRoute {
+	return NewEntitlementRoute(r.controller, r.group, r.authMiddleware)
 }

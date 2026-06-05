@@ -13,6 +13,7 @@ type IInstructorRepository interface {
 	FindInstructorProfileByUserID(ctx context.Context, userID uuid.UUID) (*models.InstructorProfile, error)
 	UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error
 	CreateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error
+	CreateInstructorProfileTx(tx *gorm.DB, profile *models.InstructorProfile) error
 	DeleteInstructorProfile(ctx context.Context, instructorID uuid.UUID) error
 }
 
@@ -28,6 +29,11 @@ func (i *InstructorRepository) DeleteInstructorProfile(ctx context.Context, inst
 // CreateInstructorProfile implements [IInstructorRepository].
 func (i *InstructorRepository) CreateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error {
 	return i.BaseRepository.Create(profile)
+}
+
+// CreateInstructorProfileTx creates an instructor profile within a transaction
+func (i *InstructorRepository) CreateInstructorProfileTx(tx *gorm.DB, profile *models.InstructorProfile) error {
+	return i.BaseRepository.CreateTx(tx, profile)
 }
 
 // FindInstructorProfileByUserID implements [IInstructorRepository].

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"user-service/models/dto"
 	apperrors "user-service/pkg/errors"
 
 	"github.com/gin-gonic/gin"
@@ -12,10 +13,11 @@ import (
 )
 
 type Response struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   *ErrorDetail `json:"error,omitempty"`
+	Success    bool        `json:"success"`
+	Message    string      `json:"message,omitempty"`
+	Data       interface{} `json:"data,omitempty"`
+	Pagination *dto.PaginationMeta `json:"pagination,omitempty"`
+	Error      *ErrorDetail `json:"error,omitempty"`
 }
 
 type ErrorDetail struct {
@@ -24,7 +26,17 @@ type ErrorDetail struct {
 	Details string `json:"details,omitempty"`
 }
 
-// Success sends a successful response
+// Paginated sends a successful response with data and pagination at same level
+func Paginated(c *gin.Context, statusCode int, message string, data interface{}, pagination *dto.PaginationMeta) {
+	c.JSON(statusCode, Response{
+		Success:    true,
+		Message:    message,
+		Data:       data,
+		Pagination: pagination,
+	})
+}
+
+// Success sends a successful response (without pagination)
 func Success(c *gin.Context, statusCode int, message string, data interface{}) {
 	c.JSON(statusCode, Response{
 		Success: true,
@@ -43,6 +55,44 @@ func Error(c *gin.Context, statusCode int, code string, message string, details 
 			Details: details,
 		},
 	})
+}
+
+// ErrorFromValidationErrors sends an error response from validation errors (map[string][]string)
+func ErrorFromValidationErrors(c *gin.Context, errs map[string][]string) {
+	c.JSON(http.StatusBadRequest, Response{
+		Success: false,
+		Error: &ErrorDetail{
+			Code:    "VALIDATION_ERROR",
+			Message: "Validation failed",
+			Details: formatValidationErrors(errs),
+		},
+	})
+}
+
+// formatValidationErrors converts validation errors map to a human-readable string
+func formatValidationErrors(errs map[string][]string) string {
+	if len(errs) == 0 {
+		return ""
+	}
+	var messages []string
+	for field, fieldErrs := range errs {
+		for _, msg := range fieldErrs {
+			messages = append(messages, field+": "+msg)
+		}
+	}
+	return joinStrings(messages, "; ")
+}
+
+// joinStrings joins strings with a separator
+func joinStrings(strs []string, sep string) string {
+	if len(strs) == 0 {
+		return ""
+	}
+	result := strs[0]
+	for i := 1; i < len(strs); i++ {
+		result += sep + strs[i]
+	}
+	return result
 }
 
 // ErrorFromAppError sends an error response from an AppError

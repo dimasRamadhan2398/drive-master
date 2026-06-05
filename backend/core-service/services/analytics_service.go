@@ -9,7 +9,7 @@ import (
 
 	"core-service/pkg/logger"
 
-	"google.golang.org/api/analyticsdata/v1beta"
+	analyticsdata "google.golang.org/api/analyticsdata/v1beta"
 	"google.golang.org/api/option"
 )
 
@@ -31,8 +31,8 @@ type GATrafficSource struct {
 }
 
 type IAnalyticsService interface {
-	GetOverviewReport(startDate, endDate string) ([]GAOverview, error)
-	GetFunnelReport() ([]GAFunnelStep, error)
+	GetOverviewReport(ctx context.Context, startDate, endDate string) ([]GAOverview, error)
+	GetFunnelReport(ctx context.Context) ([]GAFunnelStep, error)
 }
 
 type AnalyticsService struct {
@@ -53,7 +53,8 @@ func NewAnalyticsService() IAnalyticsService {
 	}
 
 	ctx := context.Background()
-	srv, err := analyticsdata.NewService(ctx, option.WithCredentialsJSON([]byte(jsonCreds)))
+	credType := option.CredentialsType(option.ServiceAccount)
+	srv, err := analyticsdata.NewService(ctx, option.WithAuthCredentialsJSON(credType, []byte(jsonCreds)))
 	if err != nil {
 		logger.Error("Failed to initialize Google Analytics API service. Falling back to MOCK mode.", logger.NewLogField("error", err))
 		return &AnalyticsService{
@@ -69,7 +70,7 @@ func NewAnalyticsService() IAnalyticsService {
 	}
 }
 
-func (s *AnalyticsService) GetOverviewReport(startDate, endDate string) ([]GAOverview, error) {
+func (s *AnalyticsService) GetOverviewReport(ctx context.Context, startDate, endDate string) ([]GAOverview, error) {
 	if s.isMock {
 		return s.generateMockOverview(startDate, endDate), nil
 	}
@@ -121,7 +122,7 @@ func (s *AnalyticsService) GetOverviewReport(startDate, endDate string) ([]GAOve
 	return results, nil
 }
 
-func (s *AnalyticsService) GetFunnelReport() ([]GAFunnelStep, error) {
+func (s *AnalyticsService) GetFunnelReport(ctx context.Context) ([]GAFunnelStep, error) {
 	if s.isMock {
 		return s.generateMockFunnel(), nil
 	}

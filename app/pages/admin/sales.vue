@@ -1,58 +1,44 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
+import { useSalesStore } from '~/stores/sales'
+import { usePackagesStore } from '~/stores/packages'
 
 definePageMeta({ layout: 'admin' })
 
 const route = useRoute()
+const salesStore = useSalesStore()
+const packagesStore = usePackagesStore()
+
 const packageId = computed(() => route.query.packageId ? Number(route.query.packageId) : null)
 
-// In a real app, this data would come from a shared store/composable
-const packages = ref([
-  { id: 1, name: '6x', price: 1750000, color: 'blue' },
-  { id: 2, name: '8x', price: 1950000, color: 'warning' },
-  { id: 3, name: '10x', price: 2250000, color: 'green' },
-  { id: 4, name: '12x', price: 2650000, color: 'purple' },
-])
+// Get packages from store
+const packages = computed(() => packagesStore.packages)
 
-const allTransactions = ref([
-    { id: 101, studentName: 'John Doe', packageId: 1, purchaseDate: '2026-03-10', amount: 1750000, status: 'Completed' },
-    { id: 102, studentName: 'Jane Smith', packageId: 1, purchaseDate: '2026-03-12', amount: 1750000, status: 'Completed' },
-    { id: 103, studentName: 'Budi Santoso', packageId: 2, purchaseDate: '2026-03-15', amount: 1950000, status: 'Completed' },
-    { id: 104, studentName: 'Amanda Chen', packageId: 1, purchaseDate: '2026-03-20', amount: 1750000, status: 'Completed' },
-    { id: 105, studentName: 'David Lee', packageId: 2, purchaseDate: '2026-03-22', amount: 1950000, status: 'Completed' },
-    { id: 106, studentName: 'Sarah Putri', packageId: 3, purchaseDate: '2026-04-01', amount: 2250000, status: 'Completed' },
-    { id: 107, studentName: 'Michael Brown', packageId: 1, purchaseDate: '2026-04-02', amount: 1750000, status: 'Completed' },
-    { id: 108, studentName: 'Emily Davis', packageId: 4, purchaseDate: '2026-04-05', amount: 2650000, status: 'Completed' },
-    { id: 109, studentName: 'Ricky Wijaya', packageId: 2, purchaseDate: '2026-04-10', amount: 1950000, status: 'Completed' },
-    { id: 110, studentName: 'Anita Sari', packageId: 3, purchaseDate: '2026-04-12', amount: 2250000, status: 'Completed' },
-])
+// Date filter
+const startDate = ref(salesStore.startDate)
+const endDate = ref(salesStore.endDate)
 
-// Filter periode transaksi
-const startDate = ref('')
-const endDate = ref('')
-
-const filteredTransactions = computed(() => {
-  return allTransactions.value.filter(t => {
-    const pDate = new Date(t.purchaseDate)
-    if (startDate.value && pDate < new Date(startDate.value)) return false
-    if (endDate.value && pDate > new Date(endDate.value)) return false
-    return true
-  })
+// Watch for changes and update store
+watch([startDate, endDate], ([newStart, newEnd]) => {
+  salesStore.setDateRange(newStart, newEnd)
 })
 
-// Data untuk tampilan paket spesifik
+// Filtered transactions from store
+const filteredTransactions = computed(() => salesStore.filteredTransactions)
+
+// Data for specific package view
 const selectedPackage = computed(() => packages.value.find(p => p.id === packageId.value))
 const packageTransactions = computed(() => {
     if (!packageId.value) return []
-    return filteredTransactions.value.filter(t => t.packageId === packageId.value)
+    return salesStore.transactionsByPackage(packageId.value)
 })
 const packageTotalRevenue = computed(() => packageTransactions.value.reduce((sum, t) => sum + t.amount, 0))
 const packageTotalSales = computed(() => packageTransactions.value.length)
 
-// Data untuk tampilan dasbor umum
-const overallTotalRevenue = computed(() => filteredTransactions.value.reduce((sum, t) => sum + t.amount, 0))
-const overallTotalSales = computed(() => filteredTransactions.value.length)
+// Data for general dashboard view
+const overallTotalRevenue = computed(() => salesStore.filteredTotalRevenue)
+const overallTotalSales = computed(() => salesStore.filteredTotalSales)
 
 // Sales breakdown by package
 const salesByPackage = computed(() => {
@@ -68,7 +54,7 @@ const salesByPackage = computed(() => {
   }).sort((a, b) => b.revenue - a.revenue)
 })
 
-// Transaksi yang akan ditampilkan di tabel
+// Transactions to display in table
 const displayTransactions = computed(() => {
   return packageId.value ? packageTransactions.value : filteredTransactions.value
 })
@@ -81,13 +67,13 @@ function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-// Kolom untuk tabel (Nuxt UI v3 style)
+// Table columns (Nuxt UI v3 style)
 const columns = computed<TableColumn<any>[]>(() => {
   const base: TableColumn<any>[] = [
     { accessorKey: 'id', header: 'ID' },
     { accessorKey: 'studentName', header: 'Student Name' },
   ]
-  
+
   if (!packageId.value) {
     base.push({ accessorKey: 'packageName', header: 'Package' })
   }
@@ -100,7 +86,7 @@ const columns = computed<TableColumn<any>[]>(() => {
   ]
 })
 
-// Data untuk tabel, diformat
+// Data for table, formatted
 const tableData = computed(() => displayTransactions.value.map(t => {
   const pkg = packages.value.find(p => p.id === t.packageId)
   return {
@@ -110,6 +96,12 @@ const tableData = computed(() => displayTransactions.value.map(t => {
     amountFormatted: formatPrice(t.amount)
   }
 }))
+
+function clearFilter() {
+  startDate.value = ''
+  endDate.value = ''
+  salesStore.clearDateFilter()
+}
 </script>
 
 <template>
@@ -147,7 +139,7 @@ const tableData = computed(() => displayTransactions.value.map(t => {
         <UFormGroup label="End Date">
           <UInput type="date" v-model="endDate" />
         </UFormGroup>
-        <UButton v-if="startDate || endDate" label="Clear Filter" color="neutral" variant="soft" @click="startDate = ''; endDate = ''" />
+        <UButton v-if="startDate || endDate" label="Clear Filter" color="neutral" variant="soft" @click="clearFilter" />
       </div>
 
       <!-- Tampilan Body Paket Spesifik -->

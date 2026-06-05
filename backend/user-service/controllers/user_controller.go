@@ -7,7 +7,8 @@ import (
 	"user-service/models"
 	"user-service/models/dto"
 	apperrors "user-service/pkg/errors"
-	responseRes "user-service/pkg/response"
+	"user-service/pkg/response"
+	"user-service/pkg/validations"
 	"user-service/services"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,7 @@ type UserController struct {
 	emailService      services.IMailtrapEmailService
 	mediaService      services.IMediaService
 }
+
 
 func NewUserController(
 	userService services.IUserService,
@@ -65,17 +67,20 @@ type IUserController interface {
 func (c *UserController) CreateUser(cxt *gin.Context) {
 	var input dto.CreateUserRequest
 	if err := cxt.ShouldBindJSON(&input); err != nil {
-		responseRes.ErrorFromAppError(cxt, apperrors.ErrBadRequest)
-		return
+		validationErrs := validations.ParseValidationErrors(err)
+		if validationErrs.HasErrors() {
+			response.ErrorFromValidationErrors(cxt, validationErrs.ToMap())
+			return
+		}
 	}
 
 	user, err := c.userService.CreateUser(cxt.Request.Context(), input)
 	if err != nil {
-		responseRes.ErrorFromGeneric(cxt, err)
+		response.ErrorFromGeneric(cxt, err)
 		return
 	}
 
-	responseRes.Success(cxt, http.StatusCreated, "User created successfully", user)
+	response.Success(cxt, http.StatusCreated, "User created successfully", user)
 }
 
 // @Summary Get All Users
@@ -88,11 +93,11 @@ func (c *UserController) CreateUser(cxt *gin.Context) {
 func (c *UserController) GetAllUsers(cxt *gin.Context) {
 	users, err := c.userService.GetAllUsersWithProfiles(cxt.Request.Context())
 	if err != nil {
-		responseRes.ErrorFromGeneric(cxt, err)
+		response.ErrorFromGeneric(cxt, err)
 		return
 	}
 
-	responseRes.Success(cxt, http.StatusOK, "Users retrieved successfully", users)
+	response.Success(cxt, http.StatusOK, "Users retrieved successfully", users)
 }
 
 // @Summary Get User by ID
@@ -107,17 +112,17 @@ func (c *UserController) GetAllUsers(cxt *gin.Context) {
 func (c *UserController) GetUserByID(cxt *gin.Context) {
 	id, err := getUserIDFromPath(cxt, "id")
 	if err != nil {
-		responseRes.ErrorFromGeneric(cxt, err)
+		response.ErrorFromGeneric(cxt, err)
 		return
 	}
 
 	user, err := c.userService.GetUserByIDWithProfiles(cxt.Request.Context(), id)
 	if err != nil {
-		responseRes.ErrorFromGeneric(cxt, err)
+		response.ErrorFromGeneric(cxt, err)
 		return
 	}
 
-	responseRes.Success(cxt, http.StatusOK, "User retrieved successfully", user)
+	response.Success(cxt, http.StatusOK, "User retrieved successfully", user)
 }
 
 // @Summary Update User
@@ -134,19 +139,22 @@ func (c *UserController) GetUserByID(cxt *gin.Context) {
 func (c *UserController) UpdateUser(cxt *gin.Context) {
 	id, err := getUserIDFromPath(cxt, "id")
 	if err != nil {
-		responseRes.ErrorFromGeneric(cxt, err)
+		response.ErrorFromGeneric(cxt, err)
 		return
 	}
 
 	var input dto.UpdateUserRequest
 	if err := cxt.ShouldBindJSON(&input); err != nil {
-		responseRes.ErrorFromAppError(cxt, apperrors.ErrBadRequest)
-		return
+		validationErrs := validations.ParseValidationErrors(err)
+		if validationErrs.HasErrors() {
+			response.ErrorFromValidationErrors(cxt, validationErrs.ToMap())
+			return
+		}
 	}
 
 	user, err := c.userService.GetUserByID(cxt.Request.Context(), id)
 	if err != nil {
-		responseRes.ErrorFromGeneric(cxt, err)
+		response.ErrorFromGeneric(cxt, err)
 		return
 	}
 
@@ -190,11 +198,11 @@ func (c *UserController) UpdateUser(cxt *gin.Context) {
 	}
 
 	if err := c.userService.UpdateUser(cxt.Request.Context(), userModel); err != nil {
-		responseRes.ErrorFromGeneric(cxt, err)
+		response.ErrorFromGeneric(cxt, err)
 		return
 	}
 
-	responseRes.Success(cxt, http.StatusOK, "User updated successfully", user)
+	response.Success(cxt, http.StatusOK, "User updated successfully", user)
 }
 
 // @Summary Delete User
@@ -209,13 +217,13 @@ func (c *UserController) UpdateUser(cxt *gin.Context) {
 func (c *UserController) DeleteUser(cxt *gin.Context) {
 	id, err := getUserIDFromPath(cxt, "id")
 	if err != nil {
-		responseRes.ErrorFromGeneric(cxt, err)
+		response.ErrorFromGeneric(cxt, err)
 		return
 	}
 
 	user, err := c.userService.GetUserByID(cxt.Request.Context(), id)
 	if err != nil {
-		responseRes.ErrorFromGeneric(cxt, err)
+		response.ErrorFromGeneric(cxt, err)
 		return
 	}
 
@@ -225,11 +233,11 @@ func (c *UserController) DeleteUser(cxt *gin.Context) {
 	}
 
 	if err := c.userService.DeleteUser(cxt.Request.Context(), userModel); err != nil {
-		responseRes.ErrorFromGeneric(cxt, err)
+		response.ErrorFromGeneric(cxt, err)
 		return
 	}
 
-	responseRes.Success(cxt, http.StatusOK, "User deleted successfully", nil)
+	response.Success(cxt, http.StatusOK, "User deleted successfully", nil)
 }
 
 // Helper to get user ID from path (returns UUID)
@@ -255,3 +263,4 @@ func getUintIDFromPath(c *gin.Context, paramName string) (uint, error) {
 	}
 	return uint(id), nil
 }
+

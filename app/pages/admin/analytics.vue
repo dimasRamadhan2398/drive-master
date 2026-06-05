@@ -8,7 +8,7 @@
         </div>
         <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" size="xs" :loading="gaLoading" @click="fetchGAData" />
         </div>
-        
+
         <div class="grid md:grid-cols-3 gap-6">
         <UCard class="relative overflow-hidden">
             <div class="flex items-center gap-4">
@@ -18,7 +18,7 @@
             <div>
                 <p class="text-2xl font-bold">
                 <span v-if="gaLoading">...</span>
-                <span v-else>{{ totalGaUsers }}</span>
+                <span v-else>{{ analyticsStore.totalGaUsers }}</span>
                 </p>
                 <p class="text-sm text-muted">Total Visitors (30 Days)</p>
             </div>
@@ -33,7 +33,7 @@
             <div>
                 <p class="text-2xl font-bold">
                 <span v-if="gaLoading">...</span>
-                <span v-else>{{ totalGaPageViews }}</span>
+                <span v-else>{{ analyticsStore.totalGaPageViews }}</span>
                 </p>
                 <p class="text-sm text-muted">Page Views (30 Days)</p>
             </div>
@@ -48,7 +48,7 @@
             <div>
                 <p class="text-2xl font-bold">
                 <span v-if="gaLoading">...</span>
-                <span v-else>{{ overallConversionRate }}%</span>
+                <span v-else>{{ analyticsStore.overallConversionRate }}%</span>
                 </p>
                 <p class="text-sm text-muted">Checkout Conversion Rate</p>
             </div>
@@ -68,11 +68,11 @@
                 </div>
             </div>
             </template>
-            
+
             <div v-if="gaLoading" class="h-[150px] flex items-center justify-center">
             <p class="text-sm text-muted">Loading chart data...</p>
             </div>
-            <div v-else-if="gaOverview.length === 0" class="h-[150px] flex items-center justify-center">
+            <div v-else-if="analyticsStore.gaOverviewData.length === 0" class="h-[150px] flex items-center justify-center">
             <p class="text-sm text-muted">No visitor data available.</p>
             </div>
             <div v-else class="relative pt-2">
@@ -83,7 +83,7 @@
                     <stop offset="100%" stop-color="rgb(249, 115, 22)" stop-opacity="0.0" />
                 </linearGradient>
                 </defs>
-                
+
                 <!-- Grid Lines -->
                 <line x1="0" y1="37.5" x2="500" y2="37.5" stroke="currentColor" class="text-default/5" stroke-dasharray="4" />
                 <line x1="0" y1="75" x2="500" y2="75" stroke="currentColor" class="text-default/5" stroke-dasharray="4" />
@@ -91,16 +91,16 @@
                 <line x1="0" y1="150" x2="500" y2="150" stroke="currentColor" class="text-default/5" />
 
                 <!-- Pageviews Area & Path -->
-                <path :d="chartAreaPath" fill="url(#chartGrad)" />
-                <path :d="chartPath" fill="none" stroke="rgb(249, 115, 22)" stroke-width="2.5" />
-                
+                <path :d="analyticsStore.chartAreaPath" fill="url(#chartGrad)" />
+                <path :d="analyticsStore.chartPathData" fill="none" stroke="rgb(249, 115, 22)" stroke-width="2.5" />
+
                 <!-- Users Path -->
-                <path :d="chartUsersPath" fill="none" stroke="rgb(59, 130, 246)" stroke-width="2" />
+                <path :d="analyticsStore.chartUsersPath" fill="none" stroke="rgb(59, 130, 246)" stroke-width="2" />
             </svg>
             <div class="flex justify-between text-[9px] text-muted mt-2 px-1">
-                <span>{{ gaOverview[0]?.date }}</span>
-                <span>{{ gaOverview[Math.floor(gaOverview.length / 2)]?.date }}</span>
-                <span>{{ gaOverview[gaOverview.length - 1]?.date }}</span>
+                <span>{{ analyticsStore.gaOverviewData[0]?.date }}</span>
+                <span>{{ analyticsStore.gaOverviewData[Math.floor(analyticsStore.gaOverviewData.length / 2)]?.date }}</span>
+                <span>{{ analyticsStore.gaOverviewData[analyticsStore.gaOverviewData.length - 1]?.date }}</span>
             </div>
             </div>
         </UCard>
@@ -110,24 +110,24 @@
             <template #header>
             <h3 class="font-semibold">Booking Conversion Funnel</h3>
             </template>
-            
+
             <div v-if="gaLoading" class="h-[150px] flex items-center justify-center">
             <p class="text-sm text-muted">Loading funnel data...</p>
             </div>
-            <div v-else-if="gaFunnel.length === 0" class="h-[150px] flex items-center justify-center">
+            <div v-else-if="analyticsStore.gaFunnelData.length === 0" class="h-[150px] flex items-center justify-center">
             <p class="text-sm text-muted">No funnel data available.</p>
             </div>
             <div v-else class="space-y-3.5 py-1">
-            <div v-for="(step, idx) in gaFunnel" :key="idx" class="space-y-1">
+            <div v-for="(step, idx) in analyticsStore.gaFunnelData" :key="idx" class="space-y-1">
                 <div class="flex items-center justify-between text-[11px] font-medium">
                 <span class="capitalize text-muted">{{ getFunnelLabel(step.event_name) }}</span>
-                <span>{{ step.count }} events <span class="text-muted text-[9px] font-normal" v-if="idx > 0 && gaFunnel[0]?.count">({{ ((step.count / gaFunnel[0].count) * 100).toFixed(1) }}%)</span></span>
+                <span>{{ step.count }} events <span class="text-muted text-[9px] font-normal" v-if="idx > 0 && analyticsStore.gaFunnelData[0]?.count">({{ ((step.count / analyticsStore.gaFunnelData[0].count) * 100).toFixed(1) }}%)</span></span>
                 </div>
                 <div class="w-full bg-default/10 rounded-full h-2 overflow-hidden">
-                <div 
+                <div
                     class="h-full rounded-full transition-all duration-500"
                     :class="getFunnelColor(idx)"
-                    :style="{ width: `${(step.count / (gaFunnel[0]?.count || 1)) * 100}%` }"
+                    :style="{ width: `${(step.count / (analyticsStore.gaFunnelData[0]?.count || 1)) * 100}%` }"
                 ></div>
                 </div>
             </div>
@@ -138,104 +138,25 @@
 </template>
 
 <script setup lang="ts">
+import { useAnalyticsStore } from '~/stores/analytics'
 
 definePageMeta({
     layout: "admin",
 });
 
-const api = useApiClients()
-const gaLoading = ref(false)
-const gaOverview = ref<{ date: string; users: number; pageviews: number }[]>([])
-const gaFunnel = ref<{ event_name: string; count: number }[]>([])
+const analyticsStore = useAnalyticsStore()
+const gaLoading = computed(() => analyticsStore.isLoading)
 
-// Extracted functions outside of computed
 function getFunnelLabel(eventName: string) {
-  switch (eventName) {
-    case 'page_view': return '1. Landing Page Visit'
-    case 'view_item': return '2. View Packages'
-    case 'begin_checkout': return '3. Start Booking Process'
-    case 'purchase': return '4. Successful Payment'
-    default: return eventName
-  }
+  return analyticsStore.getFunnelLabel(eventName)
 }
 
 function getFunnelColor(index: number) {
-  switch (index) {
-    case 0: return 'bg-primary-500'
-    case 1: return 'bg-info-500'
-    case 2: return 'bg-warning-500'
-    case 3: return 'bg-success-500'
-    default: return 'bg-neutral-500'
-  }
+  return analyticsStore.getFunnelColor(index)
 }
 
-const overallConversionRate = computed(() => {
-  const start = gaFunnel.value[0]?.count
-  const end = gaFunnel.value[3]?.count
-  
-  if (!start || !end) return '0.0'
-  return ((end / start) * 100).toFixed(1)
-})
-
-const totalGaUsers = computed(() => {
-  return gaOverview.value.reduce((sum, item) => sum + item.users, 0)
-})
-
-const totalGaPageViews = computed(() => {
-  return gaOverview.value.reduce((sum, item) => sum + item.pageviews, 0)
-})
-
-const chartPath = computed(() => {
-  if (gaOverview.value.length === 0) return ''
-  const width = 500
-  const height = 150
-  const maxVal = Math.max(...gaOverview.value.map(d => d.pageviews), 100)
-  
-  return gaOverview.value.map((d, idx) => {
-    const x = (idx / (gaOverview.value.length - 1)) * width
-    const y = height - (d.pageviews / maxVal) * height
-    return `${idx === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`
-  }).join(' ')
-})
-
-const chartAreaPath = computed(() => {
-  if (gaOverview.value.length === 0) return ''
-  const width = 500
-  const height = 150
-  const base = chartPath.value
-  return `${base} L ${width} ${height} L 0 ${height} Z`
-})
-
-const chartUsersPath = computed(() => {
-  if (gaOverview.value.length === 0) return ''
-  const width = 500
-  const height = 150
-  const maxVal = Math.max(...gaOverview.value.map(d => d.pageviews), 100)
-  
-  return gaOverview.value.map((d, idx) => {
-    const x = (idx / (gaOverview.value.length - 1)) * width
-    const y = height - (d.users / maxVal) * height
-    return `${idx === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`
-  }).join(' ')
-})
-
 async function fetchGAData() {
-  gaLoading.value = true
-  try {
-    const overviewRes = await api.core<{ data: { date: string, users: number, pageviews: number }[] }>('/admin/analytics/overview')
-    const funnelRes = await api.core<{ data: { event_name: string, count: number }[] }>('/admin/analytics/funnel')
-    
-    if (overviewRes && overviewRes.data) {
-      gaOverview.value = overviewRes.data
-    }
-    if (funnelRes && funnelRes.data) {
-      gaFunnel.value = funnelRes.data
-    }
-  } catch (err) {
-    console.error("Gagal memuat data Google Analytics 4:", err)
-  } finally {
-    gaLoading.value = false
-  }
+  await analyticsStore.fetchAnalyticsData()
 }
 
 onMounted(() => {

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -53,13 +54,13 @@ func (s *UserSession) IsExpired() bool {
 
 // MemberProfile represents the member_profiles table
 type MemberProfile struct {
-	ID                uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID            uuid.UUID `json:"userId" gorm:"type:uuid;not null;uniqueIndex"`
-	SessionsCompleted int       `json:"sessionsCompleted" gorm:"default:0"`
-	TrainingTime      int       `json:"trainingTime" gorm:"default:0"` // in minutes
-	AverageRating     float64   `json:"averageRating" gorm:"default:0"`
-	CreatedAt         time.Time `json:"createdAt"`
-	UpdatedAt         time.Time `json:"updatedAt"`
+	ID                     uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID                 uuid.UUID `json:"userId" gorm:"type:uuid;not null;uniqueIndex"`
+	SessionsCompleted      int       `json:"sessionsCompleted" gorm:"default:0"`
+	TrainingTime           int       `json:"trainingTime" gorm:"default:0"` // in minutes
+	AverageRating          float64   `json:"averageRating" gorm:"default:0"`
+	CreatedAt              time.Time `json:"createdAt"`
+	UpdatedAt              time.Time `json:"updatedAt"`
 }
 
 
@@ -78,8 +79,11 @@ type InstructorProfile struct {
 	SessionsCompleted        int              `json:"sessionsCompleted" gorm:"default:0"`
 	AverageRating            float64          `json:"averageRating" gorm:"default:0"`
 	WorkExperiences          []WorkExperience `json:"workExperiences" gorm:"foreignKey:InstructorID"`
+	Description       		 string                   `json:"description" gorm:"size:500"`
+	Specialization    		 string                   `json:"specialization" gorm:"size:50"`
 	CreatedAt                time.Time        `json:"createdAt"`
 	UpdatedAt                time.Time        `json:"updatedAt"`
+	
 }
 
 // WorkExperience represents the work_experiences table
@@ -148,6 +152,7 @@ const (
 // Certification represents an instructor's certification (e.g., BNSP certificate)
 type Certification struct {
 	ID              uuid.UUID            `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	MemberID    	uuid.UUID            `json:"memberId" gorm:"type:uuid;not null;index"`
 	InstructorID    uuid.UUID            `json:"instructorId" gorm:"type:uuid;not null;index"`
 	CertType        string               `json:"certType" gorm:"size:50;not null"`        // e.g., "BNSP", "SIM", "AWS"
 	CertNumber      string               `json:"certNumber" gorm:"size:100;not null"`     // Certificate number
@@ -181,6 +186,8 @@ type Entitlement struct {
 	BookingID       uuid.UUID           `json:"bookingId" gorm:"type:uuid;index"`           // Reference to booking that created this
 	PackageID       uuid.UUID           `json:"packageId" gorm:"type:uuid"`                // Package ID from core-service
 	PackageName     string              `json:"packageName" gorm:"size:255"`               // Package name (denormalized)
+	IsNightSession	 bool				`json:"isNightSession" gorm:"default:false"`
+	IsWeekendSession bool				`json:"isWeekendSession" gorm:"default:false"`
 	TotalSessions   int                 `json:"totalSessions" gorm:"default:0"`             // Total sessions in package
 	Remaining       int                 `json:"remaining" gorm:"default:0"`                 // Remaining sessions
 	UsedSessions    int                 `json:"usedSessions" gorm:"default:0"`              // Sessions already used
@@ -189,4 +196,19 @@ type Entitlement struct {
 	Status          EntitlementStatus   `json:"status" gorm:"type:varchar(20);default:'active'"`
 	CreatedAt       time.Time           `json:"createdAt"`
 	UpdatedAt       time.Time           `json:"updatedAt"`
+}
+
+func (e *Entitlement) IsComplete() bool {
+    return e.Remaining == 0 && e.UsedSessions == e.TotalSessions
+}
+
+// always call this before saving to catch inconsistencies
+func (e *Entitlement) ValidateSessionCount() error {
+    if e.Remaining + e.UsedSessions != e.TotalSessions {
+        return fmt.Errorf(
+            "session count mismatch: remaining(%d) + used(%d) != total(%d)",
+            e.Remaining, e.UsedSessions, e.TotalSessions,
+        )
+    }
+    return nil
 }
