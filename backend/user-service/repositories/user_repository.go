@@ -47,6 +47,7 @@ func (r *UserRepository) Create(ctx context.Context, user *dto.RegisterRequest) 
 	}
 	userModel := models.User{
 		FirstName:    user.FirstName,
+		LastName:     user.LastName,
 		Username:     user.Username,
 		EmailAddress: user.Email,
 		PhoneNumber:  user.PhoneNumber,
@@ -71,6 +72,7 @@ func (r *UserRepository) CreateTx(tx *gorm.DB, user *dto.RegisterRequest) (*mode
 	}
 	userModel := models.User{
 		FirstName:    user.FirstName,
+		LastName:     user.LastName,
 		Username:     user.Username,
 		EmailAddress: user.Email,
 		PhoneNumber:  user.PhoneNumber,

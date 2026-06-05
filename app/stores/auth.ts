@@ -1,10 +1,9 @@
 import { defineStore } from "pinia";
+import { authService } from "~/services/authService";
 import type {
   LoginCredentials,
   RegisterData,
-  BackendLoginResponse,
   BackendUserResponse,
-  RegisterResponse,
 } from "~/types/auth";
 
 interface AuthStoreState {
@@ -60,12 +59,6 @@ export const useAuthStore = defineStore("auth", {
       }
       // Persist user data for rehydration
       this.setUserCookie(user);
-
-      console.log("[Auth] setAuth completed:", {
-        user: user,
-        hasToken: !!accessToken,
-        isAuthenticated: this.isAuthenticated,
-      });
     },
 
     // Transform backend user to frontend user format
@@ -86,36 +79,16 @@ export const useAuthStore = defineStore("auth", {
       this.error = null;
 
       try {
-        const { user } = useApiClients();
-        const response = await user<BackendLoginResponse>("/auth/login", {
-          method: "POST",
-          body: {
-            email: credentials.email,
-            password: credentials.password,
-          },
-        });
-
-        console.log("[Auth] Login response:", response);
-
-        // Use dedicated setAuth action for proper state management
+        const authData = await authService.login(credentials);
         this.setAuth(
-          response.data.user,
-          response.data.accessToken,
-          response.data.refreshToken,
+          authData.user,
+          authData.accessToken,
+          authData.refreshToken,
         );
-
-        return response;
+        return authData;
       } catch (error: any) {
-        // Extract error message from backend response
-        const errorMessage =
-          error?.data?.error?.message ||
-          error?.data?.message ||
-          error?.message ||
-          "Login failed";
-        this.error = errorMessage;
-
-        // Re-throw with the extracted message so the component can use it
-        const enhancedError = new Error(errorMessage);
+        this.error = authService.parseError(error);
+        const enhancedError = new Error(this.error);
         throw enhancedError;
       } finally {
         this.isLoading = false;
@@ -123,52 +96,71 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async register(data: RegisterData) {
+      console.log(
+        "[AUTH STORE] register() called with data:",
+        JSON.stringify({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          username: data.username,
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          dateOfBirth: data.dateOfBirth,
+          password: data.password ? "***" : undefined,
+          roleId: data.roleId,
+        }),
+      );
+
       this.isLoading = true;
       this.error = null;
 
       try {
-        const { user } = useApiClients();
-        const response = await user<RegisterResponse>("/auth/register", {
-          method: "POST",
-          body: data,
-        });
+        console.log("[AUTH STORE] Calling authService.register()...");
+        const response = await authService.register(data);
+        console.log(
+          "[AUTH STORE] authService.register() succeeded, response:",
+          JSON.stringify({
+            userId: response.user?.userId,
+            username: response.user?.username,
+            email: response.user?.email,
+          }),
+        );
 
         this.user = {
-          userId: response.userId,
-          username: response.username,
-          email: response.email,
-          firstName: response.firstName,
-          lastName: response.lastName,
-          phoneNumber: response.phoneNumber,
-          roleId: response.role.id,
+          userId: response.user.userId,
+          username: response.user.username,
+          email: response.user.email,
+          firstName: response.user.firstName,
+          lastName: response.user.lastName,
+          phoneNumber: response.user.phoneNumber,
+          roleId: response.user.roleId,
           role: {
-            id: response.role.id,
-            name: response.role.name,
+            id: response.user.roleId,
+            name: "member",
           },
-          createdAt: response.createdAt,
-          updatedAt: response.createdAt,
-          dateOfBirth: response.dateOfBirth,
-          isEmailVerified: response.isEmailVerified,
+          dateOfBirth: response.user.dateOfBirth,
         };
 
-        // Use setAuth for consistency
-        this.setAuth(this.user, response.accessToken);
-
+        this.setAuth(this.user, response.accessToken, response.refreshToken);
         return response;
       } catch (error: any) {
-        this.error = error?.data?.error?.message || "Registration failed";
+        console.log(
+          "[AUTH STORE] authService.register() failed with error:",
+          error,
+        );
+        this.error = authService.parseError(error);
+        console.log("[AUTH STORE] Parsed error message:", this.error);
         throw error;
       } finally {
+        console.log(
+          "[AUTH STORE] register() completed, isLoading set to false",
+        );
         this.isLoading = false;
       }
     },
 
     async logout() {
       try {
-        const { user } = useApiClients();
-        if (this.accessToken) {
-          await user("/auth/logout", { method: "POST" });
-        }
+        await authService.logout(this.accessToken);
       } catch {
         // Continue with logout even if API call fails
       } finally {
@@ -177,30 +169,23 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async refreshToken() {
+      if (!this.refreshTokenValue) {
+        this.clearAuth();
+        return false;
+      }
+
       try {
-        const { user } = useApiClients();
-        const refreshTokenValue = this.getRefreshTokenCookie();
-
-        if (!refreshTokenValue) {
-          this.clearAuth();
-          return false;
+        const authData = await authService.refreshToken(this.refreshTokenValue);
+        if (authData) {
+          this.setAuth(
+            authData.user,
+            authData.accessToken,
+            authData.refreshToken,
+          );
+          return true;
         }
-
-        const response = await user<BackendLoginResponse>("/auth/refresh", {
-          method: "POST",
-          body: {
-            refreshToken: refreshTokenValue,
-          },
-        });
-
-        // Use setAuth for consistent state management
-        this.setAuth(
-          response.data.user,
-          response.data.accessToken,
-          response.data.refreshToken,
-        );
-
-        return true;
+        this.clearAuth();
+        return false;
       } catch {
         this.clearAuth();
         return false;
@@ -211,11 +196,10 @@ export const useAuthStore = defineStore("auth", {
       if (!this.accessToken) return null;
 
       try {
-        const { user } = useApiClients();
-        const userData = await user<BackendUserResponse>("/auth/me", {
-          method: "GET",
-        });
-        this.user = userData;
+        const userData = await authService.fetchCurrentUser(this.accessToken);
+        if (userData) {
+          this.user = userData;
+        }
         return userData;
       } catch {
         return null;
@@ -228,7 +212,7 @@ export const useAuthStore = defineStore("auth", {
         secure: true,
         sameSite: "lax",
       });
-      cookie.value = token; // works on both server and client
+      cookie.value = token;
     },
 
     getRefreshTokenCookie() {
@@ -250,7 +234,7 @@ export const useAuthStore = defineStore("auth", {
 
     setUserCookie(user: BackendUserResponse) {
       const cookie = useCookie("user_data", {
-        maxAge: 60 * 60 * 24 * 7, // 7 days, same as access token
+        maxAge: 60 * 60 * 24 * 7,
         secure: true,
         sameSite: "lax",
       });

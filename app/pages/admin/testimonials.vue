@@ -1,0 +1,634 @@
+<script setup lang="ts">
+import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
+import { ref, computed } from "vue";
+import { useTestimonialsStore, type Testimonial } from "~/stores/testimonials";
+
+definePageMeta({ layout: "admin" });
+
+const toast = useToast();
+const testimonialsStore = useTestimonialsStore();
+
+const showAddModal = ref(false);
+const showEditModal = ref(false);
+const selectedTestimonial = ref<Testimonial | null>(null);
+const filterStatus = ref<"all" | "published" | "pending" | "archived">("all");
+
+const testimonials = computed(() => testimonialsStore.testimonials);
+
+const filteredTestimonials = computed(() => {
+  if (filterStatus.value === "all") return testimonials.value;
+  return testimonials.value.filter((t) => t.status === filterStatus.value);
+});
+
+// Stats
+const totalTestimonials = computed(() => testimonialsStore.totalTestimonials);
+const totalPublished = computed(() => testimonialsStore.totalPublished);
+const totalPending = computed(() => testimonialsStore.totalPending);
+const averageRating = computed(() => testimonialsStore.averageRating);
+
+const newTestimonial = ref({
+  userName: "",
+  userRole: "Student",
+  userImage: "",
+  content: "",
+  rating: 5,
+  tags: "",
+  status: "pending" as const,
+  isFeatured: false,
+  addedBy: "admin-001",
+});
+
+function openEditModal(testimonial: Testimonial) {
+  selectedTestimonial.value = { ...testimonial };
+  showEditModal.value = true;
+}
+
+function toggleFeatured(testimonial: Testimonial) {
+  testimonialsStore.toggleFeatured(testimonial.id);
+  toast.add({
+    title: testimonial.isFeatured
+      ? "Removed from Featured"
+      : "Added to Featured",
+    icon: testimonial.isFeatured ? "i-lucide-star" : "i-lucide-star",
+    color: testimonial.isFeatured ? "warning" : "success",
+  });
+}
+
+function changeStatus(
+  testimonialId: string,
+  status: "draft" | "pending" | "published" | "archived",
+) {
+  testimonialsStore.changeStatus(testimonialId, status);
+  toast.add({
+    title: "Status Updated",
+    description: `Testimonial status changed to ${status}`,
+    color: "success",
+  });
+}
+
+function saveNewTestimonial() {
+  if (!newTestimonial.value.userName || !newTestimonial.value.content) {
+    toast.add({
+      title: "Error",
+      description: "Name and content are required.",
+      color: "error",
+    });
+    return;
+  }
+
+  testimonialsStore.addTestimonial({
+    ...newTestimonial.value,
+    userId: crypto.randomUUID(),
+    addedAt: new Date().toISOString(),
+    sortOrder: testimonials.value.length + 1,
+  });
+
+  toast.add({
+    title: "Testimonial Added",
+    description: `Testimonial from "${newTestimonial.value.userName}" has been created.`,
+    color: "success",
+  });
+
+  showAddModal.value = false;
+  newTestimonial.value = {
+    userName: "",
+    userRole: "Student",
+    userImage: "",
+    content: "",
+    rating: 5,
+    tags: "",
+    status: "pending",
+    isFeatured: false,
+    addedBy: "admin-001",
+  };
+}
+
+function saveEditedTestimonial() {
+  if (!selectedTestimonial.value) return;
+
+  testimonialsStore.updateTestimonial(
+    selectedTestimonial.value.id,
+    selectedTestimonial.value,
+  );
+
+  toast.add({
+    title: "Testimonial Updated",
+    description: `"${selectedTestimonial.value.userName}" has been saved.`,
+    color: "success",
+  });
+  showEditModal.value = false;
+  selectedTestimonial.value = null;
+}
+
+function deleteTestimonial(testimonialId: string) {
+  if (
+    confirm(
+      "Are you sure you want to delete this testimonial? This action cannot be undone.",
+    )
+  ) {
+    testimonialsStore.deleteTestimonial(testimonialId);
+    toast.add({
+      title: "Testimonial Deleted",
+      description: `Testimonial has been removed.`,
+      color: "error",
+      icon: "i-lucide-trash",
+    });
+  }
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function getStatusColor(
+  status: string,
+): "success" | "warning" | "neutral" | "info" {
+  switch (status) {
+    case "published":
+      return "success";
+    case "pending":
+      return "warning";
+    case "archived":
+      return "neutral";
+    default:
+      return "info";
+  }
+}
+
+function getRatingStars(rating: number): string[] {
+  return Array(5)
+    .fill("")
+    .map((_, i) => (i < rating ? "full" : "empty"));
+}
+
+onMounted(() => {
+  testimonialsStore.fetchTestimonials();
+});
+</script>
+
+<template>
+  <UDashboardPanel>
+    <template #header>
+      <UDashboardNavbar title="Testimonials Management">
+        <template #right>
+          <UButton
+            icon="i-lucide-plus"
+            color="warning"
+            label="Add Testimonial"
+            @click="showAddModal = true"
+          />
+          <UColorModeButton />
+        </template>
+      </UDashboardNavbar>
+    </template>
+
+    <template #body>
+      <div class="p-6 space-y-6">
+        <!-- Stats -->
+        <div class="grid md:grid-cols-4 gap-4">
+          <UCard>
+            <div class="flex items-center gap-4">
+              <div class="p-3 rounded-xl bg-info/10">
+                <UIcon
+                  name="i-lucide-message-square"
+                  class="size-6 text-info"
+                />
+              </div>
+              <div>
+                <p class="text-2xl font-bold">{{ totalTestimonials }}</p>
+                <p class="text-md text-muted">Total Testimonials</p>
+              </div>
+            </div>
+          </UCard>
+          <UCard>
+            <div class="flex items-center gap-4">
+              <div class="p-3 rounded-xl bg-green-500/10">
+                <UIcon
+                  name="i-lucide-check-circle"
+                  class="size-6 text-green-500"
+                />
+              </div>
+              <div>
+                <p class="text-2xl font-bold">{{ totalPublished }}</p>
+                <p class="text-md text-muted">Published</p>
+              </div>
+            </div>
+          </UCard>
+          <UCard>
+            <div class="flex items-center gap-4">
+              <div class="p-3 rounded-xl bg-amber-500/10">
+                <UIcon name="i-lucide-clock" class="size-6 text-amber-500" />
+              </div>
+              <div>
+                <p class="text-2xl font-bold">{{ totalPending }}</p>
+                <p class="text-md text-muted">Pending Review</p>
+              </div>
+            </div>
+          </UCard>
+          <UCard>
+            <div class="flex items-center gap-4">
+              <div class="p-3 rounded-xl bg-yellow-500/10">
+                <UIcon name="i-lucide-star" class="size-6 text-yellow-500" />
+              </div>
+              <div>
+                <p class="text-2xl font-bold">{{ averageRating }}</p>
+                <p class="text-md text-muted">Average Rating</p>
+              </div>
+            </div>
+          </UCard>
+        </div>
+
+        <!-- Filter -->
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h2 class="font-semibold">All Testimonials</h2>
+              <div class="flex items-center gap-2">
+                <UButton
+                  v-for="status in [
+                    'all',
+                    'published',
+                    'pending',
+                    'archived',
+                  ] as const"
+                  :key="status"
+                  :label="
+                    status === 'all'
+                      ? 'All'
+                      : status.charAt(0).toUpperCase() + status.slice(1)
+                  "
+                  :color="filterStatus === status ? 'warning' : 'neutral'"
+                  :variant="filterStatus === status ? 'solid' : 'outline'"
+                  size="sm"
+                  @click="filterStatus = status"
+                />
+              </div>
+            </div>
+          </template>
+
+          <div class="space-y-4">
+            <div
+              v-for="testimonial in filteredTestimonials"
+              :key="testimonial.id"
+              class="p-4 rounded-lg border border-default"
+              :class="{ 'ring-2 ring-warning': testimonial.isFeatured }"
+            >
+              <div class="flex items-start gap-4">
+                <!-- Avatar -->
+                <div class="flex-shrink-0">
+                  <img
+                    v-if="testimonial.userImage"
+                    :src="testimonial.userImage"
+                    :alt="testimonial.userName"
+                    class="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div
+                    v-else
+                    class="w-12 h-12 rounded-full bg-warning/20 flex items-center justify-center"
+                  >
+                    <span class="text-lg font-bold text-warning">{{
+                      testimonial.userName.charAt(0)
+                    }}</span>
+                  </div>
+                </div>
+
+                <!-- Content -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-start justify-between gap-4">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h3 class="font-semibold">
+                          {{ testimonial.userName }}
+                        </h3>
+                        <UBadge
+                          :label="testimonial.userRole"
+                          variant="subtle"
+                          color="neutral"
+                          size="sm"
+                        />
+                        <UBadge
+                          :label="testimonial.status"
+                          :color="getStatusColor(testimonial.status)"
+                          size="sm"
+                        />
+                        <UIcon
+                          v-if="testimonial.isFeatured"
+                          name="i-lucide-star"
+                          class="size-4 text-warning"
+                        />
+                      </div>
+                      <p class="text-md text-muted mt-1">
+                        {{ testimonial.content }}
+                      </p>
+
+                      <!-- Rating -->
+                      <div class="flex items-center gap-1 mt-2">
+                        <template
+                          v-for="(_, i) in getRatingStars(testimonial.rating)"
+                          :key="i"
+                        >
+                          <UIcon
+                            :name="
+                              i < testimonial.rating
+                                ? 'i-lucide-star'
+                                : 'i-lucide-star'
+                            "
+                            :class="
+                              i < testimonial.rating
+                                ? 'text-yellow-500'
+                                : 'text-muted'
+                            "
+                            class="size-4"
+                          />
+                        </template>
+                        <span class="text-md text-muted ml-1"
+                          >({{ testimonial.rating }}/5)</span
+                        >
+                      </div>
+
+                      <!-- Tags -->
+                      <div
+                        v-if="testimonial.tags"
+                        class="flex items-center gap-2 mt-2"
+                      >
+                        <UBadge
+                          v-for="tag in testimonial.tags.split(',')"
+                          :key="tag"
+                          :label="tag.trim()"
+                          variant="outline"
+                          color="neutral"
+                          size="sm"
+                        />
+                      </div>
+
+                      <p class="text-xs text-muted mt-2">
+                        Added {{ formatDate(testimonial.addedAt) }}
+                      </p>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                      <USwitch
+                        :model-value="testimonial.isFeatured"
+                        @update:model-value="toggleFeatured(testimonial)"
+                      />
+                      <UDropdownMenu
+                        :items="[
+                          [
+                            {
+                              label: 'Edit',
+                              icon: 'i-lucide-pencil',
+                              onSelect: () => openEditModal(testimonial),
+                            },
+                            {
+                              label: testimonial.isFeatured
+                                ? 'Remove from Featured'
+                                : 'Mark as Featured',
+                              icon: 'i-lucide-star',
+                              onSelect: () => toggleFeatured(testimonial),
+                            },
+                          ],
+                          [
+                            {
+                              label: 'Publish',
+                              icon: 'i-lucide-check-circle',
+                              onSelect: () =>
+                                changeStatus(testimonial.id, 'published'),
+                            },
+                            {
+                              label: 'Archive',
+                              icon: 'i-lucide-archive',
+                              onSelect: () =>
+                                changeStatus(testimonial.id, 'archived'),
+                            },
+                          ],
+                          [
+                            {
+                              label: 'Delete',
+                              icon: 'i-lucide-trash',
+                              color: 'error',
+                              onSelect: () => deleteTestimonial(testimonial.id),
+                            },
+                          ],
+                        ]"
+                      >
+                        <UButton
+                          icon="i-lucide-ellipsis-vertical"
+                          color="neutral"
+                          variant="ghost"
+                        />
+                      </UDropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-if="filteredTestimonials.length === 0"
+              class="text-center py-8"
+            >
+              <UIcon
+                name="i-lucide-message-square"
+                class="size-12 text-muted mx-auto mb-2"
+              />
+              <p class="text-muted">No testimonials found</p>
+            </div>
+          </div>
+        </UCard>
+
+        <!-- Add Testimonial Modal -->
+        <UModal v-model:open="showAddModal" title="Add New Testimonial">
+          <template #body>
+            <div class="space-y-4">
+              <UFormField label="Name" required>
+                <UInput
+                  v-model="newTestimonial.userName"
+                  placeholder="Customer name"
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Role">
+                <UInput
+                  v-model="newTestimonial.userRole"
+                  placeholder="e.g. Student"
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Photo URL">
+                <UInput
+                  v-model="newTestimonial.userImage"
+                  placeholder="https://..."
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Content" required>
+                <UTextarea
+                  v-model="newTestimonial.content"
+                  placeholder="Testimonial content..."
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Rating">
+                <div class="flex items-center gap-2">
+                  <USelect
+                    v-model="newTestimonial.rating"
+                    :options="
+                      [1, 2, 3, 4, 5].map((n) => ({
+                        label: `${n} Star${n > 1 ? 's' : ''}`,
+                        value: n,
+                      }))
+                    "
+                    class="w-40"
+                    color="warning"
+                  />
+                </div>
+              </UFormField>
+              <UFormField label="Tags">
+                <UInput
+                  v-model="newTestimonial.tags"
+                  placeholder="e.g. SIM A,Professional (comma separated)"
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Status">
+                <USelect
+                  v-model="newTestimonial.status"
+                  :options="[
+                    { label: 'Draft', value: 'draft' },
+                    { label: 'Pending', value: 'pending' },
+                    { label: 'Published', value: 'published' },
+                  ]"
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <USwitch
+                v-model="newTestimonial.isFeatured"
+                label="Mark as Featured"
+                class="w-full"
+                color="warning"
+              />
+            </div>
+          </template>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton
+                label="Cancel"
+                variant="ghost"
+                color="neutral"
+                @click="showAddModal = false"
+              />
+              <UButton
+                label="Create Testimonial"
+                icon="i-lucide-plus"
+                color="warning"
+                @click="saveNewTestimonial"
+              />
+            </div>
+          </template>
+        </UModal>
+
+        <!-- Edit Testimonial Modal -->
+        <UModal v-model:open="showEditModal" title="Edit Testimonial">
+          <template #body>
+            <div v-if="selectedTestimonial" class="space-y-4">
+              <UFormField label="Name" required>
+                <UInput
+                  v-model="selectedTestimonial.userName"
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Role">
+                <UInput
+                  v-model="selectedTestimonial.userRole"
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Photo URL">
+                <UInput
+                  v-model="selectedTestimonial.userImage"
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Content" required>
+                <UTextarea
+                  v-model="selectedTestimonial.content"
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Rating">
+                <USelect
+                  v-model="selectedTestimonial.rating"
+                  :options="
+                    [1, 2, 3, 4, 5].map((n) => ({
+                      label: `${n} Star${n > 1 ? 's' : ''}`,
+                      value: n,
+                    }))
+                  "
+                  class="w-40"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Tags">
+                <UInput
+                  v-model="selectedTestimonial.tags"
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <UFormField label="Status">
+                <USelect
+                  v-model="selectedTestimonial.status"
+                  :options="[
+                    { label: 'Draft', value: 'draft' },
+                    { label: 'Pending', value: 'pending' },
+                    { label: 'Published', value: 'published' },
+                    { label: 'Archived', value: 'archived' },
+                  ]"
+                  class="w-full"
+                  color="warning"
+                />
+              </UFormField>
+              <USwitch
+                v-model="selectedTestimonial.isFeatured"
+                label="Featured"
+                class="w-full"
+                color="warning"
+              />
+            </div>
+          </template>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton
+                label="Cancel"
+                variant="ghost"
+                color="neutral"
+                @click="showEditModal = false"
+              />
+              <UButton
+                label="Save Changes"
+                icon="i-lucide-save"
+                color="warning"
+                @click="saveEditedTestimonial"
+              />
+            </div>
+          </template>
+        </UModal>
+      </div>
+    </template>
+  </UDashboardPanel>
+</template>

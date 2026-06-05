@@ -1,4 +1,9 @@
 import { defineStore } from "pinia";
+import { studentService } from "~/services/studentService";
+import type {
+  CreateStudentData,
+  UpdateStudentData,
+} from "~/services/studentService";
 
 export interface Student {
   id: number;
@@ -17,6 +22,18 @@ interface StudentsState {
   students: Student[];
   isLoading: boolean;
   error: string | null;
+  // Pagination state
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  // Client-side search/filter state
+  searchQuery: string;
+  statusFilter: string;
+  // Server-side pagination mode
+  useServerPagination: boolean;
 }
 
 const packageSessionMap: { [key: string]: number } = {
@@ -91,9 +108,18 @@ const initialStudents: Student[] = [
 
 export const useStudentsStore = defineStore("students", {
   state: (): StudentsState => ({
-    students: initialStudents,
+    students: [],
     isLoading: false,
     error: null,
+    pagination: {
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 0,
+    },
+    searchQuery: "",
+    statusFilter: "all",
+    useServerPagination: true, // Default to server-side pagination
   }),
 
   getters: {
@@ -107,64 +133,155 @@ export const useStudentsStore = defineStore("students", {
   },
 
   actions: {
-    async fetchStudents() {
+    async fetchStudents(page = 1, resetPage = true) {
       this.isLoading = true;
       this.error = null;
+
       try {
-        const response = await fetch("http://localhost:8080/members");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // If resetting page, set to 1
+        if (resetPage) {
+          this.pagination.page = page;
         }
-        const data = await response.json();
-        // Map API response to Student interface
-        this.students = data.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          email: item.email,
-          phone: item.phone || item.phone_number || "",
-          package: item.package || "8x",
-          progress: item.progress || 0,
-          completedSessions: item.completed_sessions || 0,
-          totalSessions: item.total_sessions || 0,
-          joinDate: item.join_date || new Date().toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          }),
-          status: item.status || "pending",
-        }));
+
+        const params: { page: number; limit: number; search?: string; status?: string } = {
+          page: this.pagination.page,
+          limit: this.pagination.limit,
+        };
+
+        // Add search/filter params
+        if (this.searchQuery) {
+          params.search = this.searchQuery;
+        }
+        if (this.statusFilter !== "all") {
+          params.status = this.statusFilter;
+        }
+
+        const result = await studentService.fetchAll(params);
+
+        this.students = result.students;
+        this.pagination = result.pagination;
       } catch (err) {
-        this.error = err instanceof Error ? err.message : "Failed to fetch students";
+        this.error =
+          err instanceof Error ? err.message : "Failed to fetch students";
         console.error("Error fetching students:", err);
+        // API failed, use dummy data
+        this.students = [...initialStudents];
       } finally {
         this.isLoading = false;
       }
     },
 
-    addStudent(
-      data: Omit<Student, "id" | "progress" | "completedSessions" | "joinDate" | "totalSessions">
-    ) {
+    async fetchStudentsNoPagination() {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const students = await studentService.fetchAllFlat();
+        if (students.length > 0) {
+          this.students = students;
+        }
+      } catch (err) {
+        this.error =
+          err instanceof Error ? err.message : "Failed to fetch students";
+        console.error("Error fetching students:", err);
+        // API failed, use dummy data
+        this.students = [...initialStudents];
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    // Set search query and optionally trigger fetch
+    setSearchQuery(query: string) {
+      this.searchQuery = query;
+      if (this.useServerPagination) {
+        this.fetchStudents(1, true); // Reset to page 1 on new search
+      }
+    },
+
+    // Set status filter and optionally trigger fetch
+    setStatusFilter(status: string) {
+      this.statusFilter = status;
+      if (this.useServerPagination) {
+        this.fetchStudents(1, true); // Reset to page 1 on new filter
+      }
+    },
+
+    // Change page for server-side pagination
+    setPage(page: number) {
+      this.pagination.page = page;
+      this.fetchStudents(page, false); // Don't reset page
+    },
+
+    async addStudent(data: CreateStudentData) {
+      try {
+        const newStudent = await studentService.create(data);
+        this.students.unshift(newStudent);
+        return newStudent;
+      } catch {
+        // Fallback to local creation if API fails
+        return this.addStudentLocal({
+          name: `${data.firstName} ${data.lastName}`.trim(),
+          email: data.email,
+          phone: data.phoneNumber,
+          package: "8x",
+          status: "pending",
+        });
+      }
+    },
+
+    // Local creation fallback (when API is not available)
+    addStudentLocal(
+      data: Omit<
+        Student,
+        "id" | "progress" | "completedSessions" | "joinDate" | "totalSessions"
+      >,
+    ): Student {
       const newId = Math.max(...this.students.map((s) => s.id), 0) + 1;
-      const totalSessions = packageSessionMap[data.package] || 0;
+      const totalSessions = studentService.getTotalSessions(data.package);
 
       const newStudent: Student = {
-        ...data,
         id: newId,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        package: data.package,
         totalSessions,
         progress: 0,
         completedSessions: 0,
-        joinDate: new Date().toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
+        joinDate: studentService.formatJoinDate(),
+        status: data.status || "pending",
       };
 
       this.students.unshift(newStudent);
       return newStudent;
     },
 
-    updateStudent(id: number, data: Partial<Student>) {
+    async updateStudent(id: number, data: UpdateStudentData) {
+      // Convert numeric ID to userId string (for API)
+      const userId = String(id);
+
+      try {
+        const updatedStudent = await studentService.update(userId, data);
+        if (updatedStudent) {
+          const index = this.students.findIndex((s) => s.id === id);
+          if (index !== -1) {
+            this.students[index] = updatedStudent;
+          }
+          return updatedStudent;
+        }
+        return null;
+      } catch {
+        // Fallback to local update if API fails
+        // Convert UpdateStudentData to Partial<Student>
+        const localData: Partial<Student> = {
+          phone: data.phoneNumber,
+        };
+        return this.updateStudentLocal(id, localData);
+      }
+    },
+
+    // Local update fallback (when API is not available)
+    updateStudentLocal(id: number, data: Partial<Student>): Student | null {
       const index = this.students.findIndex((s) => s.id === id);
       if (index !== -1) {
         const existing = this.students[index];
@@ -177,7 +294,8 @@ export const useStudentsStore = defineStore("students", {
           phone: data.phone ?? existing.phone,
           package: data.package ?? existing.package,
           progress: data.progress ?? existing.progress,
-          completedSessions: data.completedSessions ?? existing.completedSessions,
+          completedSessions:
+            data.completedSessions ?? existing.completedSessions,
           totalSessions: data.totalSessions ?? existing.totalSessions,
           joinDate: data.joinDate ?? existing.joinDate,
           status: data.status ?? existing.status,
@@ -185,15 +303,14 @@ export const useStudentsStore = defineStore("students", {
 
         // Update totalSessions if package changed
         if (data.package) {
-          updatedData.totalSessions = packageSessionMap[data.package] || 0;
+          updatedData.totalSessions = studentService.getTotalSessions(
+            data.package,
+          );
           // Recalculate progress
-          updatedData.progress =
-            updatedData.totalSessions > 0
-              ? Math.round(
-                  (updatedData.completedSessions / updatedData.totalSessions) *
-                    100
-                )
-              : 0;
+          updatedData.progress = studentService.calculateProgress(
+            updatedData.completedSessions,
+            updatedData.totalSessions,
+          );
         }
 
         this.students[index] = updatedData;
@@ -202,8 +319,19 @@ export const useStudentsStore = defineStore("students", {
       return null;
     },
 
-    deleteStudent(id: number) {
-      this.students = this.students.filter((s) => s.id !== id);
+    async deleteStudent(id: number) {
+      const userId = String(id);
+      try {
+        const success = await studentService.delete(userId);
+        if (success) {
+          this.students = this.students.filter((s) => s.id !== id);
+        }
+        return success;
+      } catch {
+        // Fallback to local delete if API fails
+        this.students = this.students.filter((s) => s.id !== id);
+        return true;
+      }
     },
 
     getStudentById(id: number) {
@@ -215,22 +343,39 @@ export const useStudentsStore = defineStore("students", {
         const matchesSearch =
           student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           student.email.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus =
-          status === "all" || student.status === status;
+        const matchesStatus = status === "all" || student.status === status;
         return matchesSearch && matchesStatus;
       });
     },
 
-    updateSessionProgress(id: number, completedSessions: number) {
+    async updateSessionProgress(id: number, completedSessions: number) {
+      const userId = String(id);
+      try {
+        const updatedStudent = await studentService.updateProgress(
+          userId,
+          completedSessions,
+        );
+        if (updatedStudent) {
+          const index = this.students.findIndex((s) => s.id === id);
+          if (index !== -1) {
+            this.students[index] = updatedStudent;
+          }
+          return;
+        }
+      } catch {
+        // Fallback to local update if API fails
+      }
+
+      // Local progress update fallback
       const student = this.students.find((s) => s.id === id);
       if (student) {
         student.completedSessions = completedSessions;
         student.totalSessions =
           packageSessionMap[student.package] || student.totalSessions;
-        student.progress =
-          student.totalSessions > 0
-            ? Math.round((completedSessions / student.totalSessions) * 100)
-            : 0;
+        student.progress = studentService.calculateProgress(
+          completedSessions,
+          student.totalSessions,
+        );
 
         // Auto-complete if all sessions done
         if (student.progress >= 100 && student.status !== "completed") {

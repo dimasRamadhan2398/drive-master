@@ -1,4 +1,5 @@
 import { useAuthStore } from "~/stores/auth";
+import { useTokenValidator } from "~/composables/useTokenValidator";
 
 export default defineNuxtRouteMiddleware((to) => {
   // Rehydrate auth state from cookies if needed (handles SSR/client hydration)
@@ -7,6 +8,7 @@ export default defineNuxtRouteMiddleware((to) => {
   const refreshToken = useCookie("refresh_token");
 
   const authStore = useAuthStore();
+  const tokenValidator = useTokenValidator();
 
   // Rehydrate from cookies if not already authenticated
   if (!authStore.isAuthenticated && authToken.value && userData.value) {
@@ -17,6 +19,17 @@ export default defineNuxtRouteMiddleware((to) => {
       // Invalid cookie data, clear them
       authToken.value = null;
       userData.value = null;
+    }
+  }
+
+  // Check if token is expired or invalid - redirect to appropriate login page
+  if (authStore.accessToken) {
+    const loginRedirect = tokenValidator.getLoginRedirectPath(to.path);
+
+    if (tokenValidator.isTokenExpired(authStore.accessToken)) {
+      // Token is expired - clear auth and redirect
+      tokenValidator.handleInvalidToken(loginRedirect);
+      return;
     }
   }
 
@@ -65,6 +78,13 @@ export default defineNuxtRouteMiddleware((to) => {
     (route) => to.path === route || to.path.startsWith(route + "/"),
   );
 
+  // If user is authenticated as admin and trying to access auth pages, redirect to admin
+  if (authStore.isAuthenticated && authStore.userRole?.toLowerCase().includes("admin")) {
+    if (to.path.startsWith("/auth/") || to.path === "/") {
+      return navigateTo("/admin");
+    }
+  }
+
   // Allow public routes without authentication
   if (isPublicRoute) {
     return;
@@ -73,10 +93,5 @@ export default defineNuxtRouteMiddleware((to) => {
   // Check if user is authenticated
   if (!authStore.isAuthenticated) {
     return navigateTo("/auth/login");
-  }
-
-  // Check if user has admin role - redirect to admin panel
-  if (authStore.userRole?.toLowerCase().includes("admin")) {
-    return navigateTo("/admin");
   }
 });

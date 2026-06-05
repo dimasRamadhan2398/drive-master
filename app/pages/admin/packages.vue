@@ -20,7 +20,7 @@ const addOns = computed(() => packagesStore.addons)
 
 // Stats computed from store
 const totalPackages = computed(() => packagesStore.totalPackages)
-const totalSold = computed(() => packagesStore.totalSold)
+const totalSold = computed(() => packagesStore.packages.reduce((sum, p) => sum + p.totalSold, 0))
 const totalRevenue = computed(() => packagesStore.totalRevenue)
 
 const newPackage = ref({
@@ -53,7 +53,7 @@ function editPackage(pkg: Package) {
   showEditModal.value = true
 }
 
-function togglePackageStatus(pkgId: number) {
+function togglePackageStatus(pkgId: string) {
   const isActive = packagesStore.togglePackageStatus(pkgId)
   if (isActive !== null) {
     toast.add({
@@ -118,7 +118,7 @@ function duplicatePackage(pkg: Package) {
   toast.add({ title: 'Package Duplicated', description: `Salinan dari "${pkg.name}" telah dibuat.`, color: 'success' });
 }
 
-function deletePackage(pkgId: number) {
+function deletePackage(pkgId: string) {
   if (confirm(`Anda yakin ingin menghapus paket ini? Aksi ini tidak dapat dibatalkan.`)) {
     packagesStore.deletePackage(pkgId)
     toast.add({ title: 'Package Deleted', description: `Paket telah dihapus.`, color: 'error', icon: 'i-lucide-trash' });

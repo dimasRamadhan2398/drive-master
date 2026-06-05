@@ -27,21 +27,25 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      userApiBase:
-        process.env.NUXT_PUBLIC_USER_API_BASE ||
-        (process.env.NUXT_PUBLIC_API_BASE_URL
-          ? process.env.NUXT_PUBLIC_API_BASE_URL + "/api/v1/users"
-          : "http://localhost:8001/api/v1"),
-      coreApiBase:
-        process.env.NUXT_PUBLIC_CORE_API_BASE ||
-        (process.env.NUXT_PUBLIC_API_BASE_URL
-          ? process.env.NUXT_PUBLIC_API_BASE_URL + "/api/v1/core"
-          : "http://localhost:8002/api/v1"),
-      bookingApiBase:
-        process.env.NUXT_PUBLIC_BOOKING_API_BASE ||
-        (process.env.NUXT_PUBLIC_API_BASE_URL
-          ? process.env.NUXT_PUBLIC_API_BASE_URL + "/api/v1/bookings"
-          : "http://localhost:8003/api/v1"),
+      apiBase:
+        process.env.NUXT_PUBLIC_MODE == "dev"
+          ? "http://localhost:8080/api/v1"
+          : "https://api.drivemaster.id/api/v1",
+      // userApiBase:
+      //   process.env.NUXT_PUBLIC_USER_API_BASE ||
+      //   (process.env.NUXT_PUBLIC_API_BASE_URL
+      //     ? process.env.NUXT_PUBLIC_API_BASE_URL + "/api/v1/users"
+      //     : "http://localhost:8001/api/v1"),
+      // coreApiBase:
+      //   process.env.NUXT_PUBLIC_CORE_API_BASE ||
+      //   (process.env.NUXT_PUBLIC_API_BASE_URL
+      //     ? process.env.NUXT_PUBLIC_API_BASE_URL + "/api/v1/core"
+      //     : "http://localhost:8002/api/v1"),
+      // bookingApiBase:
+      //   process.env.NUXT_PUBLIC_BOOKING_API_BASE ||
+      //   (process.env.NUXT_PUBLIC_API_BASE_URL
+      //     ? process.env.NUXT_PUBLIC_API_BASE_URL + "/api/v1/bookings"
+      //     : "http://localhost:8003/api/v1"),
       gaMeasurementId:
         process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || "G-MOCK123456",
     },

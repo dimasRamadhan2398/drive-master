@@ -9,8 +9,6 @@ definePageMeta({ layout: "admin" });
 const toast = useToast();
 const studentsStore = useStudentsStore();
 
-const searchQuery = ref("");
-const statusFilter = ref("all");
 const showAddModal = ref(false);
 const showDetailModal = ref(false);
 const showEditModal = ref(false);
@@ -19,18 +17,31 @@ const selectedStudent = ref<Student | null>(null);
 const editingStudent = ref<Student | null>(null);
 
 const newStudent = ref({
-  name: "",
+  firstName: "",
+  lastName: "",
   email: "",
-  phone: "",
-  package: "6x",
+  phoneNumber: "",
+  package: "8x",
   status: "pending" as "active" | "pending",
 });
 
-const students = computed(() => studentsStore.students);
-
-const filteredStudents = computed(() => {
-  return studentsStore.filterStudents(searchQuery.value, statusFilter.value);
+// Use store's state instead of local refs for server-side pagination
+const searchQuery = computed({
+  get: () => studentsStore.searchQuery,
+  set: (value) => studentsStore.setSearchQuery(value),
 });
+
+const statusFilter = computed({
+  get: () => studentsStore.statusFilter,
+  set: (value) => studentsStore.setStatusFilter(value),
+});
+
+// Get students and pagination from store
+const students = computed(() => studentsStore.students);
+const pagination = computed(() => studentsStore.pagination);
+
+// For display purposes - students list is now directly from store
+const studentsList = computed(() => studentsStore.students);
 
 function getInitials(name: string) {
   return name
@@ -80,7 +91,7 @@ function deleteStudent(id: number) {
 }
 
 function addStudent() {
-  if (!newStudent.value.name || !newStudent.value.email) {
+  if (!newStudent.value.email || !newStudent.value.firstName) {
     toast.add({
       title: "Error",
       description: "Nama dan email wajib diisi.",
@@ -90,16 +101,16 @@ function addStudent() {
   }
 
   studentsStore.addStudent({
-    name: newStudent.value.name,
     email: newStudent.value.email,
-    phone: newStudent.value.phone,
-    package: newStudent.value.package,
-    status: newStudent.value.status,
+    firstName: newStudent.value.firstName,
+    lastName: newStudent.value.lastName,
+    phoneNumber: newStudent.value.phoneNumber,
+    password: "TempPassword123", // Default password for new students
   });
 
   toast.add({
     title: "Student Added",
-    description: `${newStudent.value.name} telah ditambahkan.`,
+    description: `${newStudent.value.firstName} telah ditambahkan.`,
     icon: "i-lucide-check-circle",
     color: "success",
   });
@@ -107,10 +118,11 @@ function addStudent() {
   showAddModal.value = false;
   // Reset form
   newStudent.value = {
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
-    phone: "",
-    package: "6x",
+    phoneNumber: "",
+    package: "8x",
     status: "pending",
   };
 }
@@ -118,7 +130,15 @@ function addStudent() {
 function saveEditedStudent() {
   if (!editingStudent.value) return;
 
-  studentsStore.updateStudent(editingStudent.value.id, editingStudent.value);
+  // Convert Student to UpdateStudentData format
+  const nameParts = editingStudent.value.name.split(" ");
+  const updateData = {
+    firstName: nameParts[0] || "",
+    lastName: nameParts.slice(1).join(" ") || "",
+    phoneNumber: editingStudent.value.phone,
+  };
+
+  studentsStore.updateStudent(editingStudent.value.id, updateData);
 
   toast.add({
     title: "Student Updated",
@@ -167,15 +187,25 @@ onMounted(() => {
           <UModal v-model:open="showAddModal" title="Add New Student">
             <template #body>
               <div class="space-y-4">
-                <UFormField label="Full Name" required>
-                  <UInput
-                    v-model="newStudent.name"
-                    placeholder="Enter student name"
-                    color="warning"
-                    class="w-full"
-                    icon="i-lucide-user"
-                  />
-                </UFormField>
+                <div class="grid grid-cols-2 gap-4">
+                  <UFormField label="First Name" required>
+                    <UInput
+                      v-model="newStudent.firstName"
+                      placeholder="First name"
+                      color="warning"
+                      class="w-full"
+                      icon="i-lucide-user"
+                    />
+                  </UFormField>
+                  <UFormField label="Last Name">
+                    <UInput
+                      v-model="newStudent.lastName"
+                      placeholder="Last name"
+                      color="warning"
+                      class="w-full"
+                    />
+                  </UFormField>
+                </div>
                 <UFormField label="Email" required>
                   <UInput
                     v-model="newStudent.email"
@@ -188,40 +218,13 @@ onMounted(() => {
                 </UFormField>
                 <UFormField label="Phone Number" required>
                   <UInput
-                    v-model="newStudent.phone"
-                    placeholder="081234567890"
+                    v-model="newStudent.phoneNumber"
+                    placeholder="+6281234567890"
                     color="warning"
                     class="w-full"
                     icon="i-lucide-phone"
                   />
                 </UFormField>
-                <div class="grid grid-cols-2 gap-4">
-                  <UFormField label="Package" required>
-                    <USelect
-                      v-model="newStudent.package"
-                      :items="[
-                        { label: '6x', value: '6x' },
-                        { label: '8x', value: '8x' },
-                        { label: '10x', value: '10x' },
-                        { label: '12x', value: '12x' },
-                      ]"
-                      placeholder="Select package"
-                      class="w-full"
-                      color="warning"
-                    />
-                  </UFormField>
-                  <UFormField label="Status" required>
-                    <USelect
-                      v-model="newStudent.status"
-                      :items="[
-                        { label: 'Active', value: 'active' },
-                        { label: 'Pending', value: 'pending' },
-                      ]"
-                      class="w-full"
-                      color="warning"
-                    />
-                  </UFormField>
-                </div>
               </div>
             </template>
             <template #footer>
@@ -391,7 +394,7 @@ onMounted(() => {
               </thead>
               <tbody>
                 <tr
-                  v-for="student in filteredStudents"
+                  v-for="student in studentsList"
                   :key="student.id"
                   class="border-b border-default hover:bg-muted/30 transition-colors"
                 >
@@ -556,13 +559,15 @@ onMounted(() => {
           <template #footer>
             <div class="flex items-center justify-between">
               <p class="text-md text-muted">
-                Showing {{ filteredStudents.length }} of
-                {{ students.length }} students
+                Showing {{ students.length }} of
+                {{ pagination.total }} students
               </p>
               <UPagination
-                :total="students.length"
+                v-model="studentsStore.pagination.page"
+                :total="pagination.total"
+                :items-per-page="pagination.limit"
                 active-color="warning"
-                :items-per-page="10"
+                @update:page="(page) => studentsStore.setPage(page)"
               />
             </div>
           </template>
