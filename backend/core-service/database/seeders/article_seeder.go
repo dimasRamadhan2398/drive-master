@@ -313,21 +313,21 @@ func RunArticleSeeder(db *gorm.DB) error {
 	// Create tags
 	tags := []models.Tag{
 		{
-			ID:          uuid.MustParse("t0000001-0000-0000-0000-000000000001"),
+			ID:          uuid.MustParse("b0000001-0000-0000-0000-000000000001"),
 			Name:        "Tips",
 			Slug:        "tips",
 			Description: "Helpful driving tips",
 			UsageCount:  5,
 		},
 		{
-			ID:          uuid.MustParse("t0000001-0000-0000-0000-000000000002"),
+			ID:          uuid.MustParse("b0000001-0000-0000-0000-000000000002"),
 			Name:        "Safety",
 			Slug:        "safety",
 			Description: "Road safety content",
 			UsageCount:  4,
 		},
 		{
-			ID:          uuid.MustParse("t0000001-0000-0000-0000-000000000003"),
+			ID:          uuid.MustParse("b0000001-0000-0000-0000-000000000003"),
 			Name:        "Beginners",
 			Slug:        "beginners",
 			Description: "Content for new drivers",

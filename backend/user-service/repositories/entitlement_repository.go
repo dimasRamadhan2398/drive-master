@@ -128,12 +128,8 @@ func (r *EntitlementRepository) FindActiveByMemberIDs(ctx context.Context, membe
 	}
 
 	var entitlements []models.Entitlement
-	if err := r.BaseRepository.FindWithOptions(&models.Entitlement{}, &entitlements, &base.QueryOptions{
-		Where: map[string]interface{}{
-			"member_id IN": memberIDs,
-			"status":       models.EntitlementStatusActive,
-		},
-	}); err != nil {
+	// Use raw query for IN clause since FindWithOptions doesn't handle " IN" suffix properly
+	if err := r.DB.Where("member_id IN ? AND status = ?", memberIDs, models.EntitlementStatusActive).Find(&entitlements).Error; err != nil {
 		return nil, err
 	}
 

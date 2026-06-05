@@ -110,15 +110,19 @@ const (
 )
 
 // InstructorArea represents the instructor_areas table
-// Links an instructor to a specific region from core-service
+// Links an instructor to a specific regency from core-service
 type InstructorArea struct {
-	InstructorID uuid.UUID `json:"instructorId" gorm:"type:uuid;not null"`
+	ID           uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	InstructorID uuid.UUID `json:"instructorId" gorm:"type:uuid;not null;index"`
 	AreaType     AreaType  `json:"areaType" gorm:"type:varchar(20);not null"` // province, regency, district
-	AreaID       uint      `json:"areaId" gorm:"not null"`                   // ID from core-service (province/regency/district ID)
+	AreaID       uint      `json:"areaId" gorm:"not null"` 
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
 // InstructorAreaWithDetails includes region details for display
 type InstructorAreaWithDetails struct {
+	ID           uuid.UUID `json:"id"`
 	InstructorID uuid.UUID `json:"instructorId"`
 	AreaType     AreaType  `json:"areaType"`
 	AreaID       uint      `json:"areaId"`
@@ -152,7 +156,6 @@ const (
 // Certification represents an instructor's certification (e.g., BNSP certificate)
 type Certification struct {
 	ID              uuid.UUID            `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	MemberID    	uuid.UUID            `json:"memberId" gorm:"type:uuid;not null;index"`
 	InstructorID    uuid.UUID            `json:"instructorId" gorm:"type:uuid;not null;index"`
 	CertType        string               `json:"certType" gorm:"size:50;not null"`        // e.g., "BNSP", "SIM", "AWS"
 	CertNumber      string               `json:"certNumber" gorm:"size:100;not null"`     // Certificate number

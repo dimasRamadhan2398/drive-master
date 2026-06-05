@@ -1,10 +1,10 @@
 package controllers
 
 import (
-	"core-service/models"
-	"core-service/models/dto"
-	"core-service/pkg/response"
-	"core-service/services"
+	"user-service/models"
+	"user-service/models/dto"
+	responseRes "user-service/pkg/response"
+	"user-service/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -45,11 +45,11 @@ func NewTestimonialController(testimonialService services.ITestimonialService) I
 func (c *TestimonialController) GetAllTestimonials(ctx *gin.Context) {
 	testimonials, err := c.testimonialService.GetAllTestimonials(ctx.Request.Context())
 	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch testimonials")
+		responseRes.InternalServerError(ctx, "Failed to fetch testimonials")
 		return
 	}
 
-	response.OK(ctx, "Testimonials fetched successfully", testimonials)
+	responseRes.OK(ctx, "Testimonials fetched successfully", testimonials)
 }
 
 // GetTestimonialByID handles GET /api/v1/testimonials/:id
@@ -64,22 +64,22 @@ func (c *TestimonialController) GetTestimonialByID(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		response.BadRequest(ctx, "Invalid testimonial ID format")
+		responseRes.BadRequest(ctx, "Invalid testimonial ID format")
 		return
 	}
 
 	testimonial, err := c.testimonialService.GetTestimonialByID(ctx.Request.Context(), id)
 	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch testimonial")
+		responseRes.InternalServerError(ctx, "Failed to fetch testimonial")
 		return
 	}
 
 	if testimonial == nil {
-		response.NotFound(ctx, "Testimonial not found")
+		responseRes.NotFound(ctx, "Testimonial not found")
 		return
 	}
 
-	response.OK(ctx, "Testimonial fetched successfully", testimonial)
+	responseRes.OK(ctx, "Testimonial fetched successfully", testimonial)
 }
 
 // GetPublishedTestimonials handles GET /api/v1/testimonials/published
@@ -92,11 +92,11 @@ func (c *TestimonialController) GetTestimonialByID(ctx *gin.Context) {
 func (c *TestimonialController) GetPublishedTestimonials(ctx *gin.Context) {
 	testimonials, err := c.testimonialService.GetPublishedTestimonials(ctx.Request.Context())
 	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch published testimonials")
+		responseRes.InternalServerError(ctx, "Failed to fetch published testimonials")
 		return
 	}
 
-	response.OK(ctx, "Published testimonials fetched successfully", testimonials)
+	responseRes.OK(ctx, "Published testimonials fetched successfully", testimonials)
 }
 
 // GetFeaturedTestimonials handles GET /api/v1/testimonials/featured
@@ -109,11 +109,11 @@ func (c *TestimonialController) GetPublishedTestimonials(ctx *gin.Context) {
 func (c *TestimonialController) GetFeaturedTestimonials(ctx *gin.Context) {
 	testimonials, err := c.testimonialService.GetFeaturedTestimonials(ctx.Request.Context())
 	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch featured testimonials")
+		responseRes.InternalServerError(ctx, "Failed to fetch featured testimonials")
 		return
 	}
 
-	response.OK(ctx, "Featured testimonials fetched successfully", testimonials)
+	responseRes.OK(ctx, "Featured testimonials fetched successfully", testimonials)
 }
 
 // GetTestimonialsByUserID handles GET /api/v1/testimonials/user/:userId
@@ -128,17 +128,17 @@ func (c *TestimonialController) GetTestimonialsByUserID(ctx *gin.Context) {
 	userIDParam := ctx.Param("userId")
 	userID, err := uuid.Parse(userIDParam)
 	if err != nil {
-		response.BadRequest(ctx, "Invalid user ID format")
+		responseRes.BadRequest(ctx, "Invalid user ID format")
 		return
 	}
 
 	testimonials, err := c.testimonialService.GetTestimonialsByUserID(ctx.Request.Context(), userID)
 	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch user testimonials")
+		responseRes.InternalServerError(ctx, "Failed to fetch user testimonials")
 		return
 	}
 
-	response.OK(ctx, "User testimonials fetched successfully", testimonials)
+	responseRes.OK(ctx, "User testimonials fetched successfully", testimonials)
 }
 
 // CreateTestimonial handles POST /api/v1/testimonials
@@ -153,12 +153,12 @@ func (c *TestimonialController) GetTestimonialsByUserID(ctx *gin.Context) {
 func (c *TestimonialController) CreateTestimonial(ctx *gin.Context) {
 	var req dto.CreateTestimonialRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(ctx, "Invalid request body: "+err.Error())
+		responseRes.BadRequest(ctx, "Invalid request body: "+err.Error())
 		return
 	}
 
 	if err := validator.New().Struct(req); err != nil {
-		response.BadRequest(ctx, "Validation failed: "+err.Error())
+		responseRes.BadRequest(ctx, "Validation failed: "+err.Error())
 		return
 	}
 
@@ -182,11 +182,11 @@ func (c *TestimonialController) CreateTestimonial(ctx *gin.Context) {
 	}
 
 	if err := c.testimonialService.CreateTestimonial(ctx.Request.Context(), testimonial); err != nil {
-		response.InternalServerError(ctx, "Failed to create testimonial")
+		responseRes.InternalServerError(ctx, "Failed to create testimonial")
 		return
 	}
 
-	response.Created(ctx, "Testimonial created successfully", testimonial)
+	responseRes.Created(ctx, "Testimonial created successfully", testimonial)
 }
 
 // UpdateTestimonial handles PUT /api/v1/testimonials/:id
@@ -203,25 +203,25 @@ func (c *TestimonialController) UpdateTestimonial(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		response.BadRequest(ctx, "Invalid testimonial ID format")
+		responseRes.BadRequest(ctx, "Invalid testimonial ID format")
 		return
 	}
 
 	// Get existing testimonial
 	testimonial, err := c.testimonialService.GetTestimonialByID(ctx.Request.Context(), id)
 	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch testimonial")
+		responseRes.InternalServerError(ctx, "Failed to fetch testimonial")
 		return
 	}
 
 	if testimonial == nil {
-		response.NotFound(ctx, "Testimonial not found")
+		responseRes.NotFound(ctx, "Testimonial not found")
 		return
 	}
 
 	var req dto.UpdateTestimonialRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(ctx, "Invalid request body: "+err.Error())
+		responseRes.BadRequest(ctx, "Invalid request body: "+err.Error())
 		return
 	}
 
@@ -253,11 +253,11 @@ func (c *TestimonialController) UpdateTestimonial(ctx *gin.Context) {
 	}
 
 	if err := c.testimonialService.UpdateTestimonial(ctx.Request.Context(), testimonial); err != nil {
-		response.InternalServerError(ctx, "Failed to update testimonial")
+		responseRes.InternalServerError(ctx, "Failed to update testimonial")
 		return
 	}
 
-	response.OK(ctx, "Testimonial updated successfully", testimonial)
+	responseRes.OK(ctx, "Testimonial updated successfully", testimonial)
 }
 
 // DeleteTestimonial handles DELETE /api/v1/testimonials/:id
@@ -272,25 +272,25 @@ func (c *TestimonialController) DeleteTestimonial(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		response.BadRequest(ctx, "Invalid testimonial ID format")
+		responseRes.BadRequest(ctx, "Invalid testimonial ID format")
 		return
 	}
 
 	testimonial, err := c.testimonialService.GetTestimonialByID(ctx.Request.Context(), id)
 	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch testimonial")
+		responseRes.InternalServerError(ctx, "Failed to fetch testimonial")
 		return
 	}
 
 	if testimonial == nil {
-		response.NotFound(ctx, "Testimonial not found")
+		responseRes.NotFound(ctx, "Testimonial not found")
 		return
 	}
 
 	if err := c.testimonialService.DeleteTestimonial(ctx.Request.Context(), id); err != nil {
-		response.InternalServerError(ctx, "Failed to delete testimonial")
+		responseRes.InternalServerError(ctx, "Failed to delete testimonial")
 		return
 	}
 
-	response.OK(ctx, "Testimonial deleted successfully", nil)
+	responseRes.OK(ctx, "Testimonial deleted successfully", nil)
 }

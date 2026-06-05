@@ -30,6 +30,7 @@ type IServiceRegistry interface {
 	GetRegionService() IRegionService
 	GetCertificationService() ICertificationService
 	GetEntitlementService() IEntitlementService
+	GetTestimonialService() ITestimonialService
 }
 
 func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgKafka.IEventPublisher, redisClient *redis.Client) IServiceRegistry {
@@ -112,4 +113,8 @@ func (r *Registry) GetEntitlementService() IEntitlementService {
 		r.eventPublisher,
 		listener,
 	)
+}
+
+func (r *Registry) GetTestimonialService() ITestimonialService {
+	return NewTestimonialService(r.repoRegistry.GetTestimonial(), r.eventPublisher)
 }

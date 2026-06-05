@@ -17,6 +17,9 @@ services:
       - CONFIG_PATH=./pkg/config/config.yaml
       - RUN_MIGRATIONS=true
       - RUN_SEEDERS=true
+    volumes:
+      # Mount GA4 credentials file from host to container
+      - ${GA4_CREDENTIALS_PATH:-./analytics}:/app/analytics:ro
     ports:
       - "8002:8002"
     networks:

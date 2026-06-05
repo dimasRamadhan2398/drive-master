@@ -26,6 +26,9 @@ COPY --from=builder /app/core-service .
 # Copy config file
 COPY --from=builder /app/pkg/config/config.yaml ./pkg/config/config.yaml
 
+# Create analytics directory for credentials file
+RUN mkdir -p /app/analytics
+
 # Copy database reference files (CSV for seeders)
 COPY --from=builder /app/database/refs ./database/refs
 

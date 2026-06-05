@@ -62,6 +62,7 @@ type ImageKitConfig struct {
 	ID          string `mapstructure:"id" yaml:"id"`
 	PrivateKey  string `mapstructure:"private_key" yaml:"private_key"`
 	URLEndpoint string `mapstructure:"url_endpoint" yaml:"url_endpoint"`
+	PublicKey   string `mapstructure:"public_key" yaml:"public_key"`
 }
 
 type JWTConfig struct {

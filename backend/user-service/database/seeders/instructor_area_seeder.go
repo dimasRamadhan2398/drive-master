@@ -57,12 +57,14 @@ func (s *InstructorAreaSeeder) Seed() error {
 	for _, area := range areas {
 		record := models.InstructorArea{
 			InstructorID: area.instructorID,
+			AreaType:     models.AreaTypeDistrict,
 			AreaID:       area.areaID,
 		}
 
 		// Use FirstOrCreate to avoid duplicates
 		if err := s.db.FirstOrCreate(&record, models.InstructorArea{
 			InstructorID: area.instructorID,
+			AreaType:     models.AreaTypeDistrict,
 			AreaID:       area.areaID,
 		}).Error; err != nil {
 			return err

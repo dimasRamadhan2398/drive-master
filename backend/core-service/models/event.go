@@ -105,45 +105,6 @@ type ArticleArchivedEvent struct {
 	ArchivedAt string `json:"archivedAt"`
 }
 
-// ========== TESTIMONIAL EVENTS ==========
-
-type TestimonialCreatedEvent struct {
-	TestimonialID string  `json:"testimonialId"`
-	UserID        string  `json:"userId"`
-	UserName      string  `json:"userName"`
-	Rating        float64 `json:"rating"`
-	Status        string  `json:"status"`
-	IsFeatured    bool    `json:"isFeatured"`
-	CreatedAt     string  `json:"createdAt"`
-}
-
-type TestimonialUpdatedEvent struct {
-	TestimonialID string  `json:"testimonialId"`
-	UserName      string  `json:"userName,omitempty"`
-	Content       string  `json:"content,omitempty"`
-	Rating        float64 `json:"rating,omitempty"`
-	Status        string  `json:"status,omitempty"`
-	IsFeatured    *bool   `json:"isFeatured,omitempty"`
-	UpdatedAt     string  `json:"updatedAt"`
-}
-
-type TestimonialDeletedEvent struct {
-	TestimonialID string `json:"testimonialId"`
-	DeletedAt      string `json:"deletedAt"`
-}
-
-type TestimonialPublishedEvent struct {
-	TestimonialID  string `json:"testimonialId"`
-	PublishedBy    string `json:"publishedBy"`
-	PublishedAt    string `json:"publishedAt"`
-}
-
-type TestimonialArchivedEvent struct {
-	TestimonialID string `json:"testimonialId"`
-	ArchivedBy     string `json:"archivedBy"`
-	ArchivedAt     string `json:"archivedAt"`
-}
-
 // ========== USER EVENTS (consumed from user-service) ==========
 
 type UserUpdatedEvent struct {

@@ -52,6 +52,11 @@ func (r *Registry) GetEntitlement() IEntitlementRepository {
 	return NewEntitlementRepository(r.db)
 }
 
+// GetTestimonial implements IRepositoryRegistry
+func (r *Registry) GetTestimonial() ITestimonialRepository {
+	return NewTestimonialRepository(r.db)
+}
+
 type IRepositoryRegistry interface {
 	GetUser() IUserRepository
 	GetMember() IMemberRepository
@@ -61,4 +66,5 @@ type IRepositoryRegistry interface {
 	GetCoverageArea() ICoverageAreaRepository
 	GetCertification() ICertificationRepository
 	GetEntitlement() IEntitlementRepository
+	GetTestimonial() ITestimonialRepository
 }

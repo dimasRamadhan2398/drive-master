@@ -221,6 +221,7 @@ func runMigrations(db *gorm.DB) {
 		&models.InstructorProfile{},
 		&models.WorkExperience{},
 		&models.InstructorArea{},
+		&models.Certification{},
 		&models.Entitlement{},
 	); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)

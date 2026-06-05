@@ -39,8 +39,8 @@ kafka:
   enabled: true
   brokers:
     - "kafka:9092"
-  topic: "service-logs"  # Default topic for producer (legacy)
-  topics:  # Topics to consume
+  topic: "service-logs" # Default topic for producer (legacy)
+  topics: # Topics to consume
     - "user-events"
     - "car-events"
     - "package-events"
@@ -57,3 +57,8 @@ app:
   rate_limiter_max: 100
   rate_limiter_time: 1
   base_path: /app
+
+analytics:
+  ga_measurement_id: G-07PS1N5DZ5
+  ga_property_id: G-539969879
+  ga_credentials_file: /app/analytics/ga_credentials.json

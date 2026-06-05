@@ -2,9 +2,10 @@ package services
 
 import (
 	"context"
-	"core-service/models"
-	"core-service/pkg/kafka"
-	"core-service/repositories"
+	"fmt"
+	"user-service/models"
+	"user-service/pkg/kafka"
+	"user-service/repositories"
 
 	"github.com/google/uuid"
 )
@@ -25,10 +26,10 @@ type ITestimonialService interface {
 
 type TestimonialService struct {
 	testimonialRepo repositories.ITestimonialRepository
-	eventPublisher  *kafka.EventPublisher
+	eventPublisher  kafka.IEventPublisher
 }
 
-func NewTestimonialService(testimonialRepo repositories.ITestimonialRepository, eventPublisher *kafka.EventPublisher) ITestimonialService {
+func NewTestimonialService(testimonialRepo repositories.ITestimonialRepository, eventPublisher kafka.IEventPublisher) ITestimonialService {
 	return &TestimonialService{
 		testimonialRepo: testimonialRepo,
 		eventPublisher:  eventPublisher,
@@ -43,7 +44,15 @@ func (s *TestimonialService) CreateTestimonial(ctx context.Context, testimonial 
 
 	// Publish event (async to not block response)
 	if s.eventPublisher != nil {
-		go s.eventPublisher.PublishTestimonialCreated(context.Background(), testimonial)
+		go s.eventPublisher.PublishTestimonialCreated(
+			context.Background(),
+			fmt.Sprintf("%d", testimonial.ID),
+			testimonial.UserID.String(),
+			testimonial.UserName,
+			testimonial.Rating,
+			string(testimonial.Status),
+			testimonial.IsFeatured,
+		)
 	}
 
 	return nil
@@ -82,7 +91,14 @@ func (s *TestimonialService) UpdateTestimonial(ctx context.Context, testimonial 
 
 	// Publish event (async to not block response)
 	if s.eventPublisher != nil {
-		go s.eventPublisher.PublishTestimonialUpdated(context.Background(), testimonial)
+		go s.eventPublisher.PublishTestimonialUpdated(
+			context.Background(),
+			fmt.Sprintf("%d", testimonial.ID),
+			testimonial.UserName,
+			testimonial.Content,
+			testimonial.Rating,
+			string(testimonial.Status),
+		)
 	}
 
 	return nil

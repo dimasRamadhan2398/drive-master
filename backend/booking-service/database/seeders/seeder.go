@@ -22,7 +22,6 @@ func NewSeederRunner(db *gorm.DB) *SeederRunner {
 		db: db,
 		seeders: []Seeder{
 			&EnrollmentSeeder{},
-			&EntitlementSeeder{},
 			&ScheduleSeeder{},
 			&CertificationSeeder{},
 		},

@@ -31,6 +31,7 @@ func (u *InstructorRoute) Run() {
 		"GET    /api/v1/instructors/all",
 		"GET    /api/v1/instructors/:id/profile",
 		"PUT    /api/v1/instructors/:id/profile",
+		"DELETE /api/v1/instructors/:id",
 		"POST   /api/v1/instructors/:id/media/upload",
 		"POST   /api/v1/instructors/:id/media/upload-base64",
 		"DELETE /api/v1/instructors/:id/media",
@@ -47,6 +48,7 @@ func (u *InstructorRoute) Run() {
 	group.GET("/all", u.controller.GetInstructorController().GetInstructorLists)
 	group.GET("/:id/profile", u.controller.GetInstructorController().GetInstructorProfile)
 	group.PUT("/:id/profile", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().UpdateInstructorProfile)
+	group.DELETE("/:id", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().DeleteInstructor)
 
 	// Media routes with instructor user ID
 	group.POST("/:id/media/upload", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().UploadProfilePic)

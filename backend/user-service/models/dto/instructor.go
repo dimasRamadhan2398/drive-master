@@ -189,7 +189,14 @@ type CreateInstructorWithUserRequest struct {
 
 // CreateInstructorWithUserResponse returns the created user and instructor profile
 type CreateInstructorWithUserResponse struct {
-	User    CreateUserResponse          `json:"user"`
+	UserID      uuid.UUID `json:"userId"`
+    Email       string    `json:"email"`
+    Username    string    `json:"username"`
+    FirstName   string    `json:"firstName"`
+    LastName    string    `json:"lastName"`
+    PhoneNumber string    `json:"phoneNumber"`
+    DateOfBirth string    `json:"dateOfBirth"`
+    RoleID      uint      `json:"roleId"`
 	Profile *InstructorProfileResponse `json:"instructorProfile"`
 }
 

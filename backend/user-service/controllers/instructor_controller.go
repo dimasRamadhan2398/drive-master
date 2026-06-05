@@ -26,6 +26,7 @@ type InstructorController struct {
 type IInstructorController interface {
 	GetInstructorProfile(ctx *gin.Context)
 	UpdateInstructorProfile(ctx *gin.Context)
+	DeleteInstructor(ctx *gin.Context)
 	GetInstructorLists(ctx *gin.Context)
 	CreateInstructorProfile(ctx *gin.Context)
 	RegisterInstructor(ctx *gin.Context)
@@ -267,6 +268,55 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 	responseRes.Success(ctx, http.StatusOK, "Instructor profile updated successfully", profile)
 }
 
+// @Summary Delete Instructor
+// @Description Soft delete an instructor by changing role to 'member'
+// @Tags Instructors
+// @Produce json
+// @Param id path string true "User ID (UUID)"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /instructors/{id} [delete]
+func (c *InstructorController) DeleteInstructor(ctx *gin.Context) {
+	userID, err := getUserIDFromPath(ctx, "id")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Get the instructor profile first to verify it exists
+	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Delete the instructor profile
+	if err := c.instructorService.DeleteInstructorProfile(ctx.Request.Context(), userID); err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Get member role and update user role
+	memberRole, err := c.roleService.GetRoleByName(ctx, "member")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Update user role to member
+	if err := c.roleService.UpdateUserRole(ctx.Request.Context(), userID, memberRole.ID); err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Instructor deleted successfully", gin.H{
+		"userId":      profile.UserID,
+		"newRole":     "member",
+		"deletedAt":   time.Now(),
+	})
+}
+
 // @Summary Upload Media
 // @Description Upload a profile picture for an instructor
 // @Tags Media
@@ -315,29 +365,8 @@ func (c *InstructorController) UploadProfilePic(ctx *gin.Context) {
 		return
 	}
 
-	// Update instructor profile with the new photo URL
-	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	// Construct model from DTO response
-	profileModel := &models.InstructorProfile{
-		UserID:                profile.UserID,
-		LicenseNumber:         profile.LicenseNumber,
-		YearsOfExperience:     profile.YearsOfExperience,
-		Bio:                   profile.Bio,
-		LicenseExpiry:         profile.LicenseExpiry,
-		PhotoURL:              resp.URL,
-		IsActive:              profile.IsActive,
-		NumberOfStudents:      profile.NumberOfStudents,
-		SessionsCompleted:     profile.SessionsCompleted,
-		AverageRating:         profile.AverageRating,
-		BNSPCertificateNumber: profile.BNSPCertificateNumber,
-	}
-
-	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel); err != nil {
+	// Update only the photo URL field
+	if err := c.instructorService.UpdateInstructorPhotoURL(ctx.Request.Context(), userID, resp.URL); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
@@ -379,28 +408,8 @@ func (c *InstructorController) UploadBase64Media(ctx *gin.Context) {
 		return
 	}
 
-	// Update instructor profile with the new photo URL
-	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	profileModel := &models.InstructorProfile{
-		UserID:                profile.UserID,
-		LicenseNumber:         profile.LicenseNumber,
-		YearsOfExperience:     profile.YearsOfExperience,
-		Bio:                   profile.Bio,
-		LicenseExpiry:         profile.LicenseExpiry,
-		PhotoURL:              resp.URL,
-		IsActive:              profile.IsActive,
-		NumberOfStudents:      profile.NumberOfStudents,
-		SessionsCompleted:     profile.SessionsCompleted,
-		AverageRating:         profile.AverageRating,
-		BNSPCertificateNumber: profile.BNSPCertificateNumber,
-	}
-
-	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel); err != nil {
+	// Update only the photo URL field
+	if err := c.instructorService.UpdateInstructorPhotoURL(ctx.Request.Context(), userID, resp.URL); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}

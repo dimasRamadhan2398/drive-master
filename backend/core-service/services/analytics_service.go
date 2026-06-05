@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"core-service/pkg/config"
 	"core-service/pkg/logger"
 
 	analyticsdata "google.golang.org/api/analyticsdata/v1beta"
@@ -42,21 +43,38 @@ type AnalyticsService struct {
 }
 
 func NewAnalyticsService() IAnalyticsService {
-	jsonCreds := os.Getenv("GA4_CREDENTIALS_JSON")
-	propertyID := os.Getenv("GA4_PROPERTY_ID")
+	cfg := config.Get();
+	measurementID := cfg.Analytics.GA4MeasurementID
+	propertyID := cfg.Analytics.GA4PropertyID
+	credentialsFile := cfg.Analytics.GA4CredentialsFile
 
-	if jsonCreds == "" || propertyID == "" {
-		logger.Warn("GA4_CREDENTIALS_JSON or GA4_PROPERTY_ID environment variables are not set. Core-service will run analytics in MOCK mode with simulated data.")
+	if measurementID == "" || propertyID == "" {
+		logger.Warn("GA4_MEASUREMENT_ID or GA4_PROPERTY_ID environment variables are not set. Core-service will run analytics in MOCK mode with simulated data.")
+		return &AnalyticsService{
+			isMock: true,
+		}
+	}
+
+	// If credentials file is not set, fall back to mock mode
+	if credentialsFile == "" {
+		logger.Warn("GA4_CREDENTIALS_FILE is not set. Core-service will run analytics in MOCK mode.")
+		return &AnalyticsService{
+			isMock: true,
+		}
+	}
+
+	// Check if credentials file exists
+	if _, err := os.Stat(credentialsFile); os.IsNotExist(err) {
+		logger.Warn("GA4 credentials file does not exist at: " + credentialsFile + ". Core-service will run analytics in MOCK mode.", logger.NewLogField("error", err))
 		return &AnalyticsService{
 			isMock: true,
 		}
 	}
 
 	ctx := context.Background()
-	credType := option.CredentialsType(option.ServiceAccount)
-	srv, err := analyticsdata.NewService(ctx, option.WithAuthCredentialsJSON(credType, []byte(jsonCreds)))
+	srv, err := analyticsdata.NewService(ctx, option.WithCredentialsFile(credentialsFile))
 	if err != nil {
-		logger.Error("Failed to initialize Google Analytics API service. Falling back to MOCK mode.", logger.NewLogField("error", err))
+		logger.Error("Failed to initialize Google Analytics API service from file. Falling back to MOCK mode.", logger.NewLogField("error", err))
 		return &AnalyticsService{
 			isMock: true,
 		}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"path/filepath"
 
 	apperrors "user-service/pkg/errors"
@@ -31,8 +32,10 @@ type MediaService struct {
 func NewMediaService(privateKey string) IMediaService {
 	client := imagekit.NewClient(
 		option.WithPrivateKey(privateKey),
-		option.WithPassword(privateKey),
 	)
+
+	log.Printf("Initialized ImageKit client with private key: %s", privateKey)
+
 	return &MediaService{imageKit: client}
 }
 
@@ -79,11 +82,12 @@ func (s *MediaService) UploadMedia(ctx context.Context, input UploadMediaInput) 
 		if len(folder) > 0 && folder[0] == '/' {
 			folder = folder[1:] // Remove leading slash for API
 		}
-		params.Folder = param.NewOpt[string](folder)
+		params.Folder = param.Opt[string]{Value: folder}
 	}
 
 	resp, err := s.imageKit.Files.Upload(ctx, params)
 	if err != nil {
+		log.Fatalf("%s", err.Error())
 		return nil, apperrors.ErrInternalServer
 	}
 

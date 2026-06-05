@@ -2,18 +2,15 @@ package services
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"time"
 	"user-service/models"
 	"user-service/models/dto"
 	"user-service/pkg/base"
-	"user-service/pkg/config"
 	"user-service/pkg/errors"
-	"user-service/pkg/logger"
 	"user-service/pkg/redis"
 	"user-service/repositories"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -24,6 +21,7 @@ type IInstructorService interface {
 	CreateInstructorProfile(ctx context.Context, userID uuid.UUID) (*dto.InstructorProfileResponse, error)
 	CreateInstructorProfileWithInput(ctx context.Context, userID uuid.UUID, req dto.InstructorProfileRequest) (*dto.InstructorProfileResponse, error)
 	UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error
+	UpdateInstructorPhotoURL(ctx context.Context, userID uuid.UUID, photoURL string) error
 	DeleteInstructorProfile(ctx context.Context, userID uuid.UUID) error
 	CreateInstructorWithUser(ctx context.Context, req dto.CreateInstructorWithUserRequest) (*dto.CreateInstructorWithUserResponse, error)
 }
@@ -179,27 +177,36 @@ func (s *InstructorService) UpdateInstructorProfile(ctx context.Context, profile
 	return s.instructorRepo.UpdateInstructorProfile(ctx, profile)
 }
 
+// UpdateInstructorPhotoURL updates only the photo URL field for an instructor profile
+func (s *InstructorService) UpdateInstructorPhotoURL(ctx context.Context, userID uuid.UUID, photoURL string) error {
+	return s.instructorRepo.UpdateInstructorPhotoURL(ctx, userID, photoURL)
+}
+
 // CreateInstructorWithUser creates both a user and an instructor profile in a single transaction
 func (s *InstructorService) CreateInstructorWithUser(ctx context.Context, req dto.CreateInstructorWithUserRequest) (*dto.CreateInstructorWithUserResponse, error) {
 	// Validate email uniqueness
 	if s.isEmailExist(ctx, req.Email) {
+		log.Fatalf("Email already exists: %s", req.Email)
 		return nil, errors.ErrEmailExist
 	}
 
 	// Validate username uniqueness
 	if s.isUsernameExist(ctx, req.Username) {
+		log.Fatalf("Username already exists: %s", req.Username)
 		return nil, errors.ErrUsernameExist
 	}
 
 	// Get instructor role ID
 	instructorRoleID, err := s.getInstructorRoleID(ctx)
 	if err != nil {
+		log.Fatalf("Failed to get instructor role ID: %v", err)
 		return nil, err
 	}
 
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Fatalf("Failed to hash password: %v", err)
 		return nil, err
 	}
 
@@ -228,6 +235,7 @@ func (s *InstructorService) CreateInstructorWithUser(ctx context.Context, req dt
 		}
 
 		if err := tx.Create(&userModel).Error; err != nil {
+			log.Fatalf("Failed to create user: %v", err)
 			return err
 		}
 		createdUser = &userModel
@@ -268,6 +276,7 @@ func (s *InstructorService) CreateInstructorWithUser(ctx context.Context, req dt
 		}
 
 		if err := tx.Create(profile).Error; err != nil {
+			log.Fatalf("Failed to create instructor profile: %v", err)
 			return err
 		}
 		createdProfile = profile
@@ -276,47 +285,46 @@ func (s *InstructorService) CreateInstructorWithUser(ctx context.Context, req dt
 	})
 
 	if err != nil {
+		log.Fatalf("Transaction failed: %v", err)
 		return nil, err
 	}
 
-	// Send OTP email asynchronously
-	go func() {
-		if err := s.sendOTPEmail(context.Background(), createdUser.EmailAddress); err != nil {
-			s.LogError("Failed to send OTP after instructor registration", logger.LogField("error", err))
-		}
-	}()
+	// // Send OTP email asynchronously
+	// go func() {
+	// 	if err := s.sendOTPEmail(context.Background(), createdUser.EmailAddress); err != nil {
+	// 		s.LogError("Failed to send OTP after instructor registration", logger.LogField("error", err))
+	// 	}
+	// }()
 
-	// Generate access token (unused but kept for future extension)
-	cfg := config.Get()
-	accessExpirationTime := time.Now().Add(time.Duration(cfg.JWT.ExpiryHour) * time.Hour).Unix()
-	claims := &jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Unix(accessExpirationTime, 0)),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	_, err = token.SignedString([]byte(cfg.JWT.Secret))
-	if err != nil {
-		return nil, errors.ErrInternalServer
-	}
+	// // Generate access token (unused but kept for future extension)
+	// cfg := config.Get()
+	// accessExpirationTime := time.Now().Add(time.Duration(cfg.JWT.ExpiryHour) * time.Hour).Unix()
+	// claims := &jwt.RegisteredClaims{
+	// 	ExpiresAt: jwt.NewNumericDate(time.Unix(accessExpirationTime, 0)),
+	// }
+	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// _, err = token.SignedString([]byte(cfg.JWT.Secret))
+	// if err != nil {
+	// 	return nil, errors.ErrInternalServer
+	// }
 
-	// Generate refresh token
-	refreshToken := generateRefreshToken()
-	refreshKey := fmt.Sprintf("refresh_token:%s", refreshToken)
-	expiryDuration := time.Duration(cfg.JWT.RefreshTokenExpiryDays) * 24 * time.Hour
-	if err := s.redisCli.Client.Set(ctx, refreshKey, createdUser.ID.String(), expiryDuration).Err(); err != nil {
-		return nil, errors.ErrInternalServer
-	}
+	// // Generate refresh token
+	// refreshToken := generateRefreshToken()
+	// refreshKey := fmt.Sprintf("refresh_token:%s", refreshToken)
+	// expiryDuration := time.Duration(cfg.JWT.RefreshTokenExpiryDays) * 24 * time.Hour
+	// if err := s.redisCli.Client.Set(ctx, refreshKey, createdUser.ID.String(), expiryDuration).Err(); err != nil {
+	// 	return nil, errors.ErrInternalServer
+	// }
 
 	// Build response
 	return &dto.CreateInstructorWithUserResponse{
-		User: dto.CreateUserResponse{
-			UserID:      createdUser.ID,
-			Email:       createdUser.EmailAddress,
-			Username:    createdUser.Username,
-			FirstName:   createdUser.FirstName,
-			LastName:    createdUser.LastName,
-			PhoneNumber: createdUser.PhoneNumber,
-			RoleID:      createdUser.RoleID,
-		},
+		UserID:      createdUser.ID,
+		Email:       createdUser.EmailAddress,
+		Username:    createdUser.Username,
+		FirstName:   createdUser.FirstName,
+		LastName:    createdUser.LastName,
+		PhoneNumber: createdUser.PhoneNumber,
+		RoleID:      createdUser.RoleID,
 		Profile: &dto.InstructorProfileResponse{
 			UserID:               createdProfile.UserID,
 			BNSPCertificateNumber: createdProfile.BNSPCertificateNumber,

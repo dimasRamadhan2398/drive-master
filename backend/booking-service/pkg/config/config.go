@@ -60,6 +60,7 @@ type RedisConfig struct {
 type ImageKitConfig struct {
 	ID          string `mapstructure:"id" yaml:"id"`
 	PrivateKey  string `mapstructure:"private_key" yaml:"private_key"`
+	PublicKey   string `mapstructure:"public_key" yaml:"public_key"`
 	URLEndpoint string `mapstructure:"url_endpoint" yaml:"url_endpoint"`
 }
 

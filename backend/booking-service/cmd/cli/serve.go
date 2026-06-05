@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"booking-service/controllers"
-	"booking-service/database/seeders"
 	"booking-service/docs"
 	"booking-service/models"
 	"booking-service/pkg/middlewares"
@@ -37,7 +36,6 @@ var (
 	serveHost    string
 	serveSwagger  bool
 	serveMigrate bool
-	serveSeed    bool
 )
 
 func init() {
@@ -47,7 +45,6 @@ func init() {
 	serveCmd.Flags().StringVar(&serveHost, "host", "0.0.0.0", "Host to bind to")
 	serveCmd.Flags().BoolVar(&serveSwagger, "swagger", true, "Enable Swagger documentation")
 	serveCmd.Flags().BoolVar(&serveMigrate, "migrate", true, "Run database migrations on startup")
-	serveCmd.Flags().BoolVar(&serveSeed, "seed", false, "Run database seeders on startup")
 }
 
 func runServe(cmd *cobra.Command, args []string) {
@@ -73,11 +70,6 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Run migrations if enabled
 	if serveMigrate {
 		runMigrations(db)
-	}
-
-	// Run seeders if enabled
-	if serveSeed {
-		runSeeders(db)
 	}
 
 	// Initialize repositories
@@ -169,23 +161,12 @@ func runMigrations(db *gorm.DB) {
 	if err := db.AutoMigrate(
 		&models.Booking{},
 		&models.Session{},
-		&models.UserEntitlement{},
-		&models.Certification{},
-		&models.UserCertification{},
+		&models.Schedule{},
 	); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}
 
 	log.Println("Database migrations completed successfully")
-}
-
-func runSeeders(db *gorm.DB) {
-	log.Println("Starting database seeding...")
-
-	seederRunner := seeders.NewSeederRunner(db)
-	if err := seederRunner.RunAll(); err != nil {
-		log.Fatalf("Failed to run seeders: %v", err)
-	}
 }
 
 // serviceRegistryImpl implements services.IServiceRegistry

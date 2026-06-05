@@ -47,6 +47,13 @@ const (
 	EventNewDeviceLogin    EventType = "security.new_device"
 	EventTrustedDeviceAdded EventType = "device.trusted_added"
 	EventTrustedDeviceRemoved EventType = "device.trusted_removed"
+
+	// Testimonial Events
+	EventTestimonialCreated   EventType = "testimonial.created"
+	EventTestimonialUpdated   EventType = "testimonial.updated"
+	EventTestimonialDeleted   EventType = "testimonial.deleted"
+	EventTestimonialPublished EventType = "testimonial.published"
+	EventTestimonialArchived  EventType = "testimonial.archived"
 )
 
 // Event represents a generic auth event
@@ -84,6 +91,13 @@ type IEventPublisher interface {
 	PublishAccountEvent(ctx context.Context, userID, username string, eventType EventType) error
 	PublishSecurityEvent(ctx context.Context, userID, username string, eventType EventType, ip string, data map[string]interface{}) error
 	PublishRoleEvent(ctx context.Context, userID, username, role string, eventType EventType) error
+
+	// Testimonial publishing
+	PublishTestimonialCreated(ctx context.Context, testimonialID string, userID, userName string, rating float64, status string, isFeatured bool) error
+	PublishTestimonialUpdated(ctx context.Context, testimonialID string, userName string, content string, rating float64, status string) error
+	PublishTestimonialDeleted(ctx context.Context, testimonialID string) error
+	PublishTestimonialPublished(ctx context.Context, testimonialID, publishedBy string) error
+	PublishTestimonialArchived(ctx context.Context, testimonialID, archivedBy string) error
 
 	// Consumer management
 	StartConsumer(ctx context.Context) error
@@ -281,6 +295,87 @@ func (r *EventPublisher) PublishRoleEvent(ctx context.Context, userID, username,
 			"role": role,
 		},
 		Timestamp: time.Now().UTC(),
+	}
+	return r.Publish(ctx, event)
+}
+
+// ========== TESTIMONIAL EVENTS ==========
+
+// PublishTestimonialCreated publishes a testimonial created event
+func (r *EventPublisher) PublishTestimonialCreated(ctx context.Context, testimonialID string, userID, userName string, rating float64, status string, isFeatured bool) error {
+	event := &Event{
+		Type:      EventTestimonialCreated,
+		Timestamp: time.Now().UTC(),
+		Data: map[string]interface{}{
+			"testimonial_id": testimonialID,
+			"user_id":        userID,
+			"user_name":      userName,
+			"rating":         rating,
+			"status":         status,
+			"is_featured":    isFeatured,
+		},
+		Success: true,
+	}
+	return r.Publish(ctx, event)
+}
+
+// PublishTestimonialUpdated publishes a testimonial updated event
+func (r *EventPublisher) PublishTestimonialUpdated(ctx context.Context, testimonialID string, userName string, content string, rating float64, status string) error {
+	event := &Event{
+		Type:      EventTestimonialUpdated,
+		Timestamp: time.Now().UTC(),
+		Data: map[string]interface{}{
+			"testimonial_id": testimonialID,
+			"user_name":      userName,
+			"content":        content,
+			"rating":         rating,
+			"status":         status,
+		},
+		Success: true,
+	}
+	return r.Publish(ctx, event)
+}
+
+// PublishTestimonialDeleted publishes a testimonial deleted event
+func (r *EventPublisher) PublishTestimonialDeleted(ctx context.Context, testimonialID string) error {
+	event := &Event{
+		Type:      EventTestimonialDeleted,
+		Timestamp: time.Now().UTC(),
+		Data: map[string]interface{}{
+			"testimonial_id": testimonialID,
+			"deleted_at":     time.Now().Format(time.RFC3339),
+		},
+		Success: true,
+	}
+	return r.Publish(ctx, event)
+}
+
+// PublishTestimonialPublished publishes a testimonial published event
+func (r *EventPublisher) PublishTestimonialPublished(ctx context.Context, testimonialID, publishedBy string) error {
+	event := &Event{
+		Type:      EventTestimonialPublished,
+		Timestamp: time.Now().UTC(),
+		Data: map[string]interface{}{
+			"testimonial_id": testimonialID,
+			"published_by":    publishedBy,
+			"published_at":    time.Now().Format(time.RFC3339),
+		},
+		Success: true,
+	}
+	return r.Publish(ctx, event)
+}
+
+// PublishTestimonialArchived publishes a testimonial archived event
+func (r *EventPublisher) PublishTestimonialArchived(ctx context.Context, testimonialID, archivedBy string) error {
+	event := &Event{
+		Type:      EventTestimonialArchived,
+		Timestamp: time.Now().UTC(),
+		Data: map[string]interface{}{
+			"testimonial_id": testimonialID,
+			"archived_by":    archivedBy,
+			"archived_at":    time.Now().Format(time.RFC3339),
+		},
+		Success: true,
 	}
 	return r.Publish(ctx, event)
 }

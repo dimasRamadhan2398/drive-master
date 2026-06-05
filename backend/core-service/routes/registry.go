@@ -26,10 +26,10 @@ func (r *Registry) Serve() {
 	r.GetRegionRoute().Run()
 	r.GetCarRoute().Run()
 	r.GetPackageRoute().Run()
-	r.GetTestimonialRoute().Run()
 	r.GetArticleRoute().Run()
 	r.GetAnalyticsRoute().Run()
 	r.GetSalesRoute().Run()
+	r.GetGeneralSettingsRoute().Run()
 }
 
 func (r *Registry) GetRegionRoute() IRegionRoute {
@@ -44,10 +44,6 @@ func (r *Registry) GetPackageRoute() IPackageRoute {
 	return NewPackageRoute(r.controller, r.group)
 }
 
-func (r *Registry) GetTestimonialRoute() ITestimonialRoute {
-	return NewTestimonialRoute(r.controller, r.group)
-}
-
 func (r *Registry) GetArticleRoute() IArticleRoute {
 	return NewArticleRoute(r.controller, r.group)
 }
@@ -58,4 +54,8 @@ func (r *Registry) GetAnalyticsRoute() IAnalyticsRoute {
 
 func (r *Registry) GetSalesRoute() ISalesRoute {
 	return NewSalesRoute(r.controller, r.group)
+}
+
+func (r *Registry) GetGeneralSettingsRoute() IGeneralSettingsRoute {
+	return NewGeneralSettingsRoute(r.controller, r.group)
 }

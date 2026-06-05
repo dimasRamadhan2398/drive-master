@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"core-service/controllers"
+	"user-service/controllers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,7 +26,7 @@ func (r *TestimonialRoute) Run() {
 	testimonials := r.group.Group("/testimonials")
 	{
 		// Admin endpoints
-		testimonials.GET("", r.controller.GetTestimonialController().GetAllTestimonials)
+		testimonials.GET("/all", r.controller.GetTestimonialController().GetAllTestimonials)
 		testimonials.GET("/:id", r.controller.GetTestimonialController().GetTestimonialByID)
 		testimonials.POST("", r.controller.GetTestimonialController().CreateTestimonial)
 		testimonials.PUT("/:id", r.controller.GetTestimonialController().UpdateTestimonial)

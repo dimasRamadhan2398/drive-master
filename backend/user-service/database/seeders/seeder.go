@@ -54,12 +54,26 @@ func (r *SeederRunner) RunAll() error {
 	}
 	log.Println("Instructor areas seeded successfully")
 
-	// 5. Seed entitlements for members
+	// 5. Seed coverage areas (district 108)
+	coverageAreaSeeder := NewCoverageAreaSeeder(r.db)
+	if err := coverageAreaSeeder.Seed(); err != nil {
+		return err
+	}
+	log.Println("Coverage areas seeded successfully")
+
+	// 6. Seed entitlements for members
 	entitlementSeeder := NewEntitlementSeeder(r.db)
 	if err := entitlementSeeder.Seed(); err != nil {
 		return err
 	}
 	log.Println("Entitlements seeded successfully")
+
+	// 8. Seed testimonials
+	testimonialSeeder := NewTestimonialSeeder(r.db)
+	if err := testimonialSeeder.Seed(); err != nil {
+		return err
+	}
+	log.Println("Testimonials seeded successfully")
 
 	log.Println("All seeders completed successfully")
 	return nil

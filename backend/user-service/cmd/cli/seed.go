@@ -44,7 +44,7 @@ func runSeed(cmd *cobra.Command, args []string) {
 		log.Println("Dry run mode - no changes will be made")
 		log.Println("Available seeders:")
 		seederList := []string{
-			"roles", "users", "work_experiences", "instructor_areas",
+			"roles", "users", "work_experiences", "instructor_areas", "testimonials", "certifications", "entitlements",
 		}
 		for _, s := range seederList {
 			log.Printf("  - %s", s)

@@ -55,9 +55,7 @@ func runMigrate(cmd *cobra.Command, args []string) {
 	err := db.AutoMigrate(
 		&models.Booking{},
 		&models.Session{},
-		&models.UserEntitlement{},
-		&models.Certification{},
-		&models.UserCertification{},
+		&models.Schedule{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)

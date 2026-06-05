@@ -212,22 +212,35 @@ func generateRefreshToken() string {
 }
 
 func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error) {
+	s.LogInfo("Register: Starting registration for email: " + req.Email)
+
 	if s.isUsernameExist(ctx, req.Username) {
+		s.LogInfo("Register: Username exists: " + req.Username)
 		return nil, apperrors.ErrUsernameExist
 	}
+	s.LogInfo("Register: Username check passed")
 
 	if s.isEmailExist(ctx, req.Email) {
+		s.LogInfo("Register: Email exists: " + req.Email)
 		return nil, apperrors.ErrEmailExist
 	}
+	s.LogInfo("Register: Email check passed")
 
 	if req.Password != req.ConfirmPassword {
 		return nil, apperrors.ErrPasswordDoesNotMatch
 	}
 
+	s.LogInfo("Register: Hashing password...")
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
+
+	confirmHashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+	s.LogInfo("Register: Password hashed")
 
 	registerReq := &dto.RegisterRequest{
 		FirstName:         req.FirstName,
@@ -237,43 +250,59 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		PhoneNumber:  req.PhoneNumber,
 		DateOfBirth:  req.DateOfBirth,
 		Password:     string(hashedPassword),
+		ConfirmPassword: string(confirmHashedPassword),
 		RoleID:       req.RoleID,
 	}
 
+	s.LogInfo("Register: Fetching roles...")
 	roles, err := s.roleService.FindAllRoles(ctx)
 	if err != nil {
 		s.LogError("error happening role repo:", logger.LogField("error", err));
 		return nil, err
 	}
+	s.LogInfo("Register: Roles fetched, count: " + fmt.Sprintf("%d", len(roles)))
 
+	s.LogInfo("Register: Creating user in database...")
 	user, err := s.userRepo.Create(ctx, registerReq)
 	if err != nil {
 		s.LogError("error happening user repo:", logger.LogField("error", err));
 		return nil, err
 	}
+	s.LogInfo("Register: User created, ID: " + user.ID.String())
 
-
+	s.LogInfo("Register: Creating profile for role ID: " + fmt.Sprintf("%d", req.RoleID))
 	for _, role := range roles {
 		if role.ID == req.RoleID {
+			s.LogInfo("Register: Matched role: " + role.Name)
 			if(strings.ToLower(role.Name) == "member") {
+				s.LogInfo("Register: Creating member profile...")
 				if _, err := s.memberService.CreateMemberProfile(ctx, user.ID); err != nil {
 					return nil, fmt.Errorf("failed to create member profile: %w", err)
 				}
+				s.LogInfo("Register: Member profile created")
 			}else if(strings.ToLower(role.Name) == "instructor") {
+				s.LogInfo("Register: Creating instructor profile...")
 				if _, err := s.instructorService.CreateInstructorProfile(ctx, user.ID); err != nil {
 					return nil, fmt.Errorf("failed to create instructor profile: %w", err)
 				}
+				s.LogInfo("Register: Instructor profile created")
 			}
 			break
 		}
 	}
+	s.LogInfo("Register: Profile creation completed")
 
+	s.LogInfo("Register: Starting async OTP generation and sending...")
 	go func() {
+		s.LogInfo("Register: Inside goroutine - generating OTP for: " + user.EmailAddress)
 		if err := s.GenerateAndSendOTP(context.Background(), user.EmailAddress); err != nil {
 			s.LogError("Failed to send OTP after registration", logger.LogField("error", err))
+		} else {
+			s.LogInfo("Register: OTP sent successfully")
 		}
 	}()
 
+	s.LogInfo("Register: Generating JWT token...")
 	cfg := config.Get()
 	accessExpirationTime := time.Now().Add(time.Duration(cfg.JWT.ExpiryHour) * time.Hour).Unix()
 	claims := &Claims{
@@ -288,7 +317,9 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	if err != nil {
 		return nil, apperrors.ErrInternalServer
 	}
+	s.LogInfo("Register: JWT token generated")
 
+	s.LogInfo("Register: Storing refresh token in Redis...")
 	// Generate refresh token
 	refreshToken := generateRefreshToken()
 	refreshKey := fmt.Sprintf("refresh_token:%s", refreshToken)
@@ -296,7 +327,9 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	if err := s.redisCli.Client.Set(ctx, refreshKey, user.ID.String(), expiryDuration).Err(); err != nil {
 		return nil, apperrors.ErrInternalServer
 	}
+	s.LogInfo("Register: Refresh token stored")
 
+	s.LogInfo("Register: Returning response...")
 	return &dto.RegisterResponse{
 		User: dto.CreateUserResponse{
 			UserID:      user.ID,
@@ -344,35 +377,46 @@ func (s *AuthService) HashPassword(password string) (string, error) {
 
 // GenerateAndSendOTP generates a 6-digit OTP, stores it in Redis, and sends it via email
 func (s *AuthService) GenerateAndSendOTP(ctx context.Context, email string) error {
+	s.LogInfo("GenerateAndSendOTP: Starting for email: " + email)
 	// Verify email exists
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
+		s.LogError("GenerateAndSendOTP: User not found", logger.LogField("error", err))
 		return apperrors.ErrUserNotFound
 	}
+	s.LogInfo("GenerateAndSendOTP: User found, ID: " + user.ID.String())
 
 	// Check if already verified
 	if user.IsVerified {
+		s.LogInfo("GenerateAndSendOTP: User already verified")
 		return apperrors.ErrAlreadyVerified
 	}
 
 	// Generate 6-digit OTP
+	s.LogInfo("GenerateAndSendOTP: Generating OTP...")
 	otp, err := s.generateOTP()
 	if err != nil {
+		s.LogError("GenerateAndSendOTP: OTP generation failed", logger.LogField("error", err))
 		return err
 	}
+	s.LogInfo("GenerateAndSendOTP: OTP generated")
 
 	// Store OTP in Redis for 15 minutes with user ID key
 	otpKey := fmt.Sprintf("email:otp:%s", user.ID.String())
+	s.LogInfo("GenerateAndSendOTP: Storing OTP in Redis, key: " + otpKey)
 	if err := s.redisCli.Client.Set(ctx, otpKey, otp, 15*time.Minute).Err(); err != nil {
-		s.LogError("Failed to store OTP in redis", logger.LogField("error", err))
+		s.LogError("GenerateAndSendOTP: Failed to store OTP in redis", logger.LogField("error", err))
 		return errors.ErrInternalServer
 	}
+	s.LogInfo("GenerateAndSendOTP: OTP stored in Redis")
 
 	// Send OTP via email
+	s.LogInfo("GenerateAndSendOTP: Sending OTP email...")
 	if err := s.emailService.SendOTPEmail(ctx, email, otp); err != nil {
-		s.LogError("Failed to send OTP email", logger.LogField("error", err))
+		s.LogError("GenerateAndSendOTP: Failed to send OTP email", logger.LogField("error", err))
 		return errors.ErrInternalServer
 	}
+	s.LogInfo("GenerateAndSendOTP: OTP email sent successfully")
 
 	return nil
 }
@@ -463,27 +507,35 @@ func (s *AuthService) generateOTP() (string, error) {
 }
 
 func (s *AuthService) isUsernameExist(ctx context.Context, username string) bool {
+	s.LogInfo("Register: Checking if username exists: " + username)
 	user, err := s.userRepo.FindByUsername(ctx, username)
 	if err != nil {
+		s.LogInfo("Register: Username check - not found (error: " + err.Error() + ")")
 		return false
 	}
 
 	if user != nil {
+		s.LogInfo("Register: Username found in database")
 		return true
 	}
 
+	s.LogInfo("Register: Username not found")
 	return false
 }
 
 func (s *AuthService) isEmailExist(ctx context.Context, email string) bool {
+	s.LogInfo("Register: Checking if email exists: " + email)
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
+		s.LogInfo("Register: Email check - not found (error: " + err.Error() + ")")
 		return false
 	}
 
 	if user != nil {
+		s.LogInfo("Register: Email found in database")
 		return true
 	}
 
+	s.LogInfo("Register: Email not found")
 	return false
 }

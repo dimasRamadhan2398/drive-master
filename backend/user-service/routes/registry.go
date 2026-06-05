@@ -30,6 +30,7 @@ func (r *Registry) Serve() {
 	r.GetEntitlementRoute().Run()
 	r.GetWorkExperienceRoute().Run()
 	r.GetCoverageAreaRoute().Run()
+	r.GetTestimonialRoute().Run()
 }
 
 func (r *Registry) GetAuthRoute() IAuthRoute {
@@ -62,4 +63,8 @@ func (r *Registry) GetCertificationRoute() ICertificationRoute {
 
 func (r *Registry) GetEntitlementRoute() IEntitlementRoute {
 	return NewEntitlementRoute(r.controller, r.group, r.authMiddleware)
+}
+
+func (r *Registry) GetTestimonialRoute() ITestimonialRoute {
+	return NewTestimonialRoute(r.controller, r.group)
 }

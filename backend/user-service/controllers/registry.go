@@ -70,6 +70,11 @@ func (r *ControllerRegistry) GetEntitlementController() IEntitlementController {
 	)
 }
 
+// GetTestimonialController implements [IControllerRegistry].
+func (r *ControllerRegistry) GetTestimonialController() ITestimonialController {
+	return NewTestimonialController(r.service.GetTestimonialService())
+}
+
 // IControllerRegistry defines methods for getting controllers
 type IControllerRegistry interface {
 	GetUserController() IUserController
@@ -81,6 +86,7 @@ type IControllerRegistry interface {
 	GetCoverageAreaController() ICoverageAreaController
 	GetCertificationController() ICertificationController
 	GetEntitlementController() IEntitlementController
+	GetTestimonialController() ITestimonialController
 }
 
 // NewControllerRegistry creates a new controller registry

@@ -87,9 +87,17 @@ func (r *BaseRepository) CreateTx(tx *gorm.DB, entity any) error {
 	return nil
 }
 
-// Update updates a record
+// Update updates a record by ID
 func (r *BaseRepository) Update(entity any) error {
 	if err := r.DB.Save(entity).Error; err != nil {
+		return apperrors.ErrDatabase
+	}
+	return nil
+}
+
+// UpdateByField updates specific fields of a record using WHERE condition
+func (r *BaseRepository) UpdateByField(model any, updates map[string]interface{}, condition string, args ...interface{}) error {
+	if err := r.DB.Model(model).Where(condition, args...).Updates(updates).Error; err != nil {
 		return apperrors.ErrDatabase
 	}
 	return nil

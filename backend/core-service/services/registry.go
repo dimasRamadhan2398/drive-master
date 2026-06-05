@@ -37,11 +37,6 @@ func (r *Registry) GetPackageService() IPackageService {
 	return NewPackageService(r.repoRegistry.GetPackage(), r.eventPublisher)
 }
 
-// GetTestimonialService implements [IServiceRegistry].
-func (r *Registry) GetTestimonialService() ITestimonialService {
-	return NewTestimonialService(r.repoRegistry.GetTestimonial(), r.eventPublisher)
-}
-
 // GetArticleService implements [IServiceRegistry].
 func (r *Registry) GetArticleService() IArticleService {
 	return NewArticleService(r.repoRegistry.GetArticle(), r.eventPublisher)
@@ -49,7 +44,7 @@ func (r *Registry) GetArticleService() IArticleService {
 
 // GetAnalyticsService implements [IServiceRegistry].
 func (r *Registry) GetAnalyticsService() IAnalyticsService {
-	return r.analyticsSvc
+	return NewAnalyticsService()
 }
 
 // GetSalesService implements [IServiceRegistry].
@@ -57,16 +52,21 @@ func (r *Registry) GetSalesService() ISalesService {
 	return NewSalesService(r.repoRegistry.GetSales())
 }
 
+// GetGeneralSettingsService implements [IServiceRegistry].
+func (r *Registry) GetGeneralSettingsService() IGeneralSettingsService {
+	return NewGeneralSettingsService(r.repoRegistry.GetGeneralSettings())
+}
+
 type IServiceRegistry interface {
 	GetEventService() IEventService
 	GetRegionService() IRegionService
 	GetCarService() ICarService
 	GetPackageService() IPackageService
-	GetTestimonialService() ITestimonialService
 	GetArticleService() IArticleService
 	GetAnalyticsService() IAnalyticsService
 	GetCacheService() ICacheService
 	GetSalesService() ISalesService
+	GetGeneralSettingsService() IGeneralSettingsService
 }
 
 func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPublisher *kafka.EventPublisher) IServiceRegistry {
