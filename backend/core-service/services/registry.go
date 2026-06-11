@@ -39,7 +39,7 @@ func (r *Registry) GetPackageService() IPackageService {
 
 // GetArticleService implements [IServiceRegistry].
 func (r *Registry) GetArticleService() IArticleService {
-	return NewArticleService(r.repoRegistry.GetArticle(), r.eventPublisher)
+	return NewArticleService(r.repoRegistry.GetArticle(), r.repoRegistry.GetFAQ(), r.eventPublisher)
 }
 
 // GetAnalyticsService implements [IServiceRegistry].
@@ -57,6 +57,11 @@ func (r *Registry) GetGeneralSettingsService() IGeneralSettingsService {
 	return NewGeneralSettingsService(r.repoRegistry.GetGeneralSettings())
 }
 
+// GetFAQService implements [IServiceRegistry].
+func (r *Registry) GetFAQService() IFAQService {
+	return NewFAQService(r.repoRegistry.GetFAQ())
+}
+
 type IServiceRegistry interface {
 	GetEventService() IEventService
 	GetRegionService() IRegionService
@@ -67,6 +72,7 @@ type IServiceRegistry interface {
 	GetCacheService() ICacheService
 	GetSalesService() ISalesService
 	GetGeneralSettingsService() IGeneralSettingsService
+	GetFAQService() IFAQService
 }
 
 func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPublisher *kafka.EventPublisher) IServiceRegistry {

@@ -89,3 +89,15 @@ type UserWithProfileResponse struct {
 	MemberProfile     *MemberProfileResponse     `json:"memberProfile,omitempty"`
 	InstructorProfile *InstructorProfileResponse `json:"instructorProfile,omitempty"`
 }
+
+type RegistrationFilters struct {
+	FromDate *time.Time `form:"fromDate" binding:"omitempty"`
+	ToDate   *time.Time `form:"toDate" binding:"omitempty"`
+}
+
+type DashboardStatsResponse struct {
+	TotalUsers          int64 `json:"totalUsers"`
+	TotalMembers        int64 `json:"totalMembers"`
+	TotalInstructors    int64 `json:"totalInstructors"`
+	RecentRegistrations int64 `json:"recentRegistrations"`
+}

@@ -24,8 +24,8 @@ func NewCertificationRoute(controller controllers.IControllerRegistry, group *gi
 func (r *CertificationRoute) Run() {
 	certifications := r.group.Group("/certifications")
 	{
-		certifications.GET("", r.controller.GetCertificationController().ListCertifications)
-		certifications.POST("", r.controller.GetCertificationController().CreateCertification)
+		certifications.GET("/all", r.controller.GetCertificationController().ListCertifications)
+		certifications.POST("/create", r.controller.GetCertificationController().CreateCertification)
 		certifications.GET("/:id", r.controller.GetCertificationController().GetCertification)
 		certifications.PUT("/:id/status", r.controller.GetCertificationController().UpdateCertificationStatus)
 		certifications.POST("/issue", r.controller.GetCertificationController().IssueCertification)

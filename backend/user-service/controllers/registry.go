@@ -35,6 +35,7 @@ func (r *ControllerRegistry) GetMemberController() IMemberController {
 		r.service.GetUserService(),
 		r.service.GetAuthService(),
 		r.service.GetMemberService(),
+		r.service.GetMemberCertificateService(),
 		r.service.GetRoleService(),
 		r.service.GetEmailService(),
 		r.service.GetMediaService(),
@@ -75,6 +76,11 @@ func (r *ControllerRegistry) GetTestimonialController() ITestimonialController {
 	return NewTestimonialController(r.service.GetTestimonialService())
 }
 
+// GetRecurringScheduleController implements [IControllerRegistry].
+func (r *ControllerRegistry) GetRecurringScheduleController() IRecurringScheduleController {
+	return NewRecurringScheduleController(r.service.GetRecurringScheduleService())
+}
+
 // IControllerRegistry defines methods for getting controllers
 type IControllerRegistry interface {
 	GetUserController() IUserController
@@ -87,6 +93,8 @@ type IControllerRegistry interface {
 	GetCertificationController() ICertificationController
 	GetEntitlementController() IEntitlementController
 	GetTestimonialController() ITestimonialController
+	GetRecurringScheduleController() IRecurringScheduleController
+	GetDashboardController() IDashboardController
 }
 
 // NewControllerRegistry creates a new controller registry
@@ -105,4 +113,9 @@ func (r *ControllerRegistry) GetUserController() IUserController {
 		r.service.GetEmailService(),
 		r.service.GetMediaService(),
 	)
+}
+
+// GetDashboardController returns the dashboard controller
+func (r *ControllerRegistry) GetDashboardController() IDashboardController {
+	return NewDashboardController(r.service.GetDashboardService())
 }

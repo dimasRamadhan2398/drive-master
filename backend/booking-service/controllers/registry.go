@@ -44,6 +44,13 @@ func (r *Registry) GetScheduleController() IScheduleController {
 	)
 }
 
+func (r *Registry) GetDashboardController() IDashboardController {
+	return NewDashboardController(
+		r.service.GetSessionService(),
+		r.service.GetCertificationService(),
+	)
+}
+
 // IControllerRegistry defines methods for getting controllers
 type IControllerRegistry interface {
 	GetBookingController() IBookingController
@@ -52,6 +59,7 @@ type IControllerRegistry interface {
 	GetCertificationController() ICertificationController
 	GetEnrollmentController() IEnrollmentController
 	GetScheduleController() IScheduleController
+	GetDashboardController() IDashboardController
 }
 
 // NewControllerRegistry creates a new controller registry

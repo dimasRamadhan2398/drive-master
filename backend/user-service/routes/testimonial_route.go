@@ -26,11 +26,13 @@ func (r *TestimonialRoute) Run() {
 	testimonials := r.group.Group("/testimonials")
 	{
 		// Admin endpoints
+		testimonials.GET("", r.controller.GetTestimonialController().GetAllTestimonials)
 		testimonials.GET("/all", r.controller.GetTestimonialController().GetAllTestimonials)
 		testimonials.GET("/:id", r.controller.GetTestimonialController().GetTestimonialByID)
 		testimonials.POST("", r.controller.GetTestimonialController().CreateTestimonial)
 		testimonials.PUT("/:id", r.controller.GetTestimonialController().UpdateTestimonial)
 		testimonials.DELETE("/:id", r.controller.GetTestimonialController().DeleteTestimonial)
+		testimonials.PUT("/:id/unfeature", r.controller.GetTestimonialController().RemoveFromFeatured)
 
 		// Public endpoints
 		testimonials.GET("/published", r.controller.GetTestimonialController().GetPublishedTestimonials)

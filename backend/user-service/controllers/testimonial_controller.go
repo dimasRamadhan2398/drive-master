@@ -7,8 +7,8 @@ import (
 	"user-service/services"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 // TestimonialController handles testimonial-related HTTP requests
@@ -26,6 +26,7 @@ type ITestimonialController interface {
 	CreateTestimonial(ctx *gin.Context)
 	UpdateTestimonial(ctx *gin.Context)
 	DeleteTestimonial(ctx *gin.Context)
+	RemoveFromFeatured(ctx *gin.Context)
 }
 
 // NewTestimonialController creates a new testimonial controller
@@ -293,4 +294,39 @@ func (c *TestimonialController) DeleteTestimonial(ctx *gin.Context) {
 	}
 
 	responseRes.OK(ctx, "Testimonial deleted successfully", nil)
+}
+
+// RemoveFromFeatured handles PUT /api/v1/testimonials/:id/unfeature
+// @Summary Remove testimonial from featured
+// @Description Removes the featured status from a testimonial
+// @Tags Testimonials
+// @Produce json
+// @Param id path string true "Testimonial ID"
+// @Success 200 {object} response.Response
+// @Router /testimonials/{id}/unfeature [put]
+func (c *TestimonialController) RemoveFromFeatured(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		responseRes.BadRequest(ctx, "Invalid testimonial ID format")
+		return
+	}
+
+	testimonial, err := c.testimonialService.GetTestimonialByID(ctx.Request.Context(), id)
+	if err != nil {
+		responseRes.InternalServerError(ctx, "Failed to fetch testimonial")
+		return
+	}
+
+	if testimonial == nil {
+		responseRes.NotFound(ctx, "Testimonial not found")
+		return
+	}
+
+	if err := c.testimonialService.RemoveFromFeatured(ctx.Request.Context(), id); err != nil {
+		responseRes.InternalServerError(ctx, "Failed to remove from featured")
+		return
+	}
+
+	responseRes.OK(ctx, "Testimonial removed from featured", nil)
 }

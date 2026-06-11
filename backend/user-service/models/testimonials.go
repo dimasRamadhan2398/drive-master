@@ -12,10 +12,11 @@ const (
 	TestimonialStatusDraft     TestimonialStatus = "draft"
 	TestimonialStatusPublished TestimonialStatus = "published"
 	TestimonialStatusArchived  TestimonialStatus = "archived"
+	TestimonialStatusPending   TestimonialStatus = "pending"
 )
 
 type Testimonial struct {
-	ID          uint              `json:"id" gorm:"primaryKey"`
+	ID          uuid.UUID         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
 	UserID      uuid.UUID         `json:"user_id" gorm:"type:uuid;not null;index"`
 	UserName    string            `json:"user_name" gorm:"size:150;not null"`
@@ -39,8 +40,8 @@ type Testimonial struct {
 
 // TestimonialMedia allows multiple photos per testimonial (optional)
 type TestimonialMedia struct {
-	ID            uint      `json:"id"             gorm:"primaryKey"`
-	TestimonialID uint      `json:"testimonial_id" gorm:"not null;index"`
+	ID            uuid.UUID `json:"id"             gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	TestimonialID uuid.UUID `json:"testimonial_id" gorm:"type:uuid;not null;index"`
 	URL           string    `json:"url"            gorm:"size:255;not null"` // ImageKit URL
 	MediaType     string    `json:"media_type"    gorm:"size:20"`           // "image" | "video"
 	SortOrder     int       `json:"sort_order"    gorm:"default:0"`

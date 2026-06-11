@@ -7,9 +7,11 @@ import (
 	"user-service/models/dto"
 	"user-service/pkg/base"
 
+	apperrors "user-service/pkg/errors"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
 
 type IUserRepository interface {
 	Create(ctx context.Context, user *dto.RegisterRequest) (*models.User, error)
@@ -27,8 +29,10 @@ type IUserRepository interface {
 	Delete(ctx context.Context, user *models.User) error
 	GetAllWithProfiles(ctx context.Context) ([]models.User, error)
 	FindByIDWithProfiles(ctx context.Context, id uuid.UUID) (*models.User, error)
+	CountAll(ctx context.Context) (int64, error)
 	CountByRoleID(ctx context.Context, roleID uint) (int64, error)
 	FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int) ([]models.User, error)
+	FindRecentRegistrations(ctx context.Context, limit int, filters *dto.RegistrationFilters) ([]models.User, error)
 }
 
 type UserRepository struct {
@@ -91,7 +95,7 @@ func (r *UserRepository) CreateTx(tx *gorm.DB, user *dto.RegisterRequest) (*mode
 
 func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var user models.User
-	if err := r.BaseRepository.FindByID(&user, id); err != nil {
+	if err := r.BaseRepository.FindByIDWithPreload(&user, id, "Role"); err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -99,7 +103,10 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Us
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	if err := r.BaseRepository.FindOne(&user, "email_address = ?", email); err != nil {
+	if err := r.db.Preload("Role").Where("email_address = ?", email).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, apperrors.ErrNotFound
+		}
 		return nil, err
 	}
 	return &user, nil
@@ -108,7 +115,10 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*models
 // FindByUsername finds a user by username
 func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
-	if err := r.BaseRepository.FindOne(&user, "username = ?", username); err != nil {
+	if err := r.db.Preload("Role").Where("username = ?", username).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, apperrors.ErrNotFound
+		}
 		return nil, err
 	}
 	return &user, nil
@@ -194,6 +204,15 @@ func (r *UserRepository) CountByRoleID(ctx context.Context, roleID uint) (int64,
 	return count, nil
 }
 
+// CountAll counts all users
+func (r *UserRepository) CountAll(ctx context.Context) (int64, error) {
+	var count int64
+	if err := r.DB.Model(&models.User{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // FindByRoleIDWithPagination retrieves users with a specific role ID with pagination
 func (r *UserRepository) FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int) ([]models.User, error) {
 	var users []models.User
@@ -204,5 +223,35 @@ func (r *UserRepository) FindByRoleIDWithPagination(ctx context.Context, roleID 
 	if err := r.BaseRepository.FindMany(&models.User{}, &users, opts); err != nil {
 		return nil, err
 	}
+	return users, nil
+}
+
+// FindRecentRegistrations retrieves recent user registrations with preloaded Role and MemberProfile
+func (r *UserRepository) FindRecentRegistrations(ctx context.Context, limit int, filters *dto.RegistrationFilters) ([]models.User, error) {
+	var users []models.User
+	opts := base.NewQueryOptions().
+		WithPreloads("Role", "MemberProfile").
+		WithOrder("created_at DESC").WithWhere(map[string]any{"role_id": 2}).
+		WithPagination(0, limit)
+
+	if filters != nil {
+		if filters.FromDate != nil {
+			opts = opts.WithWhere(map[string]any{"created_at >= ?": filters.FromDate})
+		}
+		if filters.ToDate != nil {
+			opts = opts.WithWhere(map[string]any{"created_at <= ?": filters.ToDate})
+		}
+	}
+
+	if err := r.BaseRepository.FindMany(&models.User{}, &users, opts); err != nil {
+		return nil, err
+	}
+
+	countOpts := base.NewQueryOptions().WithWhere(map[string]any{"role_id": 2})
+	total, err := r.BaseRepository.Count(&models.User{}, countOpts)
+	if err != nil {
+		return nil, err
+	}
+	_ = total // use total as needed
 	return users, nil
 }

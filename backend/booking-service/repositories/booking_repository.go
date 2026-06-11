@@ -177,128 +177,6 @@ func (r *BookingRepository) ToListResponse(enrollments []models.Enrollment, tota
 	}
 }
 
-// SessionRepository handles session database operations
-type SessionRepository struct {
-	db *gorm.DB
-}
-
-func NewSessionRepository(db *gorm.DB) *SessionRepository {
-	return &SessionRepository{db: db}
-}
-
-func (r *SessionRepository) Create(ctx context.Context, session *models.Session) error {
-	return r.db.WithContext(ctx).Create(session).Error
-}
-
-func (r *SessionRepository) GetByID(ctx context.Context, id uint) (*models.Session, error) {
-	var session models.Session
-	if err := r.db.WithContext(ctx).First(&session, id).Error; err != nil {
-		return nil, err
-	}
-	return &session, nil
-}
-
-func (r *SessionRepository) List(ctx context.Context, page, limit int) ([]models.Session, int64, error) {
-	var sessions []models.Session
-	var total int64
-
-	offset := (page - 1) * limit
-
-	if err := r.db.WithContext(ctx).Model(&models.Session{}).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := r.db.WithContext(ctx).
-		Order("created_at DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&sessions).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return sessions, total, nil
-}
-
-func (r *SessionRepository) GetByUserID(ctx context.Context, userID uint, page, limit int) ([]models.Session, int64, error) {
-	var sessions []models.Session
-	var total int64
-
-	offset := (page - 1) * limit
-	query := r.db.WithContext(ctx).Model(&models.Session{}).Where("user_id = ?", userID)
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.
-		Order("date_of_session DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&sessions).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return sessions, total, nil
-}
-
-func (r *SessionRepository) GetByInstructorID(ctx context.Context, instructorID uint, page, limit int) ([]models.Session, int64, error) {
-	var sessions []models.Session
-	var total int64
-
-	offset := (page - 1) * limit
-	query := r.db.WithContext(ctx).Model(&models.Session{}).Where("instructor_id = ?", instructorID)
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.
-		Order("date_of_session DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&sessions).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return sessions, total, nil
-}
-
-// ToResponse converts a Session model to SessionResponse DTO
-func (r *SessionRepository) ToResponse(session *models.Session) dto.SessionResponse {
-	return dto.SessionResponse{
-		ID:            session.ID,
-		UserID:        session.UserID,
-		InstructorID:  session.InstructorID,
-		Duration:      session.Duration,
-		CarID:         session.CarID,
-		Area:          session.Area,
-		Notes:         session.Notes,
-		CreatedAt:     session.CreatedAt,
-		UpdatedAt:     session.UpdatedAt,
-	}
-}
-
-// ToListResponse converts a slice of Sessions to SessionListResponse DTO
-func (r *SessionRepository) ToListResponse(sessions []models.Session, total int64, page, limit int) dto.SessionListResponse {
-	items := make([]dto.SessionResponse, len(sessions))
-	for i, s := range sessions {
-		items[i] = r.ToResponse(&s)
-	}
-
-	totalPages := int(total) / limit
-	if int(total)%limit > 0 {
-		totalPages++
-	}
-
-	return dto.SessionListResponse{
-		Data:       items,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
-	}
-}
-
 // EntitlementRepository handles user entitlement database operations
 type EntitlementRepository struct {
 	db *gorm.DB
@@ -520,6 +398,46 @@ func (r *CertificationRepository) ToListResponse(certifications []models.Certifi
 		Limit:      limit,
 		TotalPages: totalPages,
 	}
+}
+
+// CertificationStats holds certification statistics
+type CertificationStats struct {
+	Total    int64
+	Issued   int64
+	Active   int64
+	Revoked  int64
+}
+
+func (r *CertificationRepository) GetStats(ctx context.Context) (*CertificationStats, error) {
+	stats := &CertificationStats{}
+
+	// Get total certifications
+	if err := r.db.WithContext(ctx).Model(&models.Certification{}).Count(&stats.Total).Error; err != nil {
+		return nil, err
+	}
+
+	// Get issued certifications
+	if err := r.db.WithContext(ctx).Model(&models.Certification{}).
+		Where("status = ?", models.CertificationStatusIssued).
+		Count(&stats.Issued).Error; err != nil {
+		return nil, err
+	}
+
+	// Get active (issued and not revoked)
+	if err := r.db.WithContext(ctx).Model(&models.Certification{}).
+		Where("status IN ?", []string{string(models.CertificationStatusIssued), string(models.CertificationStatusPending)}).
+		Count(&stats.Active).Error; err != nil {
+		return nil, err
+	}
+
+	// Get revoked certifications
+	if err := r.db.WithContext(ctx).Model(&models.Certification{}).
+		Where("status = ?", models.CertificationStatusRevoked).
+		Count(&stats.Revoked).Error; err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // UserCertificationRepository handles user-certification associations

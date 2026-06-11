@@ -79,8 +79,8 @@ type InstructorProfile struct {
 	SessionsCompleted        int              `json:"sessionsCompleted" gorm:"default:0"`
 	AverageRating            float64          `json:"averageRating" gorm:"default:0"`
 	WorkExperiences          []WorkExperience `json:"workExperiences" gorm:"foreignKey:InstructorID"`
-	Description       		 string                   `json:"description" gorm:"size:500"`
-	Specialization    		 string                   `json:"specialization" gorm:"size:50"`
+	Description       		 string           `json:"description" gorm:"size:500"`
+	Specialization    		 string           `json:"specialization" gorm:"size:50"`
 	CreatedAt                time.Time        `json:"createdAt"`
 	UpdatedAt                time.Time        `json:"updatedAt"`
 	
@@ -214,4 +214,37 @@ func (e *Entitlement) ValidateSessionCount() error {
         )
     }
     return nil
+}
+
+// InstructorRecurringSchedule represents a recurring time slot for an instructor
+// Example: Every Monday at 09:00-10:00, or every Tuesday & Thursday at 13:00-14:00
+type InstructorRecurringSchedule struct {
+    ID           uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+    InstructorID uuid.UUID `json:"instructorId" gorm:"type:uuid;not null;index"`
+    DayOfWeek    int       `json:"dayOfWeek" gorm:"not null"`        // 0=Sunday, 1=Monday...6=Saturday
+    StartTime    string    `json:"startTime" gorm:"size:10;not null"` // Format: HH:MM
+    EndTime      string    `json:"endTime" gorm:"size:10;not null"`   // Format: HH:MM
+    IsActive     bool      `json:"isActive" gorm:"default:true"`
+    CreatedAt    time.Time `json:"createdAt"`
+    UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+// DayOfWeek constants for readability
+const (
+    DayOfWeekSunday = 0
+    DayOfWeekMonday    = 1
+    DayOfWeekTuesday   = 2
+    DayOfWeekWednesday = 3
+    DayOfWeekThursday  = 4
+    DayOfWeekFriday    = 5
+    DayOfWeekSaturday  = 6
+)
+
+// DayOfWeekNames returns the name of the day
+func DayOfWeekName(day int) string {
+    names := []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
+    if day >= 0 && day <= 6 {
+        return names[day]
+    }
+    return "Unknown"
 }

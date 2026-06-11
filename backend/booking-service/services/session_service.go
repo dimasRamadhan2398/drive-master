@@ -86,3 +86,17 @@ func (s *SessionService) ListInstructorSessions(ctx context.Context, instructorI
 	resp := s.sessionRepo.ToListResponse(sessions, total, page, limit)
 	return &resp, nil
 }
+
+func (s *SessionService) GetStats(ctx context.Context) (*dto.SessionStatsResponse, error) {
+	stats, err := s.sessionRepo.GetStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return&dto.SessionStatsResponse{
+		TotalSessions:     stats.Total,
+		ActiveSessions:    stats.Active,
+		CompletedSessions: stats.Completed,
+		PendingSessions:   stats.Pending,
+	}, nil
+}

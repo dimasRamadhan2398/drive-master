@@ -34,17 +34,29 @@ type IArticleService interface {
 	// Admin endpoints
 	PublishArticle(ctx context.Context, id uuid.UUID) error
 	ArchiveArticle(ctx context.Context, id uuid.UUID) error
+
+	// Blog endpoints
+	GetBlogArticles(ctx context.Context, page, limit int) (*dto.BlogArticleListResponse, error)
+	CreateBlogArticle(ctx context.Context, req *dto.CreateBlogArticleRequest) (*models.Article, error)
+	DeleteBlogArticle(ctx context.Context, id uuid.UUID) error
+
+	// FAQ endpoints
+	GetFAQs(ctx context.Context) ([]models.FAQ, error)
+	CreateFAQ(ctx context.Context, req *dto.CreateFAQRequest) (*models.FAQ, error)
+	DeleteFAQ(ctx context.Context, id uuid.UUID) error
 }
 
 // ArticleService implements IArticleService
 type ArticleService struct {
 	articleRepo    repositories.IArticleRepository
+	faqRepo        repositories.IFAQRepository
 	eventPublisher *kafka.EventPublisher
 }
 
-func NewArticleService(articleRepo repositories.IArticleRepository, eventPublisher *kafka.EventPublisher) IArticleService {
+func NewArticleService(articleRepo repositories.IArticleRepository, faqRepo repositories.IFAQRepository, eventPublisher *kafka.EventPublisher) IArticleService {
 	return &ArticleService{
 		articleRepo:    articleRepo,
+		faqRepo:        faqRepo,
 		eventPublisher: eventPublisher,
 	}
 }
@@ -439,6 +451,171 @@ func (s *ArticleService) ArchiveArticle(ctx context.Context, id uuid.UUID) error
 	}
 
 	return nil
+}
+
+// GetBlogArticles retrieves published blog articles with pagination
+func (s *ArticleService) GetBlogArticles(ctx context.Context, page, limit int) (*dto.BlogArticleListResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	offset := (page - 1) * limit
+	opts := base.NewQueryOptions()
+	opts.Limit = limit
+	opts.Offset = offset
+	opts.Order = "published_at DESC, created_at DESC"
+
+	articles, err := s.articleRepo.GetBlogArticles(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.articleRepo.CountBlogArticles(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := int(total) / limit
+	if int(total)%limit > 0 {
+		totalPages++
+	}
+
+	// Convert to blog article response
+	blogArticles := make([]dto.BlogArticleResponse, len(articles))
+	for i, a := range articles {
+		blogArticles[i] = dto.BlogArticleResponse{
+			ID:            a.ID,
+			Title:         a.Title,
+			Slug:          a.Slug,
+			LeadParagraph: a.LeadParagraph,
+			FeaturedImage: a.FeaturedImage,
+			ReadingTime:   a.ReadingTime,
+			ViewCount:     a.ViewCount,
+			LikeCount:     a.LikeCount,
+			Status:        string(a.Status),
+			PublishedAt:   a.PublishedAt,
+			CreatedAt:     a.CreatedAt,
+			UpdatedAt:     a.UpdatedAt,
+		}
+	}
+
+	return &dto.BlogArticleListResponse{
+		Articles:   blogArticles,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	}, nil
+}
+
+// CreateBlogArticle creates a new blog article
+func (s *ArticleService) CreateBlogArticle(ctx context.Context, req *dto.CreateBlogArticleRequest) (*models.Article, error) {
+	// Calculate reading time from body blocks
+	readingTime := s.calculateReadingTimeFromBlocks(req.BodyBlocks)
+
+	status := models.ArticleStatus(req.Status)
+	if status == "" {
+		status = models.ArticleStatusDraft
+	}
+
+	// Handle category ID pointer
+	var categoryID *uuid.UUID
+	if req.CategoryID != uuid.Nil {
+		categoryID = &req.CategoryID
+	}
+
+	article := &models.Article{
+		Title:         req.Title,
+		Slug:          req.Slug,
+		LeadParagraph: req.LeadParagraph,
+		BodyBlocks:    req.BodyBlocks,
+		FeaturedImage: req.FeaturedImage,
+		CategoryID:    categoryID,
+		AuthorID:      req.AuthorID,
+		Tags:          req.Tags,
+		Status:        status,
+		ReadingTime:   readingTime,
+	}
+
+	if err := s.articleRepo.Create(ctx, article); err != nil {
+		return nil, err
+	}
+
+	return article, nil
+}
+
+// DeleteBlogArticle soft-deletes a blog article
+func (s *ArticleService) DeleteBlogArticle(ctx context.Context, id uuid.UUID) error {
+	article, err := s.articleRepo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if article == nil {
+		return nil
+	}
+
+	return s.articleRepo.Delete(ctx, article)
+}
+
+// GetFAQs retrieves all FAQs
+func (s *ArticleService) GetFAQs(ctx context.Context) ([]models.FAQ, error) {
+	return s.faqRepo.FindActive(ctx)
+}
+
+// CreateFAQ creates a new FAQ
+func (s *ArticleService) CreateFAQ(ctx context.Context, req *dto.CreateFAQRequest) (*models.FAQ, error) {
+	category := req.Category
+	if category == "" {
+		category = "general"
+	}
+
+	order := req.Order
+	if order == 0 {
+		// Get max order and add 1
+		faqs, err := s.faqRepo.FindAll(ctx)
+		if err == nil && len(faqs) > 0 {
+			maxOrder := 0
+			for _, f := range faqs {
+				if f.Order > maxOrder {
+					maxOrder = f.Order
+				}
+			}
+			order = maxOrder + 1
+		}
+	}
+
+	faq := &models.FAQ{
+		Question: req.Question,
+		Answer:   req.Answer,
+		Category: category,
+		Order:    order,
+		IsActive: true,
+	}
+
+	if err := s.faqRepo.Create(ctx, faq); err != nil {
+		return nil, err
+	}
+
+	return faq, nil
+}
+
+// DeleteFAQ soft-deletes an FAQ
+func (s *ArticleService) DeleteFAQ(ctx context.Context, id uuid.UUID) error {
+	faq, err := s.faqRepo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if faq == nil {
+		return nil
+	}
+
+	return s.faqRepo.DeleteSoft(ctx, faq)
 }
 
 // Helper methods

@@ -338,6 +338,7 @@ func (s *InstructorService) CreateInstructorWithUser(ctx context.Context, req dt
 			IsActive:             createdProfile.IsActive,
 			PhotoURL:             createdProfile.PhotoURL,
 			Specialization:       createdProfile.Specialization,
+			
 		},
 	}, nil
 }

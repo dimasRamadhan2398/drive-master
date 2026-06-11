@@ -95,11 +95,43 @@ services:
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
+      - name: user-members-recent-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/members/recent
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: user-members-search-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/members/search
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
       - name: user-instructors-route
         strip_path: false
         preserve_host: false
         paths:
           - /api/v1/instructors
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: user-testimonials-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/testimonials
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: user-testimonials-all-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/testimonials/all
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
@@ -140,14 +172,6 @@ services:
         preserve_host: false
         paths:
           - /api/v1/articles
-        protocols: [http, https]
-        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
-
-      - name: core-testimonials-route
-        strip_path: false
-        preserve_host: false
-        paths:
-          - /api/v1/testimonials
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
@@ -199,6 +223,14 @@ services:
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
+      - name: booking-certifications-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/certifications
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
   - name: booking-service-docs-service
     url: http://booking-service-upstream
     routes:
@@ -220,6 +252,14 @@ services:
         preserve_host: false
         paths:
           - /api/v1/payments
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: payment-transactions-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/transactions
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 

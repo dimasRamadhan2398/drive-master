@@ -30,7 +30,10 @@ type IServiceRegistry interface {
 	GetRegionService() IRegionService
 	GetCertificationService() ICertificationService
 	GetEntitlementService() IEntitlementService
+	GetMemberCertificateService() IMemberCertificateService
 	GetTestimonialService() ITestimonialService
+	GetRecurringScheduleService() IRecurringScheduleService
+	GetDashboardService() IDashboardService
 }
 
 func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgKafka.IEventPublisher, redisClient *redis.Client) IServiceRegistry {
@@ -115,6 +118,22 @@ func (r *Registry) GetEntitlementService() IEntitlementService {
 	)
 }
 
+func (r *Registry) GetMemberCertificateService() IMemberCertificateService {
+	return NewMemberCertificateService(
+		r.repoRegistry.GetUser(),
+		r.repoRegistry.GetEntitlement(),
+		r.repoRegistry.GetCertification(),
+	)
+}
+
 func (r *Registry) GetTestimonialService() ITestimonialService {
 	return NewTestimonialService(r.repoRegistry.GetTestimonial(), r.eventPublisher)
+}
+
+func (r *Registry) GetRecurringScheduleService() IRecurringScheduleService {
+	return NewRecurringScheduleService(r.repoRegistry.GetRecurringSchedule())
+}
+
+func (r *Registry) GetDashboardService() IDashboardService {
+	return NewDashboardService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole())
 }

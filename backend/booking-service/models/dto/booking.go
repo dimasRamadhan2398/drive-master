@@ -291,3 +291,19 @@ type BookSlotRequest struct {
 	EntitlementID uint   `json:"entitlementId" binding:"required"`
 	Notes         string `json:"notes"`
 }
+
+// Stats Response DTOs
+
+type SessionStatsResponse struct {
+	TotalSessions     int64 `json:"totalSessions"`
+	ActiveSessions    int64 `json:"activeSessions"`
+	CompletedSessions int64 `json:"completedSessions"`
+	PendingSessions   int64 `json:"pendingSessions"`
+}
+
+type CertificationStatsResponse struct {
+	TotalCertifications int64 `json:"totalCertifications"`
+	IssuedCertifications int64 `json:"issuedCertifications"`
+	ActiveCertifications int64 `json:"activeCertifications"`
+	RevokedCertifications int64 `json:"revokedCertifications"`
+}

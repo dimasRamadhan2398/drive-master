@@ -103,6 +103,10 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginInput) (*dto.Logi
 		DateOfBirth: user.DateOfBirth,
 		Address:     user.Address,
 		RoleID:      user.RoleID,
+		Role: dto.RoleResponse{
+			ID:   user.Role.ID,
+			Name: user.Role.Name,
+		},
 	}
 
 	// Create JWT claims
@@ -164,12 +168,18 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 	userResp := dto.GetUserResponse{
 		UserID:      user.ID,
 		Email:       user.EmailAddress,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
 		Username:    user.Username,
 		PhoneNumber: user.PhoneNumber,
 		Image:       user.Image,
 		DateOfBirth: user.DateOfBirth,
 		Address:     user.Address,
 		RoleID:      user.RoleID,
+		Role: dto.RoleResponse{
+			ID:   user.Role.ID,
+			Name: user.Role.Name,
+		},
 	}
 
 	claims := &Claims{

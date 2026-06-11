@@ -21,6 +21,7 @@ type ISessionService interface {
 	CreateSession(ctx context.Context, req dto.CreateSessionRequest) (*dto.SessionResponse, error)
 	GetSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	ListSessions(ctx context.Context, page, limit int) (*dto.SessionListResponse, error)
+	GetStats(ctx context.Context) (*dto.SessionStatsResponse, error)
 }
 
 type IEntitlementService interface {
@@ -41,6 +42,7 @@ type ICertificationService interface {
 	ListCertifications(ctx context.Context, page, limit int) (*dto.CertificationListResponse, error)
 	GetUserCertifications(ctx context.Context, userID uint) ([]dto.UserCertificationResponse, error)
 	GetCertificationsByPackage(ctx context.Context, packageID uint) ([]dto.CertificationResponse, error)
+	GetStats(ctx context.Context) (*dto.CertificationStatsResponse, error)
 }
 
 type IEnrollmentService interface {

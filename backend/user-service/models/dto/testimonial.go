@@ -36,21 +36,21 @@ type UpdateTestimonialRequest struct {
 }
 
 type TestimonialResponse struct {
-	ID         uint                    `json:"id"`
+	ID         uuid.UUID               `json:"id"`
 	UserID     uuid.UUID               `json:"userId"`
-	UserName   string                 `json:"userName"`
-	UserImage  string                 `json:"userImage"`
-	UserRole   string                 `json:"userRole"`
-	Content    string                 `json:"content"`
-	Rating     float64                `json:"rating"`
-	Tags       string                 `json:"tags"`
+	UserName   string                  `json:"userName"`
+	UserImage  string                  `json:"userImage"`
+	UserRole   string                  `json:"userRole"`
+	Content    string                  `json:"content"`
+	Rating     float64                 `json:"rating"`
+	Tags       string                  `json:"tags"`
 	Status     models.TestimonialStatus `json:"status"`
-	IsFeatured bool                   `json:"isFeatured"`
-	AddedBy    uuid.UUID              `json:"addedBy"`
-	AddedAt    time.Time              `json:"addedAt"`
-	SortOrder  int                    `json:"sortOrder"`
-	CreatedAt  time.Time              `json:"createdAt"`
-	UpdatedAt  time.Time              `json:"updatedAt"`
+	IsFeatured bool                    `json:"isFeatured"`
+	AddedBy    uuid.UUID               `json:"addedBy"`
+	AddedAt    time.Time               `json:"addedAt"`
+	SortOrder  int                     `json:"sortOrder"`
+	CreatedAt  time.Time               `json:"createdAt"`
+	UpdatedAt  time.Time               `json:"updatedAt"`
 }
 
 type TestimonialListResponse struct {

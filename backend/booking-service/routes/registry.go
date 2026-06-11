@@ -28,6 +28,7 @@ func (r *Registry) Serve() {
 	r.GetCertificationRoute().Run()
 	r.GetEnrollmentRoute().Run()
 	r.GetScheduleRoute().Run()
+	r.GetDashboardRoute().Run()
 }
 
 func (r *Registry) GetBookingRoute() IBookingRoute {
@@ -52,4 +53,8 @@ func (r *Registry) GetEnrollmentRoute() IEnrollmentRoute {
 
 func (r *Registry) GetScheduleRoute() IScheduleRoute {
 	return NewScheduleRoute(r.controller, r.group, r.authMiddleware)
+}
+
+func (r *Registry) GetDashboardRoute() IDashboardRoute {
+	return NewDashboardRoute(r.controller, r.group, r.authMiddleware)
 }

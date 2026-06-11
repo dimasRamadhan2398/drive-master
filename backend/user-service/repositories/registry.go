@@ -57,6 +57,11 @@ func (r *Registry) GetTestimonial() ITestimonialRepository {
 	return NewTestimonialRepository(r.db)
 }
 
+// GetRecurringSchedule implements IRepositoryRegistry
+func (r *Registry) GetRecurringSchedule() IRecurringScheduleRepository {
+	return NewRecurringScheduleRepository(r.db)
+}
+
 type IRepositoryRegistry interface {
 	GetUser() IUserRepository
 	GetMember() IMemberRepository
@@ -67,4 +72,5 @@ type IRepositoryRegistry interface {
 	GetCertification() ICertificationRepository
 	GetEntitlement() IEntitlementRepository
 	GetTestimonial() ITestimonialRepository
+	GetRecurringSchedule() IRecurringScheduleRepository
 }

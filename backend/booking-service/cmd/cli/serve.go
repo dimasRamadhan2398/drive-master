@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"booking-service/clients/user"
 	"booking-service/controllers"
 	"booking-service/docs"
 	"booking-service/models"
@@ -87,7 +88,12 @@ func runServe(cmd *cobra.Command, args []string) {
 	entitlementService := services.NewEntitlementService(entitlementRepo)
 	certificationService := services.NewCertificationService(certificationRepo, userCertRepo)
 	enrollmentService := services.NewEnrollmentService(enrollmentRepo, entitlementRepo)
-	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo)
+
+	// Initialize user-service client and availability service
+	userClient := user.NewUserClient(getEnv("USER_SERVICE_URL", "http://localhost:8001"))
+	availabilityService := services.NewAvailabilityService(userClient)
+
+	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, availabilityService)
 
 	// Create service registry
 	serviceRegistry := &serviceRegistryImpl{

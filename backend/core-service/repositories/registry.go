@@ -36,6 +36,7 @@ type IRepositoryRegistry interface {
 	GetArticle() IArticleRepository
 	GetSales() ISalesRepository
 	GetGeneralSettings() IGeneralSettingsRepository
+	GetFAQ() IFAQRepository
 }
 
 // GetCache returns the cache repository
@@ -79,4 +80,9 @@ func (r *Registry) GetSales() ISalesRepository {
 // GetGeneralSettings returns the general settings repository
 func (r *Registry) GetGeneralSettings() IGeneralSettingsRepository {
 	return NewGeneralSettingsRepository(r.baseRepo)
+}
+
+// GetFAQ returns the FAQ repository
+func (r *Registry) GetFAQ() IFAQRepository {
+	return NewFAQRepository(r.baseRepo)
 }

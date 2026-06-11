@@ -20,6 +20,7 @@ type ITestimonialRepository interface {
 	UpdateTestimonial(ctx context.Context, testimonial *models.Testimonial) error
 	DeleteTestimonial(ctx context.Context, id uuid.UUID) error
 	CountTestimonials(ctx context.Context) (int64, error)
+	RemoveFromFeatured(ctx context.Context, id uuid.UUID) error
 }
 
 type TestimonialRepository struct {
@@ -112,4 +113,9 @@ func (r *TestimonialRepository) DeleteTestimonial(ctx context.Context, id uuid.U
 // CountTestimonials returns the total number of testimonials
 func (r *TestimonialRepository) CountTestimonials(ctx context.Context) (int64, error) {
 	return r.BaseRepository.Count( &models.Testimonial{}, nil)
+}
+
+// RemoveFromFeatured removes the featured status from a testimonial
+func (r *TestimonialRepository) RemoveFromFeatured(ctx context.Context, id uuid.UUID) error {
+	return r.BaseRepository.DB.Model(&models.Testimonial{}).Where("id = ?", id).Update("is_featured", false).Error
 }

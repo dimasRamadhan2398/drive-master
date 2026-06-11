@@ -47,5 +47,15 @@ func (r *ArticleRoute) Run() {
 		articles.POST("/:id/view", r.controller.GetArticleController().IncrementViewCount)
 		articles.POST("/:id/publish", r.controller.GetArticleController().PublishArticle)
 		articles.POST("/:id/archive", r.controller.GetArticleController().ArchiveArticle)
+
+		//blog endpoints
+		articles.GET("/blog", r.controller.GetArticleController().GetBlogArticles)
+		articles.POST("/blog", r.controller.GetArticleController().CreateBlogArticle)
+		articles.DELETE("/blog/:id", r.controller.GetArticleController().DeleteBlogArticle)
+
+		//faq endpoints
+		articles.GET("/faq", r.controller.GetArticleController().GetFAQArticles)
+		articles.POST("/faq", r.controller.GetArticleController().CreateFAQArticle)
+		articles.DELETE("/faq/:id", r.controller.GetArticleController().DeleteFAQArticle)
 	}
 }

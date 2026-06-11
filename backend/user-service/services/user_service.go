@@ -20,6 +20,7 @@ type IUserService interface {
 	DeleteUser(ctx context.Context, user *models.User) error
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetInstructorsWithPagination(ctx context.Context, page, limit int) (*dto.InstructorListResponse, error)
+	FindRecentRegistrations(ctx context.Context, limit int, filters *dto.RegistrationFilters) ([]models.User, error)
 }
 
 type UserService struct {
@@ -27,6 +28,11 @@ type UserService struct {
 	roleRepo      repositories.IRoleRepository
 	repo          repositories.IUserRepository
 	instructorSvc IInstructorService
+}
+
+// FindRecentRegistrations implements [IUserService].
+func (s *UserService) FindRecentRegistrations(ctx context.Context, limit int, filters *dto.RegistrationFilters) ([]models.User, error) {
+	return s.repo.FindRecentRegistrations(ctx, limit, filters)
 }
 
 // GetMembersWithPagination implements [IUserService].

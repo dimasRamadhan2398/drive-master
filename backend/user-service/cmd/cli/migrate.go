@@ -34,6 +34,101 @@ func init() {
 	migrateCmd.Flags().BoolVar(&migrateDryRun, "dry-run", false, "Show what would be migrated without running")
 }
 
+func migrateTestimonialIDToUUID(db *gorm.DB) error {
+    // 1. Add a new UUID column (nullable at first)
+    if err := db.Exec(`
+        ALTER TABLE testimonials
+        ADD COLUMN IF NOT EXISTS new_id UUID
+    `).Error; err != nil {
+        return err
+    }
+
+    // 2. Generate UUIDs for existing rows
+    if err := db.Exec(`
+        UPDATE testimonials
+        SET new_id = gen_random_uuid()
+        WHERE new_id IS NULL
+    `).Error; err != nil {
+        return err
+    }
+
+    // 3. Handle dependent tables (example: testimonial_media)
+    // Add a new FK column in the referencing table
+    if err := db.Exec(`
+        ALTER TABLE testimonial_media
+        ADD COLUMN IF NOT EXISTS new_testimonial_id UUID
+    `).Error; err != nil {
+        return err
+    }
+
+    // Populate it based on the old integer id
+    if err := db.Exec(`
+        UPDATE testimonial_media tm
+        SET new_testimonial_id = t.new_id
+        FROM testimonials t
+        WHERE tm.testimonial_id = t.id
+    `).Error; err != nil {
+        return err
+    }
+
+    // 4. Drop old foreign key constraints (if any)
+    //    You'll need to know the actual constraint names – query them from
+    //    information_schema or use a naming convention.
+    //    Example:
+    // db.Exec(`ALTER TABLE testimonial_media DROP CONSTRAINT fk_testimonial_media_testimonial`)
+
+    // 5. Drop the old integer columns and rename the new ones
+    //    Because this is risky, you may want to do it in a transaction.
+
+    tx := db.Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
+
+    // Drop old FK column and rename new one in referencing table
+    if err := tx.Exec(`ALTER TABLE testimonial_media DROP COLUMN testimonial_id`).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+    if err := tx.Exec(`ALTER TABLE testimonial_media RENAME COLUMN new_testimonial_id TO testimonial_id`).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    // Now swap the primary key on testimonials
+    // Drop the old primary key constraint (this may cascade, be careful)
+    if err := tx.Exec(`ALTER TABLE testimonials DROP CONSTRAINT testimonials_pkey`).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+    if err := tx.Exec(`ALTER TABLE testimonials DROP COLUMN id`).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+    if err := tx.Exec(`ALTER TABLE testimonials RENAME COLUMN new_id TO id`).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+    if err := tx.Exec(`ALTER TABLE testimonials ADD PRIMARY KEY (id)`).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    // 6. Recreate foreign key constraints (adjust to your model)
+    if err := tx.Exec(`
+        ALTER TABLE testimonial_media
+        ADD CONSTRAINT fk_testimonial_media_testimonial
+        FOREIGN KEY (testimonial_id) REFERENCES testimonials(id)
+    `).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    return tx.Commit().Error
+}
+
 func runMigrate(cmd *cobra.Command, args []string) {
 	// Load config first
 	LoadConfig()
@@ -78,12 +173,17 @@ func runMigrate(cmd *cobra.Command, args []string) {
 		&models.InstructorArea{},
 		&models.Certification{},
 		&models.Entitlement{},
-		&models.Testimonial{},
-		&models.TestimonialMedia{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}
+
+	if err := migrateTestimonialIDToUUID(db); err != nil {
+    	log.Fatal("migration failed: ", err)
+	}
+		// After the migration, AutoMigrate will recognise the new schema
+	db.AutoMigrate(&models.Testimonial{}, &models.TestimonialMedia{})
+	
 
 	log.Println("Database migrations completed successfully")
 }

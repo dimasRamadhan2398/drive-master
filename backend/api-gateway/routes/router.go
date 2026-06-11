@@ -11,16 +11,19 @@ import (
 func Register(r *gin.Engine, cfg *config.Config) {
 	auth := middlewares.NewAuthMiddleware(cfg.JWT.Secret)
     proxy := handlers.NewProxyHandler(cfg)
+    dashboard := handlers.NewDashboardHandler(cfg)
 
     // ── PUBLIC routes — no JWT required ──────────────────
     public := r.Group("/api/v1")
     {
-        // public content — articles, testimonials
-        public.GET("/content/articles/*path",     proxy.ToContentService)
-        public.GET("/content/testimonials/*path", proxy.ToContentService)
+        // public content — articles
+        public.GET("/content/articles/*path", proxy.ToContentService)
 
         // public catalog — browse cars and packages
         public.GET("/catalog/*path", proxy.ToCatalogService)
+
+        // testimonials (public endpoints: published, featured)
+        public.Any("/testimonials/*path", proxy.ToUserService)
     }
 
     // ── MIXED routes — conditional JWT ───────────────────────
@@ -38,7 +41,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
                 proxy.ToUserService(c)
                 return
             }
-            
+
             // Otherwise, validate JWT
             auth.Authenticate()(c)
             if !c.IsAborted() {
@@ -59,6 +62,9 @@ func Register(r *gin.Engine, cfg *config.Config) {
 
         // notifications
         protected.Any("/notifications/*path", proxy.ToNotificationService)
+
+        // testimonials admin operations (create, update, delete)
+        protected.Any("/testimonials/*path", proxy.ToUserService)
     }
 
     // ── ADMIN routes — JWT + admin role required ──────────
@@ -70,6 +76,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
         admin.Any("/catalog/*path",  proxy.ToCatalogService)
         admin.Any("/users/*path",    proxy.ToUserService)
         admin.Any("/analytics/*path", proxy.ToCoreService)
+        admin.GET("/dashboard/stats", dashboard.GetDashboardStats)
     }
 
     // ── CORE ADMIN routes — routed under /api/v1/core/admin ──

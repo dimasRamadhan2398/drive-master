@@ -202,3 +202,51 @@ type CreateInstructorWithUserResponse struct {
 
 // EntitlementListResponse represents a paginated list of entitlements
 type EntitlementListResponse = PagedData[EntitlementResponse]
+
+// ============================================================
+// Recurring Schedule DTOs
+// ============================================================
+
+// RecurringScheduleSlot represents a single time slot for bulk creation
+type RecurringScheduleSlot struct {
+	DayOfWeek int `json:"dayOfWeek" binding:"required,min=0,max=6"` // 0=Sunday, 1=Monday...6=Saturday
+	StartTime string `json:"startTime" binding:"required"`              // Format: HH:MM
+	EndTime   string `json:"endTime" binding:"required"`                // Format: HH:MM
+}
+
+// CreateRecurringScheduleRequest is used for POST /instructors/:id/recurring-schedules
+type CreateRecurringScheduleRequest struct {
+	DayOfWeek int    `json:"dayOfWeek" binding:"required,min=0,max=6"` // 0=Sunday, 1=Monday...6=Saturday
+	StartTime string `json:"startTime" binding:"required"`              // Format: HH:MM (e.g., "09:00")
+	EndTime   string `json:"endTime" binding:"required"` // Format: HH:MM (e.g., "10:00")
+}
+
+// BulkCreateRecurringScheduleRequest is used for POST /instructors/:id/recurring-schedules/bulk
+// Example: Create multiple slots at once for Mon-Fri 09:00-10:00 and 13:00-14:00
+type BulkCreateRecurringScheduleRequest struct {
+	Slots []RecurringScheduleSlot `json:"slots" binding:"required,min=1,dive"`
+}
+
+// UpdateRecurringScheduleRequest is used for PUT /instructors/:id/recurring-schedules/:scheduleId
+type UpdateRecurringScheduleRequest struct {
+	DayOfWeek *int    `json:"dayOfWeek" binding:"omitempty,min=0,max=6"`
+	StartTime *string `json:"startTime" binding:"omitempty"`
+	EndTime   *string `json:"endTime" binding:"omitempty"`
+	IsActive  *bool   `json:"isActive"`
+}
+
+// RecurringScheduleResponse represents a recurring schedule in API responses
+type RecurringScheduleResponse struct {
+	ID           uuid.UUID `json:"id"`
+	InstructorID uuid.UUID `json:"instructorId"`
+	DayOfWeek    int       `json:"dayOfWeek"`
+	DayName      string    `json:"dayName"` // e.g., "Monday"
+	StartTime    string    `json:"startTime"`
+	EndTime      string    `json:"endTime"`
+	IsActive     bool      `json:"isActive"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+// RecurringScheduleListResponse is a list of recurring schedules
+type RecurringScheduleListResponse = PagedData[RecurringScheduleResponse]

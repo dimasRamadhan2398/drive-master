@@ -12,6 +12,8 @@ type ITransactionRepository interface {
 	GetByID(id uuid.UUID) (*models.Transaction, error)
 	GetByPaymentID(paymentID uuid.UUID) ([]models.Transaction, error)
 	Update(tx *models.Transaction) error
+	ListWithPagination(offset, limit int) ([]models.Transaction, error)
+	CountAll() (int64, error)
 }
 
 type TransactionRepository struct {
@@ -45,4 +47,19 @@ func (r *TransactionRepository) GetByPaymentID(paymentID uuid.UUID) ([]models.Tr
 
 func (r *TransactionRepository) Update(tx *models.Transaction) error {
 	return r.db.Save(tx).Error
+}
+
+func (r *TransactionRepository) ListWithPagination(offset, limit int) ([]models.Transaction, error) {
+	var transactions []models.Transaction
+	err := r.db.Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&transactions).Error
+	return transactions, err
+}
+
+func (r *TransactionRepository) CountAll() (int64, error) {
+	var count int64
+	err := r.db.Model(&models.Transaction{}).Count(&count).Error
+	return count, err
 }

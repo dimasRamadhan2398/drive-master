@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"user-service/models"
 	"user-service/pkg/kafka"
 	"user-service/repositories"
@@ -22,6 +21,7 @@ type ITestimonialService interface {
 	PublishTestimonial(ctx context.Context, id uuid.UUID, publishedBy string) error
 	ArchiveTestimonial(ctx context.Context, id uuid.UUID, archivedBy string) error
 	CountTestimonials(ctx context.Context) (int64, error)
+	RemoveFromFeatured(ctx context.Context, id uuid.UUID) error
 }
 
 type TestimonialService struct {
@@ -46,7 +46,7 @@ func (s *TestimonialService) CreateTestimonial(ctx context.Context, testimonial 
 	if s.eventPublisher != nil {
 		go s.eventPublisher.PublishTestimonialCreated(
 			context.Background(),
-			fmt.Sprintf("%d", testimonial.ID),
+			testimonial.ID.String(),
 			testimonial.UserID.String(),
 			testimonial.UserName,
 			testimonial.Rating,
@@ -93,7 +93,7 @@ func (s *TestimonialService) UpdateTestimonial(ctx context.Context, testimonial 
 	if s.eventPublisher != nil {
 		go s.eventPublisher.PublishTestimonialUpdated(
 			context.Background(),
-			fmt.Sprintf("%d", testimonial.ID),
+			testimonial.ID.String(),
 			testimonial.UserName,
 			testimonial.Content,
 			testimonial.Rating,
@@ -163,4 +163,9 @@ func (s *TestimonialService) ArchiveTestimonial(ctx context.Context, id uuid.UUI
 // CountTestimonials returns the total number of testimonials
 func (s *TestimonialService) CountTestimonials(ctx context.Context) (int64, error) {
 	return s.testimonialRepo.CountTestimonials(ctx)
+}
+
+// RemoveFromFeatured removes the featured status from a testimonial
+func (s *TestimonialService) RemoveFromFeatured(ctx context.Context, id uuid.UUID) error {
+	return s.testimonialRepo.RemoveFromFeatured(ctx, id)
 }

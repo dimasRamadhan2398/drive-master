@@ -13,17 +13,20 @@ import (
 )
 
 type ScheduleService struct {
-	scheduleRepo   *repositories.ScheduleRepository
-	enrollmentRepo *repositories.EnrollmentRepository
+	scheduleRepo        *repositories.ScheduleRepository
+	enrollmentRepo      *repositories.EnrollmentRepository
+	availabilityService IAvailabilityService
 }
 
 func NewScheduleService(
 	scheduleRepo *repositories.ScheduleRepository,
 	enrollmentRepo *repositories.EnrollmentRepository,
+	availabilityService IAvailabilityService,
 ) IScheduleService {
 	return &ScheduleService{
-		scheduleRepo:   scheduleRepo,
-		enrollmentRepo: enrollmentRepo,
+		scheduleRepo:        scheduleRepo,
+		enrollmentRepo:      enrollmentRepo,
+		availabilityService: availabilityService,
 	}
 }
 
@@ -36,6 +39,11 @@ func (s *ScheduleService) CreateSchedule(ctx context.Context, req dto.CreateSche
 	duration := req.Duration
 	if duration == 0 {
 		duration = 60 // Default 60 minutes
+	}
+
+	// Check instructor availability against recurring schedules
+	if err := s.availabilityService.CheckAvailability(ctx, req.InstructorID, parsedDate, req.Time, duration); err != nil {
+		return nil, err
 	}
 
 	schedule := &models.Schedule{
@@ -188,6 +196,12 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 
 	if schedule.Status != models.ScheduleStatusAvailable {
 		return nil, errors.New("schedule slot is not available")
+	}
+
+	// Re-validate instructor availability (schedule was created with availability check,
+	// but we check again to handle cases where schedule might have been created externally)
+	if err := s.availabilityService.CheckAvailability(ctx, schedule.InstructorID, schedule.Date, schedule.Time, schedule.Duration); err != nil {
+		return nil, err
 	}
 
 	// Check if enrollment exists

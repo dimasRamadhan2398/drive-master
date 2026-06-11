@@ -159,3 +159,17 @@ func (s *CertificationService) GetCertificationsByPackage(ctx context.Context, p
 	}
 	return responses, nil
 }
+
+func (s *CertificationService) GetStats(ctx context.Context) (*dto.CertificationStatsResponse, error) {
+	stats, err := s.certRepo.GetStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.CertificationStatsResponse{
+		TotalCertifications:    stats.Total,
+		IssuedCertifications:   stats.Issued,
+		ActiveCertifications:   stats.Active,
+		RevokedCertifications:  stats.Revoked,
+	}, nil
+}
