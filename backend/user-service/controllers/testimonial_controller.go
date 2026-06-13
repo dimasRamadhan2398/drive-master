@@ -26,7 +26,7 @@ type ITestimonialController interface {
 	CreateTestimonial(ctx *gin.Context)
 	UpdateTestimonial(ctx *gin.Context)
 	DeleteTestimonial(ctx *gin.Context)
-	RemoveFromFeatured(ctx *gin.Context)
+	ToggleFeatured(ctx *gin.Context)
 }
 
 // NewTestimonialController creates a new testimonial controller
@@ -296,19 +296,32 @@ func (c *TestimonialController) DeleteTestimonial(ctx *gin.Context) {
 	responseRes.OK(ctx, "Testimonial deleted successfully", nil)
 }
 
-// RemoveFromFeatured handles PUT /api/v1/testimonials/:id/unfeature
-// @Summary Remove testimonial from featured
-// @Description Removes the featured status from a testimonial
+// ToggleFeatured handles PUT /api/v1/testimonials/:id/featured
+// @Summary Toggle featured status
+// @Description Sets the featured status of a testimonial
 // @Tags Testimonials
+// @Accept json
 // @Produce json
 // @Param id path string true "Testimonial ID"
+// @Param request body dto.ToggleFeaturedRequest true "Featured status"
 // @Success 200 {object} response.Response
-// @Router /testimonials/{id}/unfeature [put]
-func (c *TestimonialController) RemoveFromFeatured(ctx *gin.Context) {
+// @Router /testimonials/{id}/featured [put]
+func (c *TestimonialController) ToggleFeatured(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		responseRes.BadRequest(ctx, "Invalid testimonial ID format")
+		return
+	}
+
+	var req dto.ToggleFeaturedRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		responseRes.BadRequest(ctx, "Invalid request body: "+err.Error())
+		return
+	}
+
+	if req.IsFeatured == nil {
+		responseRes.BadRequest(ctx, "isFeatured field is required")
 		return
 	}
 
@@ -323,10 +336,10 @@ func (c *TestimonialController) RemoveFromFeatured(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.testimonialService.RemoveFromFeatured(ctx.Request.Context(), id); err != nil {
-		responseRes.InternalServerError(ctx, "Failed to remove from featured")
+	if err := c.testimonialService.ToggleFeatured(ctx.Request.Context(), id, *req.IsFeatured); err != nil {
+		responseRes.InternalServerError(ctx, "Failed to toggle featured status")
 		return
 	}
 
-	responseRes.OK(ctx, "Testimonial removed from featured", nil)
+	responseRes.OK(ctx, "Testimonial featured status updated", nil)
 }

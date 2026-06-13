@@ -29,6 +29,7 @@ func (u *InstructorRoute) Run() {
 		"POST   /api/v1/instructors/register",
 		"POST   /api/v1/instructors/new",
 		"GET    /api/v1/instructors/all",
+		"GET    /api/v1/instructors/with-schedules",
 		"GET    /api/v1/instructors/:id/profile",
 		"PUT    /api/v1/instructors/:id/profile",
 		"DELETE /api/v1/instructors/:id",
@@ -54,6 +55,7 @@ func (u *InstructorRoute) Run() {
 	group.POST("/register", u.controller.GetInstructorController().RegisterInstructor)
 	group.POST("/new", u.controller.GetInstructorController().CreateInstructorProfile)
 	group.GET("/all", u.controller.GetInstructorController().GetInstructorLists)
+	group.GET("/with-schedules", u.controller.GetInstructorController().GetAllInstructorsWithRecurringSchedules)
 	group.GET("/:id/profile", u.controller.GetInstructorController().GetInstructorProfile)
 	group.PUT("/:id/profile", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().UpdateInstructorProfile)
 	group.DELETE("/:id", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().DeleteInstructor)

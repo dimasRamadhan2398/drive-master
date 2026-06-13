@@ -18,7 +18,7 @@ type ISessionRoute interface {
 }
 
 func NewSessionRoute(controller controllers.IControllerRegistry, group *gin.RouterGroup, authMiddleware middlewares.IAuthMiddleware) ISessionRoute {
-	return &BookingRoute{controller: controller, group: group, authMiddleware: authMiddleware}
+	return &SessionRoute{controller: controller, group: group, authMiddleware: authMiddleware}
 }
 
 func (r *SessionRoute) Run() {

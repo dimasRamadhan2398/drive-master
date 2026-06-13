@@ -26,6 +26,7 @@ func (r *ControllerRegistry) GetInstructorController() IInstructorController {
 		r.service.GetRoleService(),
 		r.service.GetEmailService(),
 		r.service.GetMediaService(),
+		r.service.GetRecurringScheduleService(),
 	)
 }
 

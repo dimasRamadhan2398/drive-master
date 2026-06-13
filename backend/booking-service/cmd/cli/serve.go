@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,7 +12,9 @@ import (
 	"booking-service/controllers"
 	"booking-service/docs"
 	"booking-service/models"
+	"booking-service/pkg/kafka"
 	"booking-service/pkg/middlewares"
+	"booking-service/pkg/scheduler"
 	"booking-service/repositories"
 	"booking-service/routes"
 	"booking-service/services"
@@ -21,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -82,16 +86,22 @@ func runServe(cmd *cobra.Command, args []string) {
 	enrollmentRepo := repositories.NewEnrollmentRepository(db)
 	scheduleRepo := repositories.NewScheduleRepository(db)
 
-	// Initialize services
-	bookingService := services.NewBookingService(bookingRepo, entitlementRepo)
-	sessionService := services.NewSessionService(sessionRepo)
-	entitlementService := services.NewEntitlementService(entitlementRepo)
-	certificationService := services.NewCertificationService(certificationRepo, userCertRepo)
-	enrollmentService := services.NewEnrollmentService(enrollmentRepo, entitlementRepo)
-
 	// Initialize user-service client and availability service
 	userClient := user.NewUserClient(getEnv("USER_SERVICE_URL", "http://localhost:8001"))
 	availabilityService := services.NewAvailabilityService(userClient)
+
+	// Initialize user anonymization service for handling user.deleted events
+	userAnonymizationService := services.NewUserAnonymizationService(enrollmentRepo, sessionRepo, entitlementRepo)
+
+	// Initialize Kafka consumer for handling user.deleted events
+	eventPublisher := initKafkaConsumer(userAnonymizationService)
+
+	// Initialize services (after Kafka is initialized so we can pass the eventPublisher)
+	bookingService := services.NewBookingService(bookingRepo, entitlementRepo)
+	sessionService := services.NewSessionService(sessionRepo)
+	entitlementService := services.NewEntitlementService(entitlementRepo)
+	certificationService := services.NewCertificationService(certificationRepo, userCertRepo, userClient, eventPublisher)
+	enrollmentService := services.NewEnrollmentService(enrollmentRepo, entitlementRepo)
 
 	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, availabilityService)
 
@@ -104,6 +114,9 @@ func runServe(cmd *cobra.Command, args []string) {
 		enrollmentService:     enrollmentService,
 		scheduleService:       scheduleService,
 	}
+
+	// Initialize schedule generator for automatic schedule slot generation
+	_ = initScheduleGenerator(scheduleRepo, userClient)
 
 	// Initialize controller registry
 	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
@@ -207,4 +220,130 @@ func (s *serviceRegistryImpl) GetEnrollmentService() services.IEnrollmentService
 
 func (s *serviceRegistryImpl) GetScheduleService() services.IScheduleService {
 	return s.scheduleService
+}
+
+// initKafkaConsumer initializes the Kafka consumer for handling user.deleted events
+// Returns the event publisher for use in other services
+func initKafkaConsumer(anonymizationService services.IUserAnonymizationService) kafka.IEventPublisher {
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
+	// Get Kafka configuration from environment
+	kafkaEnabled := getEnv("KAFKA_ENABLED", "false") == "true"
+	if !kafkaEnabled {
+		logger.Info("Kafka consumer is disabled, skipping initialization")
+		return nil
+	}
+
+	kafkaBrokers := strings.Split(getEnv("KAFKA_BROKERS", "localhost:9092"), ",")
+	kafkaTopic := getEnv("KAFKA_TOPIC", "user-events")
+	kafkaGroupID := getEnv("KAFKA_GROUP_ID", "booking-service")
+
+	// Create Kafka consumer
+	consumer, err := kafka.NewConsumer(kafka.ConsumerConfig{
+		Brokers:  kafkaBrokers,
+		GroupID:  kafkaGroupID,
+		Topics:   []string{kafkaTopic},
+		Enabled:  true,
+		Version:  "3.6.0",
+		Assignor: "roundrobin",
+	}, logger)
+	if err != nil {
+		logger.Error("Failed to create Kafka consumer", zap.Error(err))
+		return nil
+	}
+
+	// Create event publisher with the consumer
+	eventPublisher := kafka.NewEventPublisher(kafka.EventPublisherConfig{
+		Consumer: consumer,
+		Topic:    kafkaTopic,
+		Enabled:  true,
+	})
+
+	// Create and register the user deleted handler
+	userDeletedHandler := kafka.NewUserDeletedHandler(func(ctx context.Context, userID string) error {
+		return anonymizationService.AnonymizeUserData(ctx, userID)
+	})
+	eventPublisher.RegisterHandler(userDeletedHandler)
+
+	// Start the consumer in a goroutine
+	ctx := context.Background()
+	if err := eventPublisher.StartConsumer(ctx); err != nil {
+		logger.Error("Failed to start Kafka consumer", zap.Error(err))
+		return nil
+	}
+
+	logger.Info("Kafka consumer initialized and started for user.deleted events")
+	return eventPublisher
+}
+
+// initScheduleGenerator initializes the schedule generator for automatic schedule slot generation
+func initScheduleGenerator(scheduleRepo *repositories.ScheduleRepository, userClient user.IUserClient) *scheduler.ScheduleGenerator {
+	scheduleGenerator := scheduler.NewScheduleGenerator(scheduleRepo, userClient)
+
+	// Get cron expression from environment or use default
+	// Default: "5 0 * * *" runs at 00:05 AM every day
+	cronExpr := getEnv("SCHEDULE_GENERATOR_CRON", "5 0 * * *")
+
+	// Get number of days to generate ahead (default: 7)
+	generationDays := 7
+	if days := getEnv("SCHEDULE_GENERATION_DAYS", ""); days != "" {
+		if parsed, err := parseInt(days); err == nil && parsed > 0 {
+			generationDays = parsed
+		}
+	}
+	scheduleGenerator.SetGenerationDays(generationDays)
+
+	// Check if scheduler is enabled
+	enabled := getEnv("SCHEDULE_GENERATOR_ENABLED", "true") == "true"
+	if !enabled {
+		log.Println("Schedule generator is disabled, skipping initialization")
+		return scheduleGenerator
+	}
+
+	// Start the scheduler
+	if err := scheduleGenerator.Start(cronExpr); err != nil {
+		log.Printf("Failed to start schedule generator: %v", err)
+		return scheduleGenerator
+	}
+
+	log.Printf("Schedule generator started with cron: %s (generating %d days ahead)", cronExpr, generationDays)
+
+	// Run once immediately on startup to populate initial schedules
+	go func() {
+		// Wait for user-service to be available (max 30 seconds)
+		userServiceURL := getEnv("USER_SERVICE_URL", "http://localhost:8001")
+		maxRetries := 10
+		retryDelay := 3 * time.Second
+
+		for i := 0; i < maxRetries; i++ {
+			resp, err := http.Get(userServiceURL + "/health")
+			if err == nil {
+				resp.Body.Close()
+				if resp.StatusCode == http.StatusOK {
+					break
+				}
+			}
+			if i < maxRetries-1 {
+				log.Printf("Waiting for user-service to be available (attempt %d/%d)...", i+1, maxRetries)
+				time.Sleep(retryDelay)
+			}
+		}
+
+		ctx := context.Background()
+		if err := scheduleGenerator.RunOnce(ctx); err != nil {
+			log.Printf("Initial schedule generation failed: %v", err)
+		} else {
+			log.Println("Initial schedule generation completed")
+		}
+	}()
+
+	return scheduleGenerator
+}
+
+// parseInt parses a string to int
+func parseInt(s string) (int, error) {
+	var result int
+	_, err := fmt.Sscanf(s, "%d", &result)
+	return result, err
 }

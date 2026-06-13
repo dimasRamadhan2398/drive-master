@@ -61,6 +61,7 @@ type Enrollment struct {
 	TotalPrice float64          `json:"totalPrice"`                       // base price + add-ons
 	PaidAt     *time.Time       `json:"paidAt"`                           // when payment was confirmed
 	ExpiresAt  time.Time        `json:"expiresAt"`                       // when the enrollment expires (usually package validity)
+	AnonymizedAt *time.Time     `json:"anonymizedAt" gorm:"index"`       // when user was deleted
 	CreatedAt  time.Time        `json:"createdAt"`
 	UpdatedAt  time.Time        `json:"updatedAt"`
 
@@ -79,6 +80,7 @@ type UserEntitlement struct {
 	TotalSessions int       `json:"totalSessions"`
 	UsedSessions  int       `json:"usedSessions"`
 	ExpiresAt     time.Time `json:"expiresAt"`
+	AnonymizedAt  *time.Time `json:"anonymizedAt" gorm:"index"`       // when user was deleted
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
@@ -99,6 +101,7 @@ type DrivingSession struct {
 	Status        string    `json:"status" gorm:"type:varchar(20);default:'scheduled'"` // scheduled | in_progress | completed | cancelled
 	Area          string    `json:"area" gorm:"size:150"`
 	Notes         string    `json:"notes" gorm:"type:text"`
+	AnonymizedAt  *time.Time `json:"anonymizedAt" gorm:"index"`       // when user was deleted
 	StartedAt     *time.Time `json:"startedAt"`  // when the session actually started
 	CompletedAt   *time.Time `json:"completedAt"` // when the session was completed
 	CreatedAt     time.Time `json:"createdAt"`

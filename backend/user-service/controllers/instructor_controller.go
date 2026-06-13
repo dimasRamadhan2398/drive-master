@@ -14,13 +14,14 @@ import (
 )
 
 type InstructorController struct {
-	userService       services.IUserService
-	authService       services.IAuthService
-	memberService     services.IMemberService
-	instructorService services.IInstructorService
-	roleService       services.IRoleService
-	emailService      services.IMailtrapEmailService
-	mediaService      services.IMediaService
+	userService            services.IUserService
+	authService            services.IAuthService
+	memberService          services.IMemberService
+	instructorService      services.IInstructorService
+	roleService            services.IRoleService
+	emailService           services.IMailtrapEmailService
+	mediaService           services.IMediaService
+	recurringScheduleService services.IRecurringScheduleService
 }
 
 type IInstructorController interface {
@@ -34,6 +35,7 @@ type IInstructorController interface {
 	DeleteProfilePic(ctx *gin.Context)
 	UploadBase64Media(ctx *gin.Context)
 	GetMediaMetadata(ctx *gin.Context)
+	GetAllInstructorsWithRecurringSchedules(ctx *gin.Context)
 }
 
 func NewInstructorController(
@@ -44,15 +46,17 @@ func NewInstructorController(
 	roleService services.IRoleService,
 	emailService services.IMailtrapEmailService,
 	mediaService services.IMediaService,
+	recurringScheduleService services.IRecurringScheduleService,
 ) IInstructorController {
 	return &InstructorController{
-		userService:       userService,
-		authService:       authService,
-		memberService:     memberService,
-		instructorService: instructorService,
-		roleService:       roleService,
-		emailService:      emailService,
-		mediaService:      mediaService,
+		userService:            userService,
+		authService:            authService,
+		memberService:          memberService,
+		instructorService:      instructorService,
+		roleService:            roleService,
+		emailService:           emailService,
+		mediaService:           mediaService,
+		recurringScheduleService: recurringScheduleService,
 	}
 }
 
@@ -507,4 +511,50 @@ func (c *InstructorController) GetMediaMetadata(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Media metadata retrieved successfully", resp)
+}
+
+// @Summary Get All Instructors with Recurring Schedules
+// @Description Get all instructors with their recurring schedules for schedule generation
+// @Tags Instructors
+// @Produce json
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /instructors/with-schedules [get]
+func (c *InstructorController) GetAllInstructorsWithRecurringSchedules(ctx *gin.Context) {
+	// Get all instructors
+	instructors, err := c.userService.GetAllInstructorsForScheduling(ctx.Request.Context())
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Build response with recurring schedules
+	type InstructorWithSchedules struct {
+		ID                 string                           `json:"id"`
+		FirstName          string                           `json:"firstName"`
+		LastName           string                           `json:"lastName"`
+		Email              string                           `json:"email"`
+		RecurringSchedules []dto.RecurringScheduleResponse  `json:"recurringSchedules"`
+	}
+
+	var result []InstructorWithSchedules
+	for _, instructor := range instructors {
+		// Get recurring schedules for this instructor
+		schedules, err := c.recurringScheduleService.GetRecurringSchedules(ctx.Request.Context(), instructor.ID)
+		if err != nil {
+			responseRes.ErrorFromGeneric(ctx, err)
+			return
+		}
+
+		item := InstructorWithSchedules{
+			ID:                 instructor.ID.String(),
+			FirstName:          instructor.FirstName,
+			LastName:           instructor.LastName,
+			Email:              instructor.EmailAddress,
+			RecurringSchedules: schedules,
+		}
+		result = append(result, item)
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Instructors with recurring schedules retrieved successfully", result)
 }

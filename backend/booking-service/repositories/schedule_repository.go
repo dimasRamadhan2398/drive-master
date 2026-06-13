@@ -224,3 +224,15 @@ func (r *ScheduleRepository) ToListResponse(schedules []models.Schedule, total i
 		TotalPages: totalPages,
 	}
 }
+
+// ExistsForInstructorAndDateTime checks if a schedule slot already exists
+func (r *ScheduleRepository) ExistsForInstructorAndDateTime(ctx context.Context, instructorID uuid.UUID, date time.Time, timeStr string) (bool, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&models.Schedule{}).
+		Where("instructor_id = ? AND date = ? AND time = ?", instructorID, date, timeStr).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}

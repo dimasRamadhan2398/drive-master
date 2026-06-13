@@ -6,9 +6,11 @@ import (
 	"core-service/pkg/response"
 	"core-service/services"
 
+	"net/http"
+
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 // PackageController handles package-related HTTP requests
@@ -23,6 +25,7 @@ type IPackageController interface {
 	CreatePackage(ctx *gin.Context)
 	UpdatePackage(ctx *gin.Context)
 	DeletePackage(ctx *gin.Context)
+	ToggleStatusPackage(ctx *gin.Context)
 }
 
 // NewPackageController creates a new package controller
@@ -32,21 +35,84 @@ func NewPackageController(packageService services.IPackageService) IPackageContr
 	}
 }
 
-// GetAllPackages handles GET /api/v1/packages
-// @Summary Get all packages
-// @Description Retrieves all packages
+// ToggleStatusPackage handles DELETE /api/v1/packages/toggle-status
+// @Summary Toggle package status
+// @Description Toggles a package status between active and inactive
 // @Tags Packages
 // @Produce json
+// @Param id query string true "Package ID"
+// @Success 200 {object} response.Response
+// @Router /packages/toggle-status [delete]
+func (c *PackageController) ToggleStatusPackage(ctx *gin.Context) {
+	var req dto.StatusPackageRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(ctx, "Invalid request body: "+err.Error())
+		return
+	}
+	idParam := ctx.Query("id")
+	if idParam == "" {
+		response.BadRequest(ctx, "Package ID is required")
+		return
+	}
+
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		response.BadRequest(ctx, "Invalid package ID format")
+		return
+	}
+
+	pkg, err := c.packageService.ToggleStatusPackage(ctx.Request.Context(), id)
+	if err != nil {
+		response.InternalServerError(ctx, "Failed to toggle package status")
+		return
+	}
+
+	response.OK(ctx, "Package status toggled successfully", pkg)
+}
+
+// GetAllPackages handles GET /api/v1/packages
+// @Summary Get all packages
+// @Description Retrieves all packages with pagination
+// @Tags Packages
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
 // @Success 200 {object} response.Response
 // @Router /packages [get]
 func (c *PackageController) GetAllPackages(ctx *gin.Context) {
-	packages, err := c.packageService.GetAllPackages(ctx.Request.Context())
+	var query dto.PaginationQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		response.BadRequest(ctx, "Invalid query parameters")
+		return
+	}
+
+	// Set defaults
+	page := query.Page
+	limit := query.Limit
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	packages, total, err := c.packageService.GetAllPackagesPaginated(ctx.Request.Context(), page, limit)
 	if err != nil {
 		response.InternalServerError(ctx, "Failed to fetch packages")
 		return
 	}
 
-	response.OK(ctx, "Packages fetched successfully", packages)
+	// Build response items
+	var items []models.Package
+	for _, pkg := range packages {
+		items = append(items, pkg)
+	}
+
+	pagination := dto.NewPaginationMeta(total, page, limit)
+	response.Paginated(ctx, http.StatusOK, "Packages fetched successfully", items, &pagination)
 }
 
 // GetPackageByID handles GET /api/v1/packages/:id
@@ -102,13 +168,30 @@ func (c *PackageController) CreatePackage(ctx *gin.Context) {
 
 	// Create benefits
 	var benefits []models.PackageBenefit
-	for _, b := range req.Benefits {
-		benefits = append(benefits, models.PackageBenefit{
-			Title:       b.Title,
-			Description: b.Description,
-			Icon:        b.Icon,
-			SortOrder:   b.SortOrder,
-		})
+	for i, b := range req.Benefits {
+		switch v := b.(type) {
+		case string:
+			// Simple string - use as title
+			benefits = append(benefits, models.PackageBenefit{
+				Title:     v,
+				SortOrder: i,
+			})
+		case map[string]interface{}:
+			// Object format
+			title, _ := v["title"].(string)
+			description, _ := v["description"].(string)
+			icon, _ := v["icon"].(string)
+			sortOrder := i
+			if so, ok := v["sortOrder"].(float64); ok {
+				sortOrder = int(so)
+			}
+			benefits = append(benefits, models.PackageBenefit{
+				Title:       title,
+				Description: description,
+				Icon:        icon,
+				SortOrder:   sortOrder,
+			})
+		}
 	}
 
 	pkg := &models.Package{

@@ -14,11 +14,13 @@ type IPackageService interface {
 	GetPackageByID(ctx context.Context, id uuid.UUID) (*models.Package, error)
 	GetPackageByIDWithBenefits(ctx context.Context, id uuid.UUID) (*models.Package, error)
 	GetAllPackages(ctx context.Context) ([]models.Package, error)
+	GetAllPackagesPaginated(ctx context.Context, page, limit int) ([]models.Package, int64, error)
 	GetPackagesByType(ctx context.Context, packageType models.PackageType) ([]models.Package, error)
 	GetPackagesByStatus(ctx context.Context, status models.PackageStatus) ([]models.Package, error)
 	UpdatePackage(ctx context.Context, pkg *models.Package) error
 	DeletePackage(ctx context.Context, pkg *models.Package) error
 	CountPackages(ctx context.Context) (int64, error)
+	ToggleStatusPackage(ctx context.Context, id uuid.UUID) (*models.Package, error)
 }
 
 type PackageService struct {
@@ -60,6 +62,11 @@ func (s *PackageService) GetPackageByIDWithBenefits(ctx context.Context, id uuid
 // GetAllPackages retrieves all packages
 func (s *PackageService) GetAllPackages(ctx context.Context) ([]models.Package, error) {
 	return s.packageRepo.FindAll(ctx)
+}
+
+// GetAllPackagesPaginated retrieves packages with pagination
+func (s *PackageService) GetAllPackagesPaginated(ctx context.Context, page, limit int) ([]models.Package, int64, error) {
+	return s.packageRepo.FindAllPaginated(ctx, page, limit)
 }
 
 // GetPackagesByType retrieves packages by type
@@ -105,4 +112,19 @@ func (s *PackageService) DeletePackage(ctx context.Context, pkg *models.Package)
 // CountPackages returns the total number of packages
 func (s *PackageService) CountPackages(ctx context.Context) (int64, error) {
 	return s.packageRepo.Count(ctx)
+}
+
+// ToggleStatusPackage toggles the package status between active and inactive
+func (s *PackageService) ToggleStatusPackage(ctx context.Context, id uuid.UUID) (*models.Package, error) {
+	pkg, err := s.packageRepo.ToggleStatus(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Publish event (async to not block response)
+	if s.eventPublisher != nil {
+		go s.eventPublisher.PublishPackageUpdated(context.Background(), pkg)
+	}
+
+	return pkg, nil
 }

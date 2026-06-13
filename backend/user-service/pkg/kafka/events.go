@@ -54,6 +54,9 @@ const (
 	EventTestimonialDeleted   EventType = "testimonial.deleted"
 	EventTestimonialPublished EventType = "testimonial.published"
 	EventTestimonialArchived  EventType = "testimonial.archived"
+
+	// User Lifecycle Events
+	EventUserDeleted EventType = "user.deleted"
 )
 
 // Event represents a generic auth event
@@ -98,6 +101,9 @@ type IEventPublisher interface {
 	PublishTestimonialDeleted(ctx context.Context, testimonialID string) error
 	PublishTestimonialPublished(ctx context.Context, testimonialID, publishedBy string) error
 	PublishTestimonialArchived(ctx context.Context, testimonialID, archivedBy string) error
+
+	// User lifecycle publishing
+	PublishUserDeleted(ctx context.Context, userID string, username, email string) error
 
 	// Consumer management
 	StartConsumer(ctx context.Context) error
@@ -374,6 +380,26 @@ func (r *EventPublisher) PublishTestimonialArchived(ctx context.Context, testimo
 			"testimonial_id": testimonialID,
 			"archived_by":    archivedBy,
 			"archived_at":    time.Now().Format(time.RFC3339),
+		},
+		Success: true,
+	}
+	return r.Publish(ctx, event)
+}
+
+// ========== USER LIFECYCLE EVENTS ==========
+
+// PublishUserDeleted publishes a user deleted event
+// This event is consumed by other services (booking, payment, notification, certificate)
+// to anonymize or clean up user-related data while preserving transactional records
+func (r *EventPublisher) PublishUserDeleted(ctx context.Context, userID string, username, email string) error {
+	event := &Event{
+		Type:     EventUserDeleted,
+		UserID:   userID,
+		Username: username,
+		Timestamp: time.Now().UTC(),
+		Data: map[string]interface{}{
+			"email":      email,
+			"deleted_at": time.Now().Format(time.RFC3339),
 		},
 		Success: true,
 	}

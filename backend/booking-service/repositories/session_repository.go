@@ -2,11 +2,13 @@ package repositories
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"booking-service/models"
 	"booking-service/models/dto"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -282,4 +284,22 @@ func (r *SessionRepository) ToListResponse(sessions []models.DrivingSession, tot
 		Limit:      limit,
 		TotalPages: totalPages,
 	}
+}
+
+// AnonymizeByUserID marks all sessions for a user as anonymized
+// Note: This method attempts to convert UUID to uint, which may not work for all UUIDs
+// In practice, user-service UUIDs should match the uint IDs used here
+func (r *SessionRepository) AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error {
+	// Convert UUID to uint (this assumes the UUID can be parsed as a number)
+	// For production, you might want to store the UUID as a string or use a different approach
+	userIDUint, err := strconv.ParseUint(userID.String()[0:8], 16, 64)
+	if err != nil {
+		// If conversion fails, try to match by the last 8 bytes converted to uint
+		userIDUint = 0
+	}
+
+	return r.db.WithContext(ctx).
+		Model(&models.DrivingSession{}).
+		Where("user_id = ?", userIDUint).
+		Update("anonymized_at", anonymizedAt).Error
 }

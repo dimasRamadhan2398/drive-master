@@ -18,7 +18,7 @@ type ICertificationRoute interface {
 }
 
 func NewCertificationRoute(controller controllers.IControllerRegistry, group *gin.RouterGroup, authMiddleware middlewares.IAuthMiddleware) ICertificationRoute {
-	return &BookingRoute{controller: controller, group: group, authMiddleware: authMiddleware}
+	return &CertificationRoute{controller: controller, group: group, authMiddleware: authMiddleware}
 }
 
 func (r *CertificationRoute) Run() {

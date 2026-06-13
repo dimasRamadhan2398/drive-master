@@ -24,6 +24,12 @@ func Register(r *gin.Engine, cfg *config.Config) {
 
         // testimonials (public endpoints: published, featured)
         public.Any("/testimonials/*path", proxy.ToUserService)
+
+        // packages (public browsing)
+        public.Any("/packages/*path", proxy.ToCoreService)
+
+        // articles (includes FAQ endpoints)
+        public.Any("/articles/*path", proxy.ToCoreService)
     }
 
     // ── MIXED routes — conditional JWT ───────────────────────
@@ -48,6 +54,9 @@ func Register(r *gin.Engine, cfg *config.Config) {
                 proxy.ToUserService(c)
             }
         })
+
+        // instructors routes
+        mixed.Any("/instructors/*path", proxy.ToUserService)
     }
 
     // ── PROTECTED routes — JWT required ──────────────────
@@ -65,6 +74,9 @@ func Register(r *gin.Engine, cfg *config.Config) {
 
         // testimonials admin operations (create, update, delete)
         protected.Any("/testimonials/*path", proxy.ToUserService)
+
+        // testimonials admin operations (create, update, delete)
+        protected.Any("/articles/*path", proxy.ToContentService)
     }
 
     // ── ADMIN routes — JWT + admin role required ──────────

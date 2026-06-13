@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/midtrans/midtrans-go"
 	"github.com/midtrans/midtrans-go/coreapi"
 	"github.com/midtrans/midtrans-go/snap"
@@ -167,7 +166,7 @@ func generateItemDetails(orderID string, amount float64) []snap.ItemDetail {
 
 // ChargeQRIS creates a QRIS charge request
 func (s *MidtransService) ChargeQRIS(orderID string, amount float64, customerName, customerEmail string) (*MidtransChargeResponse, error) {
-	req := &snap.CreateChargeReq{
+	req := &snap.Create{
 		PaymentType: "qris",
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  orderID,
@@ -180,7 +179,7 @@ func (s *MidtransService) ChargeQRIS(orderID string, amount float64, customerNam
 	ItemDetails: generateItemDetails(orderID, amount),
 	}
 
-	resp, err := s.snapClient.ChargeTransaction(req)
+	resp, err := s.snapClient.CreateTransaction(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to charge QRIS: %w", err)
 	}
@@ -212,7 +211,7 @@ func (s *MidtransService) ChargeVA(orderID string, amount float64, customerName,
 		Unit:           "hour",
 	}
 
-	resp, err := s.snapClient.ChargeTransaction(req)
+	resp, err := s.snapClient.CreateTransaction(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to charge VA: %w", err)
 	}

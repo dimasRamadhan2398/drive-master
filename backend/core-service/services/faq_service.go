@@ -15,6 +15,7 @@ type IFAQService interface {
 	GetFAQByID(ctx context.Context, id uuid.UUID) (*models.FAQ, error)
 	CreateFAQ(ctx context.Context, question, answer, category string, order int) (*models.FAQ, error)
 	UpdateFAQ(ctx context.Context, id uuid.UUID, question, answer, category string, order int, isActive bool) (*models.FAQ, error)
+	ReorderFAQ(ctx context.Context, id uuid.UUID, newOrder int) error
 	DeleteFAQ(ctx context.Context, id uuid.UUID) error
 }
 
@@ -96,4 +97,32 @@ func (s *FAQService) DeleteFAQ(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return s.faqRepo.DeleteSoft(ctx, faq)
+}
+
+// ReorderFAQ reorders an FAQ to a new position
+func (s *FAQService) ReorderFAQ(ctx context.Context, id uuid.UUID, newOrder int) error {
+	// Validate the FAQ exists
+	faq, err := s.faqRepo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if faq == nil {
+		return nil
+	}
+
+	// Get max order to validate
+	maxOrder, err := s.faqRepo.GetMaxOrder(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Ensure new order is within bounds
+	if newOrder < 0 {
+		newOrder = 0
+	}
+	if newOrder > maxOrder {
+		newOrder = maxOrder
+	}
+
+	return s.faqRepo.ReorderFAQs(ctx, id, newOrder)
 }

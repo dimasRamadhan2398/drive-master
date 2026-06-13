@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"notification-service/models"
@@ -244,4 +245,35 @@ func (s *NotificationService) ProcessPromotionalEvent(ctx context.Context, paylo
 	}
 
 	return nil
+}
+
+// ProcessCertificationEvent processes certification-related events from Kafka
+func (s *NotificationService) ProcessCertificationEvent(ctx context.Context, eventType string, payload []byte) error {
+	switch eventType {
+	case "certification-issued":
+		var data struct {
+			UserID    string `json:"user_id"`
+			Username  string `json:"username"`
+			UserEmail string `json:"user_email"`
+			CertType  string `json:"cert_type"`
+			IssueDate string `json:"issue_date"`
+		}
+
+		if err := json.Unmarshal(payload, &data); err != nil {
+			return err
+		}
+
+		if data.UserEmail == "" {
+			return fmt.Errorf("user email is required for certification notification")
+		}
+
+		userName := data.Username
+		if userName == "" {
+			userName = "Driver"
+		}
+
+		return s.emailService.SendCertificationEmail(ctx, data.UserEmail, userName, data.CertType, data.IssueDate)
+	default:
+		return apperrors.ErrBadRequest
+	}
 }

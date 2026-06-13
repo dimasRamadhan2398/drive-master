@@ -32,6 +32,9 @@ RUN mkdir -p /app/analytics
 # Copy database reference files (CSV for seeders)
 COPY --from=builder /app/database/refs ./database/refs
 
+# Copy analytics folder (including ga_credentials.json) to /app/analytics
+COPY --from=builder /app/app/analytics ./analytics
+
 # Environment variables
 ENV CONFIG_PATH=./pkg/config/config.yaml
 ENV GIN_MODE=release

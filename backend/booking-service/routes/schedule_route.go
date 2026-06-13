@@ -24,8 +24,8 @@ func NewScheduleRoute(controller controllers.IControllerRegistry, group *gin.Rou
 func (r *ScheduleRoute) Run() {
 	schedules := r.group.Group("/schedules")
 	{
-		schedules.GET("", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().ListSchedules)
-		schedules.POST("", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().CreateSchedule)
+		schedules.GET("/all", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().ListSchedules)
+		schedules.POST("/create", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().CreateSchedule)
 		schedules.GET("/filter", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().ListSchedulesFiltered)
 		schedules.GET("/available", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().GetAvailableSchedules)
 		schedules.GET("/:id", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().GetSchedule)

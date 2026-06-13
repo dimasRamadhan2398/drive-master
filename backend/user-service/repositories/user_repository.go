@@ -8,6 +8,7 @@ import (
 	"user-service/pkg/base"
 
 	apperrors "user-service/pkg/errors"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -33,6 +34,7 @@ type IUserRepository interface {
 	CountByRoleID(ctx context.Context, roleID uint) (int64, error)
 	FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int) ([]models.User, error)
 	FindRecentRegistrations(ctx context.Context, limit int, filters *dto.RegistrationFilters) ([]models.User, error)
+	FindAllInstructorsWithProfiles(ctx context.Context) ([]models.User, error)
 }
 
 type UserRepository struct {
@@ -103,7 +105,8 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Us
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	if err := r.db.Preload("Role").Where("email_address = ?", email).First(&user).Error; err != nil {
+	opts := base.NewQueryOptions().WithPreloads("Role").WithWhere(map[string]any{"email_address": email})
+	if err := r.BaseRepository.FindOneWithOptions(&user, opts); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, apperrors.ErrNotFound
 		}
@@ -115,7 +118,8 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*models
 // FindByUsername finds a user by username
 func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
-	if err := r.db.Preload("Role").Where("username = ?", username).First(&user).Error; err != nil {
+	opts := base.NewQueryOptions().WithPreloads("Role").WithWhere(map[string]any{"username": username})
+	if err := r.BaseRepository.FindOneWithOptions(&user, opts); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, apperrors.ErrNotFound
 		}
@@ -127,7 +131,8 @@ func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*
 // FindByPhoneNumber finds a user by phone number
 func (r *UserRepository) FindByPhoneNumber(ctx context.Context, phoneNumber string) (*models.User, error) {
 	var user models.User
-	if err := r.BaseRepository.FindOne(&user, "phone_number = ?", phoneNumber); err != nil {
+	opts := base.NewQueryOptions().WithPreloads("Role").WithWhere(map[string]any{"phone_number": phoneNumber})
+	if err := r.BaseRepository.FindOneWithOptions(&user, opts); err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -253,5 +258,16 @@ func (r *UserRepository) FindRecentRegistrations(ctx context.Context, limit int,
 		return nil, err
 	}
 	_ = total // use total as needed
+	return users, nil
+}
+
+// FindAllInstructorsWithProfiles retrieves all instructors with their Role and InstructorProfile
+func (r *UserRepository) FindAllInstructorsWithProfiles(ctx context.Context) ([]models.User, error) {
+	var users []models.User
+	opts := base.NewQueryOptions().
+		WithPreloads("Role", "InstructorProfile")
+	if err := r.BaseRepository.FindMany(&models.User{}, &users, opts); err != nil {
+		return nil, err
+	}
 	return users, nil
 }

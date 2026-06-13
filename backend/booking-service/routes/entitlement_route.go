@@ -18,7 +18,7 @@ type IEntitlementRoute interface {
 }
 
 func NewEntitlementRoute(controller controllers.IControllerRegistry, group *gin.RouterGroup, authMiddleware middlewares.IAuthMiddleware) IEntitlementRoute {
-	return &BookingRoute{controller: controller, group: group, authMiddleware: authMiddleware}
+	return &EntitlementRoute{controller: controller, group: group, authMiddleware: authMiddleware}
 }
 
 func (r *EntitlementRoute) Run() {

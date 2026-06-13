@@ -2,11 +2,13 @@ package repositories
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"booking-service/models"
 	"booking-service/models/dto"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -290,6 +292,19 @@ func (r *EntitlementRepository) ToListResponse(entitlements []models.UserEntitle
 		Limit:      limit,
 		TotalPages: totalPages,
 	}
+}
+
+// AnonymizeByUserID marks all entitlements for a user as anonymized
+func (r *EntitlementRepository) AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error {
+	userIDUint, err := strconv.ParseUint(userID.String()[0:8], 16, 64)
+	if err != nil {
+		userIDUint = 0
+	}
+
+	return r.db.WithContext(ctx).
+		Model(&models.UserEntitlement{}).
+		Where("user_id = ?", userIDUint).
+		Update("anonymized_at", anonymizedAt).Error
 }
 
 // CertificationRepository handles certification database operations

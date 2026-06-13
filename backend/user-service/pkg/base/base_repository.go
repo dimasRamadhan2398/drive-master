@@ -164,6 +164,20 @@ func (r *BaseRepository) FindOne(entity any, condition any, args ...any) error {
 	return nil
 }
 
+// FindOneWithOptions finds a single record using QueryOptions
+func (r *BaseRepository) FindOneWithOptions(entity any, opts *QueryOptions) error {
+	query := r.DB
+	query = r.applyQueryOptions(query, opts)
+
+	if err := query.First(entity).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return apperrors.ErrNotFound
+		}
+		return fmt.Errorf("%w: %v", apperrors.ErrDatabase, err)
+	}
+	return nil
+}
+
 // applyQueryOptions applies QueryOptions to a GORM query
 func (r *BaseRepository) applyQueryOptions(query *gorm.DB, opts *QueryOptions) *gorm.DB {
 	// Handle nil QueryOptions gracefully

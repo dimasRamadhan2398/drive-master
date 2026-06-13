@@ -7,6 +7,7 @@ import (
 	"booking-service/models"
 	"booking-service/models/dto"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -171,4 +172,12 @@ func (r *EnrollmentRepository) ToListResponse(enrollments []models.Enrollment, t
 		Limit:      limit,
 		TotalPages: totalPages,
 	}
+}
+
+// AnonymizeByUserID marks all enrollments for a user as anonymized
+func (r *EnrollmentRepository) AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error {
+	return r.db.WithContext(ctx).
+		Model(&models.Enrollment{}).
+		Where("user_id = ?", userID).
+		Update("anonymized_at", anonymizedAt).Error
 }

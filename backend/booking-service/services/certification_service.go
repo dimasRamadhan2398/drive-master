@@ -3,10 +3,13 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"booking-service/clients/user"
 	"booking-service/models"
 	"booking-service/models/dto"
+	"booking-service/pkg/kafka"
 	"booking-service/repositories"
 
 	"gorm.io/gorm"
@@ -15,15 +18,21 @@ import (
 type CertificationService struct {
 	certRepo     *repositories.CertificationRepository
 	userCertRepo *repositories.UserCertificationRepository
+	userClient   user.IUserClient
+	eventPublisher kafka.IEventPublisher
 }
 
 func NewCertificationService(
 	certRepo *repositories.CertificationRepository,
 	userCertRepo *repositories.UserCertificationRepository,
+	userClient user.IUserClient,
+	eventPublisher kafka.IEventPublisher,
 ) ICertificationService {
 	return &CertificationService{
 		certRepo:     certRepo,
 		userCertRepo: userCertRepo,
+		userClient:   userClient,
+		eventPublisher: eventPublisher,
 	}
 }
 
@@ -108,7 +117,41 @@ func (s *CertificationService) IssueCertification(ctx context.Context, req dto.I
 	}
 
 	resp := s.userCertRepo.ToResponse(userCert, s.certRepo.ToResponse(certification))
+
+	// Send email notification asynchronously
+	go s.sendCertificationEmail(context.Background(), req.UserID, certification.Type, userCert.IssuedAt)
+
 	return &resp, nil
+}
+
+// sendCertificationEmail fetches user info and sends the certification email
+func (s *CertificationService) sendCertificationEmail(ctx context.Context, userID uint, certType string, issueDate time.Time) {
+	if s.userClient == nil {
+		return
+	}
+
+	userInfo, err := s.userClient.GetUserByID(ctx, userID)
+	if err != nil {
+		fmt.Printf("Failed to get user info for certification email: %v\n", err)
+		return
+	}
+
+	if s.eventPublisher != nil {
+		userName := userInfo.FirstName
+		if userName == "" {
+			userName = userInfo.Username
+		}
+		if err := s.eventPublisher.PublishCertificationIssued(
+			ctx,
+			fmt.Sprintf("%d", userID),
+			userInfo.Email,
+			userName,
+			certType,
+			issueDate,
+		); err != nil {
+			fmt.Printf("Failed to publish certification issued event: %v\n", err)
+		}
+	}
 }
 
 func (s *CertificationService) RevokeCertification(ctx context.Context, userID, certificationID uint) error {

@@ -9,16 +9,22 @@ import (
 
 // ========== PACKAGE DTOs ==========
 
+// BenefitInput can be either a string (just title) or an object with full details
+type BenefitInput interface{}
+
+// CreatePackageRequest represents the request body for creating a package
 type CreatePackageRequest struct {
-	Name            string                `json:"name" binding:"required"`
-	Description     string                `json:"description"`
-	PackageType     models.PackageType   `json:"packageType" binding:"required"`
-	Price           float64              `json:"price" binding:"required"`
-	DiscountPrice   float64              `json:"discountPrice"`
-	DurationMinutes int                   `json:"durationMinutes"`
-	TotalSessions   int                   `json:"totalSessions"`
-	ImageURL        string                `json:"imageUrl"`
-	Benefits        []CreateBenefitRequest `json:"benefits"`
+	Name            string           `json:"name" binding:"required"`
+	Description     string           `json:"description"`
+	PackageType     models.PackageType `json:"packageType" binding:"required"`
+	Price           float64          `json:"price" binding:"required"`
+	DiscountPrice   float64          `json:"discountPrice"`
+	DurationMinutes int              `json:"durationMinutes"`
+	TotalSessions   int              `json:"totalSessions"`
+	ImageURL        string           `json:"imageUrl"`
+	Benefits        []BenefitInput   `json:"benefits"`
+	IsDiscounted    bool             `json:"isDiscounted"`
+	Highlight       bool             `json:"highlight"`
 }
 
 type CreateBenefitRequest struct {
@@ -38,6 +44,7 @@ type UpdatePackageRequest struct {
 	TotalSessions   int                 `json:"totalSessions"`
 	Status          models.PackageStatus `json:"status"`
 	ImageURL        string              `json:"imageUrl"`
+	Highlight 		bool					`json:"highlight"`
 }
 
 type PackageResponse struct {
@@ -67,4 +74,23 @@ type BenefitResponse struct {
 type PackageListResponse struct {
 	Packages []PackageResponse `json:"packages"`
 	Total    int64             `json:"total"`
+}
+
+type StatusPackageRequest struct {
+	Status  models.PackageStatus `json:"status"`
+}
+
+func (c *CreatePackageRequest) SetDefaults() {
+	if c.DurationMinutes == 0 {
+		c.DurationMinutes = 60 // Default to 1 hour
+	}
+	if c.TotalSessions == 0 {
+		c.TotalSessions = 1 // Default to 1 session
+	}
+	if c.PackageType == "" {
+		c.PackageType = models.PackageTypeBronze // Default package type
+	}
+	if c.IsDiscounted == false {
+		c.IsDiscounted = false // Default is not discounted
+	}
 }

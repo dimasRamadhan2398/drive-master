@@ -20,7 +20,7 @@ type ITestimonialRepository interface {
 	UpdateTestimonial(ctx context.Context, testimonial *models.Testimonial) error
 	DeleteTestimonial(ctx context.Context, id uuid.UUID) error
 	CountTestimonials(ctx context.Context) (int64, error)
-	RemoveFromFeatured(ctx context.Context, id uuid.UUID) error
+	ToggleFeatured(ctx context.Context, id uuid.UUID, isFeatured bool) error
 }
 
 type TestimonialRepository struct {
@@ -33,6 +33,9 @@ func NewTestimonialRepository(db *gorm.DB) ITestimonialRepository {
 
 // CreateTestimonial creates a new testimonial
 func (r *TestimonialRepository) CreateTestimonial(ctx context.Context, testimonial *models.Testimonial) error {
+	if testimonial.ID == uuid.Nil {
+		testimonial.ID = uuid.New()
+	}
 	return r.BaseRepository.Create(testimonial)
 }
 
@@ -115,7 +118,7 @@ func (r *TestimonialRepository) CountTestimonials(ctx context.Context) (int64, e
 	return r.BaseRepository.Count( &models.Testimonial{}, nil)
 }
 
-// RemoveFromFeatured removes the featured status from a testimonial
-func (r *TestimonialRepository) RemoveFromFeatured(ctx context.Context, id uuid.UUID) error {
-	return r.BaseRepository.DB.Model(&models.Testimonial{}).Where("id = ?", id).Update("is_featured", false).Error
+// ToggleFeatured toggles the featured status of a testimonial
+func (r *TestimonialRepository) ToggleFeatured(ctx context.Context, id uuid.UUID, isFeatured bool) error {
+	return r.BaseRepository.DB.Model(&models.Testimonial{}).Where("id = ?", id).Update("is_featured", isFeatured).Error
 }

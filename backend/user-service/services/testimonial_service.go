@@ -21,7 +21,7 @@ type ITestimonialService interface {
 	PublishTestimonial(ctx context.Context, id uuid.UUID, publishedBy string) error
 	ArchiveTestimonial(ctx context.Context, id uuid.UUID, archivedBy string) error
 	CountTestimonials(ctx context.Context) (int64, error)
-	RemoveFromFeatured(ctx context.Context, id uuid.UUID) error
+	ToggleFeatured(ctx context.Context, id uuid.UUID, isFeatured bool) error
 }
 
 type TestimonialService struct {
@@ -165,7 +165,7 @@ func (s *TestimonialService) CountTestimonials(ctx context.Context) (int64, erro
 	return s.testimonialRepo.CountTestimonials(ctx)
 }
 
-// RemoveFromFeatured removes the featured status from a testimonial
-func (s *TestimonialService) RemoveFromFeatured(ctx context.Context, id uuid.UUID) error {
-	return s.testimonialRepo.RemoveFromFeatured(ctx, id)
+// ToggleFeatured toggles the featured status of a testimonial
+func (s *TestimonialService) ToggleFeatured(ctx context.Context, id uuid.UUID, isFeatured bool) error {
+	return s.testimonialRepo.ToggleFeatured(ctx, id, isFeatured)
 }

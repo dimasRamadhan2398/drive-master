@@ -127,6 +127,27 @@ func (m *MockUserRepository) CountByRoleID(ctx context.Context, roleID uint) (in
 	return args.Get(0).(int64), args.Error(1)
 }
 
+func (m *MockUserRepository) CountAll(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockUserRepository) CreateTx(tx *gorm.DB, user *dto.RegisterRequest) (*models.User, error) {
+	args := m.Called(tx, user)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
+func (m *MockUserRepository) FindRecentRegistrations(ctx context.Context, limit int, filters *dto.RegistrationFilters) ([]models.User, error) {
+	args := m.Called(ctx, limit, filters)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.User), args.Error(1)
+}
+
 func (m *MockUserRepository) FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int) ([]models.User, error) {
 	args := m.Called(ctx, roleID, offset, limit)
 	if args.Get(0) == nil {
@@ -201,7 +222,7 @@ func createMockRole(id uint, name string) *models.Role {
 }
 
 func createMockUserService(mockUserRepo *MockUserRepository, mockRoleRepo *MockRoleRepository) services.IUserService {
-	return services.NewUserService(mockUserRepo, mockRoleRepo)
+	return services.NewUserService(mockUserRepo, mockRoleRepo, nil, nil)
 }
 
 // ==================== CreateUser Tests ====================

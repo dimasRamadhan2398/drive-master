@@ -39,6 +39,10 @@ type FAQListResponse struct {
 	Total int64         `json:"total"`
 }
 
+type ReorderFAQRequest struct {
+	NewOrder int `json:"newOrder" binding:"required,min=0"`
+}
+
 // Blog Article DTOs
 
 type CreateBlogArticleRequest struct {

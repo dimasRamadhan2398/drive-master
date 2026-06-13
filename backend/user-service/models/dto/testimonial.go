@@ -57,3 +57,7 @@ type TestimonialListResponse struct {
 	Testimonials []TestimonialResponse `json:"testimonials"`
 	Total        int64                  `json:"total"`
 }
+
+type ToggleFeaturedRequest struct {
+	IsFeatured *bool `json:"isFeatured"`
+}

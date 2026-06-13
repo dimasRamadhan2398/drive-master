@@ -80,6 +80,15 @@ func (r *RecurringScheduleRepository) DeleteByInstructorID(ctx context.Context, 
 	return r.BaseRepository.DB.Where("instructor_id = ?", instructorID).Delete(&models.InstructorRecurringSchedule{}).Error
 }
 
+// GetAllInstructorsWithSchedules returns all instructors with their active recurring schedules
+func (r *RecurringScheduleRepository) GetAllInstructorsWithSchedules(ctx context.Context) ([]models.InstructorRecurringSchedule, error) {
+	var schedules []models.InstructorRecurringSchedule
+	if err := r.BaseRepository.DB.Where("is_active = ?", true).Find(&schedules).Error; err != nil {
+		return nil, err
+	}
+	return schedules, nil
+}
+
 func NewRecurringScheduleRepository(db *gorm.DB) IRecurringScheduleRepository {
 	return &RecurringScheduleRepository{BaseRepository: base.NewBaseRepository(db)}
 }

@@ -32,7 +32,7 @@ func (r *TestimonialRoute) Run() {
 		testimonials.POST("", r.controller.GetTestimonialController().CreateTestimonial)
 		testimonials.PUT("/:id", r.controller.GetTestimonialController().UpdateTestimonial)
 		testimonials.DELETE("/:id", r.controller.GetTestimonialController().DeleteTestimonial)
-		testimonials.PUT("/:id/unfeature", r.controller.GetTestimonialController().RemoveFromFeatured)
+		testimonials.PUT("/:id/featured", r.controller.GetTestimonialController().ToggleFeatured)
 
 		// Public endpoints
 		testimonials.GET("/published", r.controller.GetTestimonialController().GetPublishedTestimonials)
