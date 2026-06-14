@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"booking-service/models/dto"
+	"booking-service/pkg/base"
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
@@ -63,7 +64,7 @@ func (c *SessionController) CreateSession(ctx *gin.Context) {
 // @Failure 404 {object} map[string]string
 // @Router /sessions/{id} [get]
 func (c *SessionController) GetSession(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid session id"})
 		return

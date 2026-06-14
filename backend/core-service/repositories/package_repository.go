@@ -67,13 +67,14 @@ func (r *PackageRepository) FindAll(ctx context.Context) ([]models.Package, erro
 // FindAllPaginated retrieves packages with pagination
 func (r *PackageRepository) FindAllPaginated(ctx context.Context, page, limit int) ([]models.Package, int64, error) {
 	var packages []models.Package
+	
 
 	// Count total
 	total, err := r.BaseRepository.Count(ctx, &models.Package{}, nil)
 	if err != nil {
 		return nil, 0, err
 	}
-
+	
 	// Get paginated results
 	offset := (page - 1) * limit
 	opts := base.NewQueryOptions().

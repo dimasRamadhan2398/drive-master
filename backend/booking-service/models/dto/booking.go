@@ -29,61 +29,55 @@ type EnrollmentResponse struct {
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
-type EnrollmentListResponse struct {
-	Data       []EnrollmentResponse `json:"data"`
-	Total      int64                `json:"total"`
-	Page       int                  `json:"page"`
-	Limit      int                  `json:"limit"`
-	TotalPages int                  `json:"totalPages"`
-}
+type EnrollmentListResponse = PagedData[EnrollmentResponse]
 
 // Booking DTOs (DEPRECATED: use Enrollment instead)
 
-type CreateBookingRequest struct {
-	UserID        uint      `json:"userId" binding:"required"`
-	InstructorID  uint      `json:"instructorId" binding:"required"`
-	EntitlementID uint      `json:"entitlementId" binding:"required"`
-	DateOfSession time.Time `json:"dateOfSession" binding:"required"`
-	FromTime      time.Time `json:"fromTime" binding:"required"`
-	ToTime        time.Time `json:"toTime" binding:"required"`
-	CarID         uint      `json:"carId" binding:"required"`
-	Area          string    `json:"area"`
-	Notes         string    `json:"notes"`
-}
+// type CreateBookingRequest struct {
+// 	UserID        uint      `json:"userId" binding:"required"`
+// 	InstructorID  uint      `json:"instructorId" binding:"required"`
+// 	EntitlementID uint      `json:"entitlementId" binding:"required"`
+// 	DateOfSession time.Time `json:"dateOfSession" binding:"required"`
+// 	FromTime      time.Time `json:"fromTime" binding:"required"`
+// 	ToTime        time.Time `json:"toTime" binding:"required"`
+// 	CarID         uint      `json:"carId" binding:"required"`
+// 	Area          string    `json:"area"`
+// 	Notes         string    `json:"notes"`
+// }
 
-type UpdateBookingRequest struct {
-	DateOfSession *time.Time `json:"dateOfSession" binding:"omitempty"`
-	FromTime      *time.Time `json:"fromTime" binding:"omitempty"`
-	ToTime        *time.Time `json:"toTime" binding:"omitempty"`
-	CarID         *uint      `json:"carId" binding:"omitempty"`
-	Area          *string    `json:"area" binding:"omitempty"`
-	Notes         *string    `json:"notes" binding:"omitempty"`
-	Status        *string    `json:"status" binding:"omitempty"`
-}
+// type UpdateBookingRequest struct {
+// 	DateOfSession *time.Time `json:"dateOfSession" binding:"omitempty"`
+// 	FromTime      *time.Time `json:"fromTime" binding:"omitempty"`
+// 	ToTime        *time.Time `json:"toTime" binding:"omitempty"`
+// 	CarID         *uint      `json:"carId" binding:"omitempty"`
+// 	Area          *string    `json:"area" binding:"omitempty"`
+// 	Notes         *string    `json:"notes" binding:"omitempty"`
+// 	Status        *string    `json:"status" binding:"omitempty"`
+// }
 
-type BookingResponse struct {
-	ID            uint      `json:"id"`
-	UserID        uint      `json:"userId"`
-	InstructorID  uint      `json:"instructorId"`
-	EntitlementID uint      `json:"entitlementId"`
-	DateOfSession time.Time `json:"dateOfSession"`
-	FromTime      time.Time `json:"fromTime"`
-	ToTime        time.Time `json:"toTime"`
-	CarID         uint      `json:"carId"`
-	Area          string    `json:"area"`
-	Notes         string    `json:"notes"`
-	Status        string    `json:"status"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
-}
+// type BookingResponse struct {
+// 	ID            uint      `json:"id"`
+// 	UserID        uint      `json:"userId"`
+// 	InstructorID  uint      `json:"instructorId"`
+// 	EntitlementID uint      `json:"entitlementId"`
+// 	DateOfSession time.Time `json:"dateOfSession"`
+// 	FromTime      time.Time `json:"fromTime"`
+// 	ToTime        time.Time `json:"toTime"`
+// 	CarID         uint      `json:"carId"`
+// 	Area          string    `json:"area"`
+// 	Notes         string    `json:"notes"`
+// 	Status        string    `json:"status"`
+// 	CreatedAt     time.Time `json:"createdAt"`
+// 	UpdatedAt     time.Time `json:"updatedAt"`
+// }
 
-type BookingListResponse struct {
-	Data       []BookingResponse `json:"data"`
-	Total      int64             `json:"total"`
-	Page       int               `json:"page"`
-	Limit      int               `json:"limit"`
-	TotalPages int               `json:"totalPages"`
-}
+// type BookingListResponse struct {
+// 	Data       []BookingResponse `json:"data"`
+// 	Total      int64             `json:"total"`
+// 	Page       int               `json:"page"`
+// 	Limit      int               `json:"limit"`
+// 	TotalPages int               `json:"totalPages"`
+// }
 
 // DrivingSession DTOs
 

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"booking-service/models/dto"
+	"booking-service/pkg/base"
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
@@ -69,7 +70,7 @@ func (c *ScheduleController) CreateSchedule(ctx *gin.Context) {
 // @Failure 404 {object} map[string]string
 // @Router /schedules/{id} [get]
 func (c *ScheduleController) GetSchedule(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
 		return
@@ -97,7 +98,7 @@ func (c *ScheduleController) GetSchedule(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /schedules/{id} [put]
 func (c *ScheduleController) UpdateSchedule(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
 		return
@@ -130,7 +131,7 @@ func (c *ScheduleController) UpdateSchedule(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /schedules/{id} [delete]
 func (c *ScheduleController) DeleteSchedule(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
 		return
@@ -263,7 +264,7 @@ func (c *ScheduleController) GetAvailableSchedules(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /schedules/{id}/book [post]
 func (c *ScheduleController) BookSlot(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
 		return
@@ -296,7 +297,7 @@ func (c *ScheduleController) BookSlot(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /schedules/{id}/cancel [post]
 func (c *ScheduleController) CancelBooking(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
 		return

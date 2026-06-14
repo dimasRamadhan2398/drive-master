@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"booking-service/models/dto"
+	"booking-service/pkg/base"
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
@@ -68,7 +69,7 @@ func (c *CertificationController) CreateCertification(ctx *gin.Context) {
 // @Failure 404 {object} map[string]string
 // @Router /certifications/{id} [get]
 func (c *CertificationController) GetCertification(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid certification id"})
 		return
@@ -96,7 +97,7 @@ func (c *CertificationController) GetCertification(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /certifications/{id}/status [put]
 func (c *CertificationController) UpdateCertificationStatus(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid certification id"})
 		return
@@ -211,7 +212,7 @@ func (c *CertificationController) RevokeCertification(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /certifications/user/{userId} [get]
 func (c *CertificationController) GetUserCertifications(ctx *gin.Context) {
-	userID, err := getUintIDFromPath(ctx, "userId")
+	userID, err := base.GetUintIDFromPath(ctx, "userId")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return
@@ -238,7 +239,7 @@ func (c *CertificationController) GetUserCertifications(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /certifications/package/{packageId} [get]
 func (c *CertificationController) GetCertificationsByPackage(ctx *gin.Context) {
-	packageID, err := getUintIDFromPath(ctx, "packageId")
+	packageID, err := base.GetUintIDFromPath(ctx, "packageId")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid package id"})
 		return

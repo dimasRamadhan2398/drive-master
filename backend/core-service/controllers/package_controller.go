@@ -49,7 +49,7 @@ func (c *PackageController) ToggleStatusPackage(ctx *gin.Context) {
 		response.BadRequest(ctx, "Invalid request body: "+err.Error())
 		return
 	}
-	idParam := ctx.Query("id")
+	idParam := ctx.Param("id")
 	if idParam == "" {
 		response.BadRequest(ctx, "Package ID is required")
 		return

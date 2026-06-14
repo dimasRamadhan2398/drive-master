@@ -7,197 +7,229 @@ import (
 
 	"booking-service/models"
 	"booking-service/models/dto"
+	"booking-service/pkg/base"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// SessionRepository handles session database operations
+type ISessionRepository interface {
+	Create(ctx context.Context, session *models.DrivingSession) error
+	CreateTx(tx *gorm.DB, session *models.DrivingSession) error
+	FindByID(ctx context.Context, id uint) (*models.DrivingSession, error)
+	Update(ctx context.Context, session *models.DrivingSession) error
+	Delete(ctx context.Context, session *models.DrivingSession) error
+	FindAll(ctx context.Context) ([]models.DrivingSession, error)
+	FindByUserID(ctx context.Context, userID uint) ([]models.DrivingSession, error)
+	FindByInstructorID(ctx context.Context, instructorID uint) ([]models.DrivingSession, error)
+	FindByEnrollmentID(ctx context.Context, enrollmentID uint) ([]models.DrivingSession, error)
+	FindByEntitlementID(ctx context.Context, entitlementID uint) ([]models.DrivingSession, error)
+	FindByStatus(ctx context.Context, status string) ([]models.DrivingSession, error)
+	FindByDateRange(ctx context.Context, startDate, endDate time.Time) ([]models.DrivingSession, error)
+	UpdateStatus(ctx context.Context, id uint, status string) error
+	StartSession(ctx context.Context, id uint, startedAt time.Time) error
+	CompleteSession(ctx context.Context, id uint, completedAt time.Time) error
+	GetStats(ctx context.Context) (*SessionStats, error)
+	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
+	CountByStatus(ctx context.Context, status string) (int64, error)
+	CountAll(ctx context.Context) (int64, error)
+	ToResponse(session *models.DrivingSession) dto.DrivingSessionResponse
+	ToListResponse(sessions []models.DrivingSession, total int64, page, limit int) dto.DrivingSessionListResponse
+}
+
 type SessionRepository struct {
+	*base.BaseRepository
 	db *gorm.DB
 }
 
-func NewSessionRepository(db *gorm.DB) *SessionRepository {
-	return &SessionRepository{db: db}
+func NewSessionRepository(db *gorm.DB) ISessionRepository {
+	return &SessionRepository{BaseRepository: base.NewBaseRepository(db), db: db}
 }
 
 func (r *SessionRepository) Create(ctx context.Context, session *models.DrivingSession) error {
-	return r.db.WithContext(ctx).Create(session).Error
+	return r.BaseRepository.Create(session)
 }
 
-func (r *SessionRepository) GetByID(ctx context.Context, id uint) (*models.DrivingSession, error) {
+func (r *SessionRepository) CreateTx(tx *gorm.DB, session *models.DrivingSession) error {
+	return r.BaseRepository.CreateTx(tx, session)
+}
+
+func (r *SessionRepository) FindByID(ctx context.Context, id uint) (*models.DrivingSession, error) {
 	var session models.DrivingSession
-	if err := r.db.WithContext(ctx).First(&session, id).Error; err != nil {
+	if err := r.BaseRepository.FindByIDWithPreload(&session, id); err != nil {
 		return nil, err
 	}
 	return &session, nil
 }
 
 func (r *SessionRepository) Update(ctx context.Context, session *models.DrivingSession) error {
-	return r.db.WithContext(ctx).Save(session).Error
+	return r.BaseRepository.Update(session)
 }
 
-func (r *SessionRepository) Delete(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&models.DrivingSession{}, id).Error
+func (r *SessionRepository) Delete(ctx context.Context, session *models.DrivingSession) error {
+	return r.BaseRepository.Delete(session)
 }
 
-func (r *SessionRepository) List(ctx context.Context, page, limit int) ([]models.DrivingSession, int64, error) {
+func (r *SessionRepository) FindAll(ctx context.Context) ([]models.DrivingSession, error) {
 	var sessions []models.DrivingSession
-	var total int64
-
-	offset := (page - 1) * limit
-
-	if err := r.db.WithContext(ctx).Model(&models.DrivingSession{}).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := r.db.WithContext(ctx).
-		Order("date DESC, time DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&sessions).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return sessions, total, nil
-}
-
-func (r *SessionRepository) GetByUserID(ctx context.Context, userID uint, page, limit int) ([]models.DrivingSession, int64, error) {
-	var sessions []models.DrivingSession
-	var total int64
-
-	offset := (page - 1) * limit
-	query := r.db.WithContext(ctx).Model(&models.DrivingSession{}).Where("user_id = ?", userID)
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.
-		Order("date DESC, time DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&sessions).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return sessions, total, nil
-}
-
-func (r *SessionRepository) GetByInstructorID(ctx context.Context, instructorID uint, page, limit int) ([]models.DrivingSession, int64, error) {
-	var sessions []models.DrivingSession
-	var total int64
-
-	offset := (page - 1) * limit
-	query := r.db.WithContext(ctx).Model(&models.DrivingSession{}).Where("instructor_id = ?", instructorID)
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.
-		Order("date DESC, time DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&sessions).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return sessions, total, nil
-}
-
-func (r *SessionRepository) GetByEnrollmentID(ctx context.Context, enrollmentID uint) ([]models.DrivingSession, error) {
-	var sessions []models.DrivingSession
-	if err := r.db.WithContext(ctx).
-		Where("enrollment_id = ?", enrollmentID).
-		Order("date DESC, time DESC").
-		Find(&sessions).Error; err != nil {
+	opts := base.NewQueryOptions().WithOrder("date DESC, time DESC")
+	if err := r.BaseRepository.FindMany(&models.DrivingSession{}, &sessions, opts); err != nil {
 		return nil, err
 	}
 	return sessions, nil
 }
 
-func (r *SessionRepository) GetByEntitlementID(ctx context.Context, entitlementID uint) ([]models.DrivingSession, error) {
+func (r *SessionRepository) FindByUserID(ctx context.Context, userID uint) ([]models.DrivingSession, error) {
 	var sessions []models.DrivingSession
-	if err := r.db.WithContext(ctx).
-		Where("entitlement_id = ?", entitlementID).
-		Order("date DESC, time DESC").
-		Find(&sessions).Error; err != nil {
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"user_id": userID}).
+		WithOrder("date DESC, time DESC")
+	if err := r.BaseRepository.FindMany(&models.DrivingSession{}, &sessions, opts); err != nil {
 		return nil, err
 	}
 	return sessions, nil
 }
 
-func (r *SessionRepository) GetByStatus(ctx context.Context, status string, page, limit int) ([]models.DrivingSession, int64, error) {
+func (r *SessionRepository) FindByInstructorID(ctx context.Context, instructorID uint) ([]models.DrivingSession, error) {
 	var sessions []models.DrivingSession
-	var total int64
-
-	offset := (page - 1) * limit
-	query := r.db.WithContext(ctx).Model(&models.DrivingSession{}).Where("status = ?", status)
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"instructor_id": instructorID}).
+		WithOrder("date DESC, time DESC")
+	if err := r.BaseRepository.FindMany(&models.DrivingSession{}, &sessions, opts); err != nil {
+		return nil, err
 	}
-
-	if err := query.
-		Order("date DESC, time DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&sessions).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return sessions, total, nil
+	return sessions, nil
 }
 
-func (r *SessionRepository) GetByDateRange(ctx context.Context, startDate, endDate time.Time, page, limit int) ([]models.DrivingSession, int64, error) {
+func (r *SessionRepository) FindByEnrollmentID(ctx context.Context, enrollmentID uint) ([]models.DrivingSession, error) {
 	var sessions []models.DrivingSession
-	var total int64
-
-	offset := (page - 1) * limit
-	query := r.db.WithContext(ctx).Model(&models.DrivingSession{}).
-		Where("date >= ? AND date <= ?", startDate, endDate)
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"enrollment_id": enrollmentID}).
+		WithOrder("date DESC, time DESC")
+	if err := r.BaseRepository.FindMany(&models.DrivingSession{}, &sessions, opts); err != nil {
+		return nil, err
 	}
+	return sessions, nil
+}
 
-	if err := query.
-		Order("date DESC, time DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&sessions).Error; err != nil {
-		return nil, 0, err
+func (r *SessionRepository) FindByEntitlementID(ctx context.Context, entitlementID uint) ([]models.DrivingSession, error) {
+	var sessions []models.DrivingSession
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"entitlement_id": entitlementID}).
+		WithOrder("date DESC, time DESC")
+	if err := r.BaseRepository.FindMany(&models.DrivingSession{}, &sessions, opts); err != nil {
+		return nil, err
 	}
+	return sessions, nil
+}
 
-	return sessions, total, nil
+func (r *SessionRepository) FindByStatus(ctx context.Context, status string) ([]models.DrivingSession, error) {
+	var sessions []models.DrivingSession
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"status": status}).
+		WithOrder("date DESC, time DESC")
+	if err := r.BaseRepository.FindMany(&models.DrivingSession{}, &sessions, opts); err != nil {
+		return nil, err
+	}
+	return sessions, nil
+}
+
+func (r *SessionRepository) FindByDateRange(ctx context.Context, startDate, endDate time.Time) ([]models.DrivingSession, error) {
+	var sessions []models.DrivingSession
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"date >= ?": startDate, "date <= ?": endDate}).
+		WithOrder("date DESC, time DESC")
+	if err := r.BaseRepository.FindMany(&models.DrivingSession{}, &sessions, opts); err != nil {
+		return nil, err
+	}
+	return sessions, nil
 }
 
 func (r *SessionRepository) UpdateStatus(ctx context.Context, id uint, status string) error {
-	return r.db.WithContext(ctx).
-		Model(&models.DrivingSession{}).
-		Where("id = ?", id).
-		Update("status", status).Error
+	return r.BaseRepository.Exec(
+		"UPDATE driving_sessions SET status = ?, updated_at = ? WHERE id = ?",
+		status, time.Now(), id,
+	)
 }
 
 func (r *SessionRepository) StartSession(ctx context.Context, id uint, startedAt time.Time) error {
-	return r.db.WithContext(ctx).
-		Model(&models.DrivingSession{}).
-		Where("id = ?", id).
-		Updates(map[string]interface{}{
-			"status":     "in_progress",
-			"started_at": startedAt,
-		}).Error
+	return r.BaseRepository.Exec(
+		"UPDATE driving_sessions SET status = 'in_progress', started_at = ?, updated_at = ? WHERE id = ?",
+		startedAt, time.Now(), id,
+	)
 }
 
 func (r *SessionRepository) CompleteSession(ctx context.Context, id uint, completedAt time.Time) error {
-	return r.db.WithContext(ctx).
-		Model(&models.DrivingSession{}).
-		Where("id = ?", id).
-		Updates(map[string]interface{}{
-			"status":       "completed",
-			"completed_at": completedAt,
-		}).Error
+	return r.BaseRepository.Exec(
+		"UPDATE driving_sessions SET status = 'completed', completed_at = ?, updated_at = ? WHERE id = ?",
+		completedAt, time.Now(), id,
+	)
+}
+
+// SessionStats holds session statistics
+type SessionStats struct {
+	Total     int64
+	Active    int64
+	Completed int64
+	Pending   int64
+}
+
+func (r *SessionRepository) GetStats(ctx context.Context) (*SessionStats, error) {
+	stats := &SessionStats{}
+	today := time.Now().Truncate(24 * time.Hour)
+
+	// Get total sessions
+	if err := r.db.Model(&models.DrivingSession{}).Count(&stats.Total).Error; err != nil {
+		return nil, err
+	}
+
+	// Get active sessions (today or future)
+	if err := r.db.Model(&models.DrivingSession{}).
+		Where("date >= ?", today).
+		Where("status != ?", "completed").
+		Count(&stats.Active).Error; err != nil {
+		return nil, err
+	}
+
+	// Get completed sessions
+	if err := r.db.Model(&models.DrivingSession{}).
+		Where("status = ?", "completed").
+		Count(&stats.Completed).Error; err != nil {
+		return nil, err
+	}
+
+	// Get pending sessions
+	if err := r.db.Model(&models.DrivingSession{}).
+		Where("status = ?", "scheduled").
+		Count(&stats.Pending).Error; err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+func (r *SessionRepository) AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error {
+	// Convert UUID to uint (this assumes the UUID can be parsed as a number)
+	// For production, you might want to store the UUID as a string or use a different approach
+	userIDUint, err := strconv.ParseUint(userID.String()[0:8], 16, 64)
+	if err != nil {
+		// If conversion fails, try to match by the last 8 bytes converted to uint
+		userIDUint = 0
+	}
+
+	return r.BaseRepository.Exec(
+		"UPDATE driving_sessions SET anonymized_at = ? WHERE user_id = ?",
+		anonymizedAt, userIDUint,
+	)
+}
+
+func (r *SessionRepository) CountByStatus(ctx context.Context, status string) (int64, error) {
+	opts := base.NewQueryOptions().WithWhere(map[string]any{"status": status})
+	return r.BaseRepository.Count(&models.DrivingSession{}, opts)
+}
+
+func (r *SessionRepository) CountAll(ctx context.Context) (int64, error) {
+	return r.BaseRepository.Count(&models.DrivingSession{}, base.NewQueryOptions())
 }
 
 // ToResponse converts a DrivingSession model to DrivingSessionResponse DTO
@@ -223,48 +255,6 @@ func (r *SessionRepository) ToResponse(session *models.DrivingSession) dto.Drivi
 	}
 }
 
-// SessionStats holds session statistics
-type SessionStats struct {
-	Total     int64
-	Active    int64
-	Completed int64
-	Pending   int64
-}
-
-func (r *SessionRepository) GetStats(ctx context.Context) (*SessionStats, error) {
-	stats := &SessionStats{}
-	today := time.Now().Truncate(24 * time.Hour)
-
-	// Get total sessions
-	if err := r.db.WithContext(ctx).Model(&models.DrivingSession{}).Count(&stats.Total).Error; err != nil {
-		return nil, err
-	}
-
-	// Get active sessions (today or future)
-	if err := r.db.WithContext(ctx).Model(&models.DrivingSession{}).
-		Where("date >= ?", today).
-		Where("status != ?", "completed").
-		Count(&stats.Active).Error; err != nil {
-		return nil, err
-	}
-
-	// Get completed sessions
-	if err := r.db.WithContext(ctx).Model(&models.DrivingSession{}).
-		Where("status = ?", "completed").
-		Count(&stats.Completed).Error; err != nil {
-		return nil, err
-	}
-
-	// Get pending sessions
-	if err := r.db.WithContext(ctx).Model(&models.DrivingSession{}).
-		Where("status = ?", "scheduled").
-		Count(&stats.Pending).Error; err != nil {
-		return nil, err
-	}
-
-	return stats, nil
-}
-
 // ToListResponse converts a slice of DrivingSessions to DrivingSessionListResponse DTO
 func (r *SessionRepository) ToListResponse(sessions []models.DrivingSession, total int64, page, limit int) dto.DrivingSessionListResponse {
 	items := make([]dto.DrivingSessionResponse, len(sessions))
@@ -284,22 +274,4 @@ func (r *SessionRepository) ToListResponse(sessions []models.DrivingSession, tot
 		Limit:      limit,
 		TotalPages: totalPages,
 	}
-}
-
-// AnonymizeByUserID marks all sessions for a user as anonymized
-// Note: This method attempts to convert UUID to uint, which may not work for all UUIDs
-// In practice, user-service UUIDs should match the uint IDs used here
-func (r *SessionRepository) AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error {
-	// Convert UUID to uint (this assumes the UUID can be parsed as a number)
-	// For production, you might want to store the UUID as a string or use a different approach
-	userIDUint, err := strconv.ParseUint(userID.String()[0:8], 16, 64)
-	if err != nil {
-		// If conversion fails, try to match by the last 8 bytes converted to uint
-		userIDUint = 0
-	}
-
-	return r.db.WithContext(ctx).
-		Model(&models.DrivingSession{}).
-		Where("user_id = ?", userIDUint).
-		Update("anonymized_at", anonymizedAt).Error
 }

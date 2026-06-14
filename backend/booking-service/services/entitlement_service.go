@@ -12,10 +12,10 @@ import (
 )
 
 type EntitlementService struct {
-	entitlementRepo *repositories.EntitlementRepository
+	entitlementRepo repositories.IEntitlementRepository
 }
 
-func NewEntitlementService(entitlementRepo *repositories.EntitlementRepository) IEntitlementService {
+func NewEntitlementService(entitlementRepo repositories.IEntitlementRepository) IEntitlementService {
 	return &EntitlementService{
 		entitlementRepo: entitlementRepo,
 	}
@@ -40,7 +40,7 @@ func (s *EntitlementService) CreateEntitlement(ctx context.Context, req dto.Crea
 }
 
 func (s *EntitlementService) GetEntitlement(ctx context.Context, id uint) (*dto.EntitlementResponse, error) {
-	entitlement, err := s.entitlementRepo.GetByID(ctx, id)
+	entitlement, err := s.entitlementRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("entitlement not found")
@@ -53,7 +53,7 @@ func (s *EntitlementService) GetEntitlement(ctx context.Context, id uint) (*dto.
 }
 
 func (s *EntitlementService) UpdateEntitlement(ctx context.Context, id uint, req dto.UpdateEntitlementRequest) (*dto.EntitlementResponse, error) {
-	entitlement, err := s.entitlementRepo.GetByID(ctx, id)
+	entitlement, err := s.entitlementRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("entitlement not found")
@@ -77,11 +77,20 @@ func (s *EntitlementService) UpdateEntitlement(ctx context.Context, id uint, req
 }
 
 func (s *EntitlementService) DeleteEntitlement(ctx context.Context, id uint) error {
-	return s.entitlementRepo.Delete(ctx, id)
+	entitlement, err := s.entitlementRepo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	return s.entitlementRepo.Delete(ctx, entitlement)
 }
 
 func (s *EntitlementService) ListEntitlements(ctx context.Context, page, limit int) (*dto.EntitlementListResponse, error) {
-	entitlements, total, err := s.entitlementRepo.List(ctx, page, limit)
+	entitlements, err := s.entitlementRepo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.entitlementRepo.CountAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +100,7 @@ func (s *EntitlementService) ListEntitlements(ctx context.Context, page, limit i
 }
 
 func (s *EntitlementService) GetUserEntitlements(ctx context.Context, userID uint) ([]dto.EntitlementResponse, error) {
-	entitlements, err := s.entitlementRepo.GetByUserID(ctx, userID)
+	entitlements, err := s.entitlementRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +113,7 @@ func (s *EntitlementService) GetUserEntitlements(ctx context.Context, userID uin
 }
 
 func (s *EntitlementService) GetActiveEntitlements(ctx context.Context, userID uint) ([]dto.EntitlementResponse, error) {
-	entitlements, err := s.entitlementRepo.GetActiveByUserID(ctx, userID)
+	entitlements, err := s.entitlementRepo.FindActiveByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

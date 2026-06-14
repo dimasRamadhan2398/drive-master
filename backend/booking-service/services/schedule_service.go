@@ -5,22 +5,51 @@ import (
 	"errors"
 	"time"
 
-	"booking-service/models"
 	"booking-service/models/dto"
 	"booking-service/repositories"
 
-	"gorm.io/gorm"
+	"github.com/google/uuid"
 )
 
 type ScheduleService struct {
-	scheduleRepo        *repositories.ScheduleRepository
-	enrollmentRepo      *repositories.EnrollmentRepository
+	scheduleRepo        IScheduleRepository
+	enrollmentRepo      repositories.IEnrollmentRepository
 	availabilityService IAvailabilityService
 }
 
+type IScheduleRepository interface {
+	Create(ctx context.Context, schedule *dto.Schedule) error
+	FindByID(ctx context.Context, id uint) (*dto.Schedule, error)
+	Update(ctx context.Context, schedule *dto.Schedule) error
+	Delete(ctx context.Context, schedule *dto.Schedule) error
+	FindAll(ctx context.Context) ([]dto.Schedule, error)
+	FindByDateAndInstructor(ctx context.Context, date time.Time, instructorID uuid.UUID) ([]dto.Schedule, error)
+	FindByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uint) (*dto.Schedule, error)
+	FindAvailableByDateRange(ctx context.Context, startDate, endDate time.Time) ([]dto.Schedule, error)
+	UpdateStatus(ctx context.Context, id uint, status dto.ScheduleStatus) error
+	BookSlot(ctx context.Context, id uint, userID, enrollmentID uint) error
+	ReleaseSlot(ctx context.Context, id uint) error
+	ToResponse(schedule *dto.Schedule) dto.ScheduleResponse
+	ToListResponse(schedules []dto.Schedule, total int64, page, limit int) dto.ScheduleListResponse
+	ExistsForInstructorAndDateTime(ctx context.Context, instructorID uuid.UUID, date time.Time, timeStr string) (bool, error)
+	CountAll(ctx context.Context) (int64, error)
+}
+
+type IScheduleService interface {
+	CreateSchedule(ctx context.Context, req dto.CreateScheduleRequest) (*dto.ScheduleResponse, error)
+	GetSchedule(ctx context.Context, id uint) (*dto.ScheduleResponse, error)
+	UpdateSchedule(ctx context.Context, id uint, req dto.UpdateScheduleRequest) (*dto.ScheduleResponse, error)
+	DeleteSchedule(ctx context.Context, id uint) error
+	ListSchedules(ctx context.Context, page, limit int) (*dto.ScheduleListResponse, error)
+	ListSchedulesFiltered(ctx context.Context, params dto.ScheduleFilterParams) (*dto.ScheduleListResponse, error)
+	GetAvailableSchedules(ctx context.Context, startDate, endDate string) (*dto.ScheduleListResponse, error)
+	BookSlot(ctx context.Context, slotID uint, req dto.BookSlotRequest) (*dto.ScheduleResponse, error)
+	CancelBooking(ctx context.Context, slotID uint) error
+}
+
 func NewScheduleService(
-	scheduleRepo *repositories.ScheduleRepository,
-	enrollmentRepo *repositories.EnrollmentRepository,
+	scheduleRepo IScheduleRepository,
+	enrollmentRepo repositories.IEnrollmentRepository,
 	availabilityService IAvailabilityService,
 ) IScheduleService {
 	return &ScheduleService{
@@ -46,13 +75,13 @@ func (s *ScheduleService) CreateSchedule(ctx context.Context, req dto.CreateSche
 		return nil, err
 	}
 
-	schedule := &models.Schedule{
+	schedule := &dto.Schedule{
 		Date:         parsedDate,
 		Time:         req.Time,
 		Duration:     duration,
 		InstructorID: req.InstructorID,
 		CarID:        req.CarID,
-		Status:       models.ScheduleStatusAvailable,
+		Status:       dto.ScheduleStatusAvailable,
 		Notes:        req.Notes,
 	}
 
@@ -65,11 +94,8 @@ func (s *ScheduleService) CreateSchedule(ctx context.Context, req dto.CreateSche
 }
 
 func (s *ScheduleService) GetSchedule(ctx context.Context, id uint) (*dto.ScheduleResponse, error) {
-	schedule, err := s.scheduleRepo.GetByID(ctx, id)
+	schedule, err := s.scheduleRepo.FindByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("schedule not found")
-		}
 		return nil, err
 	}
 
@@ -78,11 +104,8 @@ func (s *ScheduleService) GetSchedule(ctx context.Context, id uint) (*dto.Schedu
 }
 
 func (s *ScheduleService) UpdateSchedule(ctx context.Context, id uint, req dto.UpdateScheduleRequest) (*dto.ScheduleResponse, error) {
-	schedule, err := s.scheduleRepo.GetByID(ctx, id)
+	schedule, err := s.scheduleRepo.FindByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("schedule not found")
-		}
 		return nil, err
 	}
 
@@ -109,7 +132,7 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, id uint, req dto.U
 		schedule.Notes = *req.Notes
 	}
 	if req.Status != nil {
-		schedule.Status = models.ScheduleStatus(*req.Status)
+		schedule.Status = dto.ScheduleStatus(*req.Status)
 	}
 
 	if err := s.scheduleRepo.Update(ctx, schedule); err != nil {
@@ -121,45 +144,30 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, id uint, req dto.U
 }
 
 func (s *ScheduleService) DeleteSchedule(ctx context.Context, id uint) error {
-	schedule, err := s.scheduleRepo.GetByID(ctx, id)
+	schedule, err := s.scheduleRepo.FindByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("schedule not found")
-		}
 		return err
 	}
 
-	if schedule.Status != models.ScheduleStatusAvailable {
+	if schedule.Status != dto.ScheduleStatusAvailable {
 		return errors.New("cannot delete a non-available schedule")
 	}
 
-	return s.scheduleRepo.Delete(ctx, id)
+	return s.scheduleRepo.Delete(ctx, schedule)
 }
 
 func (s *ScheduleService) ListSchedules(ctx context.Context, page, limit int) (*dto.ScheduleListResponse, error) {
-	schedules, total, err := s.scheduleRepo.List(ctx, page, limit)
+	schedules, err := s.scheduleRepo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.scheduleRepo.CountAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	resp := s.scheduleRepo.ToListResponse(schedules, total, page, limit)
-	return &resp, nil
-}
-
-func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.ScheduleFilterParams) (*dto.ScheduleListResponse, error) {
-	if params.Limit <= 0 {
-		params.Limit = 10
-	}
-	if params.Page <= 0 {
-		params.Page = 1
-	}
-
-	schedules, total, err := s.scheduleRepo.ListFiltered(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := s.scheduleRepo.ToListResponse(schedules, total, params.Page, params.Limit)
 	return &resp, nil
 }
 
@@ -174,7 +182,7 @@ func (s *ScheduleService) GetAvailableSchedules(ctx context.Context, startDate, 
 		return nil, errors.New("invalid end date format, expected YYYY-MM-DD")
 	}
 
-	schedules, err := s.scheduleRepo.GetAvailableByDateRange(ctx, start, end)
+	schedules, err := s.scheduleRepo.FindAvailableByDateRange(ctx, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -184,17 +192,65 @@ func (s *ScheduleService) GetAvailableSchedules(ctx context.Context, startDate, 
 	return &resp, nil
 }
 
-func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.BookSlotRequest) (*dto.ScheduleResponse, error) {
-	// Check if schedule exists and is available
-	schedule, err := s.scheduleRepo.GetByID(ctx, slotID)
+func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.ScheduleFilterParams) (*dto.ScheduleListResponse, error) {
+	var schedules []dto.Schedule
+	var err error
+
+	// Get all schedules and filter manually (in a real app, you'd use DB queries)
+	allSchedules, err := s.scheduleRepo.FindAll(ctx)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("schedule slot not found")
-		}
 		return nil, err
 	}
 
-	if schedule.Status != models.ScheduleStatusAvailable {
+	// Filter schedules based on params
+	for _, sched := range allSchedules {
+		match := true
+
+		if params.Date != "" {
+			parsedDate, _ := time.Parse("2006-01-02", params.Date)
+			if !sched.Date.Equal(parsedDate) {
+				match = false
+			}
+		}
+
+		if params.StartDate != "" && params.EndDate != "" {
+			startDate, _ := time.Parse("2006-01-02", params.StartDate)
+			endDate, _ := time.Parse("2006-01-02", params.EndDate)
+			if sched.Date.Before(startDate) || sched.Date.After(endDate) {
+				match = false
+			}
+		}
+
+		if params.InstructorID != "" && sched.InstructorID.String() != params.InstructorID {
+			match = false
+		}
+
+		if params.CarID != 0 && sched.CarID != params.CarID {
+			match = false
+		}
+
+		if params.Status != "" && string(sched.Status) != params.Status {
+			match = false
+		}
+
+		if match {
+			schedules = append(schedules, sched)
+		}
+	}
+
+	total := int64(len(schedules))
+	resp := s.scheduleRepo.ToListResponse(schedules, total, params.Page, params.Limit)
+	return &resp, nil
+}
+
+func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.BookSlotRequest) (*dto.ScheduleResponse, error) {
+	// Check if schedule exists and is available
+	schedule, err := s.scheduleRepo.FindByID(ctx, slotID)
+	if err != nil {
+		return nil, errors.New("schedule slot not found")
+	}
+
+	if schedule.Status != dto.ScheduleStatusAvailable {
 		return nil, errors.New("schedule slot is not available")
 	}
 
@@ -205,12 +261,9 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 	}
 
 	// Check if enrollment exists
-	_, err = s.enrollmentRepo.GetByID(ctx, req.EntitlementID)
+	_, err = s.enrollmentRepo.FindByID(ctx, req.EntitlementID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("enrollment not found")
-		}
-		return nil, err
+		return nil, errors.New("enrollment not found")
 	}
 
 	// Book the slot
@@ -219,7 +272,7 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 	}
 
 	// Reload schedule
-	schedule, err = s.scheduleRepo.GetByID(ctx, slotID)
+	schedule, err = s.scheduleRepo.FindByID(ctx, slotID)
 	if err != nil {
 		return nil, err
 	}
@@ -229,15 +282,12 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 }
 
 func (s *ScheduleService) CancelBooking(ctx context.Context, slotID uint) error {
-	schedule, err := s.scheduleRepo.GetByID(ctx, slotID)
+	schedule, err := s.scheduleRepo.FindByID(ctx, slotID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("schedule slot not found")
-		}
-		return err
+		return errors.New("schedule slot not found")
 	}
 
-	if schedule.Status != models.ScheduleStatusBooked {
+	if schedule.Status != dto.ScheduleStatusBooked {
 		return errors.New("schedule slot is not booked")
 	}
 

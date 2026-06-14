@@ -54,3 +54,4 @@ midtrans:
   enabled: true
   notification_url: ${MIDTRANS_NOTIFICATION_URL:-http://localhost:8080/notifications}
   timeout_seconds: 30
+  gopay_callback_url: "localhost:3000/payment/success"

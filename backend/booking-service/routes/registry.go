@@ -22,17 +22,13 @@ func NewRouteRegistry(controller controllers.IControllerRegistry, group *gin.Rou
 }
 
 func (r *Registry) Serve() {
-	r.GetBookingRoute().Run()
 	r.GetSessionRoute().Run()
 	r.GetEntitlementRoute().Run()
 	r.GetCertificationRoute().Run()
 	r.GetEnrollmentRoute().Run()
 	r.GetScheduleRoute().Run()
 	r.GetDashboardRoute().Run()
-}
-
-func (r *Registry) GetBookingRoute() IBookingRoute {
-	return NewBookingRoute(r.controller, r.group, r.authMiddleware)
+	r.GetPaymentRoute().Run()
 }
 
 func (r *Registry) GetSessionRoute() ISessionRoute {
@@ -57,4 +53,8 @@ func (r *Registry) GetScheduleRoute() IScheduleRoute {
 
 func (r *Registry) GetDashboardRoute() IDashboardRoute {
 	return NewDashboardRoute(r.controller, r.group, r.authMiddleware)
+}
+
+func (r *Registry) GetPaymentRoute() IPaymentRoute {
+	return NewPaymentRoute(r.controller, r.group, r.authMiddleware)
 }

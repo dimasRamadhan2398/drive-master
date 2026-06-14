@@ -2,140 +2,165 @@ package repositories
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"booking-service/models"
 	"booking-service/models/dto"
+	"booking-service/pkg/base"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// EnrollmentRepository handles enrollment database operations
+type IEnrollmentRepository interface {
+	Create(ctx context.Context, enrollment *models.Enrollment) error
+	CreateTx(tx *gorm.DB, enrollment *models.Enrollment) error
+	FindByID(ctx context.Context, id uint) (*models.Enrollment, error)
+	FindByIDWithPreload(ctx context.Context, id uint) (*models.Enrollment, error)
+	Update(ctx context.Context, enrollment *models.Enrollment) error
+	Delete(ctx context.Context, enrollment *models.Enrollment) error
+	FindAll(ctx context.Context) ([]models.Enrollment, error)
+	FindByUserID(ctx context.Context, userID uint) ([]models.Enrollment, error)
+	FindByStatus(ctx context.Context, status models.EnrollmentStatus) ([]models.Enrollment, int64, error)
+	FindByPackageID(ctx context.Context, packageID uint) ([]models.Enrollment, error)
+	UpdateStatus(ctx context.Context, id uint, status models.EnrollmentStatus) error
+	MarkAsPaid(ctx context.Context, id uint, paidAt time.Time, totalPrice float64) error
+	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
+	CountAll(ctx context.Context) (int64, error)
+	CountByStatus(ctx context.Context, status models.EnrollmentStatus) (int64, error)
+	Exists(ctx context.Context, condition any, args ...any) (bool, error)
+	ToResponse(enrollment *models.Enrollment) dto.EnrollmentResponse
+	ToListResponse(enrollments []models.Enrollment, total int64, page, limit int) dto.EnrollmentListResponse
+}
+
 type EnrollmentRepository struct {
+	*base.BaseRepository
 	db *gorm.DB
 }
 
-func NewEnrollmentRepository(db *gorm.DB) *EnrollmentRepository {
-	return &EnrollmentRepository{db: db}
+func NewEnrollmentRepository(db *gorm.DB) IEnrollmentRepository {
+	return &EnrollmentRepository{BaseRepository: base.NewBaseRepository(db), db: db}
 }
 
 func (r *EnrollmentRepository) Create(ctx context.Context, enrollment *models.Enrollment) error {
-	return r.db.WithContext(ctx).Create(enrollment).Error
+	return r.BaseRepository.Create(enrollment)
 }
 
-func (r *EnrollmentRepository) GetByID(ctx context.Context, id uint) (*models.Enrollment, error) {
+func (r *EnrollmentRepository) CreateTx(tx *gorm.DB, enrollment *models.Enrollment) error {
+	return r.BaseRepository.CreateTx(tx, enrollment)
+}
+
+func (r *EnrollmentRepository) FindByID(ctx context.Context, id uint) (*models.Enrollment, error) {
 	var enrollment models.Enrollment
-	if err := r.db.WithContext(ctx).
-		Preload("Entitlements").
-		First(&enrollment, id).Error; err != nil {
+	if err := r.BaseRepository.FindByIDWithPreload(&enrollment, id); err != nil {
 		return nil, err
 	}
 	return &enrollment, nil
 }
 
-func (r *EnrollmentRepository) GetByIDWithPreload(ctx context.Context, id uint) (*models.Enrollment, error) {
+func (r *EnrollmentRepository) FindByIDWithPreload(ctx context.Context, id uint) (*models.Enrollment, error) {
 	var enrollment models.Enrollment
-	if err := r.db.WithContext(ctx).
-		Preload("Entitlements").
-		First(&enrollment, id).Error; err != nil {
+	opts := base.NewQueryOptions().WithPreloads("Entitlements")
+	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollment, opts); err != nil {
 		return nil, err
 	}
 	return &enrollment, nil
 }
 
 func (r *EnrollmentRepository) Update(ctx context.Context, enrollment *models.Enrollment) error {
-	return r.db.WithContext(ctx).Save(enrollment).Error
+	return r.BaseRepository.Update(enrollment)
 }
 
-func (r *EnrollmentRepository) Delete(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&models.Enrollment{}, id).Error
+func (r *EnrollmentRepository) Delete(ctx context.Context, enrollment *models.Enrollment) error {
+	return r.BaseRepository.Delete(enrollment)
 }
 
-func (r *EnrollmentRepository) List(ctx context.Context, page, limit int) ([]models.Enrollment, int64, error) {
+func (r *EnrollmentRepository) FindAll(ctx context.Context) ([]models.Enrollment, error) {
 	var enrollments []models.Enrollment
-	var total int64
-
-	offset := (page - 1) * limit
-
-	if err := r.db.WithContext(ctx).Model(&models.Enrollment{}).Count(&total).Error; err != nil {
-		return nil, 0, err
+	opts := base.NewQueryOptions().
+		WithPreloads("Entitlements").
+		WithOrder("created_at DESC")
+	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
+		return nil, err
 	}
-
-	if err := r.db.WithContext(ctx).
-		Preload("Entitlements").
-		Order("created_at DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&enrollments).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return enrollments, total, nil
+	return enrollments, nil
 }
 
-func (r *EnrollmentRepository) GetByUserID(ctx context.Context, userID uint, page, limit int) ([]models.Enrollment, int64, error) {
+func (r *EnrollmentRepository) FindByUserID(ctx context.Context, userID uint) ([]models.Enrollment, error) {
 	var enrollments []models.Enrollment
-	var total int64
-
-	offset := (page - 1) * limit
-	query := r.db.WithContext(ctx).Model(&models.Enrollment{}).Where("user_id = ?", userID)
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"user_id": userID}).
+		WithPreloads("Entitlements").
+		WithOrder("created_at DESC")
+	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
+		return nil, err
 	}
-
-	if err := query.
-		Preload("Entitlements").
-		Order("created_at DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&enrollments).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return enrollments, total, nil
+	return enrollments, nil
 }
 
-func (r *EnrollmentRepository) GetByStatus(ctx context.Context, status models.EnrollmentStatus, page, limit int) ([]models.Enrollment, int64, error) {
+func (r *EnrollmentRepository) FindByStatus(ctx context.Context, status models.EnrollmentStatus) ([]models.Enrollment, int64, error) {
 	var enrollments []models.Enrollment
-	var total int64
-
-	offset := (page - 1) * limit
-	query := r.db.WithContext(ctx).Model(&models.Enrollment{}).Where("status = ?", status)
-
-	if err := query.Count(&total).Error; err != nil {
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"status": status}).
+		WithPreloads("Entitlements").
+		WithOrder("created_at DESC")
+	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
 		return nil, 0, err
 	}
+	return enrollments, int64(len(enrollments)), nil
+}
 
-	if err := query.
-		Preload("Entitlements").
-		Order("created_at DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&enrollments).Error; err != nil {
-		return nil, 0, err
+func (r *EnrollmentRepository) FindByPackageID(ctx context.Context, packageID uint) ([]models.Enrollment, error) {
+	var enrollments []models.Enrollment
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"package_id": packageID}).
+		WithPreloads("Entitlements").
+		WithOrder("created_at DESC")
+	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
+		return nil, err
 	}
-
-	return enrollments, total, nil
+	return enrollments, nil
 }
 
 func (r *EnrollmentRepository) UpdateStatus(ctx context.Context, id uint, status models.EnrollmentStatus) error {
-	return r.db.WithContext(ctx).
-		Model(&models.Enrollment{}).
-		Where("id = ?", id).
-		Update("status", status).Error
+	return r.BaseRepository.Exec(
+		"UPDATE enrollments SET status = ?, updated_at = ? WHERE id = ?",
+		status, time.Now(), id,
+	)
 }
 
 func (r *EnrollmentRepository) MarkAsPaid(ctx context.Context, id uint, paidAt time.Time, totalPrice float64) error {
-	return r.db.WithContext(ctx).
-		Model(&models.Enrollment{}).
-		Where("id = ?", id).
-		Updates(map[string]interface{}{
-			"status":     models.EnrollmentStatusPaid,
-			"paid_at":    paidAt,
-			"total_price": totalPrice,
-		}).Error
+	return r.BaseRepository.Exec(
+		"UPDATE enrollments SET status = 'paid', paid_at = ?, total_price = ?, updated_at = ? WHERE id = ?",
+		paidAt, totalPrice, time.Now(), id,
+	)
+}
+
+func (r *EnrollmentRepository) AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error {
+	// Convert UUID to uint (this assumes the UUID can be parsed as a number)
+	userIDUint, err := strconv.ParseUint(userID.String()[0:8], 16, 64)
+	if err != nil {
+		userIDUint = 0
+	}
+
+	return r.BaseRepository.Exec(
+		"UPDATE enrollments SET anonymized_at = ? WHERE user_id = ?",
+		anonymizedAt, userIDUint,
+	)
+}
+
+func (r *EnrollmentRepository) CountAll(ctx context.Context) (int64, error) {
+	return r.BaseRepository.Count(&models.Enrollment{}, base.NewQueryOptions())
+}
+
+func (r *EnrollmentRepository) CountByStatus(ctx context.Context, status models.EnrollmentStatus) (int64, error) {
+	opts := base.NewQueryOptions().WithWhere(map[string]any{"status": status})
+	return r.BaseRepository.Count(&models.Enrollment{}, opts)
+}
+
+func (r *EnrollmentRepository) Exists(ctx context.Context, condition any, args ...any) (bool, error) {
+	return r.BaseRepository.Exists(&models.Enrollment{}, condition, args...)
 }
 
 // ToResponse converts an Enrollment model to EnrollmentResponse DTO
@@ -167,17 +192,6 @@ func (r *EnrollmentRepository) ToListResponse(enrollments []models.Enrollment, t
 
 	return dto.EnrollmentListResponse{
 		Data:       items,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Pagination: dto.NewPaginationMeta(total, page, limit),
 	}
-}
-
-// AnonymizeByUserID marks all enrollments for a user as anonymized
-func (r *EnrollmentRepository) AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error {
-	return r.db.WithContext(ctx).
-		Model(&models.Enrollment{}).
-		Where("user_id = ?", userID).
-		Update("anonymized_at", anonymizedAt).Error
 }

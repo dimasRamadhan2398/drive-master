@@ -243,7 +243,13 @@ func (r *BaseRepository) CountWithOptions(ctx context.Context, model any, opts *
 
 // Count counts records using QueryOptions
 func (r *BaseRepository) Count(ctx context.Context, model any, opts *QueryOptions) (int64, error) {
-	return r.CountWithOptions(ctx, model, opts)
+	var count int64
+	query := r.DB.WithContext(ctx).Model(model)
+
+	if err := query.Count(&count).Error; err != nil {
+		return 0, fmt.Errorf("%w: %v", apperrors.ErrDatabase, err)
+	}
+	return count, nil
 }
 
 // Exists checks if a record exists

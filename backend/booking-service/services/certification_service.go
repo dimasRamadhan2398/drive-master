@@ -11,20 +11,18 @@ import (
 	"booking-service/models/dto"
 	"booking-service/pkg/kafka"
 	"booking-service/repositories"
-
-	"gorm.io/gorm"
 )
 
 type CertificationService struct {
-	certRepo     *repositories.CertificationRepository
-	userCertRepo *repositories.UserCertificationRepository
+	certRepo     repositories.ICertificationRepository
+	userCertRepo repositories.IUserCertificationRepository
 	userClient   user.IUserClient
 	eventPublisher kafka.IEventPublisher
 }
 
 func NewCertificationService(
-	certRepo *repositories.CertificationRepository,
-	userCertRepo *repositories.UserCertificationRepository,
+	certRepo repositories.ICertificationRepository,
+	userCertRepo repositories.IUserCertificationRepository,
 	userClient user.IUserClient,
 	eventPublisher kafka.IEventPublisher,
 ) ICertificationService {
@@ -54,12 +52,9 @@ func (s *CertificationService) CreateCertification(ctx context.Context, req dto.
 }
 
 func (s *CertificationService) GetCertification(ctx context.Context, id uint) (*dto.CertificationResponse, error) {
-	certification, err := s.certRepo.GetByID(ctx, id)
+	certification, err := s.certRepo.FindByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("certification not found")
-		}
-		return nil, err
+		return nil, errors.New("certification not found")
 	}
 
 	resp := s.certRepo.ToResponse(certification)
@@ -67,12 +62,9 @@ func (s *CertificationService) GetCertification(ctx context.Context, id uint) (*
 }
 
 func (s *CertificationService) UpdateCertificationStatus(ctx context.Context, id uint, status string) (*dto.CertificationResponse, error) {
-	certification, err := s.certRepo.GetByID(ctx, id)
+	certification, err := s.certRepo.FindByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("certification not found")
-		}
-		return nil, err
+		return nil, errors.New("certification not found")
 	}
 
 	certification.Status = models.CertificationStatus(status)
@@ -86,16 +78,13 @@ func (s *CertificationService) UpdateCertificationStatus(ctx context.Context, id
 
 func (s *CertificationService) IssueCertification(ctx context.Context, req dto.IssueCertificationRequest) (*dto.UserCertificationResponse, error) {
 	// Check if certification exists
-	certification, err := s.certRepo.GetByID(ctx, req.CertificationID)
+	certification, err := s.certRepo.FindByID(ctx, req.CertificationID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("certification not found")
-		}
-		return nil, err
+		return nil, errors.New("certification not found")
 	}
 
 	// Check if already issued
-	existing, err := s.userCertRepo.GetByUserAndCertification(ctx, req.UserID, req.CertificationID)
+	existing, err := s.userCertRepo.FindByUserAndCertification(ctx, req.UserID, req.CertificationID)
 	if err == nil && existing != nil {
 		return nil, errors.New("certification already issued to this user")
 	}
@@ -155,12 +144,9 @@ func (s *CertificationService) sendCertificationEmail(ctx context.Context, userI
 }
 
 func (s *CertificationService) RevokeCertification(ctx context.Context, userID, certificationID uint) error {
-	certification, err := s.certRepo.GetByID(ctx, certificationID)
+	certification, err := s.certRepo.FindByID(ctx, certificationID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("certification not found")
-		}
-		return err
+		return errors.New("certification not found")
 	}
 
 	certification.Status = models.CertificationStatusRevoked
@@ -168,7 +154,12 @@ func (s *CertificationService) RevokeCertification(ctx context.Context, userID, 
 }
 
 func (s *CertificationService) ListCertifications(ctx context.Context, page, limit int) (*dto.CertificationListResponse, error) {
-	certifications, total, err := s.certRepo.List(ctx, page, limit)
+	certifications, err := s.certRepo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.certRepo.CountAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +169,7 @@ func (s *CertificationService) ListCertifications(ctx context.Context, page, lim
 }
 
 func (s *CertificationService) GetUserCertifications(ctx context.Context, userID uint) ([]dto.UserCertificationResponse, error) {
-	userCerts, err := s.userCertRepo.GetByUserID(ctx, userID)
+	userCerts, err := s.userCertRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +182,7 @@ func (s *CertificationService) GetUserCertifications(ctx context.Context, userID
 }
 
 func (s *CertificationService) GetCertificationsByPackage(ctx context.Context, packageID uint) ([]dto.CertificationResponse, error) {
-	certifications, err := s.certRepo.GetByPackageID(ctx, packageID)
+	certifications, err := s.certRepo.FindByPackageID(ctx, packageID)
 	if err != nil {
 		return nil, err
 	}
@@ -210,9 +201,9 @@ func (s *CertificationService) GetStats(ctx context.Context) (*dto.Certification
 	}
 
 	return &dto.CertificationStatsResponse{
-		TotalCertifications:    stats.Total,
-		IssuedCertifications:   stats.Issued,
-		ActiveCertifications:   stats.Active,
-		RevokedCertifications:  stats.Revoked,
+		TotalCertifications:   stats.Total,
+		IssuedCertifications:  stats.Issued,
+		ActiveCertifications:  stats.Active,
+		RevokedCertifications: stats.Revoked,
 	}, nil
 }

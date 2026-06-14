@@ -7,7 +7,7 @@ import (
 
 type Registry struct {
 	repos     *repositories.Registry
-	midtrans  *MidtransService
+	midtrans  IMidtransService
 	txService ITransactionService
 }
 

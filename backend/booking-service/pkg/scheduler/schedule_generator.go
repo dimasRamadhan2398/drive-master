@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"booking-service/clients/user"
-	"booking-service/models"
+	"booking-service/models/dto"
 	"booking-service/repositories"
 
 	"github.com/google/uuid"
@@ -17,22 +17,22 @@ import (
 
 // ScheduleGenerator handles automatic generation of schedule slots from recurring schedules
 type ScheduleGenerator struct {
-	scheduleRepo       *repositories.ScheduleRepository
-	userClient          user.IUserClient
-	generationDays     int // How many days ahead to generate schedules
-	cronScheduler       *cron.Cron
+	scheduleRepo   repositories.IScheduleRepository
+	userClient     user.IUserClient
+	generationDays int // How many days ahead to generate schedules
+	cronScheduler  *cron.Cron
 }
 
 // NewScheduleGenerator creates a new schedule generator
 func NewScheduleGenerator(
-	scheduleRepo *repositories.ScheduleRepository,
+	scheduleRepo repositories.IScheduleRepository,
 	userClient user.IUserClient,
 ) *ScheduleGenerator {
 	return &ScheduleGenerator{
 		scheduleRepo:   scheduleRepo,
 		userClient:      userClient,
 		cronScheduler:   cron.New(),
-		generationDays:  7, // Generate schedules 7 days ahead by default
+		generationDays: 7, // Generate schedules 7 days ahead by default
 	}
 }
 
@@ -178,13 +178,13 @@ func (sg *ScheduleGenerator) generateSlotsForRecurringSchedule(
 
 		if !exists {
 			// Create the schedule slot (status: available, car_id: 0 - to be assigned later)
-			schedule := &models.Schedule{
+			schedule := &dto.Schedule{
 				Date:         date,
 				Time:         timeStr,
 				Duration:     slotDuration,
 				InstructorID: instructorID,
 				CarID:        0, // Will be assigned when booked
-				Status:       models.ScheduleStatusAvailable,
+				Status:       dto.ScheduleStatusAvailable,
 			}
 
 			if err := sg.scheduleRepo.Create(ctx, schedule); err != nil {

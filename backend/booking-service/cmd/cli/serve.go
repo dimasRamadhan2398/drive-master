@@ -12,6 +12,7 @@ import (
 	"booking-service/controllers"
 	"booking-service/docs"
 	"booking-service/models"
+	"booking-service/models/dto"
 	"booking-service/pkg/kafka"
 	"booking-service/pkg/middlewares"
 	"booking-service/pkg/scheduler"
@@ -78,13 +79,13 @@ func runServe(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize repositories
-	bookingRepo := repositories.NewBookingRepository(db)
 	sessionRepo := repositories.NewSessionRepository(db)
 	entitlementRepo := repositories.NewEntitlementRepository(db)
 	certificationRepo := repositories.NewCertificationRepository(db)
 	userCertRepo := repositories.NewUserCertificationRepository(db)
 	enrollmentRepo := repositories.NewEnrollmentRepository(db)
 	scheduleRepo := repositories.NewScheduleRepository(db)
+	paymentRepo := repositories.NewPaymentRepository(db)
 
 	// Initialize user-service client and availability service
 	userClient := user.NewUserClient(getEnv("USER_SERVICE_URL", "http://localhost:8001"))
@@ -97,22 +98,22 @@ func runServe(cmd *cobra.Command, args []string) {
 	eventPublisher := initKafkaConsumer(userAnonymizationService)
 
 	// Initialize services (after Kafka is initialized so we can pass the eventPublisher)
-	bookingService := services.NewBookingService(bookingRepo, entitlementRepo)
 	sessionService := services.NewSessionService(sessionRepo)
 	entitlementService := services.NewEntitlementService(entitlementRepo)
 	certificationService := services.NewCertificationService(certificationRepo, userCertRepo, userClient, eventPublisher)
 	enrollmentService := services.NewEnrollmentService(enrollmentRepo, entitlementRepo)
 
 	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, availabilityService)
+	paymentService := services.NewPaymentService(paymentRepo, enrollmentRepo)
 
 	// Create service registry
 	serviceRegistry := &serviceRegistryImpl{
-		bookingService:        bookingService,
 		sessionService:        sessionService,
 		entitlementService:    entitlementService,
 		certificationService:  certificationService,
 		enrollmentService:     enrollmentService,
 		scheduleService:       scheduleService,
+		paymentService:        paymentService,
 	}
 
 	// Initialize schedule generator for automatic schedule slot generation
@@ -178,9 +179,13 @@ func runMigrations(db *gorm.DB) {
 	log.Println("Running database migrations...")
 
 	if err := db.AutoMigrate(
-		&models.Booking{},
-		&models.Session{},
-		&models.Schedule{},
+		&models.Enrollment{},
+		&models.UserEntitlement{},
+		&models.DrivingSession{},
+		&models.Certification{},
+		&models.UserCertification{},
+		&dto.Schedule{},
+		&models.Payment{},
 	); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}
@@ -190,17 +195,14 @@ func runMigrations(db *gorm.DB) {
 
 // serviceRegistryImpl implements services.IServiceRegistry
 type serviceRegistryImpl struct {
-	bookingService        services.IBookingService
 	sessionService        services.ISessionService
 	entitlementService    services.IEntitlementService
-	certificationService   services.ICertificationService
+	certificationService  services.ICertificationService
 	enrollmentService     services.IEnrollmentService
 	scheduleService       services.IScheduleService
+	paymentService        services.IPaymentService
 }
 
-func (s *serviceRegistryImpl) GetBookingService() services.IBookingService {
-	return s.bookingService
-}
 
 func (s *serviceRegistryImpl) GetSessionService() services.ISessionService {
 	return s.sessionService
@@ -220,6 +222,10 @@ func (s *serviceRegistryImpl) GetEnrollmentService() services.IEnrollmentService
 
 func (s *serviceRegistryImpl) GetScheduleService() services.IScheduleService {
 	return s.scheduleService
+}
+
+func (s *serviceRegistryImpl) GetPaymentService() services.IPaymentService {
+	return s.paymentService
 }
 
 // initKafkaConsumer initializes the Kafka consumer for handling user.deleted events
@@ -278,7 +284,7 @@ func initKafkaConsumer(anonymizationService services.IUserAnonymizationService) 
 }
 
 // initScheduleGenerator initializes the schedule generator for automatic schedule slot generation
-func initScheduleGenerator(scheduleRepo *repositories.ScheduleRepository, userClient user.IUserClient) *scheduler.ScheduleGenerator {
+func initScheduleGenerator(scheduleRepo repositories.IScheduleRepository, userClient user.IUserClient) *scheduler.ScheduleGenerator {
 	scheduleGenerator := scheduler.NewScheduleGenerator(scheduleRepo, userClient)
 
 	// Get cron expression from environment or use default

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"booking-service/models/dto"
+	"booking-service/pkg/base"
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
@@ -73,7 +74,7 @@ func (c *EnrollmentController) CreateEnrollment(ctx *gin.Context) {
 // @Failure 404 {object} map[string]string
 // @Router /enrollments/{id} [get]
 func (c *EnrollmentController) GetEnrollment(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid enrollment id"})
 		return
@@ -101,7 +102,7 @@ func (c *EnrollmentController) GetEnrollment(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /enrollments/{id} [put]
 func (c *EnrollmentController) UpdateEnrollment(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid enrollment id"})
 		return
@@ -134,7 +135,7 @@ func (c *EnrollmentController) UpdateEnrollment(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /enrollments/{id}/cancel [post]
 func (c *EnrollmentController) CancelEnrollment(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid enrollment id"})
 		return
@@ -161,7 +162,7 @@ func (c *EnrollmentController) CancelEnrollment(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /enrollments/{id}/pay [post]
 func (c *EnrollmentController) MarkAsPaid(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid enrollment id"})
 		return
@@ -221,7 +222,7 @@ func (c *EnrollmentController) ListEnrollments(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /enrollments/user/{userId} [get]
 func (c *EnrollmentController) ListUserEnrollments(ctx *gin.Context) {
-	userID, err := getUintIDFromPath(ctx, "userId")
+	userID, err := base.GetUintIDFromPath(ctx, "userId")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return

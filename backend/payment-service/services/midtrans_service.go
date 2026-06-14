@@ -7,7 +7,6 @@ import (
 	"payment-service/models"
 	"payment-service/pkg/config"
 	"strings"
-	"time"
 
 	"github.com/midtrans/midtrans-go"
 	"github.com/midtrans/midtrans-go/coreapi"
@@ -18,37 +17,43 @@ import (
 type PaymentType string
 
 const (
-	PaymentTypeQRIS        PaymentType = "qris"
+	PaymentTypeQRIS       PaymentType = "qris"
 	PaymentTypeVA         PaymentType = "bank_transfer"
-	PaymentTypeEWallet     PaymentType = "ewallet"
-	PaymentTypeCreditCard  PaymentType = "credit_card"
+	PaymentTypeEWallet    PaymentType = "ewallet"
+	PaymentTypeCreditCard PaymentType = "credit_card"
 )
+
+type SnapResponse struct {
+	Token       string `json:"token"`
+	RedirectURL string `json:"redirectUrl"`
+}
 
 // MidtransChargeResponse represents the response from Midtrans charge API
 type MidtransChargeResponse struct {
-	TransactionID   string                 `json:"transaction_id"`
-	OrderID         string                 `json:"order_id"`
-	PaymentType     string                 `json:"payment_type"`
-	StatusCode      string                 `json:"status_code"`
-	StatusMessage   string                 `json:"status_message"`
-	TransactionTime  string                 `json:"transaction_time"`
-	TransactionUUID string                 `json:"transaction_uuid"`
-	MerchantID      string                 `json:"merchant_id"`
-	FraudStatus     string                 `json:"fraud_status"`
+	TransactionID   string `json:"transaction_id"`
+	OrderID         string `json:"order_id"`
+	PaymentType     string `json:"payment_type"`
+	StatusCode      string `json:"status_code"`
+	StatusMessage   string `json:"status_message"`
+	TransactionTime string `json:"transaction_time"`
+	TransactionUUID string `json:"transaction_uuid"`
+	MerchantID      string `json:"merchant_id"`
+	FraudStatus     string `json:"fraud_status"`
 	// QRIS specific
 	QrCodeURL   string `json:"qr_code_url,omitempty"`
 	QrCodeImage string `json:"qr_code_image,omitempty"`
 	// VA specific
-	VANumbers        []VANumber `json:"va_numbers,omitempty"`
-	PermataVANumber  string     `json:"permata_va_number,omitempty"`
-	BcaVANumber      string     `json:"bca_va_number,omitempty"`
-	MandiriVANumber  string     `json:"mandiri_va_number,omitempty"`
-	BniVANumber      string     `json:"bni_va_number,omitempty"`
+	VANumbers       []VANumber `json:"va_numbers,omitempty"`
+	PermataVANumber string     `json:"permata_va_number,omitempty"`
+	BcaVANumber     string     `json:"bca_va_number,omitempty"`
+	MandiriVANumber string     `json:"mandiri_va_number,omitempty"`
+	BniVANumber     string     `json:"bni_va_number,omitempty"`
+	BillKey         string     `json:"bill_key,omitempty"`    // Mandiri
+	BillerCode      string     `json:"biller_code,omitempty"` // Mandiri
 	// E-wallet specific
-	PaymentURL       string `json:"payment_url,omitempty"`
-	AcquisitionDate  string `json:"acquisition_date,omitempty"`
+	Actions []map[string]string `json:"actions,omitempty"` // GoPay, ShopeePay deeplink/QR
 	// Common
-	GrossAmount      string `json:"gross_amount"`
+	GrossAmount string `json:"gross_amount"`
 }
 
 // VANumber represents a Virtual Account number
@@ -71,17 +76,16 @@ type MidtransStatusResponse struct {
 	CardType          string `json:"card_type,omitempty"`
 	PaymentCode       string `json:"payment_code,omitempty"`
 	QrCodeURL         string `json:"qr_code_url,omitempty"`
-	QrCodeImage       string `json:"qr_code_image,omitempty"`
 	GrossAmount       string `json:"gross_amount"`
 	SettlementTime    string `json:"settlement_time,omitempty"`
 }
 
 // IMidtransService defines the interface for Midtrans operations
 type IMidtransService interface {
-	// Charge operations
-	ChargeQRIS(orderID string, amount float64, customerName, customerEmail string) (*MidtransChargeResponse, error)
-	ChargeVA(orderID string, amount float64, customerName, customerEmail string, bank string) (*MidtransChargeResponse, error)
-	ChargeEWallet(orderID string, amount float64, customerName, customerEmail string, walletType string) (*MidtransChargeResponse, error)
+	CreateSnapTransaction(orderID string, amount float64, packageName, customerName, customerEmail string) (*SnapResponse, error)
+	ChargeQRIS(orderID string, amount float64, packageName, customerName, customerEmail string) (*MidtransChargeResponse, error)
+	ChargeVA(orderID string, amount float64, packageName, customerName, customerEmail string, bank string) (*MidtransChargeResponse, error)
+	ChargeEWallet(orderID string, amount float64, packageName, customerName, customerEmail string, walletType string) (*MidtransChargeResponse, error)
 
 	// Status operations
 	GetTransactionStatus(orderID string) (*MidtransStatusResponse, error)
@@ -122,8 +126,36 @@ type MidtransService struct {
 	cfg           *config.MidtransConfig
 }
 
+// CreateSnapTransaction uses Snap API — returns a token and redirect URL
+// CreateSnapTransaction implements [IMidtransService].
+func (s *MidtransService) CreateSnapTransaction(orderID string, amount float64, packageName, customerName string, customerEmail string) (*SnapResponse, error) {
+	items := generateItemDetails(orderID, amount, packageName)
+
+	req := &snap.Request{
+		TransactionDetails: midtrans.TransactionDetails{
+			OrderID:  orderID,
+			GrossAmt: int64(amount),
+		},
+		CustomerDetail: &midtrans.CustomerDetails{
+			FName: customerName,
+			Email: customerEmail,
+		},
+		Items: &items,
+	}
+
+	resp, midErr := s.snapClient.CreateTransaction(req)
+	if midErr != nil {
+		return nil, fmt.Errorf("failed to create SNAP transaction: %w", midErr)
+	}
+
+	return &SnapResponse{
+		Token: resp.Token,
+		RedirectURL: resp.RedirectURL,
+	}, nil
+}
+
 // NewMidtransService creates a new Midtrans service instance
-func NewMidtransService(cfg *config.MidtransConfig) *MidtransService {
+func NewMidtransService(cfg *config.MidtransConfig) IMidtransService {
 	env := midtrans.Sandbox
 	if cfg.Environment == "production" {
 		env = midtrans.Production
@@ -152,22 +184,28 @@ func (s *MidtransService) GetSnapURL() string {
 	return s.cfg.SnapURL
 }
 
-// generateItemDetails creates item details for the charge request
-func generateItemDetails(orderID string, amount float64) []snap.ItemDetail {
-	return []snap.ItemDetail{
+// generateItemDetails builds item details for a charge request.
+// FIX: return type is []midtrans.ItemDetails
+func generateItemDetails(orderID string, amount float64, packageName string) []midtrans.ItemDetails {
+	return []midtrans.ItemDetails{
 		{
 			ID:    orderID,
-			Name:  fmt.Sprintf("Payment for order %s", orderID),
+			Name:  fmt.Sprintf("%s - Paket ", orderID, packageName),
 			Price: int64(amount),
 			Qty:   1,
+			Brand: "Drive Master",
+			Category: "Pembelian Paket Mengemudi",
+			MerchantName: "PT. Drive Master Indonesia",
 		},
 	}
 }
 
 // ChargeQRIS creates a QRIS charge request
-func (s *MidtransService) ChargeQRIS(orderID string, amount float64, customerName, customerEmail string) (*MidtransChargeResponse, error) {
-	req := &snap.Create{
-		PaymentType: "qris",
+func (s *MidtransService) ChargeQRIS(orderID string, amount float64, packageName string, customerName, customerEmail string) (*MidtransChargeResponse, error) {
+	items := generateItemDetails(orderID, amount, packageName)
+
+	req := &coreapi.ChargeReq{
+		PaymentType: coreapi.PaymentTypeQris,
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  orderID,
 			GrossAmt: int64(amount),
@@ -176,22 +214,65 @@ func (s *MidtransService) ChargeQRIS(orderID string, amount float64, customerNam
 			FName: customerName,
 			Email: customerEmail,
 		},
-	ItemDetails: generateItemDetails(orderID, amount),
+		Items: &items,
 	}
 
-	resp, err := s.snapClient.CreateTransaction(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to charge QRIS: %w", err)
+	resp, midErr := s.coreAPIClient.ChargeTransaction(req)
+	if midErr != nil {
+		return nil, fmt.Errorf("failed to charge QRIS: %s", midErr.GetMessage())
 	}
 
-	return s.parseChargeResponse(resp)
+	return parseCoreAPIResponse(resp), nil
+}
+	// req := &snap.Request{
+	// 	TransactionDetails: midtrans.TransactionDetails{
+	// 		OrderID:  orderID,
+	// 		GrossAmt: int64(amount),
+	// 	},
+	// 	CustomerDetail: &midtrans.CustomerDetails{
+	// 		FName: customerName,
+	// 		Email: customerEmail,
+	// 	},
+	// 	Items: generateItemDetails(orderID, amount),
+	// }
+
+// ChargeVA charges via Core API — returns a Virtual Account number directly.
+func (s *MidtransService) ChargeVA(orderID string, amount float64, packageName, customerName, customerEmail, bank string) (*MidtransChargeResponse, error) {
+	items := generateItemDetails(orderID, amount, packageName)
+
+	// FIX: use coreapi.ChargeReq with BankTransfer details
+	req := &coreapi.ChargeReq{
+		PaymentType: coreapi.PaymentTypeBankTransfer,
+		TransactionDetails: midtrans.TransactionDetails{
+			OrderID:  orderID,
+			GrossAmt: int64(amount),
+		},
+		CustomerDetails: &midtrans.CustomerDetails{
+			FName: customerName,
+			Email: customerEmail,
+		},
+		Items: &items,
+		BankTransfer: &coreapi.BankTransferDetails{
+			// FIX: use midtrans.Bank constants, not plain strings
+			Bank: midtrans.Bank(strings.ToLower(bank)),
+		},
+	}
+
+	resp, midErr := s.coreAPIClient.ChargeTransaction(req)
+	if midErr != nil {
+		return nil, fmt.Errorf("failed to charge VA: %s", midErr.GetMessage())
+	}
+
+	return parseCoreAPIResponse(resp), nil
 }
 
-// ChargeVA creates a Virtual Account charge request
-func (s *MidtransService) ChargeVA(orderID string, amount float64, customerName, customerEmail string, bank string) (*MidtransChargeResponse, error) {
-	paymentType := s.getVAPaymentType(bank)
+// ChargeEWallet charges via Core API — returns deeplink/QR actions for GoPay, ShopeePay, etc.
+func (s *MidtransService) ChargeEWallet(orderID string, amount float64, packageName, customerName, customerEmail, walletType string) (*MidtransChargeResponse, error) {
+	items := generateItemDetails(orderID, amount, packageName)
 
-	req := &snap.CreateChargeReq{
+	paymentType := getEWalletPaymentType(walletType)
+
+	req := &coreapi.ChargeReq{
 		PaymentType: paymentType,
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  orderID,
@@ -201,54 +282,23 @@ func (s *MidtransService) ChargeVA(orderID string, amount float64, customerName,
 			FName: customerName,
 			Email: customerEmail,
 		},
-		PaymentType: paymentType,
+		Items: &items,
 	}
 
-	// Set expiry time (default 24 hours)
-	expiryTime := time.Now().Add(24 * time.Hour)
-	req.CustomExpiry = &snap.CustomExpiry{
-		ExpiryDuration: 24,
-		Unit:           "hour",
+	// GoPay needs a callback URL
+	if paymentType == coreapi.PaymentTypeGopay {
+		req.Gopay = &coreapi.GopayDetails{
+			EnableCallback: true,
+			CallbackUrl:    s.cfg.GopayCallbackURL, // add this to your config
+		}
 	}
 
-	resp, err := s.snapClient.CreateTransaction(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to charge VA: %w", err)
+	resp, midErr := s.coreAPIClient.ChargeTransaction(req)
+	if midErr != nil {
+		return nil, fmt.Errorf("failed to charge e-wallet: %s", midErr.GetMessage())
 	}
 
-	return s.parseChargeResponse(resp)
-}
-
-// ChargeEWallet creates an e-wallet charge request
-func (s *MidtransService) ChargeEWallet(orderID string, amount float64, customerName, customerEmail string, walletType string) (*MidtransChargeResponse, error) {
-	paymentType := s.getEWalletPaymentType(walletType)
-
-	req := &snap.CreateChargeReq{
-		PaymentType: paymentType,
-		TransactionDetails: midtrans.TransactionDetails{
-			OrderID:  orderID,
-			GrossAmt: int64(amount),
-		},
-		CustomerDetails: &midtrans.CustomerDetails{
-			FName: customerName,
-			Email: customerEmail,
-		},
-		ItemDetails: generateItemDetails(orderID, amount),
-	}
-
-	// Set expiry for e-wallet (if applicable)
-	expiryTime := time.Now().Add(24 * time.Hour)
-	req.CustomExpiry = &snap.CustomExpiry{
-		ExpiryDuration: 24,
-		Unit:           "hour",
-	}
-
-	resp, err := s.snapClient.ChargeTransaction(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to charge e-wallet: %w", err)
-	}
-
-	return s.parseChargeResponse(resp)
+	return parseCoreAPIResponse(resp), nil
 }
 
 // getVAPaymentType maps bank code to Midtrans VA payment type
@@ -270,10 +320,10 @@ func (s *MidtransService) getVAPaymentType(bank string) string {
 // getEWalletPaymentType maps wallet type to Midtrans payment type
 func (s *MidtransService) getEWalletPaymentType(walletType string) string {
 	walletMap := map[string]string{
-		"gopay":    "gopay",
+		"gopay":     "gopay",
 		"shopeepay": "shopeepay",
-		"ovo":      "ovo",
-		"dana":     "danazoo",
+		"ovo":       "ovo",
+		"dana":      "danazoo",
 	}
 
 	if pt, ok := walletMap[strings.ToLower(walletType)]; ok {
@@ -284,7 +334,7 @@ func (s *MidtransService) getEWalletPaymentType(walletType string) string {
 
 // GetTransactionStatus retrieves transaction status from Midtrans
 func (s *MidtransService) GetTransactionStatus(orderID string) (*MidtransStatusResponse, error) {
-	resp, err := s.coreAPIClient.GetTransactionStatus(orderID)
+	resp, err := s.coreAPIClient.CheckTransaction(orderID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transaction status: %w", err)
 	}
@@ -301,8 +351,6 @@ func (s *MidtransService) GetTransactionStatus(orderID string) (*MidtransStatusR
 		MaskedCard:        resp.MaskedCard,
 		CardType:          resp.CardType,
 		PaymentCode:       resp.PaymentCode,
-		QrCodeURL:         resp.QrCodeURL,
-		QrCodeImage:       resp.QrCodeImage,
 		GrossAmount:       resp.GrossAmount,
 		SettlementTime:    resp.SettlementTime,
 	}, nil
@@ -311,7 +359,8 @@ func (s *MidtransService) GetTransactionStatus(orderID string) (*MidtransStatusR
 // Refund processes a refund request
 func (s *MidtransService) Refund(orderID string, amount float64, reason string) error {
 	req := &coreapi.RefundReq{
-		RefundAmount: int64(amount),
+		RefundKey:    "refund_" + orderID,
+		Amount: int64(amount),
 		Reason:       reason,
 	}
 
@@ -325,7 +374,7 @@ func (s *MidtransService) Refund(orderID string, amount float64, reason string) 
 
 // CancelTransaction cancels a pending transaction
 func (s *MidtransService) CancelTransaction(orderID string) error {
-	err := s.coreAPIClient.CancelTransaction(orderID)
+	_, err := s.coreAPIClient.CancelTransaction(orderID)
 	if err != nil {
 		return fmt.Errorf("failed to cancel transaction: %w", err)
 	}
@@ -369,43 +418,43 @@ func (s *MidtransService) HandleNotification(notification *MidtransNotification)
 	return nil
 }
 
-// parseChargeResponse converts Midtrans response to our response struct
-func (s *MidtransService) parseChargeResponse(resp *snap.Response) (*MidtransChargeResponse, error) {
-	if resp == nil {
-		return nil, fmt.Errorf("nil response from Midtrans")
-	}
+// // parseChargeResponse converts Midtrans response to our response struct
+// func (s *MidtransService) parseChargeResponse(resp *snap.Response) (*MidtransChargeResponse, error) {
+// 	if resp == nil {
+// 		return nil, fmt.Errorf("nil response from Midtrans")
+// 	}
 
-	chargeResp := &MidtransChargeResponse{
-		TransactionID:   resp.TransactionID,
-		OrderID:         resp.OrderID,
-		PaymentType:     resp.PaymentType,
-		StatusCode:      resp.StatusCode,
-		StatusMessage:   resp.StatusMessage,
-		TransactionTime: resp.TransactionTime,
-		FraudStatus:     resp.FraudStatus,
-		QrCodeURL:       resp.QrCodeURL,
-		QrCodeImage:     resp.QrCodeImage,
-		GrossAmount:     resp.GrossAmount,
-	}
+// 	chargeResp := &MidtransChargeResponse{
+// 		TransactionID:   resp.TransactionID,
+// 		OrderID:         resp.OrderID,
+// 		PaymentType:     resp.PaymentType,
+// 		StatusCode:      resp.StatusCode,
+// 		StatusMessage:   resp.StatusMessage,
+// 		TransactionTime: resp.TransactionTime,
+// 		FraudStatus:     resp.FraudStatus,
+// 		QrCodeURL:       resp.QrCodeURL,
+// 		QrCodeImage:     resp.QrCodeImage,
+// 		GrossAmount:     resp.GrossAmount,
+// 	}
 
-	// Handle VA numbers
-	if len(resp.VaNumbers) > 0 {
-		chargeResp.VANumbers = make([]VANumber, len(resp.VaNumbers))
-		for i, va := range resp.VaNumbers {
-			chargeResp.VANumbers[i] = VANumber{
-				Bank:     va.Bank,
-				VANumber: va.VANumber,
-			}
-		}
-	}
+// 	// Handle VA numbers
+// 	if len(resp.VaNumbers) > 0 {
+// 		chargeResp.VANumbers = make([]VANumber, len(resp.VaNumbers))
+// 		for i, va := range resp.VaNumbers {
+// 			chargeResp.VANumbers[i] = VANumber{
+// 				Bank:     va.Bank,
+// 				VANumber: va.VANumber,
+// 			}
+// 		}
+// 	}
 
-	// Handle Permata VA
-	if resp.PermataVANumber != "" {
-		chargeResp.PermitaVANumber = resp.PermataVANumber
-	}
+// 	// Handle Permata VA
+// 	if resp.PermataVANumber != "" {
+// 		chargeResp.PermitaVANumber = resp.PermataVANumber
+// 	}
 
-	return chargeResp, nil
-}
+// 	return chargeResp, nil
+// }
 
 // getStringValue safely extracts a string from a map
 func getStringValue(m map[string]interface{}, key string) string {
@@ -427,13 +476,13 @@ func (r *MidtransChargeResponse) ToJSON() string {
 // MapMidtransStatusToPaymentStatus maps Midtrans transaction status to our payment status
 func MapMidtransStatusToPaymentStatus(midtransStatus string) models.PaymentStatus {
 	statusMap := map[string]models.PaymentStatus{
-		"capture":   models.PaymentStatusSuccess,
-		"settlement": models.PaymentStatusSuccess,
-		"pending":   models.PaymentStatusPending,
-		"deny":      models.PaymentStatusFailed,
-		"cancel":    models.PaymentStatusCancelled,
-		"expire":    models.PaymentStatusExpired,
-		"refund":    models.PaymentStatusRefunded,
+		"capture":        models.PaymentStatusSuccess,
+		"settlement":     models.PaymentStatusSuccess,
+		"pending":        models.PaymentStatusPending,
+		"deny":           models.PaymentStatusFailed,
+		"cancel":         models.PaymentStatusCancelled,
+		"expire":         models.PaymentStatusExpired,
+		"refund":         models.PaymentStatusRefunded,
 		"partial_refund": models.PaymentStatusRefunded,
 	}
 
@@ -441,4 +490,46 @@ func MapMidtransStatusToPaymentStatus(midtransStatus string) models.PaymentStatu
 		return status
 	}
 	return models.PaymentStatusPending
+}
+
+func getEWalletPaymentType(walletType string) coreapi.CoreapiPaymentType {
+	walletMap := map[string]coreapi.CoreapiPaymentType{
+		"gopay":     coreapi.PaymentTypeGopay,
+		"shopeepay": coreapi.PaymentTypeShopeepay,
+	}
+	if pt, ok := walletMap[strings.ToLower(walletType)]; ok {
+		return pt
+	}
+	return coreapi.PaymentTypeGopay
+}
+
+// parseCoreAPIResponse maps coreapi.Response to our internal struct.
+func parseCoreAPIResponse(resp *coreapi.ChargeResponse) *MidtransChargeResponse {
+	result := &MidtransChargeResponse{
+		TransactionID:   resp.TransactionID,
+		OrderID:         resp.OrderID,
+		PaymentType:     resp.PaymentType,
+		StatusCode:      resp.StatusCode,
+		StatusMessage:   resp.StatusMessage,
+		TransactionTime: resp.TransactionTime,
+		FraudStatus:     resp.FraudStatus,
+		QrCodeURL:       resp.QRString,
+		GrossAmount:     resp.GrossAmount,
+		// FIX: PermataVANumber, not PermitaVANumber
+		PermataVANumber: resp.PermataVaNumber,
+		BillKey:         resp.BillKey,
+		BillerCode:      resp.BillerCode,
+	}
+
+	if len(resp.VaNumbers) > 0 {
+		result.VANumbers = make([]VANumber, len(resp.VaNumbers))
+		for i, va := range resp.VaNumbers {
+			result.VANumbers[i] = VANumber{
+				Bank:     va.Bank,
+				VANumber: va.VANumber,
+			}
+		}
+	}
+
+	return result
 }

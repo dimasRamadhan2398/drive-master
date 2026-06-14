@@ -11,11 +11,18 @@ import (
 	"gorm.io/gorm"
 )
 
-type SessionService struct {
-	sessionRepo *repositories.SessionRepository
+type ISessionService interface {
+	CreateSession(ctx context.Context, req dto.CreateSessionRequest) (*dto.SessionResponse, error)
+	GetSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
+	ListSessions(ctx context.Context, page, limit int) (*dto.SessionListResponse, error)
+	GetStats(ctx context.Context) (*dto.SessionStatsResponse, error)
 }
 
-func NewSessionService(sessionRepo *repositories.SessionRepository) ISessionService {
+type SessionService struct {
+	sessionRepo repositories.ISessionRepository
+}
+
+func NewSessionService(sessionRepo repositories.ISessionRepository) ISessionService {
 	return &SessionService{
 		sessionRepo: sessionRepo,
 	}
@@ -45,7 +52,7 @@ func (s *SessionService) CreateSession(ctx context.Context, req dto.CreateSessio
 }
 
 func (s *SessionService) GetSession(ctx context.Context, id uint) (*dto.SessionResponse, error) {
-	session, err := s.sessionRepo.GetByID(ctx, id)
+	session, err := s.sessionRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("session not found")
@@ -58,7 +65,12 @@ func (s *SessionService) GetSession(ctx context.Context, id uint) (*dto.SessionR
 }
 
 func (s *SessionService) ListSessions(ctx context.Context, page, limit int) (*dto.SessionListResponse, error) {
-	sessions, total, err := s.sessionRepo.List(ctx, page, limit)
+	sessions, err := s.sessionRepo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.sessionRepo.CountAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -68,20 +80,24 @@ func (s *SessionService) ListSessions(ctx context.Context, page, limit int) (*dt
 }
 
 func (s *SessionService) ListUserSessions(ctx context.Context, userID uint, page, limit int) (*dto.SessionListResponse, error) {
-	sessions, total, err := s.sessionRepo.GetByUserID(ctx, userID, page, limit)
+	sessions, err := s.sessionRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
+
+	total := int64(len(sessions))
 
 	resp := s.sessionRepo.ToListResponse(sessions, total, page, limit)
 	return &resp, nil
 }
 
 func (s *SessionService) ListInstructorSessions(ctx context.Context, instructorID uint, page, limit int) (*dto.SessionListResponse, error) {
-	sessions, total, err := s.sessionRepo.GetByInstructorID(ctx, instructorID, page, limit)
+	sessions, err := s.sessionRepo.FindByInstructorID(ctx, instructorID)
 	if err != nil {
 		return nil, err
 	}
+
+	total := int64(len(sessions))
 
 	resp := s.sessionRepo.ToListResponse(sessions, total, page, limit)
 	return &resp, nil

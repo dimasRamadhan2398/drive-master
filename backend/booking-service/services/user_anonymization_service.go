@@ -15,16 +15,16 @@ type IUserAnonymizationService interface {
 }
 
 type UserAnonymizationService struct {
-	enrollmentRepo  *repositories.EnrollmentRepository
-	sessionRepo     *repositories.SessionRepository
-	entitlementRepo *repositories.EntitlementRepository
+	enrollmentRepo  repositories.IEnrollmentRepository
+	sessionRepo     repositories.ISessionRepository
+	entitlementRepo repositories.IEntitlementRepository
 }
 
 // NewUserAnonymizationService creates a new user anonymization service
 func NewUserAnonymizationService(
-	enrollmentRepo *repositories.EnrollmentRepository,
-	sessionRepo *repositories.SessionRepository,
-	entitlementRepo *repositories.EntitlementRepository,
+	enrollmentRepo repositories.IEnrollmentRepository,
+	sessionRepo repositories.ISessionRepository,
+	entitlementRepo repositories.IEntitlementRepository,
 ) IUserAnonymizationService {
 	return &UserAnonymizationService{
 		enrollmentRepo:   enrollmentRepo,
