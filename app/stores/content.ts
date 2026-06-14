@@ -1,4 +1,15 @@
 import { defineStore } from "pinia";
+import { contentService } from "~/services/contentService";
+import type {
+  BlogPostMedia,
+  Publishing,
+  Attractiveness,
+  CreateBlogPostData,
+  UpdateBlogPostData,
+} from "~/services/contentService";
+
+// Re-export types from contentService for convenience
+export type { BlogPostMedia, Publishing, Attractiveness, CreateBlogPostData, UpdateBlogPostData };
 
 export interface PageSection {
   id: string;
@@ -16,36 +27,57 @@ export interface Page {
   sections: PageSection[];
 }
 
-export interface BlogPostMedia {
-  name: string;
-  type: string;
-  size: string;
-  url: string;
-  fileType: "image" | "video";
-}
-
 export interface BlogPost {
   id: number;
   title: string;
+  slug?: string;
   author: string;
+  excerpt?: string;
   date: string;
-  status: "published" | "draft";
+  status: "published" | "draft" | "archived";
   views: number;
   content: string;
   media: BlogPostMedia[];
+  publishing?: Publishing;
+  attractiveness?: Attractiveness;
+  viewCount?: number;
+  likeCount?: number;
+  shareCount?: number;
+  readingTime?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
+// FAQ Types
 export interface Faq {
-  id: number;
+  id: string;
   question: string;
   answer: string;
-  order: number;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFaqData {
+  question: string;
+  answer: string;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateFaqData {
+  question?: string;
+  answer?: string;
+  sortOrder?: number;
+  isActive?: boolean;
 }
 
 interface ContentState {
   pages: Page[];
   blogPosts: BlogPost[];
   faqs: Faq[];
+  currentFaq: Faq | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -83,28 +115,12 @@ const initialBlogPosts: BlogPost[] = [
   },
 ];
 
-const initialFaqs: Faq[] = [
-  {
-    id: 1,
-    question: "What is an EV?",
-    answer:
-      "An Electric Vehicle (EV) is a vehicle that uses one or more electric motors for propulsion.",
-    order: 1,
-  },
-  {
-    id: 2,
-    question: "How long does it take to charge?",
-    answer:
-      "Charging time depends on the charger and the vehicle. A typical home charger can fully charge an EV overnight.",
-    order: 2,
-  },
-];
-
 export const useContentStore = defineStore("content", {
   state: (): ContentState => ({
     pages: initialPages,
     blogPosts: initialBlogPosts,
-    faqs: initialFaqs,
+    faqs: [],
+    currentFaq: null,
     isLoading: false,
     error: null,
   }),
@@ -116,22 +132,29 @@ export const useContentStore = defineStore("content", {
     publishedPosts: (state) =>
       state.blogPosts.filter((p) => p.status === "published"),
     draftPosts: (state) => state.blogPosts.filter((p) => p.status === "draft"),
-    sortedFaqs: (state) => [...state.faqs].sort((a, b) => a.order - b.order),
     totalPages: (state) => state.pages.length,
     totalPosts: (state) => state.blogPosts.length,
-    totalFaqs: (state) => state.faqs.length,
     getPageById: (state) => (id: number) =>
       state.pages.find((p) => p.id === id),
     getPageBySlug: (state) => (slug: string) =>
       state.pages.find((p) => p.slug === slug),
     getPostById: (state) => (id: number) =>
       state.blogPosts.find((p) => p.id === id),
-    getFaqById: (state) => (id: number) => state.faqs.find((f) => f.id === id),
+    // FAQ getters
+    activeFaqs: (state) => state.faqs.filter((f) => f.isActive),
+    sortedFaqs: (state) =>
+      [...state.faqs].sort((a, b) => a.sortOrder - b.sortOrder),
+    totalFaqs: (state) => state.faqs.length,
+    getFaqById: (state) => (id: string) => state.faqs.find((f) => f.id === id),
   },
 
   actions: {
     // Page actions
-    addPage(data: { title: string; slug: string; status: "published" | "draft" }) {
+    addPage(data: {
+      title: string;
+      slug: string;
+      status: "published" | "draft";
+    }) {
       const newId = Math.max(...this.pages.map((p) => p.id), 0) + 1;
       const newPage: Page = {
         ...data,
@@ -146,10 +169,15 @@ export const useContentStore = defineStore("content", {
     updatePage(id: number, data: Partial<Page>) {
       const index = this.pages.findIndex((p) => p.id === id);
       if (index !== -1) {
+        const existing = this.pages[index];
+        if (!existing) return null;
         this.pages[index] = {
-          ...this.pages[index],
-          ...data,
+          id: existing.id,
+          title: data.title ?? existing.title,
+          slug: data.slug ?? existing.slug,
           lastUpdated: this.formatDate(new Date()),
+          status: data.status ?? existing.status,
+          sections: data.sections ?? existing.sections,
         };
         return this.pages[index];
       }
@@ -171,13 +199,48 @@ export const useContentStore = defineStore("content", {
     },
 
     // Blog Post actions
-    addPost(data: {
+    async addPost(data: {
       title: string;
       author: string;
       content: string;
-      status: "published" | "draft";
+      status: "published" | "draft" | "archived";
       media?: BlogPostMedia[];
+      publishing?: Publishing;
+      attractiveness?: Attractiveness;
     }) {
+      try {
+        const created = await contentService.createBlogPost({
+          title: data.title,
+          author: data.author,
+          content: data.content,
+          media: data.media,
+          publishing: data.publishing,
+          attractiveness: data.attractiveness,
+        });
+
+        if (created) {
+          const newPost: BlogPost = {
+            id: parseInt(created.id) || this.blogPosts.length + 1,
+            title: created.title,
+            slug: created.slug,
+            author: created.author,
+            content: created.content,
+            excerpt: created.excerpt,
+            date: this.formatDate(new Date(created.createdAt)),
+            status: created.publishing?.status || "draft",
+            views: created.viewCount || 0,
+            media: created.media || [],
+            publishing: created.publishing,
+            attractiveness: created.attractiveness,
+          };
+          this.blogPosts.push(newPost);
+          return newPost;
+        }
+      } catch (e) {
+        console.error("Failed to create blog post:", e);
+      }
+
+      // Fallback to local creation if API fails
       const newId = Math.max(...this.blogPosts.map((p) => p.id), 0) + 1;
       const newPost: BlogPost = {
         ...data,
@@ -190,20 +253,80 @@ export const useContentStore = defineStore("content", {
       return newPost;
     },
 
-    updatePost(id: number, data: Partial<BlogPost>) {
+    async updatePost(id: number, data: {
+      title?: string;
+      author?: string;
+      content?: string;
+      status?: "published" | "draft" | "archived";
+      media?: BlogPostMedia[];
+      publishing?: Publishing;
+      attractiveness?: Attractiveness;
+    }) {
+      try {
+        const updated = await contentService.updateBlogPost(String(id), {
+          title: data.title,
+          author: data.author,
+          content: data.content,
+          media: data.media,
+          publishing: data.publishing,
+          attractiveness: data.attractiveness,
+        });
+
+        if (updated) {
+          const index = this.blogPosts.findIndex((p) => p.id === id);
+          if (index !== -1) {
+            const existing = this.blogPosts[index];
+            this.blogPosts[index] = {
+              ...existing,
+              title: updated.title,
+              slug: updated.slug,
+              author: updated.author,
+              content: updated.content,
+              excerpt: updated.excerpt,
+              date: this.formatDate(new Date(updated.updatedAt)),
+              status: updated.publishing?.status || existing.status,
+              views: updated.viewCount || existing.views,
+              media: updated.media || existing.media,
+              publishing: updated.publishing,
+              attractiveness: updated.attractiveness,
+            };
+            return this.blogPosts[index];
+          }
+        }
+      } catch (e) {
+        console.error("Failed to update blog post:", e);
+      }
+
+      // Fallback to local update if API fails
       const index = this.blogPosts.findIndex((p) => p.id === id);
       if (index !== -1) {
+        const existing = this.blogPosts[index];
+        if (!existing) return null;
         this.blogPosts[index] = {
-          ...this.blogPosts[index],
-          ...data,
+          id: existing.id,
+          title: data.title ?? existing.title,
+          author: data.author ?? existing.author,
           date: this.formatDate(new Date()),
+          status: data.status ?? existing.status,
+          views: existing.views,
+          content: data.content ?? existing.content,
+          media: data.media ?? existing.media,
+          publishing: data.publishing ?? existing.publishing,
+          attractiveness: data.attractiveness ?? existing.attractiveness,
         };
         return this.blogPosts[index];
       }
       return null;
     },
 
-    deletePost(id: number) {
+    async deletePost(id: number) {
+      try {
+        await contentService.deleteBlogPost(String(id));
+      } catch (e) {
+        console.error("Failed to delete blog post from server:", e);
+      }
+
+      // Always remove locally
       this.blogPosts = this.blogPosts.filter((p) => p.id !== id);
     },
 
@@ -224,38 +347,36 @@ export const useContentStore = defineStore("content", {
       }
     },
 
-    // FAQ actions
-    addFaq(data: { question: string; answer: string }) {
-      const newId = Math.max(...this.faqs.map((f) => f.id), 0) + 1;
-      const newFaq: Faq = {
-        ...data,
-        id: newId,
-        order: this.faqs.length + 1,
-      };
-      this.faqs.push(newFaq);
-      return newFaq;
-    },
-
-    updateFaq(id: number, data: Partial<Faq>) {
-      const index = this.faqs.findIndex((f) => f.id === id);
-      if (index !== -1) {
-        this.faqs[index] = { ...this.faqs[index], ...data };
-        return this.faqs[index];
+    async fetchBlogPosts(params: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+    } = {}) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const result = await contentService.fetchBlogPosts(params);
+        this.blogPosts = result.posts.map((p) => ({
+          id: parseInt(p.id) || 0,
+          title: p.title,
+          slug: p.slug,
+          author: p.author,
+          content: "",
+          excerpt: p.excerpt,
+          date: this.formatDate(new Date(p.createdAt)),
+          status: (p.status as "published" | "draft" | "archived") || "draft",
+          views: p.viewCount || 0,
+          media: [],
+        }));
+        return result;
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : "Failed to fetch blog posts";
+        console.error("Error fetching blog posts:", err);
+        return null;
+      } finally {
+        this.isLoading = false;
       }
-      return null;
-    },
-
-    deleteFaq(id: number) {
-      this.faqs = this.faqs.filter((f) => f.id !== id);
-      // Reorder remaining FAQs
-      this.faqs.forEach((f, i) => (f.order = i + 1));
-    },
-
-    reorderFaqs(fromIndex: number, toIndex: number) {
-      const faq = this.faqs.splice(fromIndex, 1)[0];
-      this.faqs.splice(toIndex, 0, faq);
-      // Update order numbers
-      this.faqs.forEach((f, i) => (f.order = i + 1));
     },
 
     // Helper functions
@@ -269,7 +390,11 @@ export const useContentStore = defineStore("content", {
 
     generateSlug(title: string): string {
       return (
-        "/" + title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+        "/" +
+        title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "")
       );
     },
 
@@ -292,11 +417,144 @@ export const useContentStore = defineStore("content", {
       return false;
     },
 
+    // FAQ Actions
+    async fetchFaqs() {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const faqs = await contentService.fetchFaqs();
+        this.faqs = faqs;
+        return faqs;
+      } catch (err) {
+        this.error =
+          err instanceof Error ? err.message : "Failed to fetch FAQs";
+        console.error("Error fetching FAQs:", err);
+        return [];
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async fetchFaqById(id: string) {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const faq = await contentService.fetchFaqById(id);
+        if (faq) {
+          this.currentFaq = faq;
+          return faq;
+        }
+        return null;
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : "Failed to fetch FAQ";
+        console.error("Error fetching FAQ:", err);
+        return null;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async createFaq(data: CreateFaqData) {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const faq = await contentService.createFaq(data);
+        if (faq) {
+          this.faqs.unshift(faq);
+          return faq;
+        }
+        return null;
+      } catch (err) {
+        this.error =
+          err instanceof Error ? err.message : "Failed to create FAQ";
+        console.error("Error creating FAQ:", err);
+        return null;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async updateFaq(id: string, data: UpdateFaqData) {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const faq = await contentService.updateFaq(id, data);
+        if (faq) {
+          const index = this.faqs.findIndex((f) => f.id === id);
+          if (index !== -1) {
+            this.faqs[index] = faq;
+          }
+          if (this.currentFaq?.id === id) {
+            this.currentFaq = faq;
+          }
+          return faq;
+        }
+        return null;
+      } catch (err) {
+        this.error =
+          err instanceof Error ? err.message : "Failed to update FAQ";
+        console.error("Error updating FAQ:", err);
+        return null;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async deleteFaq(id: string) {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const success = await contentService.deleteFaq(id);
+        if (success) {
+          this.faqs = this.faqs.filter((f) => f.id !== id);
+          if (this.currentFaq?.id === id) {
+            this.currentFaq = null;
+          }
+        }
+        return success;
+      } catch (err) {
+        this.error =
+          err instanceof Error ? err.message : "Failed to delete FAQ";
+        console.error("Error deleting FAQ:", err);
+        return false;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    setCurrentFaq(faq: Faq | null) {
+      this.currentFaq = faq;
+    },
+
+    async reorderFaqs(fromIndex: number, toIndex: number) {
+      const faq = this.faqs.splice(fromIndex, 1)[0];
+      if (faq) {
+        this.faqs.splice(toIndex, 0, faq);
+        // Update sort order locally first
+        this.faqs.forEach((f, i) => (f.sortOrder = i + 1));
+
+        // Then sync with API
+        try {
+          await Promise.all(
+            this.faqs.map((f, i) => contentService.reorderFaq(f.id, i + 1)),
+          );
+        } catch (error) {
+          console.error("Failed to sync FAQ order with server:", error);
+        }
+      }
+    },
+
     // Reset state
     reset() {
       this.pages = [...initialPages];
       this.blogPosts = [...initialBlogPosts];
-      this.faqs = [...initialFaqs];
+      this.faqs = [];
+      this.currentFaq = null;
       this.isLoading = false;
       this.error = null;
     },

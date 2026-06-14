@@ -1,24 +1,22 @@
 import type { Testimonial, TestimonialStatus } from "~/stores/testimonials";
-import type {
-  ApiResponse,
-} from "~/composables/useApiClients";
+import type { ApiResponse } from "~/composables/useApiClients";
 
 export interface TestimonialApiResponse {
   id: string;
-  userId: string;
-  userName: string;
-  userImage: string;
-  userRole: string;
+  user_id: string;
+  user_name: string;
+  user_image: string;
+  user_role: string;
   content: string;
   rating: number;
   tags: string;
   status: TestimonialStatus;
-  isFeatured: boolean;
-  addedBy: string;
-  addedAt: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
+  is_featured: boolean;
+  added_by: string;
+  added_at: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PaginatedTestimonialsResult {
@@ -56,23 +54,25 @@ export interface UpdateTestimonialData {
   sortOrder?: number;
 }
 
-export const mapApiToTestimonial = (item: TestimonialApiResponse): Testimonial => {
+export const mapApiToTestimonial = (
+  item: TestimonialApiResponse,
+): Testimonial => {
   return {
-    id: item.id,
-    userId: item.userId,
-    userName: item.userName,
-    userImage: item.userImage || "",
-    userRole: item.userRole || "Student",
+    id: String(item.id),
+    userId: item.user_id,
+    userName: item.user_name,
+    userImage: item.user_image || "",
+    userRole: item.user_role || "Student",
     content: item.content,
     rating: item.rating,
     tags: item.tags || "",
     status: item.status,
-    isFeatured: item.isFeatured || false,
-    addedBy: item.addedBy,
-    addedAt: item.addedAt,
-    sortOrder: item.sortOrder || 0,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
+    isFeatured: item.is_featured || false,
+    addedBy: item.added_by,
+    addedAt: item.added_at,
+    sortOrder: item.sort_order || 0,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
   };
 };
 
@@ -81,7 +81,11 @@ export const testimonialService = {
   async fetchAll(): Promise<PaginatedTestimonialsResult> {
     const { core, extractData } = useApiClients();
 
-    const response = await core<{ success: boolean; message: string; data: TestimonialApiResponse[] }>("/testimonials", {
+    const response = await core<{
+      success: boolean;
+      message: string;
+      data: TestimonialApiResponse[];
+    }>("/testimonials", {
       method: "GET",
     });
 
@@ -115,11 +119,14 @@ export const testimonialService = {
   async fetchPublished(): Promise<Testimonial[]> {
     const { core, extractData } = useApiClients();
     try {
-      const response = await core<{ success: boolean; message: string; data: TestimonialApiResponse[] }>(
-        "/testimonials/published",
-        { method: "GET" },
+      const response = await core<{
+        success: boolean;
+        message: string;
+        data: TestimonialApiResponse[];
+      }>("/testimonials/published", { method: "GET" });
+      return (extractData(response) as TestimonialApiResponse[]).map(
+        mapApiToTestimonial,
       );
-      return (extractData(response) as TestimonialApiResponse[]).map(mapApiToTestimonial);
     } catch {
       return [];
     }
@@ -128,11 +135,14 @@ export const testimonialService = {
   async fetchFeatured(): Promise<Testimonial[]> {
     const { core, extractData } = useApiClients();
     try {
-      const response = await core<{ success: boolean; message: string; data: TestimonialApiResponse[] }>(
-        "/testimonials/featured",
-        { method: "GET" },
+      const response = await core<{
+        success: boolean;
+        message: string;
+        data: TestimonialApiResponse[];
+      }>("/testimonials/featured", { method: "GET" });
+      return (extractData(response) as TestimonialApiResponse[]).map(
+        mapApiToTestimonial,
       );
-      return (extractData(response) as TestimonialApiResponse[]).map(mapApiToTestimonial);
     } catch {
       return [];
     }
@@ -141,17 +151,23 @@ export const testimonialService = {
   async create(data: CreateTestimonialData): Promise<Testimonial | null> {
     const { core, extractData } = useApiClients();
     try {
-      const response = await core<ApiResponse<TestimonialApiResponse>>("/testimonials", {
-        method: "POST",
-        body: data,
-      });
+      const response = await core<ApiResponse<TestimonialApiResponse>>(
+        "/testimonials",
+        {
+          method: "POST",
+          body: data,
+        },
+      );
       return mapApiToTestimonial(extractData(response));
     } catch {
       return null;
     }
   },
 
-  async update(id: string, data: UpdateTestimonialData): Promise<Testimonial | null> {
+  async update(
+    id: string,
+    data: UpdateTestimonialData,
+  ): Promise<Testimonial | null> {
     const { core, extractData } = useApiClients();
     try {
       const response = await core<ApiResponse<TestimonialApiResponse>>(

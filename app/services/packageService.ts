@@ -1,7 +1,5 @@
 import type { Package } from "~/stores/packages";
-import type {
-  ApiResponse,
-} from "~/composables/useApiClients";
+import type { ApiResponse } from "~/composables/useApiClients";
 
 export interface PaginatedPackagesResult {
   packages: Package[];
@@ -38,9 +36,10 @@ export interface CreatePackageData {
   discountPrice?: number;
   durationMinutes: number;
   totalSessions: number;
-  features: string[];
+  benefits: string[];
   highlight?: boolean;
   imageUrl?: string;
+  isDiscounted: boolean;
 }
 
 export interface UpdatePackageData {
@@ -80,7 +79,11 @@ export const packageService = {
   async fetchAll(): Promise<PaginatedPackagesResult> {
     const { core, extractData } = useApiClients();
 
-    const response = await core<{ success: boolean; message: string; data: PackageApiResponse[] }>("/packages", {
+    const response = await core<{
+      success: boolean;
+      message: string;
+      data: PackageApiResponse[];
+    }>("/packages/all", {
       method: "GET",
     });
 

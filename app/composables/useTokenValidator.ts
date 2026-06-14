@@ -40,7 +40,10 @@ export const useTokenValidator = () => {
   /**
    * Check if a token will expire soon (within 5 minutes)
    */
-  const isTokenExpiringSoon = (token: string, minutesThreshold = 5): boolean => {
+  const isTokenExpiringSoon = (
+    token: string,
+    minutesThreshold = 5,
+  ): boolean => {
     const payload = decodeToken(token);
     if (!payload || !payload.exp) return true;
 
@@ -106,10 +109,6 @@ export const useTokenValidator = () => {
   const handleInvalidToken = (redirectPath: string = "/auth/login") => {
     const authStore = useAuthStore();
     authStore.clearAuth();
-
-    if (import.meta.client) {
-      window.location.href = redirectPath;
-    }
   };
 
   /**
@@ -129,7 +128,9 @@ export const useTokenValidator = () => {
   /**
    * Check and handle invalid token, redirecting to appropriate login page
    */
-  const checkAndRedirectIfInvalid = async (currentPath: string): Promise<boolean> => {
+  const checkAndRedirectIfInvalid = async (
+    currentPath: string,
+  ): Promise<boolean> => {
     const authStore = useAuthStore();
     const token = authStore.accessToken;
 

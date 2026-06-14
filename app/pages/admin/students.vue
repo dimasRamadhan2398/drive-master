@@ -80,8 +80,8 @@ function openEditModal(student: Student) {
   showEditModal.value = true;
 }
 
-function deleteStudent(id: number) {
-  studentsStore.deleteStudent(id);
+async function deleteStudent(id: string) {
+  await studentsStore.deleteStudent(id);
   toast.add({
     title: "Student Removed",
     description: "The student has been removed from the system.",
@@ -559,8 +559,7 @@ onMounted(() => {
           <template #footer>
             <div class="flex items-center justify-between">
               <p class="text-md text-muted">
-                Showing {{ students.length }} of
-                {{ pagination.total }} students
+                Showing {{ students.length }} of {{ pagination.total }} students
               </p>
               <UPagination
                 v-model="studentsStore.pagination.page"

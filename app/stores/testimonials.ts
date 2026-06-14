@@ -1,9 +1,10 @@
 import { defineStore } from "pinia";
+import { testimonialService } from "~/services/testimonialService";
 
 export type TestimonialStatus = "draft" | "pending" | "published" | "archived";
 
 export interface Testimonial {
-  id: string;
+  id?: string | "";
   userId: string;
   userName: string;
   userImage: string;
@@ -178,6 +179,8 @@ export const useTestimonialsStore = defineStore("testimonials", {
           await import("~/services/testimonialService");
         const result = await testimonialService.fetchAll();
 
+        console.log(result);
+
         this.testimonials = result.testimonials;
         this.pagination = result.pagination;
       } catch (err) {
@@ -191,14 +194,22 @@ export const useTestimonialsStore = defineStore("testimonials", {
       }
     },
 
-    addTestimonial(data: Omit<Testimonial, "id" | "createdAt" | "updatedAt">) {
+    async addTestimonial(data: Omit<Testimonial, "createdAt" | "updatedAt">) {
       const newTestimonial: Testimonial = {
         ...data,
-        id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      this.testimonials.unshift(newTestimonial);
+      try {
+        const result = await testimonialService.create(newTestimonial);
+        this.testimonials.push({
+          ...newTestimonial,
+          ...result,
+          id: result?.id || newTestimonial.id,
+        });
+      } catch (err) {
+        console.error("Error adding testimonial:", err);
+      }
       return newTestimonial;
     },
 
@@ -216,18 +227,33 @@ export const useTestimonialsStore = defineStore("testimonials", {
       return null;
     },
 
-    deleteTestimonial(id: string) {
+    async deleteTestimonial(id: string) {
+      try {
+        var response = await testimonialService.delete(id);
+        if (!response) {
+          console.error("Failed to delete testimonial with id:", id);
+        }
+      } catch (err) {
+        console.error("Error deleting testimonial:", err);
+      }
       this.testimonials = this.testimonials.filter((t) => t.id !== id);
     },
 
-    toggleFeatured(id: string) {
-      const testimonial = this.testimonials.find((t) => t.id === id);
-      if (testimonial) {
-        testimonial.isFeatured = !testimonial.isFeatured;
-        testimonial.updatedAt = new Date().toISOString();
-        return testimonial.isFeatured;
+    async toggleFeatured(id: string) {
+      try {
+        var response = await testimonialService.toggleFeatured(id);
+        const testimonial = this.testimonials.find((t) => t.id === id);
+        if (testimonial) {
+          testimonial.isFeatured = !testimonial.isFeatured;
+          testimonial.updatedAt = new Date().toISOString();
+          return testimonial.isFeatured;
+        }
+
+        return null;
+      } catch (err) {
+        console.error("Error toggling featured:", err);
+        return null;
       }
-      return null;
     },
 
     changeStatus(id: string, status: TestimonialStatus) {

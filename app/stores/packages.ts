@@ -1,5 +1,9 @@
 import { defineStore } from "pinia";
 import { packageService } from "~/services/packageService";
+import type {
+  CreatePackageData,
+  UpdatePackageData,
+} from "~/services/packageService";
 
 export interface Package {
   id: string; // UUID from API
@@ -29,6 +33,7 @@ interface PackagesState {
   packages: Package[];
   addons: Addon[];
   isLoading: boolean;
+  isAddLoading: boolean;
   error: string | null;
   pagination: {
     page: number;
@@ -342,6 +347,7 @@ export const usePackagesStore = defineStore("packages", {
     packages: [],
     addons: initialAddons,
     isLoading: false,
+    isAddLoading: false,
     error: null,
     pagination: {
       page: 1,
@@ -383,7 +389,34 @@ export const usePackagesStore = defineStore("packages", {
         this.isLoading = false;
       }
     },
-    addPackage(data: Omit<Package, "id" | "totalSold">) {
+    async addPackage(data: CreatePackageData) {
+      this.isAddLoading = true;
+      try {
+        const newPackage = await packageService.create(data);
+        this.packages.unshift(newPackage);
+        return newPackage;
+      } catch {
+        // Fallback to local creation if API fails
+        return this.addPackageLocal({
+          name: data.name,
+          price: data.price,
+          discountPrice: data.discountPrice ?? data.price,
+          sessions: data.totalSessions,
+          duration: data.durationMinutes,
+          description: data.description,
+          features: data.benefits,
+          isActive: true,
+          isPopular: data.highlight ?? false,
+          packageType: data.packageType,
+          imageUrl: data.imageUrl ?? "",
+        });
+      } finally {
+        this.isAddLoading = false;
+      }
+    },
+
+    // Local creation fallback (when API is not available)
+    addPackageLocal(data: Omit<Package, "id" | "totalSold">) {
       const newPackage: Package = {
         ...data,
         id: crypto.randomUUID(),
@@ -393,7 +426,25 @@ export const usePackagesStore = defineStore("packages", {
       return newPackage;
     },
 
-    updatePackage(id: string, data: Partial<Package>) {
+    async updatePackage(id: string, data: UpdatePackageData) {
+      try {
+        const updatedPackage = await packageService.update(id, data);
+        if (updatedPackage) {
+          const index = this.packages.findIndex((p) => p.id === id);
+          if (index !== -1) {
+            this.packages[index] = updatedPackage;
+          }
+          return updatedPackage;
+        }
+        return null;
+      } catch {
+        // Fallback to local update if API fails
+        return this.updatePackageLocal(id, data);
+      }
+    },
+
+    // Local update fallback (when API is not available)
+    updatePackageLocal(id: string, data: Partial<Package>): Package | null {
       const index = this.packages.findIndex((p) => p.id === id);
       if (index !== -1) {
         this.packages[index] = { ...this.packages[index], ...data } as Package;
@@ -402,8 +453,18 @@ export const usePackagesStore = defineStore("packages", {
       return null;
     },
 
-    deletePackage(id: string) {
-      this.packages = this.packages.filter((p) => p.id !== id);
+    async deletePackage(id: string) {
+      try {
+        const success = await packageService.delete(id);
+        if (success) {
+          this.packages = this.packages.filter((p) => p.id !== id);
+        }
+        return success;
+      } catch {
+        // Fallback to local delete if API fails
+        this.packages = this.packages.filter((p) => p.id !== id);
+        return true;
+      }
     },
 
     duplicatePackage(id: string) {
@@ -423,13 +484,22 @@ export const usePackagesStore = defineStore("packages", {
       return null;
     },
 
-    togglePackageStatus(id: string) {
-      const pkg = this.packages.find((p) => p.id === id);
-      if (pkg) {
-        pkg.isActive = !pkg.isActive;
-        return pkg.isActive;
+    async togglePackageStatus(id: string) {
+      try {
+        const success = await packageService.toggleStatus(id);
+        if (success) {
+          const pkg = this.packages.find((p) => p.id === id);
+          if (pkg) {
+            pkg.isActive = !pkg.isActive;
+          }
+        }
+      } catch {
+        // Fallback to local toggle if API fails
+        const pkg = this.packages.find((p) => p.id === id);
+        if (pkg) {
+          pkg.isActive = !pkg.isActive;
+        }
       }
-      return null;
     },
 
     addAddon(data: Omit<Addon, "id" | "sold">) {

@@ -1,7 +1,7 @@
 import { useAuthStore } from "~/stores/auth";
 import { useTokenValidator } from "~/composables/useTokenValidator";
 
-export default defineNuxtRouteMiddleware((to) => {
+export default defineNuxtRouteMiddleware((to: any) => {
   // Rehydrate auth state from cookies if needed (handles SSR/client hydration)
   const authToken = useCookie("auth_token");
   const userData = useCookie("user_data");
@@ -29,7 +29,7 @@ export default defineNuxtRouteMiddleware((to) => {
     if (tokenValidator.isTokenExpired(authStore.accessToken)) {
       // Token is expired - clear auth and redirect
       tokenValidator.handleInvalidToken(loginRedirect);
-      return;
+      return navigateTo(loginRedirect);
     }
   }
 
@@ -46,8 +46,8 @@ export default defineNuxtRouteMiddleware((to) => {
     }
 
     // Check if user has admin role
-    const role = authStore.userRole?.toLowerCase();
-    if (role !== "admin") {
+    const role = authStore.userRole?.toLowerCase() || "";
+    if (!role.includes("admin")) {
       return navigateTo("/");
     }
 
@@ -79,7 +79,10 @@ export default defineNuxtRouteMiddleware((to) => {
   );
 
   // If user is authenticated as admin and trying to access auth pages, redirect to admin
-  if (authStore.isAuthenticated && authStore.userRole?.toLowerCase().includes("admin")) {
+  if (
+    authStore.isAuthenticated &&
+    authStore.userRole?.toLowerCase().includes("admin")
+  ) {
     if (to.path.startsWith("/auth/") || to.path === "/") {
       return navigateTo("/admin");
     }

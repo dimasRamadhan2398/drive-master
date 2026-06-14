@@ -4,7 +4,21 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: true,
   dev: true,
-  modules: ["@nuxt/ui", "@pinia/nuxt"],
+  modules: ["@nuxt/ui", "@pinia/nuxt", "nuxt-gtag", "@nuxtjs/i18n"],
+  i18n: {
+    locales: [
+      { code: "id", iso: "id-ID", name: "Bahasa Indonesia", file: "id.json" },
+      { code: "en", iso: "en-US", name: "English", file: "en.json" },
+    ],
+    defaultLocale: "id",
+    langDir: "locales",
+    strategy: "no_prefix",
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: "i18n_redirected",
+      redirectOn: "root",
+    },
+  },
   hooks: {
     "pages:extend"(pages) {
       function setMiddleware(pageList: any[]) {
@@ -29,7 +43,7 @@ export default defineNuxtConfig({
     public: {
       apiBase:
         process.env.NUXT_PUBLIC_MODE == "dev"
-          ? "http://localhost:8080/api/v1"
+          ? process.env.NUXT_PUBLIC_API_BASE_URL
           : "https://api.drivemaster.id/api/v1",
       // userApiBase:
       //   process.env.NUXT_PUBLIC_USER_API_BASE ||
@@ -47,7 +61,8 @@ export default defineNuxtConfig({
       //     ? process.env.NUXT_PUBLIC_API_BASE_URL + "/api/v1/bookings"
       //     : "http://localhost:8003/api/v1"),
       gaMeasurementId:
-        process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || "G-MOCK123456",
+        process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || "G-07PS1N5DZ5",
+      gaPropertyId: process.env.NUXT_PUBLIC_GA_PROPERTY_ID || "G-539969879",
     },
   },
   app: {
@@ -61,6 +76,13 @@ export default defineNuxtConfig({
       link: [
         { rel: "icon", type: "image/svg+xml", href: "/drive-master-icon.svg" },
       ],
+    },
+  },
+  gtag: {
+    id: process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || "G-07PS1N5DZ5",
+    config: {
+      page_title: "Drive Master Indonesia - Premium Driving Academy",
+      send_page_view: true,
     },
   },
   vite: {

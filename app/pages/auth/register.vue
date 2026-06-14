@@ -257,6 +257,15 @@ async function onSubmit(_event: FormSubmitEvent<any>) {
     }
     return;
   }
+
+  if (currentStep.value === 2) {
+    // Package selection step — navigate to verify
+    if (import.meta.client) {
+      sessionStorage.setItem("dm_selected_plan", formData.package);
+    }
+    navigateTo(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
+    return;
+  }
 }
 
 const stepItems = computed(() => {

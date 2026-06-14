@@ -90,7 +90,7 @@ export const mapApiToStudent = (item: StudentApiResponse): Student => {
   }
 
   return {
-    id: hashCode(item.userId),
+    id: item.userId,
     name: `${item.firstName} ${item.lastName}`.trim(),
     email: item.email,
     phone: item.phoneNumber || "",
@@ -247,5 +247,34 @@ export const studentService = {
       day: "numeric",
       year: "numeric",
     });
+  },
+
+  async searchStudents(query: string): Promise<PaginatedStudentsResult> {
+    const { user, extractPaginatedData } = useApiClients();
+    const lowerQuery = query.toLowerCase();
+    try {
+      const response = await user<PaginatedResponse<StudentApiResponse>>(
+        `/members/search?page=1&limit=10&search=${encodeURIComponent(query)}`,
+        {
+          method: "GET",
+        },
+      );
+
+      const { data, pagination } = extractPaginatedData(response);
+      return {
+        students: Array.isArray(data) ? data.map(mapApiToStudent) : [],
+        pagination,
+      };
+    } catch {
+      return {
+        students: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
   },
 };

@@ -16,7 +16,7 @@ export interface Article {
   excerpt: string;
   content: string;
   featuredImage?: string;
-  author: ArticleAuthor;
+  author: ArticleAuthor | "Admin Drive Master";
   tags: string[];
   status: "draft" | "published" | "archived";
   viewCount: number;
@@ -56,7 +56,12 @@ export interface PaginatedArticlesResult {
 export const articleService = {
   // GET /articles - Get all articles (admin)
   async fetchAll(
-    params: { page?: number; limit?: number; search?: string; status?: string } = {},
+    params: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+    } = {},
   ): Promise<PaginatedArticlesResult> {
     const { core, extractPaginatedData } = useApiClients();
 
@@ -84,10 +89,9 @@ export const articleService = {
   async fetchById(id: string): Promise<Article | null> {
     const { core, extractData } = useApiClients();
     try {
-      const response = await core<ApiResponse<Article>>(
-        `/articles/${id}`,
-        { method: "GET" },
-      );
+      const response = await core<ApiResponse<Article>>(`/articles/${id}`, {
+        method: "GET",
+      });
       return extractData(response);
     } catch {
       return null;
@@ -149,7 +153,9 @@ export const articleService = {
 
   // GET /articles/search - Search articles (public)
   async search(
-    params: { query: string; page?: number; limit?: number } = {},
+    params: { query: string; page?: number; limit?: number } = {
+      query: "",
+    },
   ): Promise<PaginatedArticlesResult> {
     const { core, extractPaginatedData } = useApiClients();
 

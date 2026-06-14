@@ -6,7 +6,7 @@ import type {
 } from "~/services/studentService";
 
 export interface Student {
-  id: number;
+  id: string;
   name: string;
   email: string;
   phone: string;
@@ -20,6 +20,7 @@ export interface Student {
 
 interface StudentsState {
   students: Student[];
+  searchResults: Student[];
   isLoading: boolean;
   error: string | null;
   // Pagination state
@@ -45,7 +46,7 @@ const packageSessionMap: { [key: string]: number } = {
 
 const initialStudents: Student[] = [
   {
-    id: 1,
+    id: "ee61c870-98ab-4c28-a03c-402103f94e56",
     name: "John Doe",
     email: "john@example.com",
     phone: "081234567890",
@@ -57,7 +58,7 @@ const initialStudents: Student[] = [
     status: "active",
   },
   {
-    id: 2,
+    id: "8cb66c0e-a7fd-4626-8cd5-b210198bf74d",
     name: "Sarah Putri",
     email: "sarah@example.com",
     phone: "081234567891",
@@ -69,7 +70,7 @@ const initialStudents: Student[] = [
     status: "active",
   },
   {
-    id: 3,
+    id: "7523a0e1-5be7-4cb5-83af-c8f8c355a53c",
     name: "Budi Santoso",
     email: "budi@example.com",
     phone: "081234567892",
@@ -81,7 +82,7 @@ const initialStudents: Student[] = [
     status: "completed",
   },
   {
-    id: 4,
+    id: "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
     name: "Amanda Chen",
     email: "amanda@example.com",
     phone: "081234567893",
@@ -93,7 +94,7 @@ const initialStudents: Student[] = [
     status: "active",
   },
   {
-    id: 5,
+    id: "f2g3h4i5-j6k7-8901-f2g3-h4i5j6k78901",
     name: "Ricky Wijaya",
     email: "ricky@example.com",
     phone: "081234567894",
@@ -109,6 +110,7 @@ const initialStudents: Student[] = [
 export const useStudentsStore = defineStore("students", {
   state: (): StudentsState => ({
     students: [],
+    searchResults: [],
     isLoading: false,
     error: null,
     pagination: {
@@ -143,7 +145,12 @@ export const useStudentsStore = defineStore("students", {
           this.pagination.page = page;
         }
 
-        const params: { page: number; limit: number; search?: string; status?: string } = {
+        const params: {
+          page: number;
+          limit: number;
+          search?: string;
+          status?: string;
+        } = {
           page: this.pagination.page,
           limit: this.pagination.limit,
         };
@@ -236,7 +243,7 @@ export const useStudentsStore = defineStore("students", {
         "id" | "progress" | "completedSessions" | "joinDate" | "totalSessions"
       >,
     ): Student {
-      const newId = Math.max(...this.students.map((s) => s.id), 0) + 1;
+      const newId = crypto.randomUUID();
       const totalSessions = studentService.getTotalSessions(data.package);
 
       const newStudent: Student = {
@@ -256,12 +263,9 @@ export const useStudentsStore = defineStore("students", {
       return newStudent;
     },
 
-    async updateStudent(id: number, data: UpdateStudentData) {
-      // Convert numeric ID to userId string (for API)
-      const userId = String(id);
-
+    async updateStudent(id: string, data: UpdateStudentData) {
       try {
-        const updatedStudent = await studentService.update(userId, data);
+        const updatedStudent = await studentService.update(id, data);
         if (updatedStudent) {
           const index = this.students.findIndex((s) => s.id === id);
           if (index !== -1) {
@@ -281,7 +285,7 @@ export const useStudentsStore = defineStore("students", {
     },
 
     // Local update fallback (when API is not available)
-    updateStudentLocal(id: number, data: Partial<Student>): Student | null {
+    updateStudentLocal(id: string, data: Partial<Student>): Student | null {
       const index = this.students.findIndex((s) => s.id === id);
       if (index !== -1) {
         const existing = this.students[index];
@@ -319,10 +323,9 @@ export const useStudentsStore = defineStore("students", {
       return null;
     },
 
-    async deleteStudent(id: number) {
-      const userId = String(id);
+    async deleteStudent(id: string) {
       try {
-        const success = await studentService.delete(userId);
+        const success = await studentService.delete(id);
         if (success) {
           this.students = this.students.filter((s) => s.id !== id);
         }
@@ -334,7 +337,7 @@ export const useStudentsStore = defineStore("students", {
       }
     },
 
-    getStudentById(id: number) {
+    getStudentById(id: string) {
       return this.students.find((s) => s.id === id);
     },
 
@@ -348,11 +351,23 @@ export const useStudentsStore = defineStore("students", {
       });
     },
 
-    async updateSessionProgress(id: number, completedSessions: number) {
-      const userId = String(id);
+    async searchStudents(query: string): Promise<Student[]> {
+      try {
+        const result = await studentService.searchStudents(query);
+        // Store results separately from main students list
+        this.searchResults = result.students || [];
+        return this.searchResults;
+      } catch (e) {
+        console.error("Error searching students:", e);
+        this.searchResults = [];
+        return [];
+      }
+    },
+
+    async updateSessionProgress(id: string, completedSessions: number) {
       try {
         const updatedStudent = await studentService.updateProgress(
-          userId,
+          id,
           completedSessions,
         );
         if (updatedStudent) {
@@ -382,6 +397,10 @@ export const useStudentsStore = defineStore("students", {
           student.status = "completed";
         }
       }
+    },
+
+    clearSearchResults() {
+      this.searchResults = [];
     },
 
     reset() {
