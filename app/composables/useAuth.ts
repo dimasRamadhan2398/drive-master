@@ -1,40 +1,34 @@
 export const useAuth = () => {
-  const user = useState('auth:user', () => null as { name: string, avatar?: string, email: string, role?: string } | null)
-  const admin = useState('auth:admin', () => null as { name: string, email: string, role: string } | null)
-
-  // Sync with Pinia store for middleware compatibility
+  // Use Pinia store as the single source of truth
   const authStore = useAuthStore()
 
-  const isLoggedIn = computed(() => !!user.value || authStore.isAuthenticated)
-  const isAdminLoggedIn = computed(() => !!admin.value || authStore.userRole?.toLowerCase().includes('admin') === true)
+  const user = computed(() => {
+    if (!authStore.user) return null
+    return {
+      name: `${authStore.user.firstName} ${authStore.user.lastName}`,
+      email: authStore.user.email,
+      avatar: (authStore.user as any).avatar || undefined,
+      role: authStore.userRole || undefined
+    }
+  })
 
-  const login = (userData: { name: string, email: string, avatar?: string, role?: string }) => {
-    user.value = userData
+  const isLoggedIn = computed(() => authStore.isAuthenticated)
+  const isAdminLoggedIn = computed(() => authStore.userRole?.toLowerCase().includes('admin') === true)
+
+  const logout = async () => {
+    await authStore.logout()
+    return navigateTo('/auth/login')
   }
 
-  const adminLogin = (adminData: { name: string, email: string, role: string }) => {
-    admin.value = adminData
-  }
-
-  const logout = () => {
-    user.value = null
-    authStore.clearAuth()
-    navigateTo('/auth/login')
-  }
-
-  const adminLogout = () => {
-    admin.value = null
-    authStore.clearAuth()
-    navigateTo('/admin/login')
+  const adminLogout = async () => {
+    await authStore.logout()
+    return navigateTo('/admin/login')
   }
 
   return {
     user,
-    admin,
     isLoggedIn,
     isAdminLoggedIn,
-    login,
-    adminLogin,
     logout,
     adminLogout
   }

@@ -106,10 +106,6 @@ export const useTokenValidator = () => {
   const handleInvalidToken = (redirectPath: string = "/auth/login") => {
     const authStore = useAuthStore();
     authStore.clearAuth();
-
-    if (import.meta.client) {
-      window.location.href = redirectPath;
-    }
   };
 
   /**

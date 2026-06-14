@@ -247,14 +247,12 @@ export const useAuthStore = defineStore("auth", {
       this.refreshTokenValue = null;
       this.error = null;
 
-      if (import.meta.client) {
-        const tokenCookie = useCookie("auth_token");
-        const refreshCookie = useCookie("refresh_token");
-        const userCookie = useCookie("user_data");
-        tokenCookie.value = null;
-        refreshCookie.value = null;
-        userCookie.value = null;
-      }
+      const tokenCookie = useCookie("auth_token");
+      const refreshCookie = useCookie("refresh_token");
+      const userCookie = useCookie("user_data");
+      tokenCookie.value = null;
+      refreshCookie.value = null;
+      userCookie.value = null;
     },
 
     clearError() {

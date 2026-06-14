@@ -29,7 +29,7 @@ export default defineNuxtRouteMiddleware((to) => {
     if (tokenValidator.isTokenExpired(authStore.accessToken)) {
       // Token is expired - clear auth and redirect
       tokenValidator.handleInvalidToken(loginRedirect);
-      return;
+      return navigateTo(loginRedirect);
     }
   }
 
@@ -46,8 +46,8 @@ export default defineNuxtRouteMiddleware((to) => {
     }
 
     // Check if user has admin role
-    const role = authStore.userRole?.toLowerCase();
-    if (role !== "admin") {
+    const role = authStore.userRole?.toLowerCase() || "";
+    if (!role.includes("admin")) {
       return navigateTo("/");
     }
 
