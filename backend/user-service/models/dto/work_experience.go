@@ -3,22 +3,22 @@ package dto
 import "time"
 
 type CreateWorkExperienceRequest struct {
-	CompanyName string    `json:"companyName" binding:"required"`
-	Role        string    `json:"role" binding:"required"`
-	StartDate   time.Time `json:"startDate" binding:"required"`
+	CompanyName string     `json:"companyName" binding:"required"`
+	Role        string     `json:"role" binding:"required"`
+	StartDate   time.Time  `json:"startDate" binding:"required"`
 	EndDate     *time.Time `json:"endDate"`
-	Description string    `json:"description"`
+	Description string     `json:"description"`
 }
 
 type UpdateWorkExperienceRequest struct {
-    CompanyName    *string    `json:"companyName"    binding:"omitempty,min=2"`
-    Role           *string    `json:"role"           binding:"omitempty,min=2"`
-    StartDate      *time.Time `json:"startDate"      binding:"omitempty"`
-    Description    *string    `json:"description"    binding:"omitempty"`
+	CompanyName *string    `json:"companyName"    binding:"omitempty,min=2"`
+	Role        *string    `json:"role"           binding:"omitempty,min=2"`
+	StartDate   *time.Time `json:"startDate"      binding:"omitempty"`
+	Description *string    `json:"description"    binding:"omitempty"`
 
-    // EndDate uses explicit flag pattern
-    EndDate        *time.Time `json:"endDate"`        // the value
-    ClearEndDate   *bool      `json:"clearEndDate"` 
+	// EndDate uses explicit flag pattern
+	EndDate      *time.Time `json:"endDate"` // the value
+	ClearEndDate *bool      `json:"clearEndDate"`
 }
 
 type CreateWorkExperiencesRequest struct {

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"booking-service/clients/core"
 	"booking-service/clients/user"
 	"booking-service/controllers"
 	"booking-service/docs"
 	"booking-service/models"
-	"booking-service/models/dto"
 	"booking-service/pkg/kafka"
 	"booking-service/pkg/middlewares"
 	"booking-service/pkg/scheduler"
@@ -89,6 +89,7 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	// Initialize user-service client and availability service
 	userClient := user.NewUserClient(getEnv("USER_SERVICE_URL", "http://localhost:8001"))
+	coreClient := core.NewCoreClient(getEnv("CORE_SERVICE_URL", "http://localhost:8002"))
 	availabilityService := services.NewAvailabilityService(userClient)
 
 	// Initialize user anonymization service for handling user.deleted events
@@ -103,7 +104,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	certificationService := services.NewCertificationService(certificationRepo, userCertRepo, userClient, eventPublisher)
 	enrollmentService := services.NewEnrollmentService(enrollmentRepo, entitlementRepo)
 
-	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, availabilityService)
+	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, availabilityService, userClient, coreClient)
 	paymentService := services.NewPaymentService(paymentRepo, enrollmentRepo)
 
 	// Create service registry
@@ -178,19 +179,58 @@ func runServe(cmd *cobra.Command, args []string) {
 func runMigrations(db *gorm.DB) {
 	log.Println("Running database migrations...")
 
+	// Fix column type mismatch before AutoMigrate
+	// The user_entitlements.enrollment_id column might be bigint from old schema
+	// but the model expects uuid
+	fixEnrollmentIDColumnType(db)
+
 	if err := db.AutoMigrate(
 		&models.Enrollment{},
 		&models.UserEntitlement{},
 		&models.DrivingSession{},
 		&models.Certification{},
 		&models.UserCertification{},
-		&dto.Schedule{},
+		&models.Schedule{},
 		&models.Payment{},
 	); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}
 
 	log.Println("Database migrations completed successfully")
+}
+
+// fixEnrollmentIDColumnType checks and alters the enrollment_id column type in user_entitlements table
+// This handles schema drift where the enrollment tables might have bigint IDs but should be uuid
+func fixEnrollmentIDColumnType(db *gorm.DB) {
+	// Check if enrollments.id is bigint (old schema) and needs to be converted
+	var enrollmentIDType string
+	err := db.Raw(`
+		SELECT data_type
+		FROM information_schema.columns
+		WHERE table_name = 'enrollments'
+		AND column_name = 'id'
+	`).Scan(&enrollmentIDType).Error
+
+	if err != nil {
+		log.Printf("Could not check enrollments.id column type: %v", err)
+		return
+	}
+
+	// If enrollments.id is still bigint, we have a schema mismatch - drop and recreate both tables
+	if enrollmentIDType == "bigint" {
+		log.Println("Found schema mismatch: enrollments.id is bigint but should be uuid. Dropping tables for recreation...")
+		
+		// Drop dependent tables first (due to foreign keys)
+		tables := []string{"user_entitlements", "driving_sessions", "payments", "enrollments"}
+		for _, table := range tables {
+			err = db.Exec(`DROP TABLE IF EXISTS "` + table + `" CASCADE`).Error
+			if err != nil {
+				log.Printf("Warning: could not drop %s table: %v", table, err)
+			} else {
+				log.Printf("Successfully dropped %s table", table)
+			}
+		}
+	}
 }
 
 // serviceRegistryImpl implements services.IServiceRegistry

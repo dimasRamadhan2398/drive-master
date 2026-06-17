@@ -79,8 +79,8 @@ async function onSubmit() {
   
   loading.value = false
   
-  // Redirect to payment page
-  navigateTo(`/auth/payment?method=${formData.paymentMethod}&plan=${selectedPlan.value}&email=${formData.email}&phone=${formData.phone}`)
+  // // Redirect to payment page
+  // navigateTo(`/auth/payment?method=${formData.paymentMethod}&plan=${selectedPlan.value}&email=${formData.email}&phone=${formData.phone}`)
 }
 
 const packagePrices = {

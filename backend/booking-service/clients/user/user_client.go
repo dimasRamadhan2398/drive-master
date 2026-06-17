@@ -1,14 +1,17 @@
 package user
 
 import (
+	"booking-service/pkg/logger"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -16,13 +19,14 @@ import (
 type IUserClient interface {
 	GetInstructorRecurringSchedules(ctx context.Context, instructorID uuid.UUID) ([]RecurringScheduleResponse, error)
 	GetAllInstructors(ctx context.Context) ([]InstructorWithSchedules, error)
-	GetUserByID(ctx context.Context, userID uint) (*UserResponse, error)
+	GetUserByID(ctx context.Context, userID uuid.UUID) (*UserInfo, error)
 }
 
 // UserClient implements IUserClient
 type UserClient struct {
 	baseURL    string
 	httpClient *http.Client
+	jwtSecret  string
 }
 
 // InstructorWithSchedules represents an instructor with their recurring schedules
@@ -52,7 +56,34 @@ func NewUserClient(baseURL string) IUserClient {
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		jwtSecret: os.Getenv("JWT_SECRET"),
 	}
+}
+
+type Claims struct {
+	User *UserInfo
+	jwt.RegisteredClaims
+}
+
+
+// generateServiceToken generates a JWT token for service-to-service communication
+func (c *UserClient) generateServiceToken() (string, error) {
+	uuidResult, err := uuid.Parse("cf475ead-91bf-4a55-a47e-cf93279240b6")
+	if err != nil {
+		return "", fmt.Errorf("failed to parse user ID: %w", err)
+	}
+    claims := &Claims{
+        User: &UserInfo{
+            ID: uuidResult,
+			Email: "admin@example.com",			
+        },
+        RegisteredClaims: jwt.RegisteredClaims{
+            ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
+        },
+    }
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(c.jwtSecret))
 }
 
 // GetInstructorRecurringSchedules retrieves all active recurring schedules for an instructor
@@ -66,6 +97,15 @@ func (c *UserClient) GetInstructorRecurringSchedules(ctx context.Context, instru
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+
+	// Add JWT token for service-to-service authentication
+	token, err := c.generateServiceToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate service token: %w", err)
+	}
+
+	logger.Info("token adalah",logger.LogField("token", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -106,6 +146,13 @@ func (c *UserClient) GetAllInstructors(ctx context.Context) ([]InstructorWithSch
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+
+	// Add JWT token for service-to-service authentication
+	token, err := c.generateServiceToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate service token: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -159,18 +206,10 @@ func (c *UserClient) doRequest(ctx context.Context, method, path string, body in
 	return c.httpClient.Do(req)
 }
 
-// UserResponse represents a user from user-service
-type UserResponse struct {
-	ID        uint   `json:"id"`
-	Email     string `json:"email"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Username  string `json:"username"`
-}
 
 // GetUserByID retrieves a user by ID from user-service
-func (c *UserClient) GetUserByID(ctx context.Context, userID uint) (*UserResponse, error) {
-	url := fmt.Sprintf("%s/api/v1/users/%d", c.baseURL, userID)
+func (c *UserClient) GetUserByID(ctx context.Context, userID uuid.UUID) (*UserInfo, error) {
+	url := fmt.Sprintf("%s/api/v1/users/%s", c.baseURL, userID)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -179,6 +218,13 @@ func (c *UserClient) GetUserByID(ctx context.Context, userID uint) (*UserRespons
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+
+	// Add JWT token for service-to-service authentication
+	token, err := c.generateServiceToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate service token: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -200,7 +246,7 @@ func (c *UserClient) GetUserByID(ctx context.Context, userID uint) (*UserRespons
 		return nil, fmt.Errorf("API error: %s", apiResp.Message)
 	}
 
-	var user UserResponse
+	var user UserInfo
 	if err := json.Unmarshal(apiResp.Data, &user); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal user: %w", err)
 	}

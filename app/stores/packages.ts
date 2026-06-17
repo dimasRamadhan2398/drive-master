@@ -41,6 +41,7 @@ interface PackagesState {
     total: number;
     totalPages: number;
   };
+  filteredByDate: Package[];
 }
 
 const initialPackages: Package[] = [
@@ -342,6 +343,15 @@ const initialAddons: Addon[] = [
   },
 ];
 
+// Helper to get today's date in YYYY-MM-DD format
+const getTodayDate = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = (today.getMonth() + 1).toString().padStart(2, "0");
+  const day = today.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const usePackagesStore = defineStore("packages", {
   state: (): PackagesState => ({
     packages: [],
@@ -355,6 +365,7 @@ export const usePackagesStore = defineStore("packages", {
       total: 0,
       totalPages: 0,
     },
+    filteredByDate: [],
   }),
 
   getters: {

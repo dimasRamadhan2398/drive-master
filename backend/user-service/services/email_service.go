@@ -27,7 +27,7 @@ type MailtrapEmailService struct {
 	*base.BaseService
 	fromEmail string
 	fromName  string
-	dialer	  *gomail.Dialer
+	dialer    *gomail.Dialer
 }
 
 func NewMailtrapEmailService(smtpHost string, smtpPort int, smtpUser, smtpPassword, fromEmail, fromName string) IMailtrapEmailService {
@@ -44,23 +44,22 @@ func NewMailtrapEmailService(smtpHost string, smtpPort int, smtpUser, smtpPasswo
 }
 
 func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmailRequest) error {
-		if len(input.To) == 0 {
+	if len(input.To) == 0 {
 		return apperrors.ErrBadRequest
 	}
- 
+
 	m := gomail.NewMessage()
-	
- 
+
 	// From
 	m.SetAddressHeader("From", s.fromEmail, s.fromName)
- 
+
 	// To
 	toAddrs := make([]string, len(input.To))
 	for i, addr := range input.To {
 		toAddrs[i] = addr.Email
 	}
 	m.SetHeader("To", toAddrs...)
- 
+
 	// CC (optional)
 	if len(input.CC) > 0 {
 		ccAddrs := make([]string, len(input.CC))
@@ -69,7 +68,7 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		}
 		m.SetHeader("Cc", ccAddrs...)
 	}
- 
+
 	// BCC (optional)
 	if len(input.BCC) > 0 {
 		bccAddrs := make([]string, len(input.BCC))
@@ -78,9 +77,9 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		}
 		m.SetHeader("Bcc", bccAddrs...)
 	}
- 
+
 	m.SetHeader("Subject", input.Subject)
- 
+
 	// Always set plain text; add HTML as alternative if provided
 	if input.Text != "" {
 		m.SetBody("text/plain", input.Text)
@@ -88,23 +87,23 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 	if input.HTML != "" {
 		m.AddAlternative("text/html", input.HTML)
 	}
- 
+
 	// Attachments (optional)
 	for _, att := range input.Attachments {
 		m.Attach(att.Filename)
 	}
- 
+
 	if err := s.dialer.DialAndSend(m); err != nil {
 		s.LogInfo("sending email",
- 		   logger.LogField("from", s.fromEmail),
-    		logger.LogField("to", toAddrs),
-    		logger.LogField("subject", input.Subject),
+			logger.LogField("from", s.fromEmail),
+			logger.LogField("to", toAddrs),
+			logger.LogField("subject", input.Subject),
 		)
 		s.LogError("Failed to send email via SMTP", logger.LogField("error", err))
 		return apperrors.ErrInternalServer
 	}
- 
-	return nil	
+
+	return nil
 }
 
 // SendEmail sends an email via Mailtrap
@@ -322,7 +321,7 @@ The Team`, otp)
 		Tags:    []string{"otp", "email-verification"},
 	})
 
-	if(err != nil) {
+	if err != nil {
 		s.LogError("Failed to send OTP email", logger.LogField("error", err))
 		return err
 	}

@@ -35,16 +35,17 @@ type CreateBenefitRequest struct {
 }
 
 type UpdatePackageRequest struct {
-	Name            string              `json:"name"`
-	Description     string              `json:"description"`
-	PackageType     models.PackageType `json:"packageType"`
-	Price           float64             `json:"price"`
-	DiscountPrice   float64             `json:"discountPrice"`
-	DurationMinutes int                 `json:"durationMinutes"`
-	TotalSessions   int                 `json:"totalSessions"`
-	Status          models.PackageStatus `json:"status"`
-	ImageURL        string              `json:"imageUrl"`
-	Highlight 		bool					`json:"highlight"`
+	Name            string              `json:"name" binding:"omitempty,min=1,max=255"`
+	Description     string              `json:"description" binding:"max=2000"`
+	PackageType     models.PackageType `json:"packageType" binding:"omitempty,oneof=bronze silver gold platinum"`
+	Price           float64             `json:"price" binding:"omitempty,gte=0"`
+	DiscountPrice   float64             `json:"discountPrice" binding:"omitempty,gte=0"`
+	DurationMinutes int                 `json:"durationMinutes" binding:"omitempty,gte=1"`
+	TotalSessions   int                 `json:"totalSessions" binding:"omitempty,gte=1"`
+	Status          models.PackageStatus `json:"status" binding:"omitempty,oneof=active inactive"`
+	ImageURL        string              `json:"imageUrl" binding:"omitempty,url,max=500"`
+	Benefits        []BenefitInput       `json:"benefits"`
+	Highlight       bool                `json:"highlight"`
 }
 
 type PackageResponse struct {
@@ -58,7 +59,8 @@ type PackageResponse struct {
 	TotalSessions   int                   `json:"totalSessions"`
 	Status          models.PackageStatus  `json:"status"`
 	ImageURL        string                `json:"imageUrl"`
-	Benefits        []BenefitResponse     `json:"benefits,omitempty"`
+	Features        models.StringArray    `json:"features,omitempty"`
+	Highlight       bool                  `json:"highlight"`
 	CreatedAt       time.Time             `json:"createdAt"`
 	UpdatedAt       time.Time             `json:"updatedAt"`
 }

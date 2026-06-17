@@ -8,19 +8,20 @@ import (
 	"booking-service/models/dto"
 	"booking-service/pkg/base"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type ICertificationRepository interface {
 	Create(ctx context.Context, certification *models.Certification) error
 	CreateTx(tx *gorm.DB, certification *models.Certification) error
-	FindByID(ctx context.Context, id uint) (*models.Certification, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*models.Certification, error)
 	Update(ctx context.Context, certification *models.Certification) error
 	Delete(ctx context.Context, certification *models.Certification) error
 	FindAll(ctx context.Context) ([]models.Certification, error)
 	FindByPackageID(ctx context.Context, packageID uint) ([]models.Certification, error)
 	FindByStatus(ctx context.Context, status models.CertificationStatus) ([]models.Certification, error)
-	UpdateStatus(ctx context.Context, id uint, status models.CertificationStatus) error
+	UpdateStatus(ctx context.Context, id uuid.UUID, status models.CertificationStatus) error
 	CountAll(ctx context.Context) (int64, error)
 	CountByStatus(ctx context.Context, status models.CertificationStatus) (int64, error)
 	GetStats(ctx context.Context) (*CertificationStats, error)
@@ -45,7 +46,7 @@ func (r *CertificationRepository) CreateTx(tx *gorm.DB, certification *models.Ce
 	return r.BaseRepository.CreateTx(tx, certification)
 }
 
-func (r *CertificationRepository) FindByID(ctx context.Context, id uint) (*models.Certification, error) {
+func (r *CertificationRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Certification, error) {
 	var certification models.Certification
 	if err := r.BaseRepository.FindByIDWithPreload(&certification, id); err != nil {
 		return nil, err
@@ -92,7 +93,7 @@ func (r *CertificationRepository) FindByStatus(ctx context.Context, status model
 	return certifications, nil
 }
 
-func (r *CertificationRepository) UpdateStatus(ctx context.Context, id uint, status models.CertificationStatus) error {
+func (r *CertificationRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status models.CertificationStatus) error {
 	return r.BaseRepository.Exec(
 		"UPDATE certifications SET status = ?, updated_at = ? WHERE id = ?",
 		status, time.Now(), id,

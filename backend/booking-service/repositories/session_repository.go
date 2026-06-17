@@ -29,6 +29,7 @@ type ISessionRepository interface {
 	UpdateStatus(ctx context.Context, id uint, status string) error
 	StartSession(ctx context.Context, id uint, startedAt time.Time) error
 	CompleteSession(ctx context.Context, id uint, completedAt time.Time) error
+	CancelSession(ctx context.Context, id uint) error
 	GetStats(ctx context.Context) (*SessionStats, error)
 	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
 	CountByStatus(ctx context.Context, status string) (int64, error)
@@ -206,6 +207,13 @@ func (r *SessionRepository) GetStats(ctx context.Context) (*SessionStats, error)
 	}
 
 	return stats, nil
+}
+
+func (r *SessionRepository) CancelSession(ctx context.Context, id uint) error {
+	return r.BaseRepository.Exec(
+		"UPDATE driving_sessions SET status = 'cancelled', updated_at = ? WHERE id = ?",
+		time.Now(), id,
+	)
 }
 
 func (r *SessionRepository) AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error {

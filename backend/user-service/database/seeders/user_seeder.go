@@ -30,13 +30,13 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 	users := []struct {
 		user              models.User
 		memberProfile     *models.MemberProfile
-		instructorProfile  *models.InstructorProfile
+		instructorProfile *models.InstructorProfile
 	}{
 		{
 			user: models.User{
 				Username:     "admin",
 				PasswordHash: string(hashedPassword),
-				EmailAddress:        "admin@example.com",
+				EmailAddress: "admin@example.com",
 				FirstName:    "Sandy",
 				LastName:     "Arkosh",
 				PhoneNumber:  "+6281234567890",
@@ -50,7 +50,7 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 			user: models.User{
 				Username:     "super_admin",
 				PasswordHash: string(hashedPassword),
-				EmailAddress:        "superadmin@example.com",
+				EmailAddress: "superadmin@example.com",
 				FirstName:    "Super",
 				LastName:     "Admin",
 				PhoneNumber:  "+6281234567891",
@@ -64,7 +64,7 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 			user: models.User{
 				Username:     "instructor1",
 				PasswordHash: string(hashedPassword),
-				EmailAddress:        "instructor1@example.com",
+				EmailAddress: "instructor1@example.com",
 				FirstName:    "Rahmat",
 				LastName:     "Rahkoda",
 				PhoneNumber:  "+6281234567892",
@@ -74,17 +74,17 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Address:      "Bandung, Indonesia",
 			},
 			instructorProfile: &models.InstructorProfile{
-				UserID:                 uuid.Nil, // Will be set after user creation
-				LicenseNumber:          "DRIVING-12345",
-				LicenseExpiry:          time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC),
-				BNSPCertificateNumber:   "BNSP-2024-123456",
-				Bio:                    "Experienced driving instructor with 10+ years of experience",
-				PhotoURL:               "https://example.com/images/instructor1-profile.jpg",
-				IsActive:               true,
-				NumberOfStudents:       150,
-				YearsOfExperience:      10,
-				SessionsCompleted:      500,
-				AverageRating:          4.8,
+				UserID:                uuid.Nil, // Will be set after user creation
+				LicenseNumber:         "DRIVING-12345",
+				LicenseExpiry:         time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC),
+				BNSPCertificateNumber: "BNSP-2024-123456",
+				Bio:                   "Experienced driving instructor with 10+ years of experience",
+				PhotoURL:              "https://example.com/images/instructor1-profile.jpg",
+				IsActive:              true,
+				NumberOfStudents:      150,
+				YearsOfExperience:     10,
+				SessionsCompleted:     500,
+				AverageRating:         4.8,
 				Description:           "Mantan Pembalap WRC & WGTC pada 2002-2007",
 				Specialization:        "Urban Driving & Parking Expert",
 			},
@@ -93,7 +93,7 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 			user: models.User{
 				Username:     "instructor2",
 				PasswordHash: string(hashedPassword),
-				EmailAddress:        "instructor2@example.com",
+				EmailAddress: "instructor2@example.com",
 				FirstName:    "Irena",
 				LastName:     "Setiawan",
 				PhoneNumber:  "+6281234567893",
@@ -103,18 +103,18 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Address:      "Surabaya, Indonesia",
 			},
 			instructorProfile: &models.InstructorProfile{
-				UserID:                 uuid.Nil,
-				LicenseNumber:          "DRIVING-67890",
-				LicenseExpiry:          time.Date(2027, 6, 30, 0, 0, 0, 0, time.UTC),
-				BNSPCertificateNumber:  "BNSP-2024-789012",
-				Bio:                    "Professional driving instructor specializing in defensive driving",
-				PhotoURL:               "https://example.com/images/instructor2-profile.jpg",
-				IsActive:               true,
+				UserID:                uuid.Nil,
+				LicenseNumber:         "DRIVING-67890",
+				LicenseExpiry:         time.Date(2027, 6, 30, 0, 0, 0, 0, time.UTC),
+				BNSPCertificateNumber: "BNSP-2024-789012",
+				Bio:                   "Professional driving instructor specializing in defensive driving",
+				PhotoURL:              "https://example.com/images/instructor2-profile.jpg",
+				IsActive:              true,
 				NumberOfStudents:      85,
 				YearsOfExperience:     5,
 				Description:           "Saya adalah pengendara mobil handal",
 				Specialization:        "Advanced Safety & Highway Driving",
-				SessionsCompleted:      300,
+				SessionsCompleted:     300,
 				AverageRating:         4.6,
 			},
 		},
@@ -122,15 +122,15 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 			user: models.User{
 				Username:     "member1",
 				PasswordHash: string(hashedPassword),
-				EmailAddress:        "member1@example.com",
+				EmailAddress: "member1@example.com",
 				PhoneNumber:  "+6281234567894",
 				DateOfBirth:  time.Date(2000, 11, 25, 0, 0, 0, 0, time.UTC),
 				RoleID:       roleMap["member"],
 				Image:        "https://example.com/images/member1.jpg",
 				Address:      "Jakarta, Indonesia",
 			},
-			memberProfile: &models.MemberProfile{	
-				UserID:             uuid.Nil, // Will be set after user creation
+			memberProfile: &models.MemberProfile{
+				UserID:            uuid.Nil, // Will be set after user creation
 				SessionsCompleted: 12,
 				TrainingTime:      600,
 				AverageRating:     4.5,
@@ -140,7 +140,7 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 			user: models.User{
 				Username:     "member2",
 				PasswordHash: string(hashedPassword),
-				EmailAddress:        "member2@example.com",
+				EmailAddress: "member2@example.com",
 				FirstName:    "Rizal",
 				LastName:     "Kokona",
 				PhoneNumber:  "+6281234567895",
@@ -150,10 +150,10 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Address:      "Bekasi, Indonesia",
 			},
 			memberProfile: &models.MemberProfile{
-				UserID:             uuid.Nil,
+				UserID:            uuid.Nil,
 				SessionsCompleted: 8,
-				TrainingTime:       400,
-				AverageRating:      4.2,
+				TrainingTime:      400,
+				AverageRating:     4.2,
 			},
 		},
 	}

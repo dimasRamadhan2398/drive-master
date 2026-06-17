@@ -16,18 +16,18 @@ import (
 type IEntitlementRepository interface {
 	Create(ctx context.Context, entitlement *models.UserEntitlement) error
 	CreateTx(tx *gorm.DB, entitlement *models.UserEntitlement) error
-	FindByID(ctx context.Context, id uint) (*models.UserEntitlement, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*models.UserEntitlement, error)
 	Update(ctx context.Context, entitlement *models.UserEntitlement) error
 	Delete(ctx context.Context, entitlement *models.UserEntitlement) error
 	FindAll(ctx context.Context) ([]models.UserEntitlement, error)
-	FindByEnrollmentID(ctx context.Context, enrollmentID uint) ([]models.UserEntitlement, error)
+	FindByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) ([]models.UserEntitlement, error)
 	FindByUserID(ctx context.Context, userID uint) ([]models.UserEntitlement, error)
 	FindBySourceType(ctx context.Context, sourceType string) ([]models.UserEntitlement, error)
 	FindActiveByUserID(ctx context.Context, userID uint) ([]models.UserEntitlement, error)
-	UpdateUsedSessions(ctx context.Context, id uint, usedSessions int) error
+	UpdateUsedSessions(ctx context.Context, id uuid.UUID, usedSessions int) error
 	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
 	CountAll(ctx context.Context) (int64, error)
-	CountByEnrollmentID(ctx context.Context, enrollmentID uint) (int64, error)
+	CountByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) (int64, error)
 	Exists(ctx context.Context, condition any, args ...any) (bool, error)
 	ToResponse(entitlement *models.UserEntitlement) dto.EntitlementResponse
 	ToListResponse(entitlements []models.UserEntitlement, total int64, page, limit int) dto.EntitlementListResponse
@@ -50,7 +50,7 @@ func (r *EntitlementRepository) CreateTx(tx *gorm.DB, entitlement *models.UserEn
 	return r.BaseRepository.CreateTx(tx, entitlement)
 }
 
-func (r *EntitlementRepository) FindByID(ctx context.Context, id uint) (*models.UserEntitlement, error) {
+func (r *EntitlementRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.UserEntitlement, error) {
 	var entitlement models.UserEntitlement
 	if err := r.BaseRepository.FindByIDWithPreload(&entitlement, id); err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (r *EntitlementRepository) FindAll(ctx context.Context) ([]models.UserEntit
 	return entitlements, nil
 }
 
-func (r *EntitlementRepository) FindByEnrollmentID(ctx context.Context, enrollmentID uint) ([]models.UserEntitlement, error) {
+func (r *EntitlementRepository) FindByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) ([]models.UserEntitlement, error) {
 	var entitlements []models.UserEntitlement
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"enrollment_id": enrollmentID}).
@@ -122,7 +122,7 @@ func (r *EntitlementRepository) FindActiveByUserID(ctx context.Context, userID u
 	return entitlements, nil
 }
 
-func (r *EntitlementRepository) UpdateUsedSessions(ctx context.Context, id uint, usedSessions int) error {
+func (r *EntitlementRepository) UpdateUsedSessions(ctx context.Context, id uuid.UUID, usedSessions int) error {
 	return r.BaseRepository.Exec(
 		"UPDATE user_entitlements SET used_sessions = ?, updated_at = ? WHERE id = ?",
 		usedSessions, time.Now(), id,
@@ -146,7 +146,7 @@ func (r *EntitlementRepository) CountAll(ctx context.Context) (int64, error) {
 	return r.BaseRepository.Count(&models.UserEntitlement{}, base.NewQueryOptions())
 }
 
-func (r *EntitlementRepository) CountByEnrollmentID(ctx context.Context, enrollmentID uint) (int64, error) {
+func (r *EntitlementRepository) CountByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) (int64, error) {
 	opts := base.NewQueryOptions().WithWhere(map[string]any{"enrollment_id": enrollmentID})
 	return r.BaseRepository.Count(&models.UserEntitlement{}, opts)
 }

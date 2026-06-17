@@ -51,6 +51,7 @@ type ArticleService struct {
 	articleRepo    repositories.IArticleRepository
 	faqRepo        repositories.IFAQRepository
 	eventPublisher *kafka.EventPublisher
+	mediaSvc IMediaService
 }
 
 func NewArticleService(articleRepo repositories.IArticleRepository, faqRepo repositories.IFAQRepository, eventPublisher *kafka.EventPublisher) IArticleService {

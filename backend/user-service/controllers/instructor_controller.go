@@ -14,13 +14,13 @@ import (
 )
 
 type InstructorController struct {
-	userService            services.IUserService
-	authService            services.IAuthService
-	memberService          services.IMemberService
-	instructorService      services.IInstructorService
-	roleService            services.IRoleService
-	emailService           services.IMailtrapEmailService
-	mediaService           services.IMediaService
+	userService              services.IUserService
+	authService              services.IAuthService
+	memberService            services.IMemberService
+	instructorService        services.IInstructorService
+	roleService              services.IRoleService
+	emailService             services.IMailtrapEmailService
+	mediaService             services.IMediaService
 	recurringScheduleService services.IRecurringScheduleService
 }
 
@@ -49,13 +49,13 @@ func NewInstructorController(
 	recurringScheduleService services.IRecurringScheduleService,
 ) IInstructorController {
 	return &InstructorController{
-		userService:            userService,
-		authService:            authService,
-		memberService:          memberService,
-		instructorService:      instructorService,
-		roleService:            roleService,
-		emailService:           emailService,
-		mediaService:           mediaService,
+		userService:              userService,
+		authService:              authService,
+		memberService:            memberService,
+		instructorService:        instructorService,
+		roleService:              roleService,
+		emailService:             emailService,
+		mediaService:             mediaService,
 		recurringScheduleService: recurringScheduleService,
 	}
 }
@@ -315,9 +315,9 @@ func (c *InstructorController) DeleteInstructor(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Instructor deleted successfully", gin.H{
-		"userId":      profile.UserID,
-		"newRole":     "member",
-		"deletedAt":   time.Now(),
+		"userId":    profile.UserID,
+		"newRole":   "member",
+		"deletedAt": time.Now(),
 	})
 }
 
@@ -420,7 +420,6 @@ func (c *InstructorController) UploadBase64Media(ctx *gin.Context) {
 
 	responseRes.Success(ctx, http.StatusOK, "Media uploaded successfully", resp)
 }
-
 
 // @Summary Delete Media
 // @Description Delete a media file and clear instructor photo URL
@@ -530,11 +529,11 @@ func (c *InstructorController) GetAllInstructorsWithRecurringSchedules(ctx *gin.
 
 	// Build response with recurring schedules
 	type InstructorWithSchedules struct {
-		ID                 string                           `json:"id"`
-		FirstName          string                           `json:"firstName"`
-		LastName           string                           `json:"lastName"`
-		Email              string                           `json:"email"`
-		RecurringSchedules []dto.RecurringScheduleResponse  `json:"recurringSchedules"`
+		ID                 string                          `json:"id"`
+		FirstName          string                          `json:"firstName"`
+		LastName           string                          `json:"lastName"`
+		Email              string                          `json:"email"`
+		RecurringSchedules []dto.RecurringScheduleResponse `json:"recurringSchedules"`
 	}
 
 	var result []InstructorWithSchedules

@@ -8,6 +8,7 @@ import (
 	"user-service/pkg/redis"
 	"user-service/repositories"
 	"user-service/services/listeners"
+	coreServices "core-service/services"
 )
 
 type Registry struct {
@@ -86,7 +87,7 @@ func (r *Registry) GetEmailService() IMailtrapEmailService {
 
 func (r *Registry) GetMediaService() IMediaService {
 	cfg := config.Get()
-	return NewMediaService(cfg.ImageKit.PrivateKey)
+	return coreServices.NewMediaService(cfg.ImageKit.PrivateKey)
 }
 
 func (r *Registry) GetWorkExperienceService() IWorkExperienceService {

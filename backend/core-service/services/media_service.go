@@ -8,7 +8,7 @@ import (
 	"log"
 	"path/filepath"
 
-	apperrors "user-service/pkg/errors"
+	apperrors "core-service/pkg/errors"
 
 	"github.com/google/uuid"
 	"github.com/imagekit-developer/imagekit-go/v2"
@@ -40,17 +40,17 @@ func NewMediaService(privateKey string) IMediaService {
 }
 
 type MediaUploadResponse struct {
-	URL         string `json:"url"`
-	FileID      string `json:"fileId"`
-	Name        string `json:"name"`
-	Height      int    `json:"height,omitempty"`
-	Width       int    `json:"width,omitempty"`
-	FileType    string `json:"fileType"`
-	CreatedAt   string `json:"createdAt"`
-	Duration    float64 `json:"duration,omitempty"`   // For videos
-	Size        int64  `json:"size,omitempty"`        // File size in bytes
-	ThumbnailURL string `json:"thumbnailUrl,omitempty"` // Video thumbnail
-	MIMEType    string `json:"mimeType,omitempty"`
+	URL          string  `json:"url"`
+	FileID       string  `json:"fileId"`
+	Name         string  `json:"name"`
+	Height       int     `json:"height,omitempty"`
+	Width        int     `json:"width,omitempty"`
+	FileType     string  `json:"fileType"`
+	CreatedAt    string  `json:"createdAt"`
+	Duration     float64 `json:"duration,omitempty"`     // For videos
+	Size         int64   `json:"size,omitempty"`         // File size in bytes
+	ThumbnailURL string  `json:"thumbnailUrl,omitempty"` // Video thumbnail
+	MIMEType     string  `json:"mimeType,omitempty"`
 }
 
 type UploadMediaInput struct {

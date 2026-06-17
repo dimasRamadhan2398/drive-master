@@ -13,7 +13,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 type IUserRepository interface {
 	Create(ctx context.Context, user *dto.RegisterRequest) (*models.User, error)
 	CreateTx(tx *gorm.DB, user *dto.RegisterRequest) (*models.User, error)

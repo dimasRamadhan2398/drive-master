@@ -26,8 +26,8 @@ type Schedule struct {
 	Duration     int            `json:"duration" gorm:"default:60"`   // duration in minutes
 	InstructorID uuid.UUID      `json:"instructorId" gorm:"type:uuid;not null;index"` // ref: user-service (UUID)
 	CarID        uint           `json:"carId" gorm:"not null;index"`             // ref: core-service (car)
-	UserID       *uint          `json:"userId" gorm:"index"`                    // ref: user-service (nullable, assigned when booked)
-	EnrollmentID *uint          `json:"enrollmentId" gorm:"index"`             // ref: Enrollment (nullable)
+	UserID       *uuid.UUID     `json:"userId" gorm:"index"`                    // ref: user-service (nullable, assigned when booked)
+	EnrollmentID *uuid.UUID     `json:"enrollmentId" gorm:"index"`             // ref: Enrollment (nullable)
 	Status       ScheduleStatus `json:"status" gorm:"type:varchar(20);default:'available'"`
 	Notes        string         `json:"notes" gorm:"type:text"`
 	CreatedAt    time.Time      `json:"createdAt"`
@@ -62,7 +62,7 @@ type ScheduleResponse struct {
 	InstructorName string    `json:"instructorName"`
 	CarID          uint      `json:"carId"`
 	CarName        string    `json:"carName"`
-	UserID         *uint     `json:"userId"`
+	UserID         *uuid.UUID `json:"userId"`
 	UserName       *string   `json:"userName"`        // nullable
 	BookingID      *uint     `json:"bookingId"`     // nullable
 	Status         string    `json:"status"`
@@ -78,13 +78,15 @@ type ScheduleWithDetailsResponse struct {
 	StudentName    string `json:"studentName,omitempty"`
 }
 
-type ScheduleListResponse struct {
-	Data       []ScheduleResponse `json:"data"`
-	Total      int64               `json:"total"`
-	Page       int                 `json:"page"`
-	Limit      int                 `json:"limit"`
-	TotalPages int                 `json:"totalPages"`
-}
+// type ScheduleListResponse struct {
+// 	Data       []ScheduleResponse `json:"data"`
+// 	Total      int64               `json:"total"`
+// 	Page       int                 `json:"page"`
+// 	Limit      int                 `json:"limit"`
+// 	TotalPages int                 `json:"totalPages"`
+// }
+
+type ScheduleListResponse = PagedData[ScheduleResponse]
 
 type ScheduleFilterParams struct {
 	ListParams
@@ -94,4 +96,12 @@ type ScheduleFilterParams struct {
 	InstructorID string `form:"instructorId"`
 	CarID        uint   `form:"carId"`
 	Status       string `form:"status"`
+}
+
+type ScheduleStatsResponse struct {
+	AvailableSchedule int64 `json:"availableSchedule"`
+	BookedSchedule    int64 `json:"bookedSchedule"`
+	InProgressSchedule int64 `json:"inProgressSchedule"`
+	CompletedSchedule int64 `json:"completedSchedule"`
+	BlockedSchedule    int64 `json:"blockedSchedule"`
 }

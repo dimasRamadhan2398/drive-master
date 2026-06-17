@@ -1,6 +1,7 @@
 package user
 
 import (
+	"booking-service/models/dto"
 	"encoding/json"
 	"time"
 
@@ -25,4 +26,23 @@ type RecurringScheduleResponse struct {
 	IsActive     bool      `json:"isActive"`
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+// UserResponse represents a user from user-service
+type UserResponse struct {
+	ID        uuid.UUID   `json:"userId"`
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Username  string `json:"username"`
+}
+
+type UserList = dto.PagedData[UserInfo]
+
+type UserInfo struct {
+	ID        uuid.UUID  `json:"userId"`
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Username  string `json:"username"`
 }

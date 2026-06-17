@@ -205,11 +205,11 @@ func (s *EntitlementService) UseSession(ctx context.Context, memberID, entitleme
 	}
 
 	if err := entitlement.ValidateSessionCount(); err != nil {
-        // log critical error — data is inconsistent
-        log.Printf("[CRITICAL] entitlement %s failed integrity check: %v",
-            entitlementID, err)
-        return nil, err
-    }
+		// log critical error — data is inconsistent
+		log.Printf("[CRITICAL] entitlement %s failed integrity check: %v",
+			entitlementID, err)
+		return nil, err
+	}
 
 	// Update status if no remaining sessions
 	if entitlement.Remaining == 0 {

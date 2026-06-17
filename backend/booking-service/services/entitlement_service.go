@@ -8,6 +8,7 @@ import (
 	"booking-service/models/dto"
 	"booking-service/repositories"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -39,7 +40,7 @@ func (s *EntitlementService) CreateEntitlement(ctx context.Context, req dto.Crea
 	return &resp, nil
 }
 
-func (s *EntitlementService) GetEntitlement(ctx context.Context, id uint) (*dto.EntitlementResponse, error) {
+func (s *EntitlementService) GetEntitlement(ctx context.Context, id uuid.UUID) (*dto.EntitlementResponse, error) {
 	entitlement, err := s.entitlementRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -52,7 +53,7 @@ func (s *EntitlementService) GetEntitlement(ctx context.Context, id uint) (*dto.
 	return &resp, nil
 }
 
-func (s *EntitlementService) UpdateEntitlement(ctx context.Context, id uint, req dto.UpdateEntitlementRequest) (*dto.EntitlementResponse, error) {
+func (s *EntitlementService) UpdateEntitlement(ctx context.Context, id uuid.UUID, req dto.UpdateEntitlementRequest) (*dto.EntitlementResponse, error) {
 	entitlement, err := s.entitlementRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -76,7 +77,7 @@ func (s *EntitlementService) UpdateEntitlement(ctx context.Context, id uint, req
 	return &resp, nil
 }
 
-func (s *EntitlementService) DeleteEntitlement(ctx context.Context, id uint) error {
+func (s *EntitlementService) DeleteEntitlement(ctx context.Context, id uuid.UUID) error {
 	entitlement, err := s.entitlementRepo.FindByID(ctx, id)
 	if err != nil {
 		return err

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"user-service/repositories"
 	"user-service/routes"
 	"user-service/services"
+	"user-service/services/listeners"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -35,11 +37,11 @@ var serveCmd = &cobra.Command{
 }
 
 var (
-	servePort     string
-	serveHost     string
-	serveSwagger  bool
-	serveMigrate  bool
-	serveSeed     bool
+	servePort    string
+	serveHost    string
+	serveSwagger bool
+	serveMigrate bool
+	serveSeed    bool
 )
 
 func init() {
@@ -85,7 +87,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	db, err := gorm.Open(postgres.Open(getDSN()), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
 	})
-	
+
 	if err != nil {
 		logger.Fatal("Failed to connect to database: %v", logger.LogField("error", err))
 	}
@@ -146,6 +148,29 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Initialize services
 	serviceRegistry := services.NewServiceRegistry(repoRegistry, eventPublisher, redisClient)
 
+	// Register session completed handler (consumes events such as "session.completed" or "course.completed")
+	entRepo := repoRegistry.GetEntitlement()
+	certSvc := serviceRegistry.GetCertificationService()
+	entitlementListener := listeners.NewEntitlementCompletedListener(certSvc, eventPublisher)
+	sessionHandler := listeners.NewSessionCompletedHandler(entRepo, entitlementListener)
+	if err := eventPublisher.RegisterHandler(sessionHandler); err != nil {
+		logger.Warn("Failed to register session.completed handler", logger.LogField("error", err))
+	}
+
+	// Register profile update listener to update member profile on entitlement created or session completed
+	memberRepo := repoRegistry.GetMember()
+	profileListener := listeners.NewProfileUpdateListener(memberRepo, entRepo)
+	if err := eventPublisher.RegisterHandler(profileListener); err != nil {
+		logger.Warn("Failed to register profile.update listener", logger.LogField("error", err))
+	}
+
+	// Start consumer in background so it can deliver events to registered handlers
+	go func() {
+		if err := eventPublisher.StartConsumer(context.Background()); err != nil {
+			logger.Warn("Failed to start event consumer", logger.LogField("error", err))
+		}
+	}()
+
 	// Initialize controller
 	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
 
@@ -178,13 +203,13 @@ func runServe(cmd *cobra.Command, args []string) {
 	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%d", loadedConfig.Server.Port)
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	target := `"securityDefinitions"`
-    security := `"security":[{"BearerAuth":[], "XApiKey":[],"XRequestAt":[],"XServiceName":[]}],`
-    docs.SwaggerInfo.SwaggerTemplate = strings.Replace(
-        docs.SwaggerInfo.SwaggerTemplate,
-        target,
-        security+target,
-        1,
-    )
+	security := `"security":[{"BearerAuth":[], "XApiKey":[],"XRequestAt":[],"XServiceName":[]}],`
+	docs.SwaggerInfo.SwaggerTemplate = strings.Replace(
+		docs.SwaggerInfo.SwaggerTemplate,
+		target,
+		security+target,
+		1,
+	)
 
 	// Swagger documentation
 	if serveSwagger {

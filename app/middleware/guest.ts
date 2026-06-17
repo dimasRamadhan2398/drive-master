@@ -2,8 +2,8 @@ import { useAuthStore } from '~/stores/auth';
 
 // Middleware to redirect already authenticated users away from login pages
 export default defineNuxtRouteMiddleware((to) => {
-  // Only apply to auth-related pages
-  const authPages = ['/auth/login', '/auth/register', '/admin/login'];
+  // Only apply to non-admin auth pages
+  const authPages = ['/auth/login', '/auth/register'];
   if (!authPages.includes(to.path)) {
     return;
   }
@@ -32,7 +32,7 @@ export default defineNuxtRouteMiddleware((to) => {
     return;
   }
 
-  // Redirect based on role
+  // Redirect authenticated users based on role
   if (authStore.userRole?.toLowerCase().includes('admin')) {
     return navigateTo('/admin');
   }

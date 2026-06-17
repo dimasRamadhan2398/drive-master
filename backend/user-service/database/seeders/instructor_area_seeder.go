@@ -35,7 +35,7 @@ func (s *InstructorAreaSeeder) Seed() error {
 	// For demonstration, we'll use placeholder area IDs
 	type instructorArea struct {
 		instructorID uuid.UUID
-		areaID      uint
+		areaID       uint
 	}
 
 	areas := []instructorArea{
@@ -48,9 +48,9 @@ func (s *InstructorAreaSeeder) Seed() error {
 
 	if len(instructors) > 1 {
 		areas = append(areas,
-			instructorArea{instructors[1].ID, 6},  // Surabaya
-			instructorArea{instructors[1].ID, 7},   // Sidoarjo
-			instructorArea{instructors[1].ID, 8},   // Gresik
+			instructorArea{instructors[1].ID, 6}, // Surabaya
+			instructorArea{instructors[1].ID, 7}, // Sidoarjo
+			instructorArea{instructors[1].ID, 8}, // Gresik
 		)
 	}
 

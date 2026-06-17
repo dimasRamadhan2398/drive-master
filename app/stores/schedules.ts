@@ -69,6 +69,7 @@ interface SchedulesState {
   slots: ScheduleSlot[];
   isLoading: boolean;
   error: string | null;
+  isInitialized: boolean;
   // Filter state
   selectedDate: string;
   filterInstructor: string;
@@ -139,6 +140,7 @@ export const useSchedulesStore = defineStore("schedules", {
     slots: [],
     isLoading: false,
     error: null,
+    isInitialized: false,
     selectedDate: formatDateString(new Date()),
     filterInstructor: "All Instructors",
     filterVehicle: "All Vehicles",
@@ -250,6 +252,50 @@ export const useSchedulesStore = defineStore("schedules", {
         console.error("Error fetching schedules:", err);
         // Fallback to sample data filtered by date
         this.slots = initialSlots.filter((s) => s.date === date);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    // Fetch schedules by date using the dedicated endpoint (defaults to today)
+    async fetchByDate(date?: string) {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const schedules = await scheduleService.fetchByDate(date);
+        this.slots = schedules.map(mapScheduleToSlot);
+      } catch (err) {
+        this.error =
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch schedules by date";
+        console.error("Error fetching schedules by date:", err);
+        // Fallback to sample data
+        this.slots = [...initialSlots];
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    // Initialize store and auto-fetch schedules for today
+    async initialize() {
+      if (this.isInitialized) return;
+
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const schedules = await scheduleService.fetchByDate();
+        this.slots = schedules.map(mapScheduleToSlot);
+        this.isInitialized = true;
+      } catch (err) {
+        this.error =
+          err instanceof Error ? err.message : "Failed to initialize schedules";
+        console.error("Error initializing schedules:", err);
+        // Fallback to sample data
+        this.slots = [...initialSlots];
+        this.isInitialized = true;
       } finally {
         this.isLoading = false;
       }
@@ -600,6 +646,7 @@ export const useSchedulesStore = defineStore("schedules", {
       this.slots = [];
       this.isLoading = false;
       this.error = null;
+      this.isInitialized = false;
       this.selectedDate = formatDateString(new Date());
       this.filterInstructor = "All Instructors";
       this.filterVehicle = "All Vehicles";

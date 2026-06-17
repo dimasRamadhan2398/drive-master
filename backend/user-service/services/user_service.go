@@ -26,9 +26,9 @@ type IUserService interface {
 
 type UserService struct {
 	*base.BaseService
-	roleRepo      repositories.IRoleRepository
-	repo          repositories.IUserRepository
-	instructorSvc IInstructorService
+	roleRepo       repositories.IRoleRepository
+	repo           repositories.IUserRepository
+	instructorSvc  IInstructorService
 	eventPublisher interface {
 		PublishUserDeleted(ctx context.Context, userID string, username, email string) error
 	}

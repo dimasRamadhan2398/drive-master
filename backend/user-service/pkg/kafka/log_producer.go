@@ -25,14 +25,14 @@ type LogMessage struct {
 
 // Producer wraps Sarama producer with logging-specific functionality
 type Producer struct {
-	producer    sarama.SyncProducer
+	producer      sarama.SyncProducer
 	asyncProducer sarama.AsyncProducer
-	serviceName string
-topic       string
-	enabled     bool
-	logger      *zap.Logger
-	mu          sync.RWMutex
-	useAsync    bool
+	serviceName   string
+	topic         string
+	enabled       bool
+	logger        *zap.Logger
+	mu            sync.RWMutex
+	useAsync      bool
 }
 
 // Config holds Kafka producer configuration
@@ -285,19 +285,3 @@ func extractSpanFromContext(ctx context.Context) *spanInfo {
 	}
 	return nil
 }
-
-
-// func (p *KafkaProducer) PublishUserCreated(event dto.CreateUserResponse) error {
-// 	payload, err := json.Marshal(event)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-// 	defer cancel()
-
-// 	return p.writer.WriteMessages(ctx, kafka.Message{
-// 		Key:   []byte(event.Email),
-// 		Value: payload,
-// 	})
-// }

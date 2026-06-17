@@ -12,13 +12,13 @@ import (
 )
 
 type MemberController struct {
-	userService             services.IUserService
-	authService             services.IAuthService
-	memberService           services.IMemberService
+	userService              services.IUserService
+	authService              services.IAuthService
+	memberService            services.IMemberService
 	memberCertificateService services.IMemberCertificateService
-	roleService             services.IRoleService
-	emailService            services.IMailtrapEmailService
-	mediaService            services.IMediaService
+	roleService              services.IRoleService
+	emailService             services.IMailtrapEmailService
+	mediaService             services.IMediaService
 }
 
 func NewMemberController(
@@ -31,13 +31,13 @@ func NewMemberController(
 	mediaService services.IMediaService,
 ) IMemberController {
 	return &MemberController{
-		userService:             userService,
-		authService:             authService,
-		memberService:           memberService,
+		userService:              userService,
+		authService:              authService,
+		memberService:            memberService,
 		memberCertificateService: memberCertificateService,
-		roleService:             roleService,
-		emailService:            emailService,
-		mediaService:            mediaService,
+		roleService:              roleService,
+		emailService:             emailService,
+		mediaService:             mediaService,
 	}
 }
 

@@ -3,15 +3,15 @@ package base
 import (
 	"net/http"
 
-	apperrors "user-service/pkg/errors"
-	"user-service/pkg/constants"
 	"github.com/gin-gonic/gin"
+	"user-service/pkg/constants"
+	apperrors "user-service/pkg/errors"
 )
 
 type Response struct {
-	Status  string `json:"status"`
-	Message any    `json:"message"`
-	Data    any    `json:"data"`
+	Status  string  `json:"status"`
+	Message any     `json:"message"`
+	Data    any     `json:"data"`
 	Token   *string `json:"token,omitempty"`
 }
 

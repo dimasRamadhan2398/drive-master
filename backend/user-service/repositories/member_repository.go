@@ -19,7 +19,7 @@ type IMemberRepository interface {
 	Delete(ctx context.Context, userID uuid.UUID) error
 	// Pagination support
 	FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int, query string) ([]models.User, error)
-	CountByRoleID(ctx context.Context, roleID uint) (int64, error)	
+	CountByRoleID(ctx context.Context, roleID uint) (int64, error)
 	// Update total available sessions
 	UpdateTotalAvailableSessions(ctx context.Context, userID uuid.UUID, total int) error
 }

@@ -47,6 +47,7 @@ export { useContentStore, PageSection, Page, BlogPost, Faq, CreateFaqData, Updat
 export { useDashboardStore, DashboardState } from '../app/stores/dashboard';
 export { useInstructorsStore } from '../app/stores/instructors';
 export { usePackagesStore, Package, Addon } from '../app/stores/packages';
+export { usePaymentsStore, PaymentMethodOption } from '../app/stores/payments';
 export { useSalesStore, Transaction, PackageSummary } from '../app/stores/sales';
 export { mapScheduleToSlot, mapSlotToCreateData, useSchedulesStore, ScheduleSlot, ScheduleFormFullData } from '../app/stores/schedules';
 export { useStudentsStore, Student } from '../app/stores/students';

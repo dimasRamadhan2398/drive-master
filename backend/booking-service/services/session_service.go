@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"time"
 
 	"booking-service/models"
 	"booking-service/models/dto"
@@ -16,6 +17,9 @@ type ISessionService interface {
 	GetSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	ListSessions(ctx context.Context, page, limit int) (*dto.SessionListResponse, error)
 	GetStats(ctx context.Context) (*dto.SessionStatsResponse, error)
+	StartSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
+	CompleteSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
+	CancelSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 }
 
 type SessionService struct {
@@ -109,10 +113,102 @@ func (s *SessionService) GetStats(ctx context.Context) (*dto.SessionStatsRespons
 		return nil, err
 	}
 
-	return&dto.SessionStatsResponse{
+	return &dto.SessionStatsResponse{
 		TotalSessions:     stats.Total,
 		ActiveSessions:    stats.Active,
 		CompletedSessions: stats.Completed,
 		PendingSessions:   stats.Pending,
 	}, nil
+}
+
+func (s *SessionService) StartSession(ctx context.Context, id uint) (*dto.SessionResponse, error) {
+	// Check if session exists
+	session, err := s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("session not found")
+		}
+		return nil, err
+	}
+
+	// Validate session can be started
+	if session.Status != "scheduled" {
+		return nil, errors.New("session cannot be started: invalid status")
+	}
+
+	startedAt := time.Now()
+	if err := s.sessionRepo.StartSession(ctx, id, startedAt); err != nil {
+		return nil, err
+	}
+
+	// Reload session
+	session, err = s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := s.sessionRepo.ToResponse(session)
+	return &resp, nil
+}
+
+func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.SessionResponse, error) {
+	// Check if session exists
+	session, err := s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("session not found")
+		}
+		return nil, err
+	}
+
+	// Validate session can be completed
+	if session.Status != "in_progress" {
+		return nil, errors.New("session cannot be completed: must be in progress")
+	}
+
+	completedAt := time.Now()
+	if err := s.sessionRepo.CompleteSession(ctx, id, completedAt); err != nil {
+		return nil, err
+	}
+
+	// Reload session
+	session, err = s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := s.sessionRepo.ToResponse(session)
+	return &resp, nil
+}
+
+func (s *SessionService) CancelSession(ctx context.Context, id uint) (*dto.SessionResponse, error) {
+	// Check if session exists
+	session, err := s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("session not found")
+		}
+		return nil, err
+	}
+
+	// Validate session can be cancelled (not already completed or cancelled)
+	if session.Status == "completed" {
+		return nil, errors.New("session cannot be cancelled: already completed")
+	}
+	if session.Status == "cancelled" {
+		return nil, errors.New("session cannot be cancelled: already cancelled")
+	}
+
+	if err := s.sessionRepo.CancelSession(ctx, id); err != nil {
+		return nil, err
+	}
+
+	// Reload session
+	session, err = s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := s.sessionRepo.ToResponse(session)
+	return &resp, nil
 }

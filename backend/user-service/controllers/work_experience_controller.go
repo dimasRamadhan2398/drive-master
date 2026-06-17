@@ -142,12 +142,12 @@ func (w *WorkExperienceController) UpdateWorkExperience(ctx *gin.Context) {
 
 	// TODO: Get work experience by ID and update
 	workExp := &models.WorkExperience{
-		ID:           expID,
-		CompanyName:  *input.CompanyName,
-		Role:         *input.Role,
-		StartDate:    *input.StartDate,
-		EndDate:      input.EndDate,
-		Description:  *input.Description,
+		ID:          expID,
+		CompanyName: *input.CompanyName,
+		Role:        *input.Role,
+		StartDate:   *input.StartDate,
+		EndDate:     input.EndDate,
+		Description: *input.Description,
 	}
 
 	if err := w.workExperienceService.UpdateWorkExperience(ctx, workExp); err != nil {

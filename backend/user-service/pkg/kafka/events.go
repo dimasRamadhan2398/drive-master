@@ -12,40 +12,40 @@ type EventType string
 
 const (
 	// Authentication Events
-	EventUserLogin         EventType = "user.login"
-	EventUserLogout        EventType = "user.logout"
-	EventUserLogoutAll     EventType = "user.logout_all"
-	EventUserRegister      EventType = "user.register"
-	EventUserLoginFailed   EventType = "user.login_failed"
-	EventTokenRefresh      EventType = "token.refresh"
+	EventUserLogin       EventType = "user.login"
+	EventUserLogout      EventType = "user.logout"
+	EventUserLogoutAll   EventType = "user.logout_all"
+	EventUserRegister    EventType = "user.register"
+	EventUserLoginFailed EventType = "user.login_failed"
+	EventTokenRefresh    EventType = "token.refresh"
 
 	// Password Events
-	EventPasswordChanged   EventType = "password.changed"
-	EventPasswordReset     EventType = "password.reset_requested"
+	EventPasswordChanged       EventType = "password.changed"
+	EventPasswordReset         EventType = "password.reset_requested"
 	EventPasswordResetComplete EventType = "password.reset_completed"
 
 	// MFA Events
-	EventMFAEnabled        EventType = "mfa.enabled"
-	EventMFADisabled       EventType = "mfa.disabled"
-	EventMFAVerified       EventType = "mfa.verified"
-	EventMFAFailed         EventType = "mfa.failed"
+	EventMFAEnabled  EventType = "mfa.enabled"
+	EventMFADisabled EventType = "mfa.disabled"
+	EventMFAVerified EventType = "mfa.verified"
+	EventMFAFailed   EventType = "mfa.failed"
 
 	// Account Events
-	EventAccountLocked     EventType = "account.locked"
-	EventAccountUnlocked   EventType = "account.unlocked"
+	EventAccountLocked      EventType = "account.locked"
+	EventAccountUnlocked    EventType = "account.unlocked"
 	EventAccountDeactivated EventType = "account.deactivated"
 	EventAccountReactivated EventType = "account.reactivated"
 
 	// Permission Events
-	EventRoleAssigned      EventType = "role.assigned"
-	EventRoleRevoked       EventType = "role.revoked"
-	EventPermissionDenied  EventType = "permission.denied"
+	EventRoleAssigned     EventType = "role.assigned"
+	EventRoleRevoked      EventType = "role.revoked"
+	EventPermissionDenied EventType = "permission.denied"
 
 	// Security Events
-	EventSuspiciousActivity EventType = "security.suspicious"
-	EventRateLimitExceeded EventType = "security.rate_limit"
-	EventNewDeviceLogin    EventType = "security.new_device"
-	EventTrustedDeviceAdded EventType = "device.trusted_added"
+	EventSuspiciousActivity   EventType = "security.suspicious"
+	EventRateLimitExceeded    EventType = "security.rate_limit"
+	EventNewDeviceLogin       EventType = "security.new_device"
+	EventTrustedDeviceAdded   EventType = "device.trusted_added"
 	EventTrustedDeviceRemoved EventType = "device.trusted_removed"
 
 	// Testimonial Events
@@ -54,6 +54,13 @@ const (
 	EventTestimonialDeleted   EventType = "testimonial.deleted"
 	EventTestimonialPublished EventType = "testimonial.published"
 	EventTestimonialArchived  EventType = "testimonial.archived"
+
+	// Course Events
+	EventCourseCompleted EventType = "course.completed"
+	EventCourseUpdated   EventType = "course.updated"
+	EventCourseDeleted   EventType = "course.deleted"
+	EventCoursePublished EventType = "course.published"
+	EventCourseArchived  EventType = "course.archived"
 
 	// User Lifecycle Events
 	EventUserDeleted EventType = "user.deleted"
@@ -117,29 +124,29 @@ type IEventPublisher interface {
 
 // EventPublisher implements IEventPublisher
 type EventPublisher struct {
-	producer  *Producer
-	consumer  *Consumer
-	topic     string
-	handlers  []EventHandler
-	enabled   bool
+	producer *Producer
+	consumer *Consumer
+	topic    string
+	handlers []EventHandler
+	enabled  bool
 }
 
 // EventPublisherConfig holds configuration for the event Publisher
 type EventPublisherConfig struct {
-	Producer  *Producer
-	Consumer  *Consumer
-	Topic     string
-	Enabled   bool
+	Producer *Producer
+	Consumer *Consumer
+	Topic    string
+	Enabled  bool
 }
 
 // NewEventPublisher creates a new event Publisher
 func NewEventPublisher(cfg EventPublisherConfig) IEventPublisher {
 	return &EventPublisher{
-		producer:  cfg.Producer,
-		consumer:  cfg.Consumer,
-		topic:     cfg.Topic,
-		enabled:   cfg.Enabled,
-		handlers:  make([]EventHandler, 0),
+		producer: cfg.Producer,
+		consumer: cfg.Consumer,
+		topic:    cfg.Topic,
+		enabled:  cfg.Enabled,
+		handlers: make([]EventHandler, 0),
 	}
 }
 
@@ -163,10 +170,10 @@ func (r *EventPublisher) Publish(ctx context.Context, event *Event) error {
 
 	// Use the producer's SendLogSync for reliable delivery
 	return r.producer.SendLogSync(ctx, "info", string(event.Type), map[string]interface{}{
-		"event":         event,
-		"event_type":    event.Type,
-		"event_data":    string(data),
-		"log_level":     getLogLevel(event.Type),
+		"event":      event,
+		"event_type": event.Type,
+		"event_data": string(data),
+		"log_level":  getLogLevel(event.Type),
 	})
 }
 
@@ -213,12 +220,12 @@ func (r *EventPublisher) PublishLogoutAll(ctx context.Context, userID, username 
 // PublishLoginFailed publishes a failed login attempt event
 func (r *EventPublisher) PublishLoginFailed(ctx context.Context, username, ip, reason string) error {
 	event := &Event{
-		Type:       EventUserLoginFailed,
-		Username:   username,
-		IPAddress:  ip,
-		Success:    false,
+		Type:        EventUserLoginFailed,
+		Username:    username,
+		IPAddress:   ip,
+		Success:     false,
 		ErrorReason: reason,
-		Timestamp:  time.Now().UTC(),
+		Timestamp:   time.Now().UTC(),
 	}
 	return r.Publish(ctx, event)
 }
@@ -255,10 +262,10 @@ func (r *EventPublisher) PublishPasswordReset(ctx context.Context, userID, usern
 func (r *EventPublisher) PublishMFAEvent(ctx context.Context, userID, username string, eventType EventType, success bool, ip string) error {
 	event := &Event{
 		Type:      eventType,
-		UserID:   userID,
-		Username: username,
+		UserID:    userID,
+		Username:  username,
 		IPAddress: ip,
-		Success:  success,
+		Success:   success,
 		Timestamp: time.Now().UTC(),
 	}
 	return r.Publish(ctx, event)
@@ -268,9 +275,9 @@ func (r *EventPublisher) PublishMFAEvent(ctx context.Context, userID, username s
 func (r *EventPublisher) PublishAccountEvent(ctx context.Context, userID, username string, eventType EventType) error {
 	event := &Event{
 		Type:      eventType,
-		UserID:   userID,
-		Username: username,
-		Success:  true,
+		UserID:    userID,
+		Username:  username,
+		Success:   true,
 		Timestamp: time.Now().UTC(),
 	}
 	return r.Publish(ctx, event)
@@ -363,8 +370,8 @@ func (r *EventPublisher) PublishTestimonialPublished(ctx context.Context, testim
 		Timestamp: time.Now().UTC(),
 		Data: map[string]interface{}{
 			"testimonial_id": testimonialID,
-			"published_by":    publishedBy,
-			"published_at":    time.Now().Format(time.RFC3339),
+			"published_by":   publishedBy,
+			"published_at":   time.Now().Format(time.RFC3339),
 		},
 		Success: true,
 	}
@@ -393,9 +400,9 @@ func (r *EventPublisher) PublishTestimonialArchived(ctx context.Context, testimo
 // to anonymize or clean up user-related data while preserving transactional records
 func (r *EventPublisher) PublishUserDeleted(ctx context.Context, userID string, username, email string) error {
 	event := &Event{
-		Type:     EventUserDeleted,
-		UserID:   userID,
-		Username: username,
+		Type:      EventUserDeleted,
+		UserID:    userID,
+		Username:  username,
 		Timestamp: time.Now().UTC(),
 		Data: map[string]interface{}{
 			"email":      email,

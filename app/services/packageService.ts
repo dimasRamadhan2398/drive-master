@@ -122,10 +122,13 @@ export const packageService = {
 
   async create(data: CreatePackageData): Promise<Package> {
     const { core, extractData } = useApiClients();
-    const response = await core<ApiResponse<PackageApiResponse>>("/packages", {
-      method: "POST",
-      body: data,
-    });
+    const response = await core<ApiResponse<PackageApiResponse>>(
+      "/packages/create",
+      {
+        method: "POST",
+        body: data,
+      },
+    );
     return mapApiToPackage(extractData(response));
   },
 

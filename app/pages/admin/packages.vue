@@ -95,7 +95,21 @@ function openEditAddonModal(addon: Addon) {
 }
 
 async function handleAddPackage(pkg: CreatePackageData) {
-  await packagesStore.addPackage(pkg);
+  try {
+    const created = await packagesStore.addPackage(pkg);
+    toast.add({
+      title: "Paket Ditambahkan",
+      description: `"${created.name}" telah dibuat.`,
+      color: "success",
+    });
+    showAddModal.value = false;
+  } catch (error) {
+    toast.add({
+      title: "Error",
+      description: "Gagal membuat paket. Silakan coba lagi.",
+      color: "error",
+    });
+  }
 }
 
 onMounted(() => {

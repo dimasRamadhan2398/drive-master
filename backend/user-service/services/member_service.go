@@ -23,7 +23,6 @@ type MemberService struct {
 	entitlementSvc IEntitlementService
 }
 
-
 func NewMemberService(repo repositories.IMemberRepository, roleRepo repositories.IRoleRepository, entitlementSvc IEntitlementService) IMemberService {
 	return &MemberService{
 		repo:           repo,

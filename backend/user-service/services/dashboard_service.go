@@ -58,9 +58,9 @@ func (s *DashboardService) GetStats(ctx context.Context) (*dto.DashboardStatsRes
 	recentCount := int64(len(recentUsers))
 
 	return &dto.DashboardStatsResponse{
-		TotalUsers:           totalUsers,
-		TotalMembers:         memberCount,
-		TotalInstructors:     instructorCount,
-		RecentRegistrations:  recentCount,
+		TotalUsers:          totalUsers,
+		TotalMembers:        memberCount,
+		TotalInstructors:    instructorCount,
+		RecentRegistrations: recentCount,
 	}, nil
 }

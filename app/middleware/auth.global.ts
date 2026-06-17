@@ -35,8 +35,13 @@ export default defineNuxtRouteMiddleware((to: any) => {
 
   // Handle admin routes
   if (to.path.startsWith("/admin")) {
-    // Skip admin login page (handled by guest middleware)
+    // If accessing admin login
     if (to.path === "/admin/login") {
+      // Redirect authenticated admin users away from login
+      if (authStore.isAuthenticated && authStore.userRole?.toLowerCase().includes("admin")) {
+        return navigateTo("/admin");
+      }
+      // Allow unauthenticated users to access login
       return;
     }
 

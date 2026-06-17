@@ -54,7 +54,7 @@ func (r *TestimonialRepository) GetAllTestimonials(ctx context.Context) ([]model
 	opts := base.NewQueryOptions()
 	opts.Limit = 0 // No limit
 	opts.Order = "created_at DESC"
-	if err := r.BaseRepository.FindMany( &models.Testimonial{}, &testimonials, opts); err != nil {
+	if err := r.BaseRepository.FindMany(&models.Testimonial{}, &testimonials, opts); err != nil {
 		return nil, err
 	}
 	return testimonials, nil
@@ -66,7 +66,7 @@ func (r *TestimonialRepository) GetPublishedTestimonials(ctx context.Context) ([
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"status": models.TestimonialStatusPublished}).
 		WithOrder("sort_order ASC, created_at DESC")
-	if err := r.BaseRepository.FindMany( &models.Testimonial{}, &testimonials, opts); err != nil {
+	if err := r.BaseRepository.FindMany(&models.Testimonial{}, &testimonials, opts); err != nil {
 		return nil, err
 	}
 	return testimonials, nil
@@ -81,7 +81,7 @@ func (r *TestimonialRepository) GetFeaturedTestimonials(ctx context.Context) ([]
 			"is_featured": true,
 		}).
 		WithOrder("sort_order ASC, created_at DESC")
-	if err := r.BaseRepository.FindMany( &models.Testimonial{}, &testimonials, opts); err != nil {
+	if err := r.BaseRepository.FindMany(&models.Testimonial{}, &testimonials, opts); err != nil {
 		return nil, err
 	}
 	return testimonials, nil
@@ -93,7 +93,7 @@ func (r *TestimonialRepository) GetTestimonialsByUserID(ctx context.Context, use
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"user_id": userID}).
 		WithOrder("created_at DESC")
-	if err := r.BaseRepository.FindMany( &models.Testimonial{}, &testimonials, opts); err != nil {
+	if err := r.BaseRepository.FindMany(&models.Testimonial{}, &testimonials, opts); err != nil {
 		return nil, err
 	}
 	return testimonials, nil
@@ -101,21 +101,21 @@ func (r *TestimonialRepository) GetTestimonialsByUserID(ctx context.Context, use
 
 // UpdateTestimonial updates a testimonial
 func (r *TestimonialRepository) UpdateTestimonial(ctx context.Context, testimonial *models.Testimonial) error {
-	return r.BaseRepository.Update( testimonial)
+	return r.BaseRepository.Update(testimonial)
 }
 
 // DeleteTestimonial deletes a testimonial
 func (r *TestimonialRepository) DeleteTestimonial(ctx context.Context, id uuid.UUID) error {
 	var testimonial models.Testimonial
-	if err := r.BaseRepository.FindByID( &testimonial, id); err != nil {
+	if err := r.BaseRepository.FindByID(&testimonial, id); err != nil {
 		return err
 	}
-	return r.BaseRepository.Delete( &testimonial)
+	return r.BaseRepository.Delete(&testimonial)
 }
 
 // CountTestimonials returns the total number of testimonials
 func (r *TestimonialRepository) CountTestimonials(ctx context.Context) (int64, error) {
-	return r.BaseRepository.Count( &models.Testimonial{}, nil)
+	return r.BaseRepository.Count(&models.Testimonial{}, nil)
 }
 
 // ToggleFeatured toggles the featured status of a testimonial

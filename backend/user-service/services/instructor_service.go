@@ -53,25 +53,24 @@ func NewInstructorService(
 
 // GetInstructorProfile retrieves an instructor profile by user ID
 func (s *InstructorService) GetInstructorProfile(ctx context.Context, userID uuid.UUID) (*dto.InstructorProfileResponse, error) {
-	result, err := s.instructorRepo.FindInstructorProfileByUserID(ctx, userID);
+	result, err := s.instructorRepo.FindInstructorProfileByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	response := &dto.InstructorProfileResponse{
-		UserID:            result.UserID,
-		IsActive:          result.IsActive,
-		NumberOfStudents:  result.NumberOfStudents,
-		YearsOfExperience: result.YearsOfExperience,
-		SessionsCompleted: result.SessionsCompleted,
-		AverageRating:     result.AverageRating,
-		Bio: 				result.Bio,
-		LicenseNumber: result.LicenseNumber,
-		LicenseExpiry: result.LicenseExpiry,
-		PhotoURL: result.PhotoURL,
+		UserID:                result.UserID,
+		IsActive:              result.IsActive,
+		NumberOfStudents:      result.NumberOfStudents,
+		YearsOfExperience:     result.YearsOfExperience,
+		SessionsCompleted:     result.SessionsCompleted,
+		AverageRating:         result.AverageRating,
+		Bio:                   result.Bio,
+		LicenseNumber:         result.LicenseNumber,
+		LicenseExpiry:         result.LicenseExpiry,
+		PhotoURL:              result.PhotoURL,
 		BNSPCertificateNumber: result.BNSPCertificateNumber,
-		Description: result.Description,
-
+		Description:           result.Description,
 	}
 
 	return response, nil
@@ -82,8 +81,8 @@ func (s *InstructorService) CreateInstructorProfileWithInput(ctx context.Context
 	profile := &models.InstructorProfile{
 		UserID:            userID,
 		IsActive:          true,
-		NumberOfStudents:   0,
-		YearsOfExperience:  0,
+		NumberOfStudents:  0,
+		YearsOfExperience: 0,
 		SessionsCompleted: 0,
 		AverageRating:     0,
 		PhotoURL:          "",
@@ -115,55 +114,54 @@ func (s *InstructorService) CreateInstructorProfileWithInput(ctx context.Context
 	}
 
 	return &dto.InstructorProfileResponse{
-		UserID:               profile.UserID,
+		UserID:                profile.UserID,
 		BNSPCertificateNumber: profile.BNSPCertificateNumber,
-		NumberOfStudents:     profile.NumberOfStudents,
-		SessionsCompleted:    profile.SessionsCompleted,
-		AverageRating:        profile.AverageRating,
-		Description:         profile.Bio,
-		LicenseNumber:        profile.LicenseNumber,
-		YearsOfExperience:    profile.YearsOfExperience,
-		LicenseExpiry:        profile.LicenseExpiry,
-		IsActive:            profile.IsActive,
-		PhotoURL:            profile.PhotoURL,
+		NumberOfStudents:      profile.NumberOfStudents,
+		SessionsCompleted:     profile.SessionsCompleted,
+		AverageRating:         profile.AverageRating,
+		Description:           profile.Bio,
+		LicenseNumber:         profile.LicenseNumber,
+		YearsOfExperience:     profile.YearsOfExperience,
+		LicenseExpiry:         profile.LicenseExpiry,
+		IsActive:              profile.IsActive,
+		PhotoURL:              profile.PhotoURL,
 	}, nil
 }
 
 // CreateInstructorProfile creates a new instructor profile with default empty values
 func (s *InstructorService) CreateInstructorProfile(ctx context.Context, userID uuid.UUID) (*dto.InstructorProfileResponse, error) {
 	profile := &models.InstructorProfile{
-		UserID:            userID,
-		LicenseNumber:     "",
-		LicenseExpiry:     time.Now(),
+		UserID:                userID,
+		LicenseNumber:         "",
+		LicenseExpiry:         time.Now(),
 		BNSPCertificateNumber: "",
-		Bio:               "",
-		IsActive:          true,
-		NumberOfStudents:  0,
-		YearsOfExperience: 0,
-		SessionsCompleted: 0,
-		AverageRating:     0,
-		PhotoURL:          "",
-		CreatedAt:         time.Now(),
+		Bio:                   "",
+		IsActive:              true,
+		NumberOfStudents:      0,
+		YearsOfExperience:     0,
+		SessionsCompleted:     0,
+		AverageRating:         0,
+		PhotoURL:              "",
+		CreatedAt:             time.Now(),
 	}
 
 	if err := s.instructorRepo.CreateInstructorProfile(ctx, profile); err != nil {
 		return nil, err
 	}
 	return &dto.InstructorProfileResponse{
-		UserID:            profile.UserID,
+		UserID:                profile.UserID,
 		BNSPCertificateNumber: profile.BNSPCertificateNumber,
-		NumberOfStudents:  profile.NumberOfStudents,
-		SessionsCompleted: profile.SessionsCompleted,
-		AverageRating:     profile.AverageRating,
-		Description:      profile.Bio,
-		LicenseNumber:     profile.LicenseNumber,
-		YearsOfExperience: profile.YearsOfExperience,
-		LicenseExpiry:     profile.LicenseExpiry,
-		IsActive:          profile.IsActive,
-		PhotoURL:          profile.PhotoURL,
-	
-		Specialization: profile.Specialization,
+		NumberOfStudents:      profile.NumberOfStudents,
+		SessionsCompleted:     profile.SessionsCompleted,
+		AverageRating:         profile.AverageRating,
+		Description:           profile.Bio,
+		LicenseNumber:         profile.LicenseNumber,
+		YearsOfExperience:     profile.YearsOfExperience,
+		LicenseExpiry:         profile.LicenseExpiry,
+		IsActive:              profile.IsActive,
+		PhotoURL:              profile.PhotoURL,
 
+		Specialization: profile.Specialization,
 	}, nil
 }
 
@@ -326,19 +324,18 @@ func (s *InstructorService) CreateInstructorWithUser(ctx context.Context, req dt
 		PhoneNumber: createdUser.PhoneNumber,
 		RoleID:      createdUser.RoleID,
 		Profile: &dto.InstructorProfileResponse{
-			UserID:               createdProfile.UserID,
+			UserID:                createdProfile.UserID,
 			BNSPCertificateNumber: createdProfile.BNSPCertificateNumber,
 			NumberOfStudents:      createdProfile.NumberOfStudents,
 			SessionsCompleted:     createdProfile.SessionsCompleted,
 			AverageRating:         createdProfile.AverageRating,
-			Description:          createdProfile.Bio,
+			Description:           createdProfile.Bio,
 			LicenseNumber:         createdProfile.LicenseNumber,
 			YearsOfExperience:     createdProfile.YearsOfExperience,
 			LicenseExpiry:         createdProfile.LicenseExpiry,
-			IsActive:             createdProfile.IsActive,
-			PhotoURL:             createdProfile.PhotoURL,
-			Specialization:       createdProfile.Specialization,
-			
+			IsActive:              createdProfile.IsActive,
+			PhotoURL:              createdProfile.PhotoURL,
+			Specialization:        createdProfile.Specialization,
 		},
 	}, nil
 }

@@ -3,36 +3,25 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"time"
 
+	cClient "booking-service/clients/core"
+	uClient "booking-service/clients/user"
 	"booking-service/models/dto"
+	"booking-service/pkg/utils"
 	"booking-service/repositories"
 
 	"github.com/google/uuid"
 )
 
 type ScheduleService struct {
-	scheduleRepo        IScheduleRepository
+	scheduleRepo        repositories.IScheduleRepository
 	enrollmentRepo      repositories.IEnrollmentRepository
 	availabilityService IAvailabilityService
-}
-
-type IScheduleRepository interface {
-	Create(ctx context.Context, schedule *dto.Schedule) error
-	FindByID(ctx context.Context, id uint) (*dto.Schedule, error)
-	Update(ctx context.Context, schedule *dto.Schedule) error
-	Delete(ctx context.Context, schedule *dto.Schedule) error
-	FindAll(ctx context.Context) ([]dto.Schedule, error)
-	FindByDateAndInstructor(ctx context.Context, date time.Time, instructorID uuid.UUID) ([]dto.Schedule, error)
-	FindByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uint) (*dto.Schedule, error)
-	FindAvailableByDateRange(ctx context.Context, startDate, endDate time.Time) ([]dto.Schedule, error)
-	UpdateStatus(ctx context.Context, id uint, status dto.ScheduleStatus) error
-	BookSlot(ctx context.Context, id uint, userID, enrollmentID uint) error
-	ReleaseSlot(ctx context.Context, id uint) error
-	ToResponse(schedule *dto.Schedule) dto.ScheduleResponse
-	ToListResponse(schedules []dto.Schedule, total int64, page, limit int) dto.ScheduleListResponse
-	ExistsForInstructorAndDateTime(ctx context.Context, instructorID uuid.UUID, date time.Time, timeStr string) (bool, error)
-	CountAll(ctx context.Context) (int64, error)
+	userClient          uClient.IUserClient
+	coreClient         	cClient.ICoreClient
 }
 
 type IScheduleService interface {
@@ -45,17 +34,22 @@ type IScheduleService interface {
 	GetAvailableSchedules(ctx context.Context, startDate, endDate string) (*dto.ScheduleListResponse, error)
 	BookSlot(ctx context.Context, slotID uint, req dto.BookSlotRequest) (*dto.ScheduleResponse, error)
 	CancelBooking(ctx context.Context, slotID uint) error
+	GetStats(ctx context.Context) (*dto.ScheduleStatsResponse, error)
 }
 
 func NewScheduleService(
-	scheduleRepo IScheduleRepository,
+	scheduleRepo repositories.IScheduleRepository,
 	enrollmentRepo repositories.IEnrollmentRepository,
 	availabilityService IAvailabilityService,
+	userClient uClient.IUserClient,
+	coreClient cClient.ICoreClient,
 ) IScheduleService {
 	return &ScheduleService{
 		scheduleRepo:        scheduleRepo,
 		enrollmentRepo:      enrollmentRepo,
 		availabilityService: availabilityService,
+		userClient:          userClient,
+		coreClient:          coreClient,
 	}
 }
 
@@ -167,8 +161,26 @@ func (s *ScheduleService) ListSchedules(ctx context.Context, page, limit int) (*
 		return nil, err
 	}
 
-	resp := s.scheduleRepo.ToListResponse(schedules, total, page, limit)
-	return &resp, nil
+	// Enrich schedules with instructor, car, and user names
+	enrichedSchedules, err := s.enrichSchedules(ctx, schedules)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := int(total) / limit
+	if int(total)%limit > 0 {
+		totalPages++
+	}
+
+	return &dto.ScheduleListResponse{
+		Data: enrichedSchedules,
+		Pagination: dto.PaginationMeta{
+			Page:       page,
+			Total:      total,
+			Limit:      limit,
+			TotalPages: totalPages,
+		},
+	}, nil
 }
 
 func (s *ScheduleService) GetAvailableSchedules(ctx context.Context, startDate, endDate string) (*dto.ScheduleListResponse, error) {
@@ -292,4 +304,106 @@ func (s *ScheduleService) CancelBooking(ctx context.Context, slotID uint) error 
 	}
 
 	return s.scheduleRepo.ReleaseSlot(ctx, slotID)
+}
+
+func (s *ScheduleService) GetStats(ctx context.Context) (*dto.ScheduleStatsResponse, error) {
+	return s.scheduleRepo.GetStats(ctx)
+}
+
+// enrichSchedules fetches instructor, car, and student names concurrently
+// and assembles the final enriched response list.
+func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.Schedule) ([]dto.ScheduleResponse, error) {
+	// --- Collect unique IDs to minimize external calls ---
+	instructorIDSet := make(map[string]struct{})
+	userIDSet       := make(map[string]struct{})
+	carIDSet        := make(map[uint]struct{})
+
+	for _, sched := range schedules {
+		instructorIDSet[sched.InstructorID.String()] = struct{}{}
+		carIDSet[sched.CarID] = struct{}{}
+		if sched.UserID != nil {
+			userIDSet[fmt.Sprintf("%d", *sched.UserID)] = struct{}{}
+		}
+	}
+
+	allUserIDs := make(map[string]struct{})
+	for id := range instructorIDSet { allUserIDs[id] = struct{}{} }
+	for id := range userIDSet       { allUserIDs[id] = struct{}{} }
+	carIDs := utils.SliceFromSet(carIDSet)
+
+	// --- Fan-out: call user-service and core-service concurrently ---
+	var (
+		mu       sync.Mutex
+		wg       sync.WaitGroup
+		fetchErr error
+		userMap  = make(map[string]uClient.UserInfo)
+		carMap   = make(map[uint]cClient.CarInfo)
+	)
+
+	for id := range allUserIDs {
+		wg.Add(1)
+		go func(userID string) {
+			defer wg.Done()
+			parsedID, err := uuid.Parse(userID)
+			if err != nil {
+				mu.Lock()
+				fetchErr = fmt.Errorf("failed to parse user ID %s: %w", userID, err)
+				mu.Unlock()
+				return
+			}
+			info, err := s.userClient.GetUserByID(ctx, parsedID)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				fetchErr = fmt.Errorf("failed to fetch user %s: %w", userID, err)
+				return
+			}
+			userMap[userID] = *info
+		}(id)
+	}
+
+	for _, id := range carIDs {
+		wg.Add(1)
+		go func(carID uint) {
+			defer wg.Done()
+			info, err := s.coreClient.GetCarByID(ctx, carID)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				fetchErr = fmt.Errorf("failed to fetch car %d: %w", carID, err)
+				return
+			}
+			carMap[carID] = *info
+		}(id)
+	}
+
+	wg.Wait()
+
+	if fetchErr != nil {
+		return nil, fetchErr
+	}
+
+	// --- Assemble enriched responses ---
+	result := make([]dto.ScheduleResponse, 0, len(schedules))
+	for _, sched := range schedules {
+		resp := s.scheduleRepo.ToResponse(&sched)
+
+		if u, ok := userMap[sched.InstructorID.String()]; ok {
+			resp.InstructorName = u.FirstName + " " + u.LastName
+		}
+		if c, ok := carMap[sched.CarID]; ok {
+			resp.CarName = c.Brand + " " + c.Model
+		}
+		if sched.UserID != nil {
+			key := fmt.Sprintf("%d", *sched.UserID)
+			if u, ok := userMap[key]; ok {
+				name := u.FirstName + " " + u.LastName
+				resp.UserName = &name
+			}
+		}
+
+		result = append(result, resp)
+	}
+
+	return result, nil
 }

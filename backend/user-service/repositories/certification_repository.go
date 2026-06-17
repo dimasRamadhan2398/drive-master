@@ -97,7 +97,6 @@ func (r *CertificationRepository) FindByMemberIDAndCertID(ctx context.Context, m
 	return &cert, nil
 }
 
-
 func (r *CertificationRepository) FindByInstructorID(ctx context.Context, instructorID uuid.UUID, page, limit int) ([]models.Certification, int64, error) {
 	var certs []models.Certification
 	offset := (page - 1) * limit

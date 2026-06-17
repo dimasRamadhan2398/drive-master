@@ -38,22 +38,22 @@ type IAuthService interface {
 
 type AuthService struct {
 	*base.BaseService
-	userRepo     repositories.IUserRepository
-	redisCli    *redis.Client
-	emailService IMailtrapEmailService
-	memberService IMemberService
+	userRepo          repositories.IUserRepository
+	redisCli          *redis.Client
+	emailService      IMailtrapEmailService
+	memberService     IMemberService
 	instructorService IInstructorService
-	roleService   IRoleService
+	roleService       IRoleService
 }
 
 func NewAuthService(userRepo repositories.IUserRepository, redisCli *redis.Client, emailService IMailtrapEmailService, memberService IMemberService, instructorService IInstructorService, roleService IRoleService) IAuthService {
 	return &AuthService{
-		userRepo:        userRepo,
-		redisCli:        redisCli,
-		emailService:    emailService,
-		memberService:   memberService,
+		userRepo:          userRepo,
+		redisCli:          redisCli,
+		emailService:      emailService,
+		memberService:     memberService,
 		instructorService: instructorService,
-		roleService:     roleService,
+		roleService:       roleService,
 	}
 }
 
@@ -253,21 +253,21 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	s.LogInfo("Register: Password hashed")
 
 	registerReq := &dto.RegisterRequest{
-		FirstName:         req.FirstName,
-		LastName:          req.LastName,
-		Username:     req.Username,
-		Email:        req.Email,
-		PhoneNumber:  req.PhoneNumber,
-		DateOfBirth:  req.DateOfBirth,
-		Password:     string(hashedPassword),
+		FirstName:       req.FirstName,
+		LastName:        req.LastName,
+		Username:        req.Username,
+		Email:           req.Email,
+		PhoneNumber:     req.PhoneNumber,
+		DateOfBirth:     req.DateOfBirth,
+		Password:        string(hashedPassword),
 		ConfirmPassword: string(confirmHashedPassword),
-		RoleID:       req.RoleID,
+		RoleID:          req.RoleID,
 	}
 
 	s.LogInfo("Register: Fetching roles...")
 	roles, err := s.roleService.FindAllRoles(ctx)
 	if err != nil {
-		s.LogError("error happening role repo:", logger.LogField("error", err));
+		s.LogError("error happening role repo:", logger.LogField("error", err))
 		return nil, err
 	}
 	s.LogInfo("Register: Roles fetched, count: " + fmt.Sprintf("%d", len(roles)))
@@ -275,7 +275,7 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	s.LogInfo("Register: Creating user in database...")
 	user, err := s.userRepo.Create(ctx, registerReq)
 	if err != nil {
-		s.LogError("error happening user repo:", logger.LogField("error", err));
+		s.LogError("error happening user repo:", logger.LogField("error", err))
 		return nil, err
 	}
 	s.LogInfo("Register: User created, ID: " + user.ID.String())
@@ -284,13 +284,13 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	for _, role := range roles {
 		if role.ID == req.RoleID {
 			s.LogInfo("Register: Matched role: " + role.Name)
-			if(strings.ToLower(role.Name) == "member") {
+			if strings.ToLower(role.Name) == "member" {
 				s.LogInfo("Register: Creating member profile...")
 				if _, err := s.memberService.CreateMemberProfile(ctx, user.ID); err != nil {
 					return nil, fmt.Errorf("failed to create member profile: %w", err)
 				}
 				s.LogInfo("Register: Member profile created")
-			}else if(strings.ToLower(role.Name) == "instructor") {
+			} else if strings.ToLower(role.Name) == "instructor" {
 				s.LogInfo("Register: Creating instructor profile...")
 				if _, err := s.instructorService.CreateInstructorProfile(ctx, user.ID); err != nil {
 					return nil, fmt.Errorf("failed to create instructor profile: %w", err)

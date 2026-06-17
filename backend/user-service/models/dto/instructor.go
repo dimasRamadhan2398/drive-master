@@ -7,37 +7,37 @@ import (
 )
 
 type InstructorProfileRequest struct {
-	Specialization       *string  `json:"specialization"       binding:"omitempty,max=255"`
-	Description       *string  `json:"description"       binding:"omitempty"`
-	LicenseNumber     *string  `json:"licenseNumber"     binding:"omitempty,min=5"`
-	LicenseExpiry     time.Time  `json:"licenseExpiry"     binding:"omitempty"`
-	BNSPCertificateNumber *string `json:"bnspCertificateNumber" binding:"omitempty,min=10"`
-	YearsOfExperience *int     `json:"yearsOfExperience" binding:"omitempty,min=0"`
+	Specialization        *string   `json:"specialization"       binding:"omitempty,max=255"`
+	Description           *string   `json:"description"       binding:"omitempty"`
+	LicenseNumber         *string   `json:"licenseNumber"     binding:"omitempty,min=5"`
+	LicenseExpiry         time.Time `json:"licenseExpiry"     binding:"omitempty"`
+	BNSPCertificateNumber *string   `json:"bnspCertificateNumber" binding:"omitempty,min=10"`
+	YearsOfExperience     *int      `json:"yearsOfExperience" binding:"omitempty,min=0"`
 }
 
 type InstructorProfileResponse struct {
-	UserID            uuid.UUID                `json:"userId"`
-	BNSPCertificateNumber string               `json:"bnspCertificateNumber"`
-	NumberOfStudents  int                      `json:"numberOfStudents"`
-	SessionsCompleted int                      `json:"sessionsCompleted"`
-	AverageRating     float64                  `json:"averageRating"`
-	Description       string                   `json:"description"`
-	Specialization    string                   `json:"specialization"`
-	LicenseNumber     string                   `json:"licenseNumber"`
-	YearsOfExperience int                      `json:"yearsOfExperience"`
-	LicenseExpiry     time.Time                `json:"licenseExpiry"`
-	WorkExperiences   []WorkExperienceResponse `json:"workExperiences,omitempty"`
-	IsActive          bool                     `json:"isActive"`
-	PhotoURL          string                   `json:"photoURL"`
-	Bio               string                   `json:"bio"`
+	UserID                uuid.UUID                `json:"userId"`
+	BNSPCertificateNumber string                   `json:"bnspCertificateNumber"`
+	NumberOfStudents      int                      `json:"numberOfStudents"`
+	SessionsCompleted     int                      `json:"sessionsCompleted"`
+	AverageRating         float64                  `json:"averageRating"`
+	Description           string                   `json:"description"`
+	Specialization        string                   `json:"specialization"`
+	LicenseNumber         string                   `json:"licenseNumber"`
+	YearsOfExperience     int                      `json:"yearsOfExperience"`
+	LicenseExpiry         time.Time                `json:"licenseExpiry"`
+	WorkExperiences       []WorkExperienceResponse `json:"workExperiences,omitempty"`
+	IsActive              bool                     `json:"isActive"`
+	PhotoURL              string                   `json:"photoURL"`
+	Bio                   string                   `json:"bio"`
 }
 
 type UpdateInstructorProfileInput struct {
-	Description       *string  `json:"description"       binding:"omitempty"`
-	LicenseNumber     *string  `json:"licenseNumber"     binding:"omitempty,min=5"`
-	LicenseExpiry     *string  `json:"licenseExpiry"     binding:"omitempty"`
+	Description           *string `json:"description"       binding:"omitempty"`
+	LicenseNumber         *string `json:"licenseNumber"     binding:"omitempty,min=5"`
+	LicenseExpiry         *string `json:"licenseExpiry"     binding:"omitempty"`
 	BNSPCertificateNumber *string `json:"bnspCertificateNumber" binding:"omitempty,min=10"`
-	YearsOfExperience *int     `json:"yearsOfExperience" binding:"omitempty,min=0"`
+	YearsOfExperience     *int    `json:"yearsOfExperience" binding:"omitempty,min=0"`
 }
 
 type InstructorListResponse = PagedData[UserWithProfileResponse]
@@ -55,7 +55,7 @@ type AddCoverageAreaInput struct {
 	AreaType string `json:"areaType" binding:"required,oneof=province regency district"`
 	AreaID   uint   `json:"areaId" binding:"required,min=1"`
 }
- 
+
 // RemoveCoverageAreaInput is used for DELETE /instructors/:id/coverage-areas/:areaId
 // No body needed — IDs come from path params, this is here for documentation clarity
 type RemoveCoverageAreaInput struct {
@@ -104,19 +104,19 @@ type IssueCertificationInput struct {
 
 // CertificationResponse represents a certification in API responses
 type CertificationResponse struct {
-	ID            uuid.UUID `json:"id"`
-	InstructorID  uuid.UUID `json:"instructorId"`
-	CertType      string    `json:"certType"`
-	CertNumber    string    `json:"certNumber"`
-	IssuedBy      string    `json:"issuedBy"`
-	IssuedDate    string    `json:"issuedDate"`
-	ExpiryDate    *string   `json:"expiryDate,omitempty"`
-	Status        string    `json:"status"`
-	DocumentURL   string    `json:"documentUrl,omitempty"`
-	Notes         string    `json:"notes,omitempty"`
-	VerifiedAt    *string   `json:"verifiedAt,omitempty"`
-	CreatedAt     string    `json:"createdAt"`
-	UpdatedAt     string    `json:"updatedAt"`
+	ID           uuid.UUID `json:"id"`
+	InstructorID uuid.UUID `json:"instructorId"`
+	CertType     string    `json:"certType"`
+	CertNumber   string    `json:"certNumber"`
+	IssuedBy     string    `json:"issuedBy"`
+	IssuedDate   string    `json:"issuedDate"`
+	ExpiryDate   *string   `json:"expiryDate,omitempty"`
+	Status       string    `json:"status"`
+	DocumentURL  string    `json:"documentUrl,omitempty"`
+	Notes        string    `json:"notes,omitempty"`
+	VerifiedAt   *string   `json:"verifiedAt,omitempty"`
+	CreatedAt    string    `json:"createdAt"`
+	UpdatedAt    string    `json:"updatedAt"`
 }
 
 // CertificationListResponse represents a paginated list of certifications
@@ -129,11 +129,11 @@ type CertificationListResponse = PagedData[CertificationResponse]
 // CreateEntitlementInput is used for POST /members/:id/entitlements
 type CreateEntitlementInput struct {
 	BookingID     uuid.UUID `json:"bookingId" binding:"required"`
-	PackageID    uuid.UUID `json:"packageId" binding:"required"`
-	PackageName  string    `json:"packageName" binding:"required,min=2,max=255"`
-	TotalSessions int      `json:"totalSessions" binding:"required,min=1"`
-	StartDate     string   `json:"startDate" binding:"required"` // Format: YYYY-MM-DD
-	EndDate       string   `json:"endDate"`                     // Format: YYYY-MM-DD (optional)
+	PackageID     uuid.UUID `json:"packageId" binding:"required"`
+	PackageName   string    `json:"packageName" binding:"required,min=2,max=255"`
+	TotalSessions int       `json:"totalSessions" binding:"required,min=1"`
+	StartDate     string    `json:"startDate" binding:"required"` // Format: YYYY-MM-DD
+	EndDate       string    `json:"endDate"`                      // Format: YYYY-MM-DD (optional)
 }
 
 // UpdateEntitlementInput is used for PUT /members/:id/entitlements/:entId
@@ -169,35 +169,35 @@ type EntitlementResponse struct {
 // Creates both a user and an instructor profile in a single transaction
 type CreateInstructorWithUserRequest struct {
 	// User fields
-	FirstName    string `json:"firstName" binding:"required,min=2"`
-	LastName     string `json:"lastName" binding:"required,min=2"`
-	Username     string `json:"username" binding:"required,min=2"`
-	Password     string `json:"password" binding:"required,min=8"`
-	Email        string `json:"email" binding:"required,email"`
-	PhoneNumber  string `json:"phoneNumber" binding:"required,min=10"`
-	DateOfBirth  string `json:"dateOfBirth"` // Format: YYYY-MM-DD
-	Address      string `json:"address"`
+	FirstName   string `json:"firstName" binding:"required,min=2"`
+	LastName    string `json:"lastName" binding:"required,min=2"`
+	Username    string `json:"username" binding:"required,min=2"`
+	Password    string `json:"password" binding:"required,min=8"`
+	Email       string `json:"email" binding:"required,email"`
+	PhoneNumber string `json:"phoneNumber" binding:"required,min=10"`
+	DateOfBirth string `json:"dateOfBirth"` // Format: YYYY-MM-DD
+	Address     string `json:"address"`
 
 	// Instructor profile fields
-	LicenseNumber          *string `json:"licenseNumber" binding:"omitempty,min=5"`
-	LicenseExpiry          *string `json:"licenseExpiry"` // Format: DD/MM/YYYY
+	LicenseNumber         *string `json:"licenseNumber" binding:"omitempty,min=5"`
+	LicenseExpiry         *string `json:"licenseExpiry"` // Format: DD/MM/YYYY
 	BNSPCertificateNumber *string `json:"bnspCertificateNumber" binding:"omitempty,min=10"`
-	YearsOfExperience      *int    `json:"yearsOfExperience" binding:"omitempty,min=0"`
-	Specialization         *string `json:"specialization" binding:"omitempty,max=255"`
-	Description            *string `json:"description"`
+	YearsOfExperience     *int    `json:"yearsOfExperience" binding:"omitempty,min=0"`
+	Specialization        *string `json:"specialization" binding:"omitempty,max=255"`
+	Description           *string `json:"description"`
 }
 
 // CreateInstructorWithUserResponse returns the created user and instructor profile
 type CreateInstructorWithUserResponse struct {
-	UserID      uuid.UUID `json:"userId"`
-    Email       string    `json:"email"`
-    Username    string    `json:"username"`
-    FirstName   string    `json:"firstName"`
-    LastName    string    `json:"lastName"`
-    PhoneNumber string    `json:"phoneNumber"`
-    DateOfBirth string    `json:"dateOfBirth"`
-    RoleID      uint      `json:"roleId"`
-	Profile *InstructorProfileResponse `json:"instructorProfile"`
+	UserID      uuid.UUID                  `json:"userId"`
+	Email       string                     `json:"email"`
+	Username    string                     `json:"username"`
+	FirstName   string                     `json:"firstName"`
+	LastName    string                     `json:"lastName"`
+	PhoneNumber string                     `json:"phoneNumber"`
+	DateOfBirth string                     `json:"dateOfBirth"`
+	RoleID      uint                       `json:"roleId"`
+	Profile     *InstructorProfileResponse `json:"instructorProfile"`
 }
 
 // EntitlementListResponse represents a paginated list of entitlements
@@ -209,16 +209,16 @@ type EntitlementListResponse = PagedData[EntitlementResponse]
 
 // RecurringScheduleSlot represents a single time slot for bulk creation
 type RecurringScheduleSlot struct {
-	DayOfWeek int `json:"dayOfWeek" binding:"required,min=0,max=6"` // 0=Sunday, 1=Monday...6=Saturday
-	StartTime string `json:"startTime" binding:"required"`              // Format: HH:MM
-	EndTime   string `json:"endTime" binding:"required"`                // Format: HH:MM
+	DayOfWeek int    `json:"dayOfWeek" binding:"required,min=0,max=6"` // 0=Sunday, 1=Monday...6=Saturday
+	StartTime string `json:"startTime" binding:"required"`             // Format: HH:MM
+	EndTime   string `json:"endTime" binding:"required"`               // Format: HH:MM
 }
 
 // CreateRecurringScheduleRequest is used for POST /instructors/:id/recurring-schedules
 type CreateRecurringScheduleRequest struct {
 	DayOfWeek int    `json:"dayOfWeek" binding:"required,min=0,max=6"` // 0=Sunday, 1=Monday...6=Saturday
-	StartTime string `json:"startTime" binding:"required"`              // Format: HH:MM (e.g., "09:00")
-	EndTime   string `json:"endTime" binding:"required"` // Format: HH:MM (e.g., "10:00")
+	StartTime string `json:"startTime" binding:"required"`             // Format: HH:MM (e.g., "09:00")
+	EndTime   string `json:"endTime" binding:"required"`               // Format: HH:MM (e.g., "10:00")
 }
 
 // BulkCreateRecurringScheduleRequest is used for POST /instructors/:id/recurring-schedules/bulk

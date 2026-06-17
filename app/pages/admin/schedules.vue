@@ -2,14 +2,18 @@
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
 import { ref, computed } from "vue";
 import { useRoute, navigateTo } from "nuxt/app";
+import AddSlotModal from "~/components/schedules/AddSlotModal.vue";
+import EditSlotModal from "~/components/schedules/EditSlotModal.vue";
 
 definePageMeta({ layout: "admin" });
 
 const route = useRoute();
 const toast = useToast();
+const instructorsStore = useInstructorsStore();
+const schedulesStore = useSchedulesStore();
 const studentNameToBook = computed(() => route.query.studentName as string | undefined);
 const showAddSlotModal = ref(false);
-const selectedDate = ref(new Date("2026-04-10T00:00:00"));
+const selectedDate = ref(new Date());
 
 // FIX: Define localDateStr to format the selected date
 const localDateStr = computed(() => {
@@ -33,7 +37,21 @@ const {
   bookSlot,
 } = useSchedules();
 
-const instructors = ["Mr. Ahmad", "Ms. Sari", "Mr. Budi"];
+const instructors = computed(() => {
+	return instructorsStore.instructors.map((value) => {
+    return {
+      label: value.name,
+      value: value.userId
+    }
+  })
+})
+const schedules = computed(() => {
+  var {slots: timeSlots} = useSchedules();
+  if(!schedulesStore.isInitialized){
+    return timeSlots
+  }
+  return schedulesStore.slots
+})
 const vehicles = ["BYD Atto 1"];
 
 // FITUR BARU: Sinkronisasi jam operasional dari settings
@@ -190,24 +208,12 @@ function cancelBooking(slotId: string) {
 }
 
 // FITUR BARU: Add Slot State & Logic
-const newSlotData = ref({
-  time: "08:00",
-  duration: "60",
-  car: "",
-  instructor: "",
-});
-
-function saveNewSlot() {
-  if (
-    !newSlotData.value.time ||
-    !newSlotData.value.car ||
-    !newSlotData.value.instructor
-  ) {
+function handleAddSlot(form: { date?: string; time: string; duration: string; car: string; instructor: string; }) {
+  if (!form.time || !form.car || !form.instructor) {
     toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
     return;
   }
 
-  // FITUR BARU: Validasi jam operasional (Termasuk Night Shift)
   const {
     start,
     end,
@@ -225,11 +231,11 @@ function saveNewSlot() {
     return;
   }
 
-  const isDayShift = newSlotData.value.time >= start && newSlotData.value.time <= end;
+  const isDayShift = form.time >= start && form.time <= end;
   const isNightShift =
     nightEnabled &&
-    newSlotData.value.time >= nightStart &&
-    newSlotData.value.time <= nightEnd;
+    form.time >= nightStart &&
+    form.time <= nightEnd;
 
   if (!isDayShift && !isNightShift) {
     let msg = `Time must be between ${start} - ${end}`;
@@ -241,30 +247,22 @@ function saveNewSlot() {
   const id = Date.now().toString();
   addSlot({
     id,
-    date: localDateStr.value, // FIX: Menggunakan localDateStr
-    time: newSlotData.value.time,
-    duration: newSlotData.value.duration + " min",
-    car: newSlotData.value.car,
-    instructor: newSlotData.value.instructor,
+    date: form.date ?? localDateStr.value,
+    time: form.time,
+    duration: form.duration + " min",
+    car: form.car,
+    instructor: form.instructor,
     student: null,
     status: "available",
   });
 
   toast.add({ title: "New Slot Added", color: "success", icon: "i-lucide-check" });
   showAddSlotModal.value = false;
-  // Reset
-  newSlotData.value = { time: "08:00", duration: "60", car: "", instructor: "" };
 }
 
 // FITUR BARU: Edit Slot State & Logic
 const showEditSlotModal = ref(false);
-const editSlotData = ref({
-  id: "",
-  time: "",
-  duration: "60",
-  car: "",
-  instructor: "",
-});
+const selectedEditSlot = ref<any>(null);
 
 function openEditModal(slot: any) {
   if (slot.status !== "available") {
@@ -275,27 +273,16 @@ function openEditModal(slot: any) {
     });
     return;
   }
-  editSlotData.value = {
-    id: slot.id,
-    time: slot.time,
-    duration: slot.duration.replace(" min", ""),
-    car: slot.car,
-    instructor: slot.instructor,
-  };
+  selectedEditSlot.value = slot;
   showEditSlotModal.value = true;
 }
 
-function saveEditSlot() {
-  if (
-    !editSlotData.value.time ||
-    !editSlotData.value.car ||
-    !editSlotData.value.instructor
-  ) {
+function handleEditSlot(updated: { id: string; time: string; duration: string; car: string; instructor: string; }) {
+  if (!updated.time || !updated.car || !updated.instructor) {
     toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
     return;
   }
 
-  // Validasi jam operasional (Termasuk Night Shift)
   const {
     start,
     end,
@@ -313,11 +300,11 @@ function saveEditSlot() {
     return;
   }
 
-  const isDayShift = editSlotData.value.time >= start && editSlotData.value.time <= end;
+  const isDayShift = updated.time >= start && updated.time <= end;
   const isNightShift =
     nightEnabled &&
-    editSlotData.value.time >= nightStart &&
-    editSlotData.value.time <= nightEnd;
+    updated.time >= nightStart &&
+    updated.time <= nightEnd;
 
   if (!isDayShift && !isNightShift) {
     let msg = `Time must be between ${start} - ${end}`;
@@ -326,16 +313,21 @@ function saveEditSlot() {
     return;
   }
 
-  editSlot(editSlotData.value.id, {
-    time: editSlotData.value.time,
-    duration: editSlotData.value.duration + " min",
-    car: editSlotData.value.car,
-    instructor: editSlotData.value.instructor,
+  editSlot(updated.id, {
+    time: updated.time,
+    duration: updated.duration + " min",
+    car: updated.car,
+    instructor: updated.instructor,
   });
 
   toast.add({ title: "Slot Updated", color: "success", icon: "i-lucide-check" });
   showEditSlotModal.value = false;
 }
+
+onMounted(() => {
+  instructorsStore.fetchInstructors();
+  schedulesStore.initialize();
+})
 </script>
 
 <template>
@@ -371,86 +363,14 @@ function saveEditSlot() {
             @click="showAddSlotModal = true"
           />
           <UColorModeButton />
-          <!-- Add Slot Modal -->
-          <UModal v-model:open="showAddSlotModal" title="Add New Time Slot">
-            <template #body>
-              <div class="space-y-5">
-                <UFormField label="Date" required>
-                  <UInput
-                    type="date"
-                    :model-value="localDateStr"
-                    disabled
-                    class="w-full"
-                  />
-                </UFormField>
-                <div class="grid grid-cols-2 gap-4">
-                  <UFormField
-                    :label="
-                      currentDayOperatingHours.isClosed ? 'Closed Today' : `Start Time`
-                    "
-                    required
-                  >
-                    <template #hint>
-                      <div
-                        class="text-[10px] text-muted-foreground flex flex-col items-end"
-                      >
-                        <span
-                          >Day: {{ currentDayOperatingHours.start }}-{{
-                            currentDayOperatingHours.end
-                          }}</span
-                        >
-                        <span v-if="currentDayOperatingHours.nightEnabled"
-                          >Night: {{ currentDayOperatingHours.nightStart }}-{{
-                            currentDayOperatingHours.nightEnd
-                          }}</span
-                        >
-                      </div>
-                    </template>
-                    <UInput
-                      type="time"
-                      v-model="newSlotData.time"
-                      :disabled="currentDayOperatingHours.isClosed"
-                      class="w-full"
-                    />
-                  </UFormField>
-                  <UFormField label="Duration">
-                    <USelect
-                      :items="[{ label: '60 minutes', value: '60' }]"
-                      v-model="newSlotData.duration"
-                      disabled
-                      class="w-full"
-                    />
-                  </UFormField>
-                </div>
-                <UFormField label="Vehicle" required>
-                  <USelect
-                    :items="vehicles"
-                    v-model="newSlotData.car"
-                    placeholder="Select vehicle"
-                    class="w-full"
-                  />
-                </UFormField>
-                <UFormField label="Instructor" required>
-                  <USelect
-                    :items="instructors"
-                    v-model="newSlotData.instructor"
-                    placeholder="Select instructor"
-                    class="w-full"
-                  />
-                </UFormField>
-              </div>
-            </template>
-            <template #footer>
-              <div class="flex justify-end gap-3">
-                <UButton
-                  label="Create Slot"
-                  icon="i-lucide-plus"
-                  @click="saveNewSlot"
-                  color="warning"
-                />
-              </div>
-            </template>
-          </UModal>
+          <AddSlotModal
+            v-model:open="showAddSlotModal"
+            :date="localDateStr"
+            :instructors="instructors"
+            :vehicles="vehicles"
+            :operatingHours="currentDayOperatingHours"
+            @saved="handleAddSlot"
+          />
         </template>
       </UDashboardNavbar>
 
@@ -499,15 +419,9 @@ function saveEditSlot() {
           <USelect
             v-model="filterInstructor"
             :items="['All Instructors', ...instructors]"
+
             placeholder="Filter by instructor"
             class="w-48"
-            color="warning"
-          />
-          <USelect
-            v-model="filterVehicle"
-            :items="['All Vehicles', ...vehicles]"
-            placeholder="Filter by vehicle"
-            class="w-44"
             color="warning"
           />
         </template>
@@ -517,7 +431,7 @@ function saveEditSlot() {
     <template #body>
       <div class="p-6 space-y-6">
         <!-- Stats -->
-        <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <UCard>
             <div class="flex items-center gap-3">
               <div class="p-2 rounded-lg bg-green-500/10">
@@ -583,7 +497,7 @@ function saveEditSlot() {
               </div>
             </div>
           </UCard>
-        </div>
+        </div> -->
 
         <!-- Schedule Grid -->
         <div class="grid lg:grid-cols-3 gap-6">
@@ -872,74 +786,14 @@ function saveEditSlot() {
         </div>
       </div>
 
-      <!-- FITUR BARU: Edit Slot Modal -->
-      <UModal v-model:open="showEditSlotModal" title="Edit Time Slot">
-        <template #body>
-          <div class="space-y-5">
-            <div class="grid grid-cols-2 gap-4">
-              <UFormField
-                :label="currentDayOperatingHours.isClosed ? 'Closed Today' : `Start Time`"
-                required
-              >
-                <template #hint>
-                  <div class="text-[10px] text-muted-foreground flex flex-col items-end">
-                    <span
-                      >Day: {{ currentDayOperatingHours.start }}-{{
-                        currentDayOperatingHours.end
-                      }}</span
-                    >
-                    <span v-if="currentDayOperatingHours.nightEnabled"
-                      >Night: {{ currentDayOperatingHours.nightStart }}-{{
-                        currentDayOperatingHours.nightEnd
-                      }}</span
-                    >
-                  </div>
-                </template>
-                <UInput
-                  type="time"
-                  v-model="editSlotData.time"
-                  :disabled="currentDayOperatingHours.isClosed"
-                  class="w-full"
-                />
-              </UFormField>
-              <UFormField label="Duration">
-                <USelect
-                  :items="[{ label: '60 minutes', value: '60' }]"
-                  v-model="editSlotData.duration"
-                  disabled
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
-            <UFormField label="Vehicle" required>
-              <USelect
-                :items="vehicles"
-                v-model="editSlotData.car"
-                placeholder="Select vehicle"
-                class="w-full"
-              />
-            </UFormField>
-            <UFormField label="Instructor" required>
-              <USelect
-                :items="instructors"
-                v-model="editSlotData.instructor"
-                placeholder="Select instructor"
-                class="w-full"
-              />
-            </UFormField>
-          </div>
-        </template>
-        <template #footer>
-          <div class="flex justify-end gap-3">
-            <UButton
-              label="Save Changes"
-              icon="i-lucide-save"
-              @click="saveEditSlot"
-              color="warning"
-            />
-          </div>
-        </template>
-      </UModal>
+      <EditSlotModal
+        v-model:open="showEditSlotModal"
+        :initialSlot="selectedEditSlot"
+        :instructors="instructors"
+        :vehicles="vehicles"
+        :operatingHours="currentDayOperatingHours"
+        @saved="handleEditSlot"
+      />
     </template>
   </UDashboardPanel>
 </template>

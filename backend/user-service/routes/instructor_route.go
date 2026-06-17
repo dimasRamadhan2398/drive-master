@@ -9,8 +9,8 @@ import (
 )
 
 type InstructorRoute struct {
-	controller controllers.IControllerRegistry
-	group      *gin.RouterGroup
+	controller     controllers.IControllerRegistry
+	group          *gin.RouterGroup
 	authMiddleware middlewares.IAuthMiddleware
 }
 

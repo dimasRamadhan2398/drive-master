@@ -9,20 +9,21 @@ import (
 	"booking-service/models/dto"
 	"booking-service/repositories"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 
 type IEnrollmentService interface {
 	CreateEnrollment(ctx context.Context, req dto.CreateEnrollmentRequest) (*dto.EnrollmentResponse, error)
-	GetEnrollment(ctx context.Context, id uint) (*dto.EnrollmentResponse, error)
-	UpdateEnrollment(ctx context.Context, id uint, req dto.UpdateEnrollmentRequest) (*dto.EnrollmentResponse, error)
-	CancelEnrollment(ctx context.Context, id uint) error
-	MarkAsPaid(ctx context.Context, id uint, totalPrice float64) (*dto.EnrollmentResponse, error)
+	GetEnrollment(ctx context.Context, id uuid.UUID) (*dto.EnrollmentResponse, error)
+	UpdateEnrollment(ctx context.Context, id uuid.UUID, req dto.UpdateEnrollmentRequest) (*dto.EnrollmentResponse, error)
+	CancelEnrollment(ctx context.Context, id uuid.UUID) error
+	MarkAsPaid(ctx context.Context, id uuid.UUID, totalPrice float64) (*dto.EnrollmentResponse, error)
 	ListEnrollments(ctx context.Context, page, limit int) (*dto.EnrollmentListResponse, error)
 	ListUserEnrollments(ctx context.Context, userID uint, page, limit int) (*dto.EnrollmentListResponse, error)
 	ListEnrollmentsByStatus(ctx context.Context, status string, page, limit int) (*dto.EnrollmentListResponse, error)
-	CreateEntitlementFromEnrollment(ctx context.Context, enrollmentID uint, sourceType, sourceID string, totalSessions int, expiresAt time.Time) (*dto.EntitlementResponse, error)
+	CreateEntitlementFromEnrollment(ctx context.Context, enrollmentID uuid.UUID, sourceType, sourceID string, totalSessions int, expiresAt time.Time) (*dto.EntitlementResponse, error)
 }
 
 type EnrollmentService struct {
@@ -57,7 +58,7 @@ func (s *EnrollmentService) CreateEnrollment(ctx context.Context, req dto.Create
 	return &resp, nil
 }
 
-func (s *EnrollmentService) GetEnrollment(ctx context.Context, id uint) (*dto.EnrollmentResponse, error) {
+func (s *EnrollmentService) GetEnrollment(ctx context.Context, id uuid.UUID) (*dto.EnrollmentResponse, error) {
 	enrollment, err := s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -70,7 +71,7 @@ func (s *EnrollmentService) GetEnrollment(ctx context.Context, id uint) (*dto.En
 	return &resp, nil
 }
 
-func (s *EnrollmentService) UpdateEnrollment(ctx context.Context, id uint, req dto.UpdateEnrollmentRequest) (*dto.EnrollmentResponse, error) {
+func (s *EnrollmentService) UpdateEnrollment(ctx context.Context, id uuid.UUID, req dto.UpdateEnrollmentRequest) (*dto.EnrollmentResponse, error) {
 	enrollment, err := s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -94,7 +95,7 @@ func (s *EnrollmentService) UpdateEnrollment(ctx context.Context, id uint, req d
 	return &resp, nil
 }
 
-func (s *EnrollmentService) CancelEnrollment(ctx context.Context, id uint) error {
+func (s *EnrollmentService) CancelEnrollment(ctx context.Context, id uuid.UUID) error {
 	enrollment, err := s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -114,7 +115,7 @@ func (s *EnrollmentService) CancelEnrollment(ctx context.Context, id uint) error
 	return s.enrollmentRepo.UpdateStatus(ctx, id, models.EnrollmentStatusCancelled)
 }
 
-func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uint, totalPrice float64) (*dto.EnrollmentResponse, error) {
+func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalPrice float64) (*dto.EnrollmentResponse, error) {
 	enrollment, err := s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -185,7 +186,7 @@ func (s *EnrollmentService) ListEnrollmentsByStatus(ctx context.Context, status 
 	return resp, nil
 }
 
-func (s *EnrollmentService) CreateEntitlementFromEnrollment(ctx context.Context, enrollmentID uint, sourceType, sourceID string, totalSessions int, expiresAt time.Time) (*dto.EntitlementResponse, error) {
+func (s *EnrollmentService) CreateEntitlementFromEnrollment(ctx context.Context, enrollmentID uuid.UUID, sourceType, sourceID string, totalSessions int, expiresAt time.Time) (*dto.EntitlementResponse, error) {
 	enrollment, err := s.enrollmentRepo.FindByID(ctx, enrollmentID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -195,7 +196,7 @@ func (s *EnrollmentService) CreateEntitlementFromEnrollment(ctx context.Context,
 	}
 
 	entitlement := &models.UserEntitlement{
-		EnrollmentID:  enrollmentID,
+		EnrollmentID:  enrollment.ID,
 		UserID:        enrollment.UserID,
 		SourceType:    sourceType,
 		SourceID:      sourceID,

@@ -156,6 +156,7 @@ declare global {
   const useNuxtDevTools: typeof import('../../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools').useNuxtDevTools
   const useOverlay: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useOverlay').useOverlay
   const usePackagesStore: typeof import('../../app/stores/packages').usePackagesStore
+  const usePaymentsStore: typeof import('../../app/stores/payments').usePaymentsStore
   const usePinia: typeof import('../../node_modules/@pinia/nuxt/dist/runtime/composables').usePinia
   const usePreviewMode: typeof import('../../node_modules/nuxt/dist/app/composables/preview').usePreviewMode
   const useRequestEvent: typeof import('../../node_modules/nuxt/dist/app/composables/ssr').useRequestEvent
@@ -269,6 +270,9 @@ declare global {
   // @ts-ignore
   export type { Package, Addon } from '../../app/stores/packages'
   import('../../app/stores/packages')
+  // @ts-ignore
+  export type { PaymentMethodOption } from '../../app/stores/payments'
+  import('../../app/stores/payments')
   // @ts-ignore
   export type { Transaction, PackageSummary } from '../../app/stores/sales'
   import('../../app/stores/sales')
@@ -441,6 +445,7 @@ declare module 'vue' {
     readonly useNuxtDevTools: UnwrapRef<typeof import('../../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools')['useNuxtDevTools']>
     readonly useOverlay: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useOverlay')['useOverlay']>
     readonly usePackagesStore: UnwrapRef<typeof import('../../app/stores/packages')['usePackagesStore']>
+    readonly usePaymentsStore: UnwrapRef<typeof import('../../app/stores/payments')['usePaymentsStore']>
     readonly usePinia: UnwrapRef<typeof import('../../node_modules/@pinia/nuxt/dist/runtime/composables')['usePinia']>
     readonly usePreviewMode: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/preview')['usePreviewMode']>
     readonly useRequestEvent: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/ssr')['useRequestEvent']>

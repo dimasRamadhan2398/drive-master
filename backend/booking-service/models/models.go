@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"booking-service/models/dto"
+
+	"github.com/google/uuid"
 )
 
 // EnrollmentStatus represents the lifecycle of an enrollment (package purchase)
@@ -15,20 +17,6 @@ const (
 	EnrollmentStatusInProgress     EnrollmentStatus = "in_progress"
 	EnrollmentStatusCompleted      EnrollmentStatus = "completed"
 	EnrollmentStatusCancelled      EnrollmentStatus = "cancelled"
-)
-
-// BookingStatus represents the lifecycle of a booking (DEPRECATED: use EnrollmentStatus)
-type BookingStatus string
-
-// Booking is an alias for Enrollment for backward compatibility (DEPRECATED: use Enrollment)
-type Booking = Enrollment
-
-// Deprecated: Use EnrollmentStatus instead
-const (
-	BookingStatusPending   BookingStatus = "pending"
-	BookingStatusConfirmed BookingStatus = "confirmed"
-	BookingStatusCompleted BookingStatus = "completed"
-	BookingStatusCancelled BookingStatus = "cancelled"
 )
 
 // CertificationStatus represents certification lifecycle
@@ -56,16 +44,16 @@ const (
 // Enrollment represents a user's enrollment/purchase of a driving package.
 // This is created when a user pays for a package (Bronze/Silver/Gold/Platinum).
 type Enrollment struct {
-	ID         uint             `json:"id" gorm:"primaryKey"`
-	UserID     uint             `json:"userId" gorm:"not null;index"`     // ref: user-service
-	PackageID  uint             `json:"packageId" gorm:"not null;index"`  // ref: core-service (package)
+	ID         uuid.UUID       `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID     uint           `json:"userId" gorm:"not null;index"`     // ref: user-service
+	PackageID  uint           `json:"packageId" gorm:"not null;index"`  // ref: core-service (package)
 	Status     EnrollmentStatus `json:"status" gorm:"type:varchar(30);default:'pending_payment'"`
-	TotalPrice float64          `json:"totalPrice"`                       // base price + add-ons
-	PaidAt     *time.Time       `json:"paidAt"`                           // when payment was confirmed
-	ExpiresAt  time.Time        `json:"expiresAt"`                       // when the enrollment expires (usually package validity)
-	AnonymizedAt *time.Time     `json:"anonymizedAt" gorm:"index"`       // when user was deleted
-	CreatedAt  time.Time        `json:"createdAt"`
-	UpdatedAt  time.Time        `json:"updatedAt"`
+	TotalPrice float64        `json:"totalPrice"`                       // base price + add-ons
+	PaidAt     *time.Time     `json:"paidAt"`                           // when payment was confirmed
+	ExpiresAt  time.Time      `json:"expiresAt"`                       // when the enrollment expires (usually package validity)
+	AnonymizedAt *time.Time   `json:"anonymizedAt" gorm:"index"`       // when user was deleted
+	CreatedAt  time.Time      `json:"createdAt"`
+	UpdatedAt  time.Time      `json:"updatedAt"`
 
 	// Local associations
 	Entitlements []UserEntitlement `json:"entitlements" gorm:"foreignKey:EnrollmentID"`
@@ -74,17 +62,17 @@ type Enrollment struct {
 // UserEntitlement tracks how many sessions a user has remaining within an enrollment.
 // A user can have multiple entitlements if they purchased add-ons.
 type UserEntitlement struct {
-	ID            uint      `json:"id" gorm:"primaryKey"`
-	EnrollmentID  uint      `json:"enrollmentId" gorm:"not null;index"` // ref: Enrollment
-	UserID        uint      `json:"userId" gorm:"not null;index"`       // ref: user-service
-	SourceType    string    `json:"sourceType" gorm:"size:50;not null"` // "package" | "addon" | "voucher"
-	SourceID      string    `json:"sourceId" gorm:"size:100;not null"` // ID in core-service
-	TotalSessions int       `json:"totalSessions"`
-	UsedSessions  int       `json:"usedSessions"`
-	ExpiresAt     time.Time `json:"expiresAt"`
+	ID            uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	EnrollmentID  uuid.UUID  `json:"enrollmentId" gorm:"type:uuid;not null;index"` // ref: Enrollment
+	UserID        uint       `json:"userId" gorm:"not null;index"`       // ref: user-service
+	SourceType    string     `json:"sourceType" gorm:"size:50;not null"` // "package" | "addon" | "voucher"
+	SourceID      string     `json:"sourceId" gorm:"size:100;not null"` // ID in core-service
+	TotalSessions int        `json:"totalSessions"`
+	UsedSessions  int        `json:"usedSessions"`
+	ExpiresAt     time.Time  `json:"expiresAt"`
 	AnonymizedAt  *time.Time `json:"anonymizedAt" gorm:"index"`       // when user was deleted
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
 }
 
 // DrivingSession is the record of an actual driving lesson/session.
@@ -116,22 +104,22 @@ type Session = DrivingSession
 // Certification is issued to a user after completing a package.
 // PackageID is a reference to catalog-service; UserID to user-service.
 type Certification struct {
-	ID        uint                `json:"id" gorm:"primaryKey"`
-	Type      string              `json:"type" gorm:"size:100;not null"`
-	Recipient string              `json:"recipient" gorm:"size:150;not null"`
-	IssueDate time.Time           `json:"issueDate"`
-	PackageID uint                `json:"packageId" gorm:"not null;index"` // ref: catalog-service
+	ID        uuid.UUID         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	Type      string            `json:"type" gorm:"size:100;not null"`
+	Recipient string            `json:"recipient" gorm:"size:150;not null"`
+	IssueDate time.Time         `json:"issueDate"`
+	PackageID uint              `json:"packageId" gorm:"not null;index"` // ref: catalog-service
 	Status    CertificationStatus `json:"status" gorm:"type:varchar(30);default:'pending'"`
-	CreatedAt time.Time           `json:"createdAt"`
-	UpdatedAt time.Time           `json:"updatedAt"`
+	CreatedAt time.Time         `json:"createdAt"`
+	UpdatedAt time.Time         `json:"updatedAt"`
 }
 
 // UserCertification is the join table between users and certifications.
 // UserID references user-service; CertificationID is local.
 type UserCertification struct {
-	UserID          uint      `json:"userId" gorm:"primaryKey"`
-	CertificationID uint      `json:"certificationId" gorm:"primaryKey"`
-	IssuedAt        time.Time `json:"issuedAt"`
+	UserID          uuid.UUID    `json:"userId" gorm:"type:uuid;primaryKey"`
+	CertificationID uuid.UUID    `json:"certificationId" gorm:"type:uuid;primaryKey"`
+	IssuedAt        time.Time    `json:"issuedAt"`
 
 	Certification Certification `json:"certification" gorm:"foreignKey:CertificationID"`
 }
@@ -142,17 +130,17 @@ type Schedule = dto.Schedule
 
 // Payment represents a payment transaction for an enrollment
 type Payment struct {
-	ID            uint           `json:"id" gorm:"primaryKey"`
-	EnrollmentID  uint           `json:"enrollmentId" gorm:"not null;index"` // ref: Enrollment
-	UserID        uint           `json:"userId" gorm:"not null;index"`      // ref: user-service
-	OrderID       string         `json:"orderId" gorm:"size:100;uniqueIndex"` // Midtrans order ID
-	Amount        float64        `json:"amount" gorm:"not null"`
+	ID            uint            `json:"id" gorm:"primaryKey"`
+	EnrollmentID  uuid.UUID       `json:"enrollmentId" gorm:"type:uuid;not null;index"` // ref: Enrollment
+	UserID        uint            `json:"userId" gorm:"not null;index"`      // ref: user-service
+	OrderID       string          `json:"orderId" gorm:"size:100;uniqueIndex"` // Midtrans order ID
+	Amount        float64         `json:"amount" gorm:"not null"`
 	PaymentMethod dto.PaymentMethod `json:"paymentMethod" gorm:"type:varchar(30)"`
 	Status        dto.PaymentStatus `json:"status" gorm:"type:varchar(30);default:'pending'"`
-	PaymentURL    string         `json:"paymentUrl" gorm:"type:text"`       // Snap redirect URL
-	TransactionID string         `json:"transactionId" gorm:"size:100"`     // Midtrans transaction ID
-	PaidAt        *time.Time     `json:"paidAt"`
-	ExpiresAt     *time.Time     `json:"expiresAt"`
-	CreatedAt     time.Time      `json:"createdAt"`
-	UpdatedAt     time.Time      `json:"updatedAt"`
+	PaymentURL    string          `json:"paymentUrl" gorm:"type:text"`       // Snap redirect URL
+	TransactionID string          `json:"transactionId" gorm:"size:100"`     // Midtrans transaction ID
+	PaidAt        *time.Time      `json:"paidAt"`
+	ExpiresAt     *time.Time      `json:"expiresAt"`
+	CreatedAt     time.Time       `json:"createdAt"`
+	UpdatedAt     time.Time       `json:"updatedAt"`
 }

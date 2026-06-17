@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // GetUintIDFromPath extracts a uint ID from the URL path parameter
@@ -20,4 +21,19 @@ func GetUintIDFromPath(ctx *gin.Context, param string) (uint, error) {
 	}
 
 	return uint(id), nil
+}
+
+// GetUUIDIDFromPath extracts a uuid.UUID ID from the URL path parameter
+func GetUUIDIDFromPath(ctx *gin.Context, param string) (uuid.UUID, error) {
+	idStr := ctx.Param(param)
+	if idStr == "" {
+		return uuid.Nil, errors.New("parameter not found")
+	}
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return uuid.Nil, errors.New("invalid id format")
+	}
+
+	return id, nil
 }

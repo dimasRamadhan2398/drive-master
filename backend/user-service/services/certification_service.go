@@ -24,7 +24,7 @@ type ICertificationService interface {
 }
 
 type CertificationService struct {
-	repo repositories.ICertificationRepository
+	repo     repositories.ICertificationRepository
 	listener listeners.IEntitlementCompletedListener
 }
 

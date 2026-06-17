@@ -29,7 +29,7 @@ type IRecurringScheduleController interface {
 func NewRecurringScheduleController(
 	recurringScheduleService services.IRecurringScheduleService,
 ) IRecurringScheduleController {
-	return&RecurringScheduleController{
+	return &RecurringScheduleController{
 		recurringScheduleService: recurringScheduleService,
 	}
 }

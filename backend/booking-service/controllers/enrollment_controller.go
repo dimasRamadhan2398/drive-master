@@ -68,13 +68,13 @@ func (c *EnrollmentController) CreateEnrollment(ctx *gin.Context) {
 // @Tags enrollments
 // @Accept json
 // @Produce json
-// @Param id path int true "Enrollment ID"
+// @Param id path string true "Enrollment ID"
 // @Success 200 {object} dto.EnrollmentResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /enrollments/{id} [get]
 func (c *EnrollmentController) GetEnrollment(ctx *gin.Context) {
-	id, err := base.GetUintIDFromPath(ctx, "id")
+	id, err := base.GetUUIDIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid enrollment id"})
 		return
@@ -95,14 +95,14 @@ func (c *EnrollmentController) GetEnrollment(ctx *gin.Context) {
 // @Tags enrollments
 // @Accept json
 // @Produce json
-// @Param id path int true "Enrollment ID"
+// @Param id path string true "Enrollment ID"
 // @Param enrollment body dto.UpdateEnrollmentRequest true "Enrollment data"
 // @Success 200 {object} dto.EnrollmentResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /enrollments/{id} [put]
 func (c *EnrollmentController) UpdateEnrollment(ctx *gin.Context) {
-	id, err := base.GetUintIDFromPath(ctx, "id")
+	id, err := base.GetUUIDIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid enrollment id"})
 		return
@@ -129,13 +129,13 @@ func (c *EnrollmentController) UpdateEnrollment(ctx *gin.Context) {
 // @Tags enrollments
 // @Accept json
 // @Produce json
-// @Param id path int true "Enrollment ID"
+// @Param id path string true "Enrollment ID"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /enrollments/{id}/cancel [post]
 func (c *EnrollmentController) CancelEnrollment(ctx *gin.Context) {
-	id, err := base.GetUintIDFromPath(ctx, "id")
+	id, err := base.GetUUIDIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid enrollment id"})
 		return
@@ -155,14 +155,14 @@ func (c *EnrollmentController) CancelEnrollment(ctx *gin.Context) {
 // @Tags enrollments
 // @Accept json
 // @Produce json
-// @Param id path int true "Enrollment ID"
+// @Param id path string true "Enrollment ID"
 // @Param body body map[string]interface{} true "Payment details"
 // @Success 200 {object} dto.EnrollmentResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /enrollments/{id}/pay [post]
 func (c *EnrollmentController) MarkAsPaid(ctx *gin.Context) {
-	id, err := base.GetUintIDFromPath(ctx, "id")
+	id, err := base.GetUUIDIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid enrollment id"})
 		return

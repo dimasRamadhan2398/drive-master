@@ -20,9 +20,9 @@ type IMemberCertificateService interface {
 }
 
 type MemberCertificateService struct {
-	userRepo   repositories.IUserRepository
+	userRepo        repositories.IUserRepository
 	entitlementRepo repositories.IEntitlementRepository
-	certRepo   repositories.ICertificationRepository
+	certRepo        repositories.ICertificationRepository
 }
 
 func NewMemberCertificateService(
@@ -31,9 +31,9 @@ func NewMemberCertificateService(
 	certRepo repositories.ICertificationRepository,
 ) IMemberCertificateService {
 	return &MemberCertificateService{
-		userRepo:       userRepo,
+		userRepo:        userRepo,
 		entitlementRepo: entitlementRepo,
-		certRepo:       certRepo,
+		certRepo:        certRepo,
 	}
 }
 
@@ -54,16 +54,16 @@ func (s *MemberCertificateService) GetCertificate(ctx context.Context, memberID 
 	memberName := fmt.Sprintf("%s %s", user.FirstName, user.LastName)
 
 	return &dto.MemberCertificateDetail{
-		ID:           cert.ID,
-		CertNumber:   cert.CertNumber,
-		MemberName:   memberName,
-		MemberEmail:  user.EmailAddress,
-		PackageName:  cert.IssuedBy, // Using IssuedBy as package name
-		IssuedDate:   cert.IssuedDate,
-		IssuedBy:     "Drive Master",
+		ID:            cert.ID,
+		CertNumber:    cert.CertNumber,
+		MemberName:    memberName,
+		MemberEmail:   user.EmailAddress,
+		PackageName:   cert.IssuedBy, // Using IssuedBy as package name
+		IssuedDate:    cert.IssuedDate,
+		IssuedBy:      "Drive Master",
 		TrainingHours: 0,
 		TotalSessions: 0,
-		Status:       string(cert.Status),
+		Status:        string(cert.Status),
 	}, nil
 }
 
@@ -105,7 +105,7 @@ func (s *MemberCertificateService) GetCertificatesByMember(ctx context.Context, 
 			PackageName: cert.IssuedBy,
 			CertNumber:  cert.CertNumber,
 			IssuedDate:  cert.IssuedDate.Format("2006-01-02"),
-			CompletedAt:  completedAt,
+			CompletedAt: completedAt,
 			Status:      status,
 		})
 	}

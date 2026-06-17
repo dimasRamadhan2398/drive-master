@@ -7,15 +7,16 @@ import (
 	"booking-service/models/dto"
 	"booking-service/pkg/base"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type IUserCertificationRepository interface {
 	Create(ctx context.Context, uc *models.UserCertification) error
-	FindByUserID(ctx context.Context, userID uint) ([]models.UserCertification, error)
-	FindByUserAndCertification(ctx context.Context, userID, certificationID uint) (*models.UserCertification, error)
-	Delete(ctx context.Context, userID, certificationID uint) error
-	Exists(ctx context.Context, userID, certificationID uint) (bool, error)
+	FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.UserCertification, error)
+	FindByUserAndCertification(ctx context.Context, userID, certificationID uuid.UUID) (*models.UserCertification, error)
+	Delete(ctx context.Context, userID, certificationID uuid.UUID) error
+	Exists(ctx context.Context, userID, certificationID uuid.UUID) (bool, error)
 	ToResponse(uc *models.UserCertification, certResponse dto.CertificationResponse) dto.UserCertificationResponse
 }
 
@@ -32,7 +33,7 @@ func (r *UserCertificationRepository) Create(ctx context.Context, uc *models.Use
 	return r.BaseRepository.Create(uc)
 }
 
-func (r *UserCertificationRepository) FindByUserID(ctx context.Context, userID uint) ([]models.UserCertification, error) {
+func (r *UserCertificationRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.UserCertification, error) {
 	var userCerts []models.UserCertification
 	opts := base.NewQueryOptions().
 		WithPreloads("Certification").
@@ -43,7 +44,7 @@ func (r *UserCertificationRepository) FindByUserID(ctx context.Context, userID u
 	return userCerts, nil
 }
 
-func (r *UserCertificationRepository) FindByUserAndCertification(ctx context.Context, userID, certificationID uint) (*models.UserCertification, error) {
+func (r *UserCertificationRepository) FindByUserAndCertification(ctx context.Context, userID, certificationID uuid.UUID) (*models.UserCertification, error) {
 	var uc models.UserCertification
 	opts := base.NewQueryOptions().
 		WithPreloads("Certification").
@@ -54,14 +55,14 @@ func (r *UserCertificationRepository) FindByUserAndCertification(ctx context.Con
 	return &uc, nil
 }
 
-func (r *UserCertificationRepository) Delete(ctx context.Context, userID, certificationID uint) error {
+func (r *UserCertificationRepository) Delete(ctx context.Context, userID, certificationID uuid.UUID) error {
 	return r.BaseRepository.Exec(
 		"DELETE FROM user_certifications WHERE user_id = ? AND certification_id = ?",
 		userID, certificationID,
 	)
 }
 
-func (r *UserCertificationRepository) Exists(ctx context.Context, userID, certificationID uint) (bool, error) {
+func (r *UserCertificationRepository) Exists(ctx context.Context, userID, certificationID uuid.UUID) (bool, error) {
 	return r.BaseRepository.Exists(&models.UserCertification{}, "user_id = ? AND certification_id = ?", userID, certificationID)
 }
 

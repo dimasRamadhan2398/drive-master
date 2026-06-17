@@ -280,6 +280,25 @@ func (c *PackageController) UpdatePackage(ctx *gin.Context) {
 		pkg.ImageURL = req.ImageURL
 	}
 
+	// Handle Features (converted from Benefits input)
+	if len(req.Benefits) > 0 {
+		var features models.StringArray
+		for _, b := range req.Benefits {
+			switch v := b.(type) {
+			case string:
+				features = append(features, v)
+			case map[string]interface{}:
+				if title, ok := v["title"].(string); ok && title != "" {
+					features = append(features, title)
+				}
+			}
+		}
+		pkg.Features = features
+	}
+
+	// Update Highlight
+	pkg.Highlight = req.Highlight
+
 	if err := c.packageService.UpdatePackage(ctx.Request.Context(), pkg); err != nil {
 		response.InternalServerError(ctx, "Failed to update package")
 		return

@@ -127,6 +127,22 @@ services:
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
+      - name: user-entitlements-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/entitlements
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      # - name: user-entitlements-route
+      #   strip_path: false
+      #   preserve_host: false
+      #   paths:
+      #     - /api/v1/entitlements
+      #   protocols: [http, https]
+      #   methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
       - name: user-testimonials-all-route
         strip_path: false
         preserve_host: false
@@ -244,6 +260,14 @@ services:
         preserve_host: false
         paths:
           - /api/v1/certifications
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: booking-schedules-filter-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/schedules/filter
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 

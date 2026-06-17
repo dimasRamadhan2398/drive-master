@@ -2,6 +2,8 @@ package dto
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Enrollment DTOs (represents package purchase/enrollment)
@@ -18,7 +20,7 @@ type UpdateEnrollmentRequest struct {
 }
 
 type EnrollmentResponse struct {
-	ID         uint      `json:"id"`
+	ID         uuid.UUID `json:"id"`
 	UserID     uint      `json:"userId"`
 	PackageID  uint      `json:"packageId"`
 	Status     string    `json:"status"`
@@ -146,7 +148,7 @@ type UpdateEntitlementRequest struct {
 }
 
 type EntitlementResponse struct {
-	ID                uint      `json:"id"`
+	ID                uuid.UUID `json:"id"`
 	UserID            uint      `json:"userId"`
 	SourceType        string    `json:"sourceType"`
 	SourceID          string    `json:"sourceId"`
@@ -179,7 +181,7 @@ type UpdateCertificationRequest struct {
 }
 
 type CertificationResponse struct {
-	ID         uint      `json:"id"`
+	ID         uuid.UUID `json:"id"`
 	Type       string    `json:"type"`
 	Recipient  string    `json:"recipient"`
 	IssueDate  time.Time `json:"issueDate"`
@@ -200,13 +202,13 @@ type CertificationListResponse struct {
 // UserCertification DTOs
 
 type IssueCertificationRequest struct {
-	UserID         uint `json:"userId" binding:"required"`
-	CertificationID uint `json:"certificationId" binding:"required"`
+	UserID         uuid.UUID `json:"userId" binding:"required"`
+	CertificationID uuid.UUID `json:"certificationId" binding:"required"`
 }
 
 type UserCertificationResponse struct {
-	UserID          uint      `json:"userId"`
-	CertificationID uint      `json:"certificationId"`
+	UserID          uuid.UUID      `json:"userId"`
+	CertificationID uuid.UUID      `json:"certificationId"`
 	IssuedAt        time.Time `json:"issuedAt"`
 	Certification   CertificationResponse `json:"certification"`
 }
@@ -217,8 +219,8 @@ type ListParams struct {
 	Limit int `form:"limit,default=10"`
 }
 type BookSlotRequest struct {
-	UserID        uint   `json:"userId" binding:"required"`
-	EntitlementID uint   `json:"entitlementId" binding:"required"`
+	UserID        uuid.UUID   `json:"userId" binding:"required"`
+	EntitlementID uuid.UUID   `json:"entitlementId" binding:"required"`
 	Notes         string `json:"notes"`
 }
 

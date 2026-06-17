@@ -22,13 +22,13 @@ import (
 )
 
 const (
-	DefaultMaxRequests        = 100               // requests per window
-	DefaultExpirationTTLSeconds = 60              // 1 minute window
+	DefaultMaxRequests          = 100 // requests per window
+	DefaultExpirationTTLSeconds = 60  // 1 minute window
 )
 
 type Claims struct {
 	User *dto.GetUserResponse `json:"User"`
-	Exp  int64                 `json:"exp"`
+	Exp  int64                `json:"exp"`
 }
 
 // AuthMiddleware validates JWT tokens
@@ -48,7 +48,6 @@ func NewAuthMiddleware(secret string) IAuthMiddleware {
 		secret: secret,
 	}
 }
-
 
 // Authenticate validates both the API key signature and Bearer token
 func (m *AuthMiddleware) Authenticate() gin.HandlerFunc {

@@ -101,6 +101,14 @@ export interface AvailableScheduleParams {
   duration?: number;
 }
 
+// Helper to format date to YYYY-MM-DD
+export const formatDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const scheduleService = {
   // ==================== SCHEDULE CRUD METHODS ====================
 
@@ -208,6 +216,24 @@ export const scheduleService = {
         : [],
       ...pagination,
     };
+  },
+
+  // GET /schedules/filter?date=YYYY-MM-DD - Fetch schedules by date (defaults to today)
+  async fetchByDate(date?: string): Promise<ScheduleBrief[]> {
+    const { user, extractData } = useApiClients();
+
+    // Default to today if no date provided
+    const targetDate = date || formatDateString(new Date());
+
+    try {
+      const response = await user<ApiResponse<ScheduleBrief[]>>(
+        `/schedules/filter?date=${targetDate}`,
+        { method: "GET" },
+      );
+      return extractData(response);
+    } catch {
+      return [];
+    }
   },
 
   // GET /schedules/available - Get available schedules

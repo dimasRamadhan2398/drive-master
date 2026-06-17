@@ -2,6 +2,8 @@ package dto
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // PaymentStatus represents the status of a payment
@@ -29,15 +31,15 @@ const (
 // Payment DTOs
 
 type CreatePaymentRequest struct {
-	EnrollmentID uint    `json:"enrollmentId" binding:"required"`
-	UserID       uint    `json:"userId" binding:"required"`
-	Amount       float64 `json:"amount" binding:"required"`
+	EnrollmentID uuid.UUID `json:"enrollmentId" binding:"required"`
+	UserID       uint      `json:"userId" binding:"required"`
+	Amount       float64   `json:"amount" binding:"required"`
 	PaymentMethod PaymentMethod `json:"paymentMethod" binding:"required"`
 }
 
 type PaymentResponse struct {
 	ID            uint           `json:"id"`
-	EnrollmentID  uint           `json:"enrollmentId"`
+	EnrollmentID  uuid.UUID     `json:"enrollmentId"`
 	UserID        uint           `json:"userId"`
 	OrderID       string         `json:"orderId"`
 	Amount        float64        `json:"amount"`

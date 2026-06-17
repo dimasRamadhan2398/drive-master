@@ -8,8 +8,8 @@ import (
 )
 
 type WorkExperienceRoute struct {
-	controller controllers.IControllerRegistry
-	group      *gin.RouterGroup
+	controller     controllers.IControllerRegistry
+	group          *gin.RouterGroup
 	authMiddleware middlewares.IAuthMiddleware
 }
 

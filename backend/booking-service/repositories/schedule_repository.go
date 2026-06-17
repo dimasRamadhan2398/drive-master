@@ -22,10 +22,11 @@ type IScheduleRepository interface {
 	FindByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uint) (*dto.Schedule, error)
 	FindAvailableByDateRange(ctx context.Context, startDate, endDate time.Time) ([]dto.Schedule, error)
 	UpdateStatus(ctx context.Context, id uint, status dto.ScheduleStatus) error
-	BookSlot(ctx context.Context, id uint, userID, enrollmentID uint) error
+	BookSlot(ctx context.Context, id uint, userID, enrollmentID uuid.UUID) error
 	ReleaseSlot(ctx context.Context, id uint) error
 	ExistsForInstructorAndDateTime(ctx context.Context, instructorID uuid.UUID, date time.Time, timeStr string) (bool, error)
 	CountAll(ctx context.Context) (int64, error)
+	GetStats(ctx context.Context) (*dto.ScheduleStatsResponse, error)
 	ToResponse(schedule *dto.Schedule) dto.ScheduleResponse
 	ToListResponse(schedules []dto.Schedule, total int64, page, limit int) dto.ScheduleListResponse
 }
@@ -111,7 +112,7 @@ func (r *ScheduleRepository) UpdateStatus(ctx context.Context, id uint, status d
 	)
 }
 
-func (r *ScheduleRepository) BookSlot(ctx context.Context, id uint, userID, enrollmentID uint) error {
+func (r *ScheduleRepository) BookSlot(ctx context.Context, id uint, userID, enrollmentID uuid.UUID) error {
 	return r.BaseRepository.Exec(
 		"UPDATE schedules SET user_id = ?, enrollment_id = ?, status = ?, updated_at = ? WHERE id = ? AND status = ?",
 		userID, enrollmentID, dto.ScheduleStatusBooked, time.Now(), id, dto.ScheduleStatusAvailable,
@@ -131,6 +132,47 @@ func (r *ScheduleRepository) ExistsForInstructorAndDateTime(ctx context.Context,
 
 func (r *ScheduleRepository) CountAll(ctx context.Context) (int64, error) {
 	return r.BaseRepository.Count(&dto.Schedule{}, base.NewQueryOptions())
+}
+
+func (r *ScheduleRepository) GetStats(ctx context.Context) (*dto.ScheduleStatsResponse, error) {
+	stats := &dto.ScheduleStatsResponse{}
+
+	// Get available schedules
+	if err := r.db.Model(&dto.Schedule{}).
+		Where("status = ?", dto.ScheduleStatusAvailable).
+		Count(&stats.AvailableSchedule).Error; err != nil {
+		return nil, err
+	}
+
+	// Get booked schedules
+	if err := r.db.Model(&dto.Schedule{}).
+		Where("status = ?", dto.ScheduleStatusBooked).
+		Count(&stats.BookedSchedule).Error; err != nil {
+		return nil, err
+	}
+
+	// Get in-progress schedules
+	if err := r.db.Model(&dto.Schedule{}).
+		Where("status = ?", dto.ScheduleStatusInProgress).
+		Count(&stats.InProgressSchedule).Error; err != nil {
+		return nil, err
+	}
+
+	// Get completed schedules
+	if err := r.db.Model(&dto.Schedule{}).
+		Where("status = ?", dto.ScheduleStatusCompleted).
+		Count(&stats.CompletedSchedule).Error; err != nil {
+		return nil, err
+	}
+
+	// Get blocked schedules
+	if err := r.db.Model(&dto.Schedule{}).
+		Where("status = ?", dto.ScheduleStatusBlocked).
+		Count(&stats.BlockedSchedule).Error; err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // ToResponse converts a Schedule model to ScheduleResponse DTO
@@ -169,9 +211,11 @@ func (r *ScheduleRepository) ToListResponse(schedules []dto.Schedule, total int6
 
 	return dto.ScheduleListResponse{
 		Data:       items,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Pagination: dto.PaginationMeta{
+			Page: page,
+			Total: total,
+			Limit: limit,
+			TotalPages: totalPages,
+		},
 	}
 }

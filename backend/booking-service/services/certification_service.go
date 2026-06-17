@@ -11,6 +11,8 @@ import (
 	"booking-service/models/dto"
 	"booking-service/pkg/kafka"
 	"booking-service/repositories"
+
+	"github.com/google/uuid"
 )
 
 type CertificationService struct {
@@ -51,7 +53,7 @@ func (s *CertificationService) CreateCertification(ctx context.Context, req dto.
 	return &resp, nil
 }
 
-func (s *CertificationService) GetCertification(ctx context.Context, id uint) (*dto.CertificationResponse, error) {
+func (s *CertificationService) GetCertification(ctx context.Context, id uuid.UUID) (*dto.CertificationResponse, error) {
 	certification, err := s.certRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, errors.New("certification not found")
@@ -61,7 +63,7 @@ func (s *CertificationService) GetCertification(ctx context.Context, id uint) (*
 	return &resp, nil
 }
 
-func (s *CertificationService) UpdateCertificationStatus(ctx context.Context, id uint, status string) (*dto.CertificationResponse, error) {
+func (s *CertificationService) UpdateCertificationStatus(ctx context.Context, id uuid.UUID, status string) (*dto.CertificationResponse, error) {
 	certification, err := s.certRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, errors.New("certification not found")
@@ -114,7 +116,7 @@ func (s *CertificationService) IssueCertification(ctx context.Context, req dto.I
 }
 
 // sendCertificationEmail fetches user info and sends the certification email
-func (s *CertificationService) sendCertificationEmail(ctx context.Context, userID uint, certType string, issueDate time.Time) {
+func (s *CertificationService) sendCertificationEmail(ctx context.Context, userID uuid.UUID, certType string, issueDate time.Time) {
 	if s.userClient == nil {
 		return
 	}
@@ -143,7 +145,7 @@ func (s *CertificationService) sendCertificationEmail(ctx context.Context, userI
 	}
 }
 
-func (s *CertificationService) RevokeCertification(ctx context.Context, userID, certificationID uint) error {
+func (s *CertificationService) RevokeCertification(ctx context.Context, userID, certificationID uuid.UUID) error {
 	certification, err := s.certRepo.FindByID(ctx, certificationID)
 	if err != nil {
 		return errors.New("certification not found")
@@ -168,7 +170,7 @@ func (s *CertificationService) ListCertifications(ctx context.Context, page, lim
 	return &resp, nil
 }
 
-func (s *CertificationService) GetUserCertifications(ctx context.Context, userID uint) ([]dto.UserCertificationResponse, error) {
+func (s *CertificationService) GetUserCertifications(ctx context.Context, userID uuid.UUID) ([]dto.UserCertificationResponse, error) {
 	userCerts, err := s.userCertRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err

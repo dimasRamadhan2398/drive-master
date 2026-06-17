@@ -113,7 +113,7 @@ func (s *ScheduleSeeder) Run(db *gorm.DB) error {
 					// Every 5th slot per instructor per day is booked
 					slotIndex := dayOffset%5 + 1
 					if slotIndex%3 == 0 {
-						userID := uint(1)
+						userID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 						schedule.UserID = &userID
 						schedule.Status = dto.ScheduleStatusBooked
 					}

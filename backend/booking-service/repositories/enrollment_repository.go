@@ -16,16 +16,16 @@ import (
 type IEnrollmentRepository interface {
 	Create(ctx context.Context, enrollment *models.Enrollment) error
 	CreateTx(tx *gorm.DB, enrollment *models.Enrollment) error
-	FindByID(ctx context.Context, id uint) (*models.Enrollment, error)
-	FindByIDWithPreload(ctx context.Context, id uint) (*models.Enrollment, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*models.Enrollment, error)
+	FindByIDWithPreload(ctx context.Context, id uuid.UUID) (*models.Enrollment, error)
 	Update(ctx context.Context, enrollment *models.Enrollment) error
 	Delete(ctx context.Context, enrollment *models.Enrollment) error
 	FindAll(ctx context.Context) ([]models.Enrollment, error)
 	FindByUserID(ctx context.Context, userID uint) ([]models.Enrollment, error)
 	FindByStatus(ctx context.Context, status models.EnrollmentStatus) ([]models.Enrollment, int64, error)
 	FindByPackageID(ctx context.Context, packageID uint) ([]models.Enrollment, error)
-	UpdateStatus(ctx context.Context, id uint, status models.EnrollmentStatus) error
-	MarkAsPaid(ctx context.Context, id uint, paidAt time.Time, totalPrice float64) error
+	UpdateStatus(ctx context.Context, id uuid.UUID, status models.EnrollmentStatus) error
+	MarkAsPaid(ctx context.Context, id uuid.UUID, paidAt time.Time, totalPrice float64) error
 	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
 	CountAll(ctx context.Context) (int64, error)
 	CountByStatus(ctx context.Context, status models.EnrollmentStatus) (int64, error)
@@ -51,7 +51,7 @@ func (r *EnrollmentRepository) CreateTx(tx *gorm.DB, enrollment *models.Enrollme
 	return r.BaseRepository.CreateTx(tx, enrollment)
 }
 
-func (r *EnrollmentRepository) FindByID(ctx context.Context, id uint) (*models.Enrollment, error) {
+func (r *EnrollmentRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Enrollment, error) {
 	var enrollment models.Enrollment
 	if err := r.BaseRepository.FindByIDWithPreload(&enrollment, id); err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (r *EnrollmentRepository) FindByID(ctx context.Context, id uint) (*models.E
 	return &enrollment, nil
 }
 
-func (r *EnrollmentRepository) FindByIDWithPreload(ctx context.Context, id uint) (*models.Enrollment, error) {
+func (r *EnrollmentRepository) FindByIDWithPreload(ctx context.Context, id uuid.UUID) (*models.Enrollment, error) {
 	var enrollment models.Enrollment
 	opts := base.NewQueryOptions().WithPreloads("Entitlements")
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollment, opts); err != nil {
@@ -123,14 +123,14 @@ func (r *EnrollmentRepository) FindByPackageID(ctx context.Context, packageID ui
 	return enrollments, nil
 }
 
-func (r *EnrollmentRepository) UpdateStatus(ctx context.Context, id uint, status models.EnrollmentStatus) error {
+func (r *EnrollmentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status models.EnrollmentStatus) error {
 	return r.BaseRepository.Exec(
 		"UPDATE enrollments SET status = ?, updated_at = ? WHERE id = ?",
 		status, time.Now(), id,
 	)
 }
 
-func (r *EnrollmentRepository) MarkAsPaid(ctx context.Context, id uint, paidAt time.Time, totalPrice float64) error {
+func (r *EnrollmentRepository) MarkAsPaid(ctx context.Context, id uuid.UUID, paidAt time.Time, totalPrice float64) error {
 	return r.BaseRepository.Exec(
 		"UPDATE enrollments SET status = 'paid', paid_at = ?, total_price = ?, updated_at = ? WHERE id = ?",
 		paidAt, totalPrice, time.Now(), id,
