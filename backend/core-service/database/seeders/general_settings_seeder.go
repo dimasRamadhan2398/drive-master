@@ -12,10 +12,10 @@ import (
 func RunGeneralSettingsSeeder(db *gorm.DB) error {
 	settings := models.GeneralSettings{
 		ID:              uuid.MustParse("00000000-0000-0000-0000-000000000001"),
-		BusinessName:    "Drive",
-		Email:           "info@drive.com",
-		Phone:           "+62 21 1234 5678",
+		BusinessName:    "Drive Master Indonesia",
+		Email:           "admin@drive-master.com",
 		Fax:             "+62 21 1234 5679",
+		Phone:           "+62 21 1234 5678",
 		WhatsApp:        "+62 812 3456 7890",
 		Address:         "Jl. Sudirman No. 123, Jakarta Selatan",
 		HoursMonFri:     "08:00 - 17:00",

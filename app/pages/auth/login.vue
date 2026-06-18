@@ -110,7 +110,7 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
 
         <div class="flex items-center justify-between">
           <UCheckbox v-model="state.remember" label="Remember me" color="warning" />
-          <NuxtLink to="/forgot-password" class="text-sm text-warning hover:underline">
+          <NuxtLink to="/auth/forgot-password" class="text-sm text-warning hover:underline">
             Forgot password?
           </NuxtLink>
         </div>

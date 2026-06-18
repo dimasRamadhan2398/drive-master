@@ -231,6 +231,14 @@ services:
         protocols: [http, https]
         methods: [GET, OPTIONS]
 
+      - name: core-general-settings-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/general-settings
+        protocols: [http, https]
+        methods: [GET, OPTIONS]
+
   - name: core-service-docs-service
     url: http://core-service-upstream
     routes:

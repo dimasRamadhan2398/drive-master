@@ -53,7 +53,7 @@ func runMigrate(cmd *cobra.Command, args []string) {
 	log.Println("Running database migrations...")
 
 	err := db.AutoMigrate(
-		&models.Booking{},
+		&models.Enrollment{},
 		&models.Session{},
 		&models.Schedule{},
 	)
