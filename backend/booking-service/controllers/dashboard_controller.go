@@ -9,23 +9,23 @@ import (
 )
 
 type DashboardController struct {
-	sessionService     services.ISessionService
-	certificationService services.ICertificationService
+	sessionService services.ISessionService
+	revenueService services.IRevenueService
 }
 
 func NewDashboardController(
 	sessionService services.ISessionService,
-	certificationService services.ICertificationService,
+	revenueService services.IRevenueService,
 ) IDashboardController {
 	return &DashboardController{
-		sessionService:       sessionService,
-		certificationService: certificationService,
+		sessionService:  sessionService,
+		revenueService: revenueService,
 	}
 }
 
 type IDashboardController interface {
 	GetSessionStats(ctx *gin.Context)
-	GetCertificationStats(ctx *gin.Context)
+	GetRevenueStats(ctx *gin.Context)
 }
 
 func (c *DashboardController) GetSessionStats(ctx *gin.Context) {
@@ -42,8 +42,9 @@ func (c *DashboardController) GetSessionStats(ctx *gin.Context) {
 	})
 }
 
-func (c *DashboardController) GetCertificationStats(ctx *gin.Context) {
-	stats, err := c.certificationService.GetStats(ctx.Request.Context())
+func (c *DashboardController) GetRevenueStats(ctx *gin.Context) {
+	// Get current month's revenue stats with growth from last month
+	stats, err := c.revenueService.GetCurrentMonthRevenue(ctx.Request.Context())
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -51,7 +52,7 @@ func (c *DashboardController) GetCertificationStats(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Certification stats retrieved successfully",
+		"message": "Revenue stats retrieved successfully",
 		"data":    stats,
 	})
 }

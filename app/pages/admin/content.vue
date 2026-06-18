@@ -3,7 +3,7 @@ import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
 import { ref } from "vue";
 import FaqModal from "~/components/content/FaqModal.vue";
 import ArticlePageModal from "~/components/content/ArticlePageModal.vue";
-import PostBlogModal from "~/components/content/PostBlogModal.vue";
+import PostBlogModal, { type PostFormData } from "~/components/content/PostBlogModal.vue";
 import { useContentStore } from "~/stores/content";
 import type { Page, BlogPost, Faq, BlogPostMedia } from "~/stores/content";
 import type { CreateBlogPostData } from "~/services/contentService";
@@ -14,7 +14,7 @@ definePageMeta({ layout: "admin" });
 
 const toast = useToast();
 const contentStore = useContentStore();
-const activeTab = ref("pages");
+const activeTab = ref("blog");
 
 // ==================== MODAL STATES ====================
 const showPageModal = ref(false);
@@ -24,13 +24,24 @@ const isEditing = ref(false);
 
 // ==================== FORM DATA ====================
 const pageForm = ref({ id: 0, title: "", slug: "", status: "draft" as "draft" | "published" | "archived" });
-const postForm = ref({
+const postForm = ref<PostFormData>({
   id: 0,
   title: "",
   author: "Admin",
   content: "",
-  status: "draft" as "draft" | "published" | "archived",
-  media: [] as BlogPostMedia[],
+  status: "draft",
+  media: [],
+  publishing: {
+    status: "draft",
+    publishedAt: undefined,
+    scheduledAt: undefined,
+  },
+  attractiveness: {
+    isFeatured: false,
+    isSpotlight: false,
+    priority: 0,
+    highlight: false,
+  },
 });
 const faqForm = ref({ id: "", question: "", answer: "", sortOrder: 0 });
 
@@ -40,7 +51,7 @@ const blogPosts = computed(() => contentStore.blogPosts);
 const faqs = computed(() => contentStore.sortedFaqs);
 
 const tabs = [
-  { label: "Pages", value: "pages", icon: "i-lucide-file-text" },
+  // { label: "Pages", value: "pages", icon: "i-lucide-file-text" },
   { label: "Blog Posts", value: "blog", icon: "i-lucide-newspaper" },
   { label: "FAQs", value: "faq", icon: "i-lucide-help-circle" },
 ];
@@ -173,6 +184,17 @@ function openNewPost() {
     content: "",
     status: "draft",
     media: [],
+    publishing: {
+      status: "draft",
+      publishedAt: undefined,
+      scheduledAt: undefined,
+    },
+    attractiveness: {
+      isFeatured: false,
+      isSpotlight: false,
+      priority: 0,
+      highlight: false,
+    },
   };
   showPostModal.value = true;
 }
@@ -186,6 +208,17 @@ function openEditPost(post: BlogPost) {
     content: post.content || "",
     status: post.status,
     media: post.media ? [...post.media] : [],
+    publishing: {
+      status: post.publishing.status,
+      publishedAt: post.publishing.publishedAt,
+      scheduledAt: post.publishing.scheduledAt,
+    },
+    attractiveness: {
+      isFeatured: post.attractiveness.isFeatured,
+      isSpotlight: post.attractiveness.isSpotlight,
+      priority: post.attractiveness.priority,
+      highlight: post.attractiveness.highlight,
+    },
   };
   showPostModal.value = true;
 }
@@ -195,7 +228,6 @@ async function handlePostSaved(data: CreateBlogPostData) {
     title: data.title,
     author: data.author,
     content: data.content,
-    status: data.publishing?.status || "draft",
     media: data.media,
     publishing: data.publishing,
     attractiveness: data.attractiveness,
@@ -473,7 +505,7 @@ onMounted(() => {
             <h2 class="font-semibold">Blog Posts</h2>
           </template>
 
-          <div class="space-y-3">
+          <div v-if="blogPosts.length > 0" class="space-y-3">
             <div
               v-for="post in blogPosts"
               :key="post.id"
@@ -507,6 +539,28 @@ onMounted(() => {
               </div>
             </div>
           </div>
+
+          <div v-else class="py-16 text-center">
+            <div class="flex flex-col items-center gap-4">
+              <div class="p-4 rounded-full bg-muted">
+                <UIcon name="i-lucide-newspaper" class="size-12 text-muted" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-foreground">
+                  No blog posts yet
+                </h3>
+                <p class="text-md text-muted mt-1 max-w-sm mx-auto">
+                  Start creating engaging content for your audience. Click the button below to create your first post.
+                </p>
+              </div>
+              <UButton
+                label="Create Your First Post"
+                icon="i-lucide-plus"
+                color="warning"
+                @click="openNewPost"
+              />
+            </div>
+          </div>
         </UCard>
 
         <UCard v-if="activeTab === 'faq'">
@@ -517,7 +571,7 @@ onMounted(() => {
             </div>
           </template>
 
-          <div class="space-y-3">
+          <div v-if="faqs.length > 0" class="space-y-3">
             <div
               v-for="(faq, index) in faqs"
               :key="faq.id"
@@ -562,6 +616,28 @@ onMounted(() => {
                   @click="deleteFaq(faq)"
                 />
               </div>
+            </div>
+          </div>
+
+          <div v-else class="py-16 text-center">
+            <div class="flex flex-col items-center gap-4">
+              <div class="p-4 rounded-full bg-muted">
+                <UIcon name="i-lucide-help-circle" class="size-12 text-muted" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-foreground">
+                  No FAQs yet
+                </h3>
+                <p class="text-md text-muted mt-1 max-w-sm mx-auto">
+                  Add frequently asked questions to help your customers find answers quickly.
+                </p>
+              </div>
+              <UButton
+                label="Add Your First FAQ"
+                icon="i-lucide-plus"
+                color="warning"
+                @click="openNewFaq"
+              />
             </div>
           </div>
         </UCard>

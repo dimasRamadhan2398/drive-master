@@ -14,6 +14,7 @@ import (
 	"github.com/imagekit-developer/imagekit-go/v2"
 	"github.com/imagekit-developer/imagekit-go/v2/option"
 	"github.com/imagekit-developer/imagekit-go/v2/packages/param"
+	"github.com/imagekit-developer/imagekit-go/v2/shared"
 )
 
 type IMediaService interface {
@@ -27,16 +28,17 @@ type IMediaService interface {
 
 type MediaService struct {
 	imageKit imagekit.Client
+	urlEndpoint string
 }
 
-func NewMediaService(privateKey string) IMediaService {
+func NewMediaService(privateKey string, urlEndpoint string) IMediaService {
 	client := imagekit.NewClient(
 		option.WithPrivateKey(privateKey),
 	)
 
 	log.Printf("Initialized ImageKit client with private key: %s", privateKey)
 
-	return &MediaService{imageKit: client}
+	return &MediaService{imageKit: client, urlEndpoint: urlEndpoint}
 }
 
 type MediaUploadResponse struct {
@@ -87,12 +89,31 @@ func (s *MediaService) UploadMedia(ctx context.Context, input UploadMediaInput) 
 
 	resp, err := s.imageKit.Files.Upload(ctx, params)
 	if err != nil {
-		log.Fatalf("%s", err.Error())
+		log.Printf("%s", err.Error())
 		return nil, apperrors.ErrInternalServer
 	}
 
+	// 1. Buat parameter transformasi untuk URL baru
+    urlParams := shared.SrcOptionsParam{
+		URLEndpoint: s.urlEndpoint, // whatever endpoint you used to init the client
+		Src:         resp.FilePath,
+		Transformation: []shared.TransformationParam{
+			{
+				Raw: param.NewOpt("w-700,h-450,fo-auto"),
+			},
+		},
+	}
+
+    // 2. Generate URL yang sudah ditransformasi
+    transformedUrl := s.imageKit.Helper.BuildURL(urlParams)
+    // if err != nil {
+    //     log.Printf("Failed to generate transformed URL: %s", err.Error())
+    //     // Fallback ke URL asli jika transformasi gagal
+    //     transformedURL = resp.URL
+    // }
+
 	return &MediaUploadResponse{
-		URL:      resp.URL,
+		URL:      transformedUrl,
 		FileID:   resp.FileID,
 		Name:     resp.Name,
 		Height:   int(resp.Height),

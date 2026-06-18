@@ -1,6 +1,7 @@
 package services
 
 import (
+	coreServices "core-service/services"
 	"user-service/clients"
 	"user-service/clients/region"
 	"user-service/pkg/config"
@@ -8,7 +9,6 @@ import (
 	"user-service/pkg/redis"
 	"user-service/repositories"
 	"user-service/services/listeners"
-	coreServices "core-service/services"
 )
 
 type Registry struct {
@@ -82,7 +82,7 @@ func (r *Registry) GetAuthService() IAuthService {
 
 func (r *Registry) GetEmailService() IMailtrapEmailService {
 	cfg := config.Get()
-	return NewMailtrapEmailService(cfg.Email.Host, cfg.Email.Port, cfg.Email.User, cfg.Email.Password, cfg.Email.FromEmail, cfg.Email.FromName)
+	return NewMailtrapEmailService(cfg.Email.FromEmail, cfg.Email.FromName, cfg.Email.APIKey)
 }
 
 func (r *Registry) GetMediaService() IMediaService {

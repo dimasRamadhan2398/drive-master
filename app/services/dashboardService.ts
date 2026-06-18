@@ -63,6 +63,28 @@ export interface RecentRegistration {
   createdAt: string;
 }
 
+export interface UserDashboardStats {
+  totalUsers: number;
+  totalMembers: number;
+  totalInstructors: number;
+  recentRegistrations: number;
+  growthTotalUsers: number;
+  growthTotalMembers: number;
+  growthTotalInstructors: number;
+  growthRecentRegistrations: number;
+}
+
+export interface UserDashboardStatsAPI {
+  totalUsers: number;
+  totalMembers: number;
+  totalInstructors: number;
+  recentRegistrations: number;
+  growthTotalUsers: number;
+  growthTotalMembers: number;
+  growthTotalInstructors: number;
+  growthRecentRegistrations: number;
+}
+
 export interface DashboardStats {
   totalUsers: number;
   totalMembers: number;
@@ -70,35 +92,78 @@ export interface DashboardStats {
   recentRegistrations: number;
   activeSessions: number;
   totalSessions: number;
+  growthRecentRegistrations: number;
+  growthTotalUsers: number;
+  growthTotalMembers: number;
+  growthTotalInstructors: number;
   revenueMTD: number;
   revenueCurrency: string;
   certificatesIssued: number;
   totalCertifications: number;
 }
 
+// Helper function to map API response to UserDashboardStats
+function mapApiToData(data: UserDashboardStatsAPI): UserDashboardStats {
+  return {
+    totalUsers: data.totalUsers ?? 0,
+    totalMembers: data.totalMembers ?? 0,
+    totalInstructors: data.totalInstructors ?? 0,
+    recentRegistrations: data.recentRegistrations ?? 0,
+    // Multiply growth percentages by 100 since they're stored as decimals
+    growthTotalUsers: (data.growthTotalUsers ?? 0) * 100,
+    growthTotalMembers: (data.growthTotalMembers ?? 0) * 100,
+    growthTotalInstructors: (data.growthTotalInstructors ?? 0) * 100,
+    growthRecentRegistrations: (data.growthRecentRegistrations ?? 0) * 100,
+  };
+}
+
 export const dashboardService = {
   // GET /admin/dashboard/stats - Fetch unified dashboard stats (admin only)
-  async fetchDashboardStats(): Promise<DashboardStats> {
+  // async fetchDashboardStats(): Promise<DashboardStats> {
+  //   const { user, extractData } = useApiClients();
+
+  //   try {
+  //     const response = await user<ApiResponse<DashboardStats>>(
+  //       "/dashboard/stats",
+  //       { method: "GET" },
+  //     );
+  //     return extractData(response);
+  //   } catch {
+  //     return {
+  //       totalUsers: 0,
+  //       totalMembers: 0,
+  //       totalInstructors: 0,
+  //       recentRegistrations: 0,
+  //       activeSessions: 0,
+  //       totalSessions: 0,
+  //       revenueMTD: 0,
+  //       revenueCurrency: "IDR",
+  //       certificatesIssued: 0,
+  //       totalCertifications: 0,
+  //     };
+  //   }
+  // },
+
+  async fetchUserDashboardStats(): Promise<UserDashboardStats> {
     const { user, extractData } = useApiClients();
 
     try {
-      const response = await user<ApiResponse<DashboardStats>>(
-        "/admin/dashboard/stats",
+      const response = await user<ApiResponse<UserDashboardStatsAPI>>(
+        "/dashboard/stats",
         { method: "GET" },
       );
-      return extractData(response);
+      const rawData = extractData(response);
+      return mapApiToData(rawData);
     } catch {
       return {
         totalUsers: 0,
         totalMembers: 0,
         totalInstructors: 0,
         recentRegistrations: 0,
-        activeSessions: 0,
-        totalSessions: 0,
-        revenueMTD: 0,
-        revenueCurrency: "IDR",
-        certificatesIssued: 0,
-        totalCertifications: 0,
+        growthRecentRegistrations: 0,
+        growthTotalUsers: 0,
+        growthTotalMembers: 0,
+        growthTotalInstructors: 0,
       };
     }
   },
@@ -146,10 +211,12 @@ export const dashboardService = {
   },
 
   // GET /members/all - Fetch all members with pagination (admin only)
-  async fetchAllMembers(params: {
-    page?: number;
-    limit?: number;
-  } = {}): Promise<{ members: UserWithProfileResponse[]; pagination: any }> {
+  async fetchAllMembers(
+    params: {
+      page?: number;
+      limit?: number;
+    } = {},
+  ): Promise<{ members: UserWithProfileResponse[]; pagination: any }> {
     const { user, extractPaginatedData } = useApiClients();
 
     const queryParams = new URLSearchParams();

@@ -23,7 +23,7 @@ const stats = computed(() => {
     {
       label: "Total Students",
       value: dashboardStats.totalMembers.toString() || "0",
-      change: "+12%",
+      change: `${dashboardStats.growthTotalMembers * 100}%`,
       icon: "i-lucide-users",
       color: "primary",
     },

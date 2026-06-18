@@ -1,15 +1,9 @@
 import { defineStore } from "pinia";
 import { contentService } from "~/services/contentService";
-import type {
-  BlogPostMedia,
-  Publishing,
-  Attractiveness,
-  CreateBlogPostData,
-  UpdateBlogPostData,
-} from "~/services/contentService";
+import type { BlogPostMedia, CreateBlogPostData, UpdateBlogPostData } from "~/services/contentService";
 
 // Re-export types from contentService for convenience
-export type { BlogPostMedia, Publishing, Attractiveness, CreateBlogPostData, UpdateBlogPostData };
+export type { BlogPostMedia, CreateBlogPostData, UpdateBlogPostData };
 
 export interface PageSection {
   id: string;
@@ -38,8 +32,17 @@ export interface BlogPost {
   views: number;
   content: string;
   media: BlogPostMedia[];
-  publishing?: Publishing;
-  attractiveness?: Attractiveness;
+  publishing: {
+    status: "draft" | "published" | "archived";
+    publishedAt?: string;
+    scheduledAt?: string;
+  };
+  attractiveness: {
+    isFeatured: boolean;
+    isSpotlight: boolean;
+    priority: number;
+    highlight: boolean;
+  };
   viewCount?: number;
   likeCount?: number;
   shareCount?: number;
@@ -112,6 +115,15 @@ const initialBlogPosts: BlogPost[] = [
     content:
       "This is the first post on our brand new blog. Stay tuned for more updates!",
     media: [],
+    publishing: {
+      status: "published",
+    },
+    attractiveness: {
+      isFeatured: false,
+      isSpotlight: false,
+      priority: 0,
+      highlight: false,
+    },
   },
 ];
 
@@ -203,10 +215,18 @@ export const useContentStore = defineStore("content", {
       title: string;
       author: string;
       content: string;
-      status: "published" | "draft" | "archived";
       media?: BlogPostMedia[];
-      publishing?: Publishing;
-      attractiveness?: Attractiveness;
+      publishing: {
+        status: "draft" | "published" | "archived";
+        publishedAt?: string;
+        scheduledAt?: string;
+      };
+      attractiveness: {
+        isFeatured: boolean;
+        isSpotlight: boolean;
+        priority: number;
+        highlight: boolean;
+      };
     }) {
       try {
         const created = await contentService.createBlogPost({
@@ -247,6 +267,7 @@ export const useContentStore = defineStore("content", {
         id: newId,
         date: this.formatDate(new Date()),
         views: 0,
+        status: data.publishing.status,
         media: data.media || [],
       };
       this.blogPosts.push(newPost);
@@ -257,10 +278,18 @@ export const useContentStore = defineStore("content", {
       title?: string;
       author?: string;
       content?: string;
-      status?: "published" | "draft" | "archived";
       media?: BlogPostMedia[];
-      publishing?: Publishing;
-      attractiveness?: Attractiveness;
+      publishing?: {
+        status?: "draft" | "published" | "archived";
+        publishedAt?: string;
+        scheduledAt?: string;
+      };
+      attractiveness?: {
+        isFeatured?: boolean;
+        isSpotlight?: boolean;
+        priority?: number;
+        highlight?: boolean;
+      };
     }) {
       try {
         const updated = await contentService.updateBlogPost(String(id), {
@@ -276,6 +305,7 @@ export const useContentStore = defineStore("content", {
           const index = this.blogPosts.findIndex((p) => p.id === id);
           if (index !== -1) {
             const existing = this.blogPosts[index];
+            if (!existing) return null;
             this.blogPosts[index] = {
               ...existing,
               title: updated.title,
@@ -287,8 +317,8 @@ export const useContentStore = defineStore("content", {
               status: updated.publishing?.status || existing.status,
               views: updated.viewCount || existing.views,
               media: updated.media || existing.media,
-              publishing: updated.publishing,
-              attractiveness: updated.attractiveness,
+              publishing: updated.publishing || existing.publishing,
+              attractiveness: updated.attractiveness || existing.attractiveness,
             };
             return this.blogPosts[index];
           }
@@ -302,17 +332,23 @@ export const useContentStore = defineStore("content", {
       if (index !== -1) {
         const existing = this.blogPosts[index];
         if (!existing) return null;
+        const updatedPublishing = data.publishing
+          ? { ...existing.publishing, ...data.publishing }
+          : existing.publishing;
+        const updatedAttractiveness = data.attractiveness
+          ? { ...existing.attractiveness, ...data.attractiveness }
+          : existing.attractiveness;
         this.blogPosts[index] = {
-          id: existing.id,
+          ...existing,
           title: data.title ?? existing.title,
           author: data.author ?? existing.author,
           date: this.formatDate(new Date()),
-          status: data.status ?? existing.status,
+          status: updatedPublishing.status,
           views: existing.views,
           content: data.content ?? existing.content,
           media: data.media ?? existing.media,
-          publishing: data.publishing ?? existing.publishing,
-          attractiveness: data.attractiveness ?? existing.attractiveness,
+          publishing: updatedPublishing,
+          attractiveness: updatedAttractiveness,
         };
         return this.blogPosts[index];
       }
@@ -368,6 +404,15 @@ export const useContentStore = defineStore("content", {
           status: (p.status as "published" | "draft" | "archived") || "draft",
           views: p.viewCount || 0,
           media: [],
+          publishing: {
+            status: (p.status as "published" | "draft" | "archived") || "draft",
+          },
+          attractiveness: {
+            isFeatured: false,
+            isSpotlight: false,
+            priority: 0,
+            highlight: false,
+          },
         }));
         return result;
       } catch (err) {

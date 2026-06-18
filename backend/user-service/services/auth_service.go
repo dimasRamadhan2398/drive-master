@@ -28,6 +28,8 @@ type IAuthService interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*dto.LoginResponse, error)
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error)
 	ChangePassword(ctx context.Context, userID uuid.UUID, oldPassword, newPassword string) error
+	ForgotPasswordEmail(ctx context.Context, email string) error
+	ResetPassword(ctx context.Context, token, newPassword string) error
 	HashPassword(password string) (string, error)
 
 	// OTP methods
@@ -45,6 +47,36 @@ type AuthService struct {
 	instructorService IInstructorService
 	roleService       IRoleService
 }
+
+// ForgotPasswordEmail implements [IAuthService].
+// Generates a secure reset token, stores it in Redis and sends a password reset email.
+func (s *AuthService) ForgotPasswordEmail(ctx context.Context, email string) error {
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		// don't leak existence of email to caller
+		return apperrors.ErrUserNotFound
+	}
+
+	// Generate secure token (UUID)
+	token := uuid.NewString()
+
+	// Store token -> userID in redis with 1 hour expiry
+	key := fmt.Sprintf("password_reset:%s", token)
+	if err := s.redisCli.Client.Set(ctx, key, user.ID.String(), time.Hour).Err(); err != nil {
+		s.LogError("ForgotPasswordEmail: failed to store reset token", logger.LogField("error", err))
+		return apperrors.ErrInternalServer
+	}
+
+	// Send password reset email with token
+	if err := s.emailService.SendPasswordResetEmail(ctx, user.EmailAddress, token); err != nil {
+		s.LogError("ForgotPasswordEmail: failed to send password reset email", logger.LogField("error", err))
+		// best effort: delete token if sending failed
+		s.redisCli.Client.Del(ctx, key)
+		return apperrors.ErrInternalServer
+	}
+
+	return nil
+}	
 
 func NewAuthService(userRepo repositories.IUserRepository, redisCli *redis.Client, emailService IMailtrapEmailService, memberService IMemberService, instructorService IInstructorService, roleService IRoleService) IAuthService {
 	return &AuthService{
@@ -386,6 +418,43 @@ func (s *AuthService) HashPassword(password string) (string, error) {
 		return "", err
 	}
 	return string(hashedPassword), nil
+}
+
+// ResetPassword validates a reset token, updates the user's password and removes the token.
+func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword string) error {
+	// Lookup token in Redis
+	key := fmt.Sprintf("password_reset:%s", token)
+	storedUserID, err := s.redisCli.Client.Get(ctx, key).Result()
+	if err != nil {
+		return apperrors.ErrOTPExpired
+	}
+
+	userID, err := uuid.Parse(storedUserID)
+	if err != nil {
+		return apperrors.ErrUnauthorized
+	}
+
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return apperrors.ErrUserNotFound
+	}
+
+	// Hash new password
+	hashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return apperrors.ErrInternalServer
+	}
+
+	user.PasswordHash = string(hashed)
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		s.LogError("ResetPassword: failed to update user password", logger.LogField("error", err))
+		return apperrors.ErrInternalServer
+	}
+
+	// Delete token after successful reset
+	s.redisCli.Client.Del(ctx, key)
+
+	return nil
 }
 
 // GenerateAndSendOTP generates a 6-digit OTP, stores it in Redis, and sends it via email

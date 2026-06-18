@@ -7,6 +7,7 @@ import type {
   CreateBlogPostData,
 } from "~/services/contentService";
 
+
 export interface PostFormData {
   id: number;
   title: string;
@@ -14,8 +15,17 @@ export interface PostFormData {
   content: string;
   status: "draft" | "published" | "archived";
   media: BlogPostMedia[];
-  publishing?: Publishing;
-  attractiveness?: Attractiveness;
+  publishing: {
+    status: "draft" | "published" | "archived";
+    publishedAt?: string;
+    scheduledAt?: string;
+  };
+  attractiveness: {
+    isFeatured: boolean;
+    isSpotlight: boolean;
+    priority: number;
+    highlight: boolean;
+  };
 }
 
 const props = defineProps<{
@@ -90,16 +100,16 @@ function initForm() {
       content: props.post.content || "",
       status: props.post.status,
       media: props.post.media ? [...props.post.media] : [],
-      publishing: props.post.publishing || {
-        status: props.post.status,
-        publishedAt: undefined,
-        scheduledAt: undefined,
+      publishing: {
+        status: props.post.publishing.status,
+        publishedAt: props.post.publishing.publishedAt,
+        scheduledAt: props.post.publishing.scheduledAt,
       },
-      attractiveness: props.post.attractiveness || {
-        isFeatured: false,
-        isSpotlight: false,
-        priority: 0,
-        highlight: false,
+      attractiveness: {
+        isFeatured: props.post.attractiveness.isFeatured,
+        isSpotlight: props.post.attractiveness.isSpotlight,
+        priority: props.post.attractiveness.priority,
+        highlight: props.post.attractiveness.highlight,
       },
     };
   } else {
@@ -200,15 +210,15 @@ async function savePost() {
       content: postForm.value.content,
       media: [...postForm.value.media],
       publishing: {
-        status: postForm.value.publishing?.status || postForm.value.status,
-        publishedAt: postForm.value.publishing?.publishedAt,
-        scheduledAt: postForm.value.publishing?.scheduledAt,
+        status: postForm.value.publishing.status,
+        publishedAt: postForm.value.publishing.publishedAt,
+        scheduledAt: postForm.value.publishing.scheduledAt,
       },
       attractiveness: {
-        isFeatured: postForm.value.attractiveness?.isFeatured || false,
-        isSpotlight: postForm.value.attractiveness?.isSpotlight || false,
-        priority: postForm.value.attractiveness?.priority || 0,
-        highlight: postForm.value.attractiveness?.highlight || false,
+        isFeatured: postForm.value.attractiveness.isFeatured,
+        isSpotlight: postForm.value.attractiveness.isSpotlight,
+        priority: postForm.value.attractiveness.priority,
+        highlight: postForm.value.attractiveness.highlight,
       },
     };
 
@@ -258,11 +268,9 @@ async function savePost() {
             />
           </UFormField>
           <UFormField label="Content">
-            <UTextarea
+            <RichTextEditor
               v-model="postForm.content"
               placeholder="Write your blog post content here..."
-              :rows="6"
-              class="w-full"
             />
           </UFormField>
           <UFormField label="Media">

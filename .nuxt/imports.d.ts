@@ -43,8 +43,9 @@ export { useTokenValidator } from '../app/composables/useTokenValidator';
 export { useAnalyticsStore, GAOverviewItem, GAFunnelStep, FunnelLabels } from '../app/stores/analytics';
 export { useArticlesStore } from '../app/stores/articles';
 export { useAuthStore } from '../app/stores/auth';
-export { useContentStore, PageSection, Page, BlogPost, Faq, CreateFaqData, UpdateFaqData, BlogPostMedia, Publishing, Attractiveness, CreateBlogPostData, UpdateBlogPostData } from '../app/stores/content';
+export { useContentStore, PageSection, Page, BlogPost, Faq, CreateFaqData, UpdateFaqData, BlogPostMedia, CreateBlogPostData, UpdateBlogPostData } from '../app/stores/content';
 export { useDashboardStore, DashboardState } from '../app/stores/dashboard';
+export { useEnrollmentsStore } from '../app/stores/enrollments';
 export { useInstructorsStore } from '../app/stores/instructors';
 export { usePackagesStore, Package, Addon } from '../app/stores/packages';
 export { usePaymentsStore, PaymentMethodOption } from '../app/stores/payments';
@@ -67,5 +68,4 @@ export { defineStore, acceptHMRUpdate, usePinia, storeToRefs } from '../node_mod
 export { useGtag } from '../node_modules/nuxt-gtag/dist/runtime/composables/useGtag';
 export { useTrackEvent } from '../node_modules/nuxt-gtag/dist/runtime/composables/useTrackEvent';
 export { useI18n } from 'vue-i18n';
-export { useNuxtDevTools } from '../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';
 export { useColorMode } from '../node_modules/@nuxtjs/color-mode/dist/runtime/composables';

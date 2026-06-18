@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { z } from "zod";
 import type { FormSubmitEvent } from "@nuxt/ui";
-import { reactive, ref, computed } from "vue";
+import { reactive, ref, computed, onMounted } from "vue";
 import { navigateTo, useRoute } from "nuxt/app";
+import { useI18n } from "vue-i18n";
 import { useAuthStore } from "~/stores/auth";
+import { usePackagesStore } from "~/stores/packages";
+import { useEnrollmentsStore } from "~/stores/enrollments";
 
 definePageMeta({
   layout: "blank",
 });
 
+const { t } = useI18n();
 const route = useRoute();
 const authStore = useAuthStore();
+const packagesStore = usePackagesStore();
+const enrollmentsStore = useEnrollmentsStore();
 
 const planFromQuery = computed(() => route.query.plan as string | undefined);
 
@@ -20,41 +26,54 @@ const totalSteps = computed(() => (planFromQuery.value ? 2 : 3));
 const showPrivacyModal = ref(false);
 const showTermsModal = ref(false);
 
-const packageOptions = [
-  { label: "6x Session - Rp 1.750.000", value: "6x" },
-  { label: "8x Session - Rp 1.950.000 (Popular)", value: "8x" },
-  { label: "10x Session - Rp 2.250.000", value: "10x" },
-  { label: "12x Session - Rp 2.650.000", value: "12x" },
-];
+// Fetch packages on mount
+onMounted(() => {
+  packagesStore.fetchPackages();
+});
+
+// Convert packages to radio options
+const packageOptions = computed(() => {
+  return packagesStore.activePackages.map((pkg) => ({
+    label: `${pkg.name} - Rp ${pkg.discountPrice.toLocaleString("id-ID")}${
+      pkg.isPopular ? ` (${t("packages.popular")})` : ""
+    }`,
+    value: pkg.id,
+  }));
+});
+
+// Get selected package details
+const selectedPackage = computed(() => {
+  return packagesStore.getPackageById(formData.package);
+});
 
 // Step 0: Personal Info
-const step0Schema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Please enter a valid email"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
-  birthDate: z.string().min(1, "Please enter your birth date"),
-});
+const step0Schema = computed(() => z.object({
+  firstName: z.string().min(1, t("register.validation.firstNameRequired")),
+  lastName: z.string().min(1, t("register.validation.lastNameRequired")),
+  email: z.string().email(t("register.validation.emailRequired")),
+  phone: z.string().min(10, t("register.validation.phoneRequired")),
+  birthDate: z.string().min(1, t("register.validation.birthDateRequired")),
+}));
 
 // Step 1: Package Selection
-const step1Schema = z.object({
-  package: z.string().min(1, "Please select a package"),
+const step1Schema = computed(() => z.object({
+  package: z.string().min(1, t("register.validation.packageRequired")),
   startDate: z.string().optional(),
-});
+}));
 
 // Step 2: Account
-const step2Schema = z
+const step2Schema = computed(() => z
   .object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z.string().min(8, t("register.validation.passwordMinLength")),
     confirmPassword: z.string(),
     terms: z
       .boolean()
-      .refine((val) => val === true, "You must accept the terms"),
+      .refine((val) => val === true, t("register.validation.termsRequired")),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
+    message: t("register.validation.passwordsNotMatch"),
     path: ["confirmPassword"],
-  });
+  }));
 
 const formData = reactive({
   // Step 0
@@ -64,7 +83,7 @@ const formData = reactive({
   phone: "",
   birthDate: "",
   // Step 1
-  package: "8x",
+  package: "",
   startDate: "",
   // Step 2
   password: "",
@@ -82,119 +101,11 @@ async function prevStep() {
   currentStep.value--;
 }
 
-// async function onSubmit(_event: FormSubmitEvent<any>) {
-//   if (currentStep.value === 0) {
-//     nextStep();
-//     return;
-//   }
-
-//   if (currentStep.value === 1 && planFromQuery.value) {
-//     nextStep();
-//     return;
-//   }
-//   console.log(
-//     "[REGISTER PAGE] formData at submit:",
-//     JSON.stringify({
-//       firstName: formData.firstName,
-//       lastName: formData.lastName,
-//       email: formData.email,
-//       phone: formData.phone,
-//       birthDate: formData.birthDate,
-//       password: formData.password ? "***" : undefined,
-//       confirmPassword: formData.confirmPassword ? "***" : undefined,
-//       terms: formData.terms,
-//       package: formData.package,
-//       startDate: formData.startDate,
-//     }),
-//   );
-
-//   if (currentStep.value < totalSteps.value - 1) {
-//     console.log("[REGISTER PAGE] Moving to next step (not final step)");
-//     nextStep();
-//     return;
-//   }
-
-//   console.log("[REGISTER PAGE] Final step reached, checking passwords...");
-//   console.log("[REGISTER PAGE] Password:", formData.password);
-//   console.log("[REGISTER PAGE] Confirm Password:", formData.confirmPassword);
-
-//   loading.value = true;
-//   const toast = useToast();
-
-//   try {
-//     // Prepare registration data
-//     const username = formData.email.split("@")[0];
-
-//     console.log("[REGISTER PAGE] Preparing to call authStore.register()...");
-//     console.log(
-//       "[REGISTER PAGE] Register payload:",
-//       JSON.stringify({
-//         firstName: formData.firstName,
-//         lastName: formData.lastName,
-//         username: username,
-//         email: formData.email,
-//         phoneNumber: formData.phone,
-//         dateOfBirth: formData.birthDate,
-//         password: "***",
-//         roleId: 2,
-//       }),
-//     );
-
-//     // Call auth store register method
-//     const registerResponse = await authStore.register({
-//       firstName: formData.firstName,
-//       lastName: formData.lastName,
-//       username: username,
-//       email: formData.email,
-//       phoneNumber: formData.phone,
-//       dateOfBirth: formData.birthDate,
-//       password: formData.password,
-//       roleId: 2, // 2 is Member role
-//     });
-
-//     console.log(
-//       "[REGISTER PAGE] authStore.register() succeeded:",
-//       registerResponse,
-//     );
-
-//     // Store data for payment page
-//     if (import.meta.client) {
-//       sessionStorage.setItem("dm_reg_email", formData.email);
-//       sessionStorage.setItem("dm_reg_phone", formData.phone);
-//       if (planFromQuery.value) {
-//         sessionStorage.setItem("dm_selected_plan", planFromQuery.value);
-//       }
-//     }
-
-//     if (currentStep.value === 2) {
-//       // Package selection step — proceed to payment or verify
-//       if (import.meta.client) {
-//         sessionStorage.setItem("dm_selected_plan", formData.package);
-//       }
-//       navigateTo(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
-//     }
-//   } catch (error: any) {
-//     console.log("[REGISTER PAGE] Registration failed with error:", error);
-//     console.log("[REGISTER PAGE] Error message:", error?.message);
-//     console.log("[REGISTER PAGE] Auth store error:", authStore.error);
-//     toast.add({
-//       title: "Registration Failed",
-//       description: error?.message || "An error occurred. Please try again.",
-//       color: "error",
-//     });
-//   } finally {
-//     console.log("[REGISTER PAGE] Submit complete, loading set to false");
-//     loading.value = false;
-//   }
-// }
-
 async function onSubmit(_event: FormSubmitEvent<any>) {
   console.log(
     "[REGISTER PAGE] onSubmit() called, currentStep:",
     currentStep.value,
   );
-  console.log("[REGISTER PAGE] Password:", formData.password);
-  console.log("[REGISTER PAGE] Confirm Password:", formData.confirmPassword);
 
   if (currentStep.value === 0) {
     nextStep();
@@ -207,17 +118,6 @@ async function onSubmit(_event: FormSubmitEvent<any>) {
     const toast = useToast();
     try {
       const username = formData.email.split("@")[0];
-      console.log("[REGISTER PAGE] Calling authStore.register() with:", {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        username,
-        email: formData.email,
-        phoneNumber: formData.phone,
-        dateOfBirth: formData.birthDate,
-        password: "***",
-        confirmPassword: formData.confirmPassword ? "***" : undefined,
-        roleId: 2,
-      });
 
       const registerResponse = await authStore.register({
         firstName: formData.firstName,
@@ -237,9 +137,7 @@ async function onSubmit(_event: FormSubmitEvent<any>) {
         sessionStorage.setItem("dm_reg_phone", formData.phone);
       }
 
-      if (planFromQuery.value) {
-        // Has plan from query, no package step needed
-        sessionStorage.setItem("dm_selected_plan", planFromQuery.value);
+      if (!planFromQuery.value) {
         navigateTo(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
       } else {
         // Proceed to package selection step
@@ -248,8 +146,8 @@ async function onSubmit(_event: FormSubmitEvent<any>) {
     } catch (error: any) {
       console.log("[REGISTER PAGE] Registration failed:", error);
       toast.add({
-        title: "Registration Failed",
-        description: error?.message || "An error occurred. Please try again.",
+        title: t("register.errors.registrationFailed"),
+        description: error?.message || t("register.errors.tryAgain"),
         color: "error",
       });
     } finally {
@@ -259,25 +157,68 @@ async function onSubmit(_event: FormSubmitEvent<any>) {
   }
 
   if (currentStep.value === 2) {
-    // Package selection step — navigate to verify
-    if (import.meta.client) {
-      sessionStorage.setItem("dm_selected_plan", formData.package);
+    // Package selection step — create enrollment and navigate to verify
+    loading.value = true;
+    const toast = useToast();
+    try {
+      if (import.meta.client) {
+        sessionStorage.setItem("dm_selected_plan", formData.package);
+      }
+
+      // Create enrollment after successful registration
+      if (formData.package && authStore.user?.userId) {
+        const selectedPkg = selectedPackage.value;
+        if (selectedPkg) {
+          await enrollmentsStore.createEnrollment({
+            userId: authStore.user.userId,
+            packageId: formData.package,
+            price: selectedPkg.price,
+            discountPrice: selectedPkg.discountPrice,
+            startDate: formData.startDate || undefined,
+          });
+          console.log(
+            "[REGISTER PAGE] Enrollment created:",
+            enrollmentsStore.currentEnrollment,
+          );
+        }
+      }
+
+      navigateTo(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
+    } catch (error: any) {
+      console.log("[REGISTER PAGE] Error creating enrollment:", error);
+      toast.add({
+        title: t("register.errors.enrollmentError"),
+        description: error?.message || t("register.errors.enrollmentFailed"),
+        color: "error",
+      });
+    } finally {
+      loading.value = false;
     }
-    navigateTo(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
     return;
   }
 }
 
 const stepItems = computed(() => {
   const items = [
-    { label: "Personal Info", icon: "i-lucide-user" },
-    { label: "Create Account", icon: "i-lucide-shield-check" },
+    { label: t("register.steps.personalInfo"), icon: "i-lucide-user" },
+    { label: t("register.steps.createAccount"), icon: "i-lucide-shield-check" },
   ];
   if (!planFromQuery.value) {
-    items.push({ label: "Select Package", icon: "i-lucide-package" });
+    items.push({ label: t("register.steps.selectPackage"), icon: "i-lucide-package" });
   }
   return items;
 });
+
+// If plan is passed in query, auto-select it
+watch(
+  () => planFromQuery.value,
+  (newPlan) => {
+    if (newPlan) {
+      formData.package = newPlan;
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -292,8 +233,8 @@ const stepItems = computed(() => {
             class="h-16"
           />
         </div>
-        <h1 class="text-2xl font-bold">Create Your Account</h1>
-        <p class="text-muted mt-2">Join our Drive Master course</p>
+        <h1 class="text-2xl font-bold">{{ t("register.title") }}</h1>
+        <p class="text-muted mt-2">{{ t("register.subtitle") }}</p>
       </div>
 
       <!-- Stepper -->
@@ -314,10 +255,10 @@ const stepItems = computed(() => {
           @submit="onSubmit"
         >
           <div class="grid grid-cols-2 gap-4">
-            <UFormField name="firstName" label="First Name" required>
+            <UFormField name="firstName" :label="t('register.form.firstName')" required>
               <UInput
                 v-model="formData.firstName"
-                placeholder="Enter your first name"
+                :placeholder="t('register.placeholder.firstName')"
                 icon="i-lucide-user"
                 size="lg"
                 class="w-full"
@@ -325,10 +266,10 @@ const stepItems = computed(() => {
               />
             </UFormField>
 
-            <UFormField name="lastName" label="Last Name" required>
+            <UFormField name="lastName" :label="t('register.form.lastName')" required>
               <UInput
                 v-model="formData.lastName"
-                placeholder="Enter your last name"
+                :placeholder="t('register.placeholder.lastName')"
                 icon="i-lucide-user"
                 size="lg"
                 class="w-full"
@@ -337,11 +278,11 @@ const stepItems = computed(() => {
             </UFormField>
           </div>
 
-          <UFormField name="email" label="Email Address" required>
+          <UFormField name="email" :label="t('register.form.email')" required>
             <UInput
               v-model="formData.email"
               type="email"
-              placeholder="you@example.com"
+              :placeholder="t('register.placeholder.email')"
               icon="i-lucide-mail"
               size="lg"
               class="w-full"
@@ -349,10 +290,10 @@ const stepItems = computed(() => {
             />
           </UFormField>
 
-          <UFormField name="phone" label="Phone Number (WhatsApp)" required>
+          <UFormField name="phone" :label="t('register.form.phone')" required>
             <UInput
               v-model="formData.phone"
-              placeholder="08123456789"
+              :placeholder="t('register.placeholder.phone')"
               icon="i-lucide-phone"
               size="lg"
               class="w-full"
@@ -360,7 +301,7 @@ const stepItems = computed(() => {
             />
           </UFormField>
 
-          <UFormField name="birthDate" label="Date of Birth" required>
+          <UFormField name="birthDate" :label="t('register.form.birthDate')" required>
             <UInput
               v-model="formData.birthDate"
               type="date"
@@ -373,7 +314,7 @@ const stepItems = computed(() => {
           <div class="flex justify-end pt-4">
             <UButton
               type="submit"
-              label="Continue"
+              :label="t('register.buttons.continue')"
               color="warning"
               trailingIcon="i-lucide-arrow-right"
               size="lg"
@@ -384,23 +325,23 @@ const stepItems = computed(() => {
         <!-- Step 1: Account Creation -->
         <UForm
           v-if="currentStep === 1"
-          :schema="step1Schema"
+          :schema="step2Schema"
           :state="formData"
           class="space-y-4"
           @submit="onSubmit"
         >
           <UAlert icon="i-lucide-user-check" color="warning">
-            <template #title>Almost there, {{ formData.firstName }}!</template>
+            <template #title>{{ t("register.almostThere", { name: formData.firstName }) }}</template>
             <template #description>
-              Create your password to secure your account.
+              {{ t("register.createPassword") }}
             </template>
           </UAlert>
 
-          <UFormField name="password" label="Password" required>
+          <UFormField name="password" :label="t('register.form.password')" required>
             <UInput
               v-model="formData.password"
               type="password"
-              placeholder="Create a strong password"
+              :placeholder="t('register.placeholder.password')"
               icon="i-lucide-lock"
               size="lg"
               class="w-full"
@@ -408,11 +349,11 @@ const stepItems = computed(() => {
             />
           </UFormField>
 
-          <UFormField name="confirmPassword" label="Confirm Password" required>
+          <UFormField name="confirmPassword" :label="t('register.form.confirmPassword')" required>
             <UInput
               v-model="formData.confirmPassword"
               type="password"
-              placeholder="Confirm your password"
+              :placeholder="t('register.placeholder.confirmPassword')"
               icon="i-lucide-lock"
               size="lg"
               class="w-full"
@@ -423,18 +364,18 @@ const stepItems = computed(() => {
           <UFormField name="terms">
             <UCheckbox v-model="formData.terms" color="warning">
               <template #label>
-                <span class="text-sm">
-                  I agree to the
+                <span class="text-sm flex items-center gap-1">
+                  {{ t("register.terms.agree") }}
                   <UButton
-                    label="Terms of Service"
+                    :label="t('register.terms.termsOfService')"
                     color="warning"
                     variant="ghost"
-                    class="underline"
+                    class="underline mx-0 px-0 h-auto py-0 text-sm"
                     @click="showTermsModal = true"
                   />
                   <UModal
                     v-model:open="showTermsModal"
-                    title="Terms of Service"
+                    :title="t('register.terms.termsTitle')"
                   >
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
@@ -587,17 +528,17 @@ const stepItems = computed(() => {
                       </div>
                     </template>
                   </UModal>
-                  and
+                  {{ t("register.terms.and") }}
                   <UButton
-                    label="Privacy Policy"
+                    :label="t('register.terms.privacyPolicy')"
                     color="warning"
                     variant="ghost"
-                    class="underline"
+                    class="underline mx-0 px-0 h-auto py-0 text-sm"
                     @click="showPrivacyModal = true"
                   />
                   <UModal
                     v-model:open="showPrivacyModal"
-                    title="Privacy Policy"
+                    :title="t('register.terms.privacyTitle')"
                   >
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
@@ -785,7 +726,7 @@ const stepItems = computed(() => {
 
           <div class="flex justify-between pt-4">
             <UButton
-              label="Back"
+              :label="t('register.buttons.back')"
               variant="ghost"
               color="neutral"
               icon="i-lucide-arrow-left"
@@ -793,7 +734,7 @@ const stepItems = computed(() => {
             />
             <UButton
               type="submit"
-              label="Create Account"
+              :label="t('register.buttons.createAccount')"
               color="warning"
               :loading="loading"
               icon="i-lucide-check"
@@ -805,12 +746,12 @@ const stepItems = computed(() => {
         <!-- Step 2: Package Selection -->
         <UForm
           v-if="currentStep === 2"
-          :schema="step2Schema"
+          :schema="step1Schema"
           :state="formData"
           class="space-y-4"
           @submit="onSubmit"
         >
-          <UFormField name="package" label="Select Package" required>
+          <UFormField name="package" :label="t('register.form.package')" required>
             <URadioGroup
               v-model="formData.package"
               :items="packageOptions"
@@ -821,60 +762,43 @@ const stepItems = computed(() => {
 
           <!-- Package Summary -->
           <UAlert
-            v-if="formData.package"
-            :icon="
-              formData.package === '8x' ? 'i-lucide-star' : 'i-lucide-info'
-            "
-            :color="formData.package === '8x' ? 'warning' : 'neutral'"
+            v-if="selectedPackage"
+            :icon="selectedPackage.isPopular ? 'i-lucide-star' : 'i-lucide-info'"
+            :color="selectedPackage.isPopular ? 'warning' : 'neutral'"
           >
             <template #title>
-              {{
-                formData.package === "6x"
-                  ? "6x Session"
-                  : formData.package === "8x"
-                    ? "8x Session (Recommended)"
-                    : formData.package === "10x"
-                      ? "10x Session"
-                      : "12x Session"
-              }}
+              {{ selectedPackage.name }}
             </template>
             <template #description>
               <ul class="mt-2 space-y-1 text-sm">
-                <template v-if="formData.package === '6x'">
-                  <li>Free Trial</li>
-                  <li>6x Sessions</li>
-                </template>
-                <template v-else-if="formData.package === '8x'">
-                  <li>Free Trial</li>
-                  <li>8x Sessions</li>
-                </template>
-                <template v-else-if="formData.package === '10x'">
-                  <li>Free Trial</li>
-                  <li>10x Sessions</li>
-                </template>
-                <template v-else-if="formData.package === '12x'">
-                  <li>Free Trial</li>
-                  <li>12x Sessions</li>
-                </template>
+                <li v-for="(feature, idx) in selectedPackage.features" :key="idx">
+                  {{ feature }}
+                </li>
+                <li class="font-semibold mt-2">
+                  {{ selectedPackage.sessions }} {{ t("register.sessions") }}
+                </li>
+                <li class="font-semibold text-warning">
+                  Rp {{ selectedPackage.discountPrice.toLocaleString("id-ID") }}
+                </li>
               </ul>
             </template>
           </UAlert>
 
           <div class="text-center">
             <p class="text-sm text-muted">
-              Let me decide later
+              {{ t("register.letMeDecide") }}
               <NuxtLink
                 to="/auth/onboarding"
                 class="text-warning font-medium hover:underline"
               >
-                Go to Onboarding page
+                {{ t("register.goToOnboarding") }}
               </NuxtLink>
             </p>
           </div>
 
           <div class="flex justify-between pt-4">
             <UButton
-              label="Back"
+              :label="t('register.buttons.back')"
               variant="ghost"
               color="neutral"
               icon="i-lucide-arrow-left"
@@ -882,7 +806,7 @@ const stepItems = computed(() => {
             />
             <UButton
               type="submit"
-              label="Proceed to Payment"
+              :label="t('register.buttons.proceedToPayment')"
               color="warning"
               trailingIcon="i-lucide-arrow-right"
               size="lg"
@@ -893,12 +817,12 @@ const stepItems = computed(() => {
         <template #footer>
           <div class="text-center">
             <p class="text-sm text-muted">
-              Already have an account?
+              {{ t("register.alreadyHaveAccount") }}
               <NuxtLink
                 to="/auth/login"
                 class="text-warning font-medium hover:underline"
               >
-                Sign in
+                {{ t("register.signIn") }}
               </NuxtLink>
             </p>
           </div>

@@ -118,5 +118,5 @@ func (r *ControllerRegistry) GetUserController() IUserController {
 
 // GetDashboardController returns the dashboard controller
 func (r *ControllerRegistry) GetDashboardController() IDashboardController {
-	return NewDashboardController(r.service.GetDashboardService())
+	return NewDashboardController(r.service.GetDashboardService(), r.service.GetCertificationService())
 }

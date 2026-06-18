@@ -106,6 +106,7 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, availabilityService, userClient, coreClient)
 	paymentService := services.NewPaymentService(paymentRepo, enrollmentRepo)
+	revenueService := services.NewRevenueService(coreClient)
 
 	// Create service registry
 	serviceRegistry := &serviceRegistryImpl{
@@ -115,6 +116,7 @@ func runServe(cmd *cobra.Command, args []string) {
 		enrollmentService:     enrollmentService,
 		scheduleService:       scheduleService,
 		paymentService:        paymentService,
+		revenueService:        revenueService,
 	}
 
 	// Initialize schedule generator for automatic schedule slot generation
@@ -237,10 +239,11 @@ func fixEnrollmentIDColumnType(db *gorm.DB) {
 type serviceRegistryImpl struct {
 	sessionService        services.ISessionService
 	entitlementService    services.IEntitlementService
-	certificationService  services.ICertificationService
+	certificationService services.ICertificationService
 	enrollmentService     services.IEnrollmentService
 	scheduleService       services.IScheduleService
 	paymentService        services.IPaymentService
+	revenueService        services.IRevenueService
 }
 
 
@@ -266,6 +269,10 @@ func (s *serviceRegistryImpl) GetScheduleService() services.IScheduleService {
 
 func (s *serviceRegistryImpl) GetPaymentService() services.IPaymentService {
 	return s.paymentService
+}
+
+func (s *serviceRegistryImpl) GetRevenueService() services.IRevenueService {
+	return s.revenueService
 }
 
 // initKafkaConsumer initializes the Kafka consumer for handling user.deleted events

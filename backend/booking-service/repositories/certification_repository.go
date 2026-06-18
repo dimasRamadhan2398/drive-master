@@ -24,7 +24,9 @@ type ICertificationRepository interface {
 	UpdateStatus(ctx context.Context, id uuid.UUID, status models.CertificationStatus) error
 	CountAll(ctx context.Context) (int64, error)
 	CountByStatus(ctx context.Context, status models.CertificationStatus) (int64, error)
+	CountByDateRange(ctx context.Context, startDate, endDate time.Time) (int64, error)
 	GetStats(ctx context.Context) (*CertificationStats, error)
+	GetStatsByDateRange(ctx context.Context, startDate, endDate time.Time) (*CertificationStats, error)
 	ToResponse(certification *models.Certification) dto.CertificationResponse
 	ToListResponse(certifications []models.Certification, total int64, page, limit int) dto.CertificationListResponse
 }

@@ -65,6 +65,7 @@ export default defineNuxtRouteMiddleware((to: any) => {
     "/auth/login",
     "/auth/register",
     "/auth/verify",
+    "/auth/forgot-password",
     "/auth/onboarding",
     "/auth/select-plan",
     "/auth/payment",

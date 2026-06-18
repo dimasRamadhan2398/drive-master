@@ -7,6 +7,42 @@ import (
 )
 
 // BlogPost DTOs
+// Blog Article DTOs
+
+type CreateBlogArticleRequest struct {
+	Title         string    `json:"title" binding:"required,max=255"`
+	Slug          string    `json:"slug" binding:"required,max=255"`
+	LeadParagraph string    `json:"leadParagraph"`
+	BodyBlocks    []byte    `json:"bodyBlocks"`
+	FeaturedImage string    `json:"featuredImage"`
+	CategoryID    uuid.UUID `json:"categoryId"`
+	AuthorID      uuid.UUID `json:"authorId" binding:"required"`
+	Tags          []string  `json:"tags"`
+	Status        string    `json:"status"`
+}
+
+type BlogArticleResponse struct {
+	ID            uuid.UUID `json:"id"`
+	Title         string    `json:"title"`
+	Slug          string    `json:"slug"`
+	LeadParagraph string    `json:"leadParagraph"`
+	FeaturedImage string    `json:"featuredImage"`
+	ReadingTime   int       `json:"readingTime"`
+	ViewCount     int64     `json:"viewCount"`
+	LikeCount     int64     `json:"likeCount"`
+	Status        string    `json:"status"`
+	PublishedAt   *time.Time `json:"publishedAt"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
+type BlogArticleListResponse struct {
+	Articles   []BlogArticleResponse `json:"articles"`
+	Total      int64                `json:"total"`
+	Page       int                  `json:"page"`
+	Limit      int                  `json:"limit"`
+	TotalPages int                  `json:"totalPages"`
+}
 
 // Media represents media attached to a blog post
 type BlogPostMedia struct {

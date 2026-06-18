@@ -141,13 +141,12 @@ func (a *AuthController) ResetPassword(ctx *gin.Context) {
 		return
 	}
 
-	user, err := a.userService.GetUserByEmail(ctx.Request.Context(), input.EmailAddress)
-	if err != nil {
+	// Delegate to auth service which will generate token and send email.
+	if err := a.authService.ForgotPasswordEmail(ctx.Request.Context(), input.EmailAddress); err != nil {
+		// Do not reveal whether the email exists; always return success message
 		responseRes.Success(ctx, http.StatusOK, "If the email exists, a reset link has been sent", nil)
 		return
 	}
-
-	go a.emailService.SendPasswordResetEmail(ctx.Request.Context(), user.EmailAddress, user.Username)
 
 	responseRes.Success(ctx, http.StatusOK, "If the email exists, a reset link has been sent", nil)
 }
@@ -175,7 +174,11 @@ func (a *AuthController) ConfirmResetPassword(ctx *gin.Context) {
 		return
 	}
 
-	// TODO: Implement token validation and password reset
+	if err := a.authService.ResetPassword(ctx.Request.Context(), input.Token, input.NewPassword); err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
 	responseRes.Success(ctx, http.StatusOK, "Password has been reset successfully", nil)
 }
 

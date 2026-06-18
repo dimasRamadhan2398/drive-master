@@ -35,8 +35,17 @@ export interface CreateBlogPostData {
   author: string;
   content: string;
   media?: BlogPostMedia[];
-  publishing?: Publishing;
-  attractiveness?: Attractiveness;
+  publishing: {
+    status: "draft" | "published" | "archived";
+    publishedAt?: string;
+    scheduledAt?: string;
+  };
+  attractiveness: {
+    isFeatured: boolean;
+    isSpotlight: boolean;
+    priority: number;
+    highlight: boolean;
+  };
 }
 
 export interface UpdateBlogPostData {
@@ -45,8 +54,17 @@ export interface UpdateBlogPostData {
   author?: string;
   content?: string;
   media?: BlogPostMedia[];
-  publishing?: Publishing;
-  attractiveness?: Attractiveness;
+  publishing?: {
+    status?: "draft" | "published" | "archived";
+    publishedAt?: string;
+    scheduledAt?: string;
+  };
+  attractiveness?: {
+    isFeatured?: boolean;
+    isSpotlight?: boolean;
+    priority?: number;
+    highlight?: boolean;
+  };
 }
 
 // Response DTOs (matching backend BlogPostResponse)

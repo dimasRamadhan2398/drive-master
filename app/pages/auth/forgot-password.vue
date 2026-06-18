@@ -66,7 +66,13 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
         </template>
       </UAlert>
 
-      <UForm v-if="!success" :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
+      <UForm
+        v-if="!success"
+        :schema="schema"
+        :state="state"
+        class="space-y-4"
+        @submit="onSubmit"
+      >
         <UFormField name="email" label="Email Address">
           <UInput
             v-model="state.email"

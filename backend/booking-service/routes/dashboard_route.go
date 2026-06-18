@@ -34,8 +34,8 @@ func (r *DashboardRoute) Run() {
 	group := r.group.Group("/dashboard")
 	log.Printf("[DashboardRoute] Registered routes under /api/v1/dashboard:")
 	log.Printf("  GET /api/v1/dashboard/sessions/stats")
-	log.Printf("  GET /api/v1/dashboard/certifications/stats")
+	log.Printf("  GET /api/v1/dashboard/revenue/stats")
 
 	group.GET("/sessions/stats", r.authMiddleware.Authenticate(), r.controller.GetDashboardController().GetSessionStats)
-	group.GET("/certifications/stats", r.authMiddleware.Authenticate(), r.controller.GetDashboardController().GetCertificationStats)
+	group.GET("/revenue/stats", r.authMiddleware.Authenticate(), r.controller.GetDashboardController().GetRevenueStats)
 }

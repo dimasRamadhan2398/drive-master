@@ -1,15 +1,18 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"time"
 
 	"user-service/models/dto"
 	"user-service/pkg/base"
 	apperrors "user-service/pkg/errors"
 	"user-service/pkg/logger"
-
-	gomail "gopkg.in/mail.v2"
 )
 
 type IMailtrapEmailService interface {
@@ -27,19 +30,18 @@ type MailtrapEmailService struct {
 	*base.BaseService
 	fromEmail string
 	fromName  string
-	dialer    *gomail.Dialer
+	apiKey    string
+	client    *http.Client
 }
 
-func NewMailtrapEmailService(smtpHost string, smtpPort int, smtpUser, smtpPassword, fromEmail, fromName string) IMailtrapEmailService {
+func NewMailtrapEmailService(fromEmail, fromName, apiKey string) IMailtrapEmailService {
 	return &MailtrapEmailService{
 		fromEmail: fromEmail,
 		fromName:  fromName,
-		dialer: gomail.NewDialer(
-			smtpHost,
-			smtpPort,
-			smtpUser,
-			smtpPassword,
-		),
+		apiKey:    apiKey,
+		client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 	}
 }
 
@@ -48,60 +50,80 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		return apperrors.ErrBadRequest
 	}
 
-	m := gomail.NewMessage()
-
-	// From
-	m.SetAddressHeader("From", s.fromEmail, s.fromName)
-
-	// To
-	toAddrs := make([]string, len(input.To))
-	for i, addr := range input.To {
-		toAddrs[i] = addr.Email
-	}
-	m.SetHeader("To", toAddrs...)
-
-	// CC (optional)
-	if len(input.CC) > 0 {
-		ccAddrs := make([]string, len(input.CC))
-		for i, addr := range input.CC {
-			ccAddrs[i] = addr.Email
-		}
-		m.SetHeader("Cc", ccAddrs...)
+	// Build recipients
+	toRecipients := make([]dto.EmailAddress, len(input.To))
+	for i := range input.To {
+		toRecipients[i] = dto.EmailAddress{Email: input.To[i].Email}
 	}
 
-	// BCC (optional)
-	if len(input.BCC) > 0 {
-		bccAddrs := make([]string, len(input.BCC))
-		for i, addr := range input.BCC {
-			bccAddrs[i] = addr.Email
-		}
-		m.SetHeader("Bcc", bccAddrs...)
+	// Build CC if provided
+	var ccRecipients []dto.EmailAddress
+	for _, addr := range input.CC {
+		ccRecipients = append(ccRecipients, dto.EmailAddress{Email: addr.Email})
 	}
 
-	m.SetHeader("Subject", input.Subject)
-
-	// Always set plain text; add HTML as alternative if provided
-	if input.Text != "" {
-		m.SetBody("text/plain", input.Text)
-	}
-	if input.HTML != "" {
-		m.AddAlternative("text/html", input.HTML)
+	// Build BCC if provided
+	var bccRecipients []dto.EmailAddress
+	for _, addr := range input.BCC {
+		bccRecipients = append(bccRecipients, dto.EmailAddress{Email: addr.Email})
 	}
 
-	// Attachments (optional)
-	for _, att := range input.Attachments {
-		m.Attach(att.Filename)
+	// Build request body
+	reqBody := dto.SendEmailRequest{
+		To:          toRecipients,
+		From:        dto.EmailAddress{Email: s.fromEmail, Name: s.fromName},
+		Subject:     input.Subject,
+		Text:        input.Text,
+		HTML:        input.HTML,
+		CC:          ccRecipients,
+		BCC:         bccRecipients,
+		Attachments: input.Attachments,
+		CustomArgs:  input.CustomArgs,
+		Tags:        input.Tags,
 	}
 
-	if err := s.dialer.DialAndSend(m); err != nil {
-		s.LogInfo("sending email",
-			logger.LogField("from", s.fromEmail),
-			logger.LogField("to", toAddrs),
-			logger.LogField("subject", input.Subject),
-		)
-		s.LogError("Failed to send email via SMTP", logger.LogField("error", err))
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		s.LogError("Failed to marshal email json", logger.LogField("error", err))
 		return apperrors.ErrInternalServer
 	}
+
+	// Create HTTP request
+	url := "https://send.api.mailtrap.io/api/send"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		s.LogError("Failed to create email request", logger.LogField("error", err))
+		return apperrors.ErrInternalServer
+	}
+
+	// Set headers with Bearer token
+	req.Header.Add("Authorization", "Bearer "+s.apiKey)
+	req.Header.Add("Content-Type", "application/json")
+
+	// Send request
+	resp, err := s.client.Do(req)
+	if err != nil {
+		s.LogError("Failed to send email request", logger.LogField("error", err))
+		return apperrors.ErrInternalServer
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	// Check response
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		s.LogError("Email API error",
+			logger.LogField("status", resp.StatusCode),
+			logger.LogField("response", string(body)),
+		)
+		return apperrors.ErrInternalServer
+	}
+
+	s.LogInfo("Email sent successfully",
+		logger.LogField("from", s.fromEmail),
+		logger.LogField("subject", input.Subject),
+	)
 
 	return nil
 }

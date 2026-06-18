@@ -15,6 +15,7 @@ import (
 type ICoreClient interface {
 	GetCars(ctx context.Context, page, limit int) (*dto.PagedData[CarResponse], error)
 	GetCarByID(ctx context.Context, carID uint) (*CarInfo, error)
+	GetSalesOverview(ctx context.Context, startDate, endDate string) (*SalesOverviewResponse, error)
 }
 
 // CoreClient implements ICoreClient
@@ -118,4 +119,58 @@ func (c *CoreClient) GetCarByID(ctx context.Context, carID uint) (*CarInfo, erro
 	}
 
 	return &car, nil
+}
+
+// SalesOverviewResponse is the response DTO for sales overview
+type SalesOverviewResponse struct {
+	TotalRevenue     float64 `json:"totalRevenue"`
+	TotalSales       int64   `json:"totalSales"`
+	TotalRefunds     float64 `json:"totalRefunds"`
+	NetRevenue       float64 `json:"netRevenue"`
+	AvgOrderValue    float64 `json:"avgOrderValue"`
+	CompletedSales   int64   `json:"completedSales"`
+	PendingSales     int64   `json:"pendingSales"`
+	CanceledSales    int64   `json:"canceledSales"`
+	RefundedSales    int64   `json:"refundedSales"`
+	GrowthRate       float64 `json:"growthRate"`
+}
+
+// GetSalesOverview retrieves sales overview from core-service
+func (c *CoreClient) GetSalesOverview(ctx context.Context, startDate, endDate string) (*SalesOverviewResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/admin/sales/analytics/overview?startDate=%s&endDate=%s", c.baseURL, startDate, endDate)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call core-service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("core-service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var apiResp APIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if !apiResp.Success {
+		return nil, fmt.Errorf("API error: %s", apiResp.Message)
+	}
+
+	var overview SalesOverviewResponse
+	if err := json.Unmarshal(apiResp.Data, &overview); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal sales overview: %w", err)
+	}
+
+	return &overview, nil
 }

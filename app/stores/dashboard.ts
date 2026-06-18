@@ -1,4 +1,8 @@
-import { dashboardService, type RecentRegistration, type DashboardStats as DashboardStatsType } from "~/services/dashboardService";
+import {
+  dashboardService,
+  type RecentRegistration,
+  type DashboardStats as DashboardStatsType,
+} from "~/services/dashboardService";
 import { defineStore } from "pinia";
 
 export interface DashboardState {
@@ -16,6 +20,10 @@ export const useDashboardStore = defineStore("dashboard", {
       totalUsers: 0,
       totalMembers: 0,
       totalInstructors: 0,
+      growthRecentRegistrations: 0.0,
+      growthTotalUsers: 0.0,
+      growthTotalMembers: 0.0,
+      growthTotalInstructors: 0.0,
       recentRegistrations: 0,
       activeSessions: 0,
       totalSessions: 0,
@@ -36,8 +44,8 @@ export const useDashboardStore = defineStore("dashboard", {
       this.isLoading = true;
       this.error = null;
       try {
-        const stats = await dashboardService.fetchDashboardStats();
-        this.stats = stats;
+        const stats = await dashboardService.fetchUserDashboardStats();
+        this.stats = { ...this.stats, ...stats };
         this.lastFetched = new Date();
       } catch (err) {
         this.error = "Failed to load dashboard stats.";
@@ -45,15 +53,18 @@ export const useDashboardStore = defineStore("dashboard", {
         this.isLoading = false;
       }
     },
-    async fetchRecentRegistrations(params: {
-      limit?: number;
-      fromDate?: string;
-      toDate?: string;
-    } = {}) {
+    async fetchRecentRegistrations(
+      params: {
+        limit?: number;
+        fromDate?: string;
+        toDate?: string;
+      } = {},
+    ) {
       this.isLoading = true;
       this.error = null;
       try {
-        const response = await dashboardService.fetchRecentRegistrations(params);
+        const response =
+          await dashboardService.fetchRecentRegistrations(params);
         this.recentRegistrations = response;
         this.lastFetched = new Date();
       } catch (err) {
@@ -67,10 +78,10 @@ export const useDashboardStore = defineStore("dashboard", {
       this.error = null;
       try {
         const [stats, registrations] = await Promise.all([
-          dashboardService.fetchDashboardStats(),
+          dashboardService.fetchUserDashboardStats(),
           dashboardService.fetchRecentRegistrations({ limit: 10 }),
         ]);
-        this.stats = stats;
+        this.stats = { ...this.stats, ...stats };
         this.recentRegistrations = registrations;
         this.lastFetched = new Date();
         return { stats, registrations };

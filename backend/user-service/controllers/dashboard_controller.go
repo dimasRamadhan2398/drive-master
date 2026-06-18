@@ -10,17 +10,23 @@ import (
 )
 
 type DashboardController struct {
-	dashboardService services.IDashboardService
+	dashboardService     services.IDashboardService
+	certificationService services.ICertificationService
 }
 
-func NewDashboardController(dashboardService services.IDashboardService) IDashboardController {
+func NewDashboardController(
+	dashboardService services.IDashboardService,
+	certificationService services.ICertificationService,
+) IDashboardController {
 	return &DashboardController{
-		dashboardService: dashboardService,
+		dashboardService:     dashboardService,
+		certificationService: certificationService,
 	}
 }
 
 type IDashboardController interface {
 	GetStats(ctx *gin.Context)
+	GetCertificationStats(ctx *gin.Context)
 }
 
 func (c *DashboardController) GetStats(ctx *gin.Context) {
@@ -31,4 +37,14 @@ func (c *DashboardController) GetStats(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Dashboard stats retrieved successfully", stats)
+}
+
+func (c *DashboardController) GetCertificationStats(ctx *gin.Context) {
+	stats, err := c.certificationService.GetStats(ctx.Request.Context())
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Certification stats retrieved successfully", stats)
 }

@@ -87,9 +87,9 @@ func (h *DashboardHandler) GetDashboardStats(c *gin.Context) {
 		sessionChan <- statsResult{data: data, err: err}
 	}()
 
-	// Fetch from booking-service (certifications)
+	// Fetch from user-service (certifications)
 	go func() {
-		data, err := h.callService(c, ctx, h.bookingServiceURL, "/api/v1/dashboard/certifications/stats", "GET", nil)
+		data, err := h.callService(c, ctx, h.userServiceURL, "/api/v1/dashboard/certifications/stats", "GET", nil)
 		certChan <- statsResult{data: data, err: err}
 	}()
 

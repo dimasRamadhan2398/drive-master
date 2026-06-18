@@ -58,7 +58,7 @@ email:
   from_email: "noreply@ai-forlearning.com"
   app_name: user_service
   enabled: true
-  smtp_host: sandbox.smtp.mailtrap.io
+  smtp_host: send.api.mailtrap.io
   smtp_port: 587
   smtp_username: 49bbd2a554bd3e
   smtp_password: 4f4bc1b03a1d70

@@ -140,7 +140,7 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
           <USeparator label="or" />
 
           <NuxtLink
-            to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi"
+            to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20perlu%20bantuan%20di%20website%20ketika...."
             target="_blank"
             class="block"
           >

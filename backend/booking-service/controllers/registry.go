@@ -41,7 +41,7 @@ func (r *Registry) GetScheduleController() IScheduleController {
 func (r *Registry) GetDashboardController() IDashboardController {
 	return NewDashboardController(
 		r.service.GetSessionService(),
-		r.service.GetCertificationService(),
+		r.service.GetRevenueService(),
 	)
 }
 

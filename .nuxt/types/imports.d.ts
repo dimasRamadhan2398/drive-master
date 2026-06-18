@@ -129,6 +129,7 @@ declare global {
   const useCssModule: typeof import('vue').useCssModule
   const useCssVars: typeof import('vue').useCssVars
   const useDashboardStore: typeof import('../../app/stores/dashboard').useDashboardStore
+  const useEnrollmentsStore: typeof import('../../app/stores/enrollments').useEnrollmentsStore
   const useError: typeof import('../../node_modules/nuxt/dist/app/composables/error').useError
   const useFetch: typeof import('../../node_modules/nuxt/dist/app/composables/fetch').useFetch
   const useFileUpload: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload').useFileUpload
@@ -153,7 +154,6 @@ declare global {
   const useModel: typeof import('vue').useModel
   const useNuxtApp: typeof import('../../node_modules/nuxt/dist/app/nuxt').useNuxtApp
   const useNuxtData: typeof import('../../node_modules/nuxt/dist/app/composables/asyncData').useNuxtData
-  const useNuxtDevTools: typeof import('../../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools').useNuxtDevTools
   const useOverlay: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useOverlay').useOverlay
   const usePackagesStore: typeof import('../../app/stores/packages').usePackagesStore
   const usePaymentsStore: typeof import('../../app/stores/payments').usePaymentsStore
@@ -262,7 +262,7 @@ declare global {
   export type { GAOverviewItem, GAFunnelStep, FunnelLabels } from '../../app/stores/analytics'
   import('../../app/stores/analytics')
   // @ts-ignore
-  export type { PageSection, Page, BlogPost, Faq, CreateFaqData, UpdateFaqData, BlogPostMedia, Publishing, Attractiveness, CreateBlogPostData, UpdateBlogPostData } from '../../app/stores/content'
+  export type { PageSection, Page, BlogPost, Faq, CreateFaqData, UpdateFaqData, BlogPostMedia, CreateBlogPostData, UpdateBlogPostData } from '../../app/stores/content'
   import('../../app/stores/content')
   // @ts-ignore
   export type { DashboardState } from '../../app/stores/dashboard'
@@ -418,6 +418,7 @@ declare module 'vue' {
     readonly useCssModule: UnwrapRef<typeof import('vue')['useCssModule']>
     readonly useCssVars: UnwrapRef<typeof import('vue')['useCssVars']>
     readonly useDashboardStore: UnwrapRef<typeof import('../../app/stores/dashboard')['useDashboardStore']>
+    readonly useEnrollmentsStore: UnwrapRef<typeof import('../../app/stores/enrollments')['useEnrollmentsStore']>
     readonly useError: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/error')['useError']>
     readonly useFetch: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/fetch')['useFetch']>
     readonly useFileUpload: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload')['useFileUpload']>
@@ -442,7 +443,6 @@ declare module 'vue' {
     readonly useModel: UnwrapRef<typeof import('vue')['useModel']>
     readonly useNuxtApp: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/nuxt')['useNuxtApp']>
     readonly useNuxtData: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/asyncData')['useNuxtData']>
-    readonly useNuxtDevTools: UnwrapRef<typeof import('../../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools')['useNuxtDevTools']>
     readonly useOverlay: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useOverlay')['useOverlay']>
     readonly usePackagesStore: UnwrapRef<typeof import('../../app/stores/packages')['usePackagesStore']>
     readonly usePaymentsStore: UnwrapRef<typeof import('../../app/stores/payments')['usePaymentsStore']>

@@ -38,4 +38,5 @@ type IServiceRegistry interface {
 	GetEnrollmentService() IEnrollmentService
 	GetScheduleService() IScheduleService
 	GetPaymentService() IPaymentService
+	GetRevenueService() IRevenueService
 }

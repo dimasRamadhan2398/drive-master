@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+const { t } = useI18n();
 
 useSeoMeta({
   title: "Home | Drive Master Academy",
@@ -7,62 +8,59 @@ useSeoMeta({
     "Drive Master Academy offers comprehensive EV and manual driving courses in Alam Sutera with expert instructors and certified programs.",
 });
 
-// Course Material
-const courseMaterial = [
+// Course Material with i18n
+const courseMaterial = computed(() => [
   {
-    title: "Material Theory",
+    title: t("home.material.materialTheory"),
     description: [
-      "Vehicle Introduction and Basic Controls",
-      "Cockpit training (ergonomic seating position, center and side mirror adjustment, and seat belt use)",
-      "Introduction to instruments (gas pedal, brake, transmission lever, handbrake, indicator lights in the dashboard)",
-      "Safety check (check the condition of tires, oil and radiator water before driving)",
+      t("home.material.materialTheoryDesc"),
+      t("home.material.materialTheoryDesc2"),
+      t("home.material.materialTheoryDesc3"),
+      t("home.material.materialTheoryDesc4"),
     ],
     icon: "i-lucide-book-open",
   },
   {
-    title: "Initial Control",
+    title: t("home.material.initialControl"),
     description: [
-      "Starting & stopping the engine (standard procedure for starting the engine safely)",
-      "Accelerator pedal technique safely (balanced and smooth)",
-      "Braking and stopping techniques (smooth braking and how to stop at a certain point precisely)",
+      t("home.material.initialControlDesc"),
+      t("home.material.initialControlDesc2"),
+      t("home.material.initialControlDesc3"),
     ],
     icon: "i-lucide-shield-check",
   },
   {
-    title: "Basic Maneuvering Techniques",
+    title: t("home.material.basicManeuvering"),
     description: [
-      "Steering control (steering wheel turning technique when turning quickly)",
-      "Reverse (controlling the car to reverse using only the rearview mirror)",
-      "Turning at an intersection (technique for taking the correct turning angle to the left or right)",
+      t("home.material.basicManeuveringDesc"),
+      t("home.material.basicManeuveringDesc2"),
+      t("home.material.basicManeuveringDesc3"),
     ],
     icon: "i-lucide-radar",
   },
   {
-    title: "Driving Techniques on Uphill & Downhill Roads",
+    title: t("home.material.uphillDownhill"),
     description: [
-      "Start-stop technique on an incline",
-      "Start-stop technique on a downhill",
+      t("home.material.uphillDownhillDesc"),
+      t("home.material.uphillDownhillDesc2"),
     ],
     icon: "i-lucide-car",
   },
   {
-    title: "Parking Technic",
-    description: [
-      "Reverse parking at an angle or straight (enter the parking slot with the car in reverse)",
-      "Parallel parking (a technique of inserting a car between two other vehicles parallel to each other)",
-    ],
+    title: t("home.material.parking"),
+    description: [t("home.material.parkingDesc"), t("home.material.parkingDesc2")],
     icon: "i-lucide-car",
   },
   {
-    title: "Driving on the Highway",
+    title: t("home.material.highway"),
     description: [
-      "Road signs and markings (obey traffic signs, no parking signs and road markings)",
-      "Driving ethics (using turn signals, maintaining a safe distance, and how to overtake other vehicles correctly)",
-      "Blind spot (a technique for checking areas that are not visible in the rearview mirror before changing lanes)",
+      t("home.material.highwayDesc"),
+      t("home.material.highwayDesc2"),
+      t("home.material.highwayDesc3"),
     ],
     icon: "i-lucide-car",
   },
-];
+]);
 
 const selectedPlan = ref<
   | "six_package"
@@ -106,6 +104,10 @@ const discount = computed(() => {
       currentPlan.value.originalPrice) *
       100,
   );
+});
+
+const translatedSaveAmount = computed(() => {
+  return t('home.saveUpTo', { discount: discount.value });
 });
 
 const timeLeft = computed(() => {
@@ -415,19 +417,19 @@ onMounted(() => {
 
     <!-- Hero Section -->
     <UPageHero
-      title="Master the Road, Drive the Future"
-      description="The first premium driving academy in Alam Sutera using 100% Electric Vehicles. Experience smooth, silent, and sustainable learning."
+      :title="t('home.hero.title')"
+      :description="t('home.hero.description')"
       orientation="horizontal"
       :links="[
         {
-          label: 'Book Your First Session',
+          label: t('home.bookFirstSession'),
           to: '/auth/register',
           color: 'warning',
           icon: 'i-lucide-calendar-check',
           size: 'lg',
         },
         {
-          label: 'View Packages',
+          label: t('home.viewPackages'),
           to: '/packages',
           color: 'neutral',
           variant: 'outline',
@@ -457,13 +459,13 @@ onMounted(() => {
               name="i-lucide-battery-charging"
               class="size-5 text-warning"
             />
-            <span>100% Electric</span>
+            <span>{{ t('home.electricVehicle') }}</span>
           </div>
           <div
             class="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-4 py-2 text-white text-md"
           >
             <UIcon name="i-lucide-shield-check" class="size-5 text-warning" />
-            <span>Dual Controls</span>
+            <span>{{ t('home.dualControls') }}</span>
           </div>
         </div>
       </div>
@@ -472,9 +474,9 @@ onMounted(() => {
     <!-- Course Material -->
     <UPageSection
       id="material"
-      headline="Course material you will study"
-      title="Course Material"
-      description="Course material that you learn will make you more confident in driving."
+      :headline="t('home.courseMaterialHeadline')"
+      :title="t('home.courseMaterial')"
+      :description="t('home.courseMaterialDesc')"
       :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
@@ -508,9 +510,9 @@ onMounted(() => {
     <!-- Pricing Section -->
     <UPageSection
       id="pricing"
-      headline="Pricing"
-      title="Choose Your Learning Path"
-      description="Flexible packages designed to match your goals and schedule."
+      :headline="t('home.pricing')"
+      :title="t('home.choosePath')"
+      :description="t('home.pricingDesc')"
       :ui="{ headline: 'text-warning' }"
     >
       <!-- Premium Promo Banner with Real-time Countdown -->
@@ -540,7 +542,7 @@ onMounted(() => {
                   <div
                     class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter"
                   >
-                    Hot
+                    {{ t('home.hot') }}
                   </div>
                 </div>
 
@@ -548,19 +550,18 @@ onMounted(() => {
                   <div
                     class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-warning-500/10 text-warning-600 text-xs font-bold uppercase tracking-widest mb-3"
                   >
-                    Flash Sale Active
+                    {{ t('home.flashSale') }}
                   </div>
                   <h2
                     class="text-2xl md:text-3xl font-black tracking-tight mb-2"
                   >
-                    Special Price:
+                    {{ t('home.specialPrice') }}
                     <span class="text-warning-500"
-                      >Save up to {{ discount }}%</span
+                      >{{ translatedSaveAmount }}</span
                     >
                   </h2>
                   <p class="text-muted text-sm md:text-base max-w-lg">
-                    Exclusive discount for new members. Start your journey today
-                    with our professional instructors.
+                    {{ t('home.exclusiveDiscount') }}
                   </p>
                 </div>
               </div>
@@ -572,7 +573,7 @@ onMounted(() => {
                 <p
                   class="text-xs font-bold text-warning-600 uppercase tracking-[0.2em] mb-4"
                 >
-                  Promo Ends In:
+                  {{ t('home.promoEndsIn') }}
                 </p>
 
                 <div class="flex gap-3">
@@ -626,14 +627,14 @@ onMounted(() => {
                 v-if="plan.isPopular"
                 class="absolute -top-3 left-1/2 -translate-x-1/2 z-10"
               >
-                <UBadge label="Most Popular" color="warning" />
+                <UBadge :label="t('home.mostPopular')" color="warning" />
               </div>
 
               <template #header>
                 <div class="text-center">
                   <h3 class="text-2xl font-bold">{{ plan.name }}</h3>
                   <p class="text-muted text-sm mt-2">
-                    Package Duration : {{ plan.duration }}
+                    {{ t('home.packageDuration') }} {{ plan.duration }}
                   </p>
                 </div>
               </template>
@@ -698,7 +699,7 @@ onMounted(() => {
                   <NuxtLink
                     :to="{ path: '/auth/register', query: { plan: plan.id } }"
                   >
-                    <UButton label="Choose this Plan" color="warning" block />
+                    <UButton :label="t('home.chooseThisPlan')" color="warning" block />
                   </NuxtLink>
                 </div>
               </div>
@@ -710,9 +711,9 @@ onMounted(() => {
 
     <!-- Interactive Booking Preview -->
     <UPageSection
-      headline="Easy Booking"
-      title="Book Your Sessions with Ease"
-      description="Our intuitive booking system shows real-time availability for our electric vehicles."
+      :headline="t('home.easyBooking')"
+      :title="t('home.bookSessions')"
+      :description="t('home.bookingDesc')"
       :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
@@ -723,7 +724,7 @@ onMounted(() => {
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-calendar" class="size-5 text-warning" />
-                <h3 class="font-semibold">Select Date</h3>
+                <h3 class="font-semibold">{{ t('home.selectDate') }}</h3>
               </div>
               <div class="flex items-center gap-2">
                 <UButton
@@ -779,11 +780,11 @@ onMounted(() => {
               <div
                 class="size-3 rounded bg-primary/10 border border-primary/30"
               ></div>
-              <span class="text-muted">Available</span>
+              <span class="text-muted">{{ t('home.available') }}</span>
             </div>
             <div class="flex items-center gap-2">
               <div class="size-3 rounded bg-primary"></div>
-              <span class="text-muted">Selected</span>
+              <span class="text-muted">{{ t('home.selected') }}</span>
             </div>
           </div>
         </UCard>
@@ -794,7 +795,7 @@ onMounted(() => {
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-clock" class="size-5 text-warning" />
-                <h3 class="font-semibold">Available Slots</h3>
+                <h3 class="font-semibold">{{ t('home.availableSlots') }}</h3>
               </div>
               <!-- PERUBAHAN: Memperbaiki teks bulan statis -->
               <UBadge
@@ -841,7 +842,7 @@ onMounted(() => {
               class="w-full"
             >
               <UButton
-                label="Choose this Schedule"
+                :label="t('home.chooseSchedule')"
                 icon="i-lucide-arrow-right"
                 color="warning"
                 trailing
@@ -856,9 +857,9 @@ onMounted(() => {
 
     <!-- Instructors Section -->
     <UPageSection
-      headline="Our Instructor"
-      title="Meet Our Professional Instructors"
-      description="Learn from certified experts who are passionate about teaching and safety."
+      :headline="t('home.instructors')"
+      :title="t('home.meetInstructors')"
+      :description="t('home.instructorsDesc')"
       :ui="{ headline: 'text-warning' }"
     >
       <div class="grid md:grid-cols-3 gap-8">
@@ -882,7 +883,7 @@ onMounted(() => {
           <div class="p-6">
             <h3 class="text-xl font-bold">{{ instructor.name }}</h3>
             <p class="text-warning font-medium text-sm mb-4">
-              {{ instructor.yearsOfExperience }} years of experience
+              {{ instructor.yearsOfExperience }} {{ t('home.yearsExperience') }}
             </p>
             <p class="text-muted text-sm">{{ instructor.bio }}</p>
           </div>
@@ -892,7 +893,7 @@ onMounted(() => {
       <div class="mt-12 text-center">
         <NuxtLink to="/instructors">
           <UButton
-            label="View All Instructors"
+            :label="t('home.viewAllInstructors')"
             color="warning"
             variant="outline"
             size="lg"
@@ -905,9 +906,9 @@ onMounted(() => {
     <!-- Location Section -->
     <UPageSection
       id="contact"
-      headline="Location"
-      title="Conveniently Located in Alam Sutera"
-      description="Our training center is strategically located in Alam Sutera, easily accessible from Tangerang and Jakarta."
+      :headline="t('home.location')"
+      :title="t('home.convenientlyLocated')"
+      :description="t('home.locationDesc')"
       :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
@@ -919,11 +920,9 @@ onMounted(() => {
                 <UIcon name="i-lucide-map-pin" class="size-6 text-warning" />
               </div>
               <div>
-                <h3 class="font-semibold mb-1">Training Center</h3>
+                <h3 class="font-semibold mb-1">{{ t('home.trainingCenter') }}</h3>
                 <p class="text-muted text-md">
-                  Jl. Alam Sutera Boulevard No. 123<br />
-                  Alam Sutera, Tangerang 15143<br />
-                  Banten, Indonesia
+                  {{ t('home.address') }}
                 </p>
               </div>
             </div>
@@ -935,11 +934,11 @@ onMounted(() => {
                 <UIcon name="i-lucide-clock" class="size-6 text-warning" />
               </div>
               <div>
-                <h3 class="font-semibold mb-1">Operating Hours</h3>
+                <h3 class="font-semibold mb-1">{{ t('home.operatingHours') }}</h3>
                 <p class="text-muted text-md">
-                  Monday - Friday: 08:00 - 17:00<br />
-                  Saturday - Sunday: 08:00 - 17:00<br />
-                  Night Shift: 18:00 - 20:00
+                  {{ t('home.hoursWeekday') }}<br />
+                  {{ t('home.hoursWeekend') }}<br />
+                  {{ t('home.hoursNight') }}
                 </p>
               </div>
             </div>
@@ -951,10 +950,10 @@ onMounted(() => {
                 <UIcon name="i-lucide-phone" class="size-6 text-warning" />
               </div>
               <div>
-                <h3 class="font-semibold mb-1">Contact Us</h3>
+                <h3 class="font-semibold mb-1">{{ t('home.contactUs') }}</h3>
                 <p class="text-muted text-md">
-                  Phone: +62 812-3456-7890<br />
-                  Email: info@evdriveacademy.id
+                  {{ t('home.phone') }}: +62 812-3456-7890<br />
+                  {{ t('home.email') }}: info@evdriveacademy.id
                 </p>
               </div>
             </div>
@@ -968,7 +967,7 @@ onMounted(() => {
             >
               <UButton
                 icon="i-simple-icons-whatsapp"
-                label="Chat on WhatsApp"
+                :label="t('home.chatWhatsApp')"
                 class="!bg-[#25D366] hover:!bg-[#128C7E] text-white"
                 block
               />
@@ -980,7 +979,7 @@ onMounted(() => {
             >
               <UButton
                 icon="i-lucide-navigation"
-                label="Get Directions"
+                :label="t('home.getDirections')"
                 color="neutral"
                 variant="outline"
                 block
@@ -1008,9 +1007,9 @@ onMounted(() => {
 
     <!-- Testimonials -->
     <UPageSection
-      headline="Testimonials"
-      title="What Our Students Say"
-      description="Join hundreds of satisfied students who have learned to drive with us."
+      :headline="t('home.testimonials')"
+      :title="t('home.whatStudentsSay')"
+      :description="t('home.testimonialsDesc')"
       :ui="{ headline: 'text-warning' }"
     >
       <div class="grid md:grid-cols-3 gap-6">
@@ -1041,31 +1040,31 @@ onMounted(() => {
     <!-- FAQ Section -->
     <UPageSection
       id="faq"
-      headline="FAQ"
-      title="Frequently Asked Questions"
-      description="Find answers to common questions about our EV driving courses."
-      :ui="{ headline: 'text-warning' }"
+      :headline="t('home.faq')"
+      :title="t('home.frequentlyAsked')"
+      :description="t('home.faqDesc')"
+      :ui="{ headline: 'text-warning', body: 'w-full min-w-full', container: 'max-w-full px-0'}"
       class="bg-muted/30"
     >
       <div class="max-w-3xl mx-auto">
-        <UAccordion :items="faqItems" />
+        <UAccordion :items="faqItems" :ui="{ body: 'w-full min-w-full', label: 'w-full min-w-full block', header: 'max-w-none w-full px-0', }" />
       </div>
     </UPageSection>
 
     <!-- CTA Section -->
     <UPageCTA
-      title="Ready to Drive the Future?"
-      description="Book your first session today and experience the joy of learning in a premium electric vehicle."
+      :title="t('home.readyToDrive')"
+      :description="t('home.readyToDriveDesc')"
       :links="[
         {
-          label: 'Start Your Journey',
+          label: t('home.startJourney'),
           to: '/auth/register',
           color: 'warning',
           icon: 'i-lucide-rocket',
           size: 'lg',
         },
         {
-          label: 'View All Packages',
+          label: t('home.viewAllPackages'),
           to: '/packages',
           color: 'neutral',
           variant: 'ghost',

@@ -205,9 +205,18 @@ func Load(path string) (*Config, error) {
 	_ = viper.BindEnv("jwt.expiry_hour", "JWT_EXPIRY_HOUR")
 	_ = viper.BindEnv("jwt.refresh_token_expiry_days", "JWT_REFRESH_TOKEN_EXPIRY_DAYS")
 
-	// App env overrides
-	_ = viper.BindEnv("app.app_env", "APP_ENV")
-	_ = viper.BindEnv("app.signature_key", "APP_SIGNATURE_KEY")
+	// Email env overrides
+	_ = viper.BindEnv("email.token", "EMAIL_TOKEN")
+	_ = viper.BindEnv("email.api_key", "EMAIL_API_KEY")
+	_ = viper.BindEnv("email.from_email", "EMAIL_FROM_EMAIL")
+	_ = viper.BindEnv("email.from_name", "EMAIL_FROM_NAME")
+	_ = viper.BindEnv("email.enabled", "EMAIL_ENABLED")
+
+	// SMTP env overrides
+	_ = viper.BindEnv("email.smtp_host", "EMAIL_SMTP_HOST")
+	_ = viper.BindEnv("email.smtp_port", "EMAIL_SMTP_PORT")
+	_ = viper.BindEnv("email.smtp_username", "EMAIL_SMTP_USERNAME")
+	_ = viper.BindEnv("email.smtp_password", "EMAIL_SMTP_PASSWORD")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

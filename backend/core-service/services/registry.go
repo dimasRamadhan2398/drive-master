@@ -1,6 +1,7 @@
 package services
 
 import (
+	"core-service/pkg/config"
 	"core-service/pkg/kafka"
 	"core-service/repositories"
 )
@@ -62,6 +63,13 @@ func (r *Registry) GetFAQService() IFAQService {
 	return NewFAQService(r.repoRegistry.GetFAQ())
 }
 
+func (r *Registry) GetMediaService() IMediaService {
+	cfg := config.Get()
+	return NewMediaService(cfg.ImageKit.PrivateKey, cfg.ImageKit.URLEndpoint)
+}
+
+
+
 type IServiceRegistry interface {
 	GetEventService() IEventService
 	GetRegionService() IRegionService
@@ -73,6 +81,7 @@ type IServiceRegistry interface {
 	GetSalesService() ISalesService
 	GetGeneralSettingsService() IGeneralSettingsService
 	GetFAQService() IFAQService
+	GetMediaService() IMediaService
 }
 
 func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPublisher *kafka.EventPublisher) IServiceRegistry {

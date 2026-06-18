@@ -150,6 +150,14 @@ services:
           - /api/v1/testimonials/all
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+      
+      - name: user-dashboard-route
+        strip_path: false
+        preserve_host: false
+        paths: 
+        - /api/v1/dashboard/
+        protocols: [http, https]
+        methods: [GET, OPTIONS]
 
   - name: user-service-docs-service
     url: http://user-service-upstream
@@ -294,6 +302,14 @@ services:
           - /api/v1/sessions
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+      
+      - name: booking-dashboard-route
+        strip_path: false
+        preserve_host: false
+        paths: 
+        - /api/v1/dashboard/
+        protocols: [http, https]
+        methods: [GET, OPTIONS]
 
   - name: booking-service-docs-service
     url: http://booking-service-upstream
