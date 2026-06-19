@@ -66,3 +66,9 @@ analytics:
   ga_measurement_id: G-07PS1N5DZ5
   ga_property_id: G-539969879
   ga_credentials_file: /app/analytics/ga_credentials.json
+
+payment_service:
+  base_url: http://localhost:8004/api/v1
+  service_name: core-service
+  signature_key: baf8f21c59948f5731ece01240fb303a8744e668a0befff55a63a3eb7022d8c9
+  enabled: true 

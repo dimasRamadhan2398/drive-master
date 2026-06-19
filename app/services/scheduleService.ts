@@ -31,7 +31,7 @@ export interface Schedule {
   updatedAt: string;
 }
 
-// Brief response for lists
+// Brief response for lists (API response format)
 export interface ScheduleBrief {
   id: string;
   date: string;
@@ -43,6 +43,40 @@ export interface ScheduleBrief {
   studentName?: string;
   status: ScheduleStatus;
 }
+
+// Raw API response format (from backend)
+export interface ScheduleApiResponse {
+  id: string;
+  date: string;
+  time: string; // API uses "time" instead of "startTime"
+  duration: number;
+  instructorId?: string;
+  instructorName?: string;
+  carId?: number;
+  carName?: string; // API uses "carName" instead of "vehicleName"
+  userId?: string;
+  userName?: string; // API uses "userName" instead of "studentName"
+  bookingId?: string;
+  status: ScheduleStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Map API response to ScheduleBrief format
+export const mapApiToScheduleBrief = (item: ScheduleApiResponse): ScheduleBrief => {
+  return {
+    id: item.id,
+    date: item.date,
+    startTime: item.time, // Map "time" to "startTime"
+    endTime: "", // Not provided in API response
+    duration: item.duration,
+    vehicleName: item.carName || "", // Map "carName" to "vehicleName"
+    instructorName: item.instructorName || "", // API instructorName is empty, use as-is
+    studentName: item.userName || undefined, // Map "userName" to "studentName"
+    status: item.status,
+  };
+};
 
 export interface ScheduleListResponse {
   schedules: ScheduleBrief[];
@@ -135,24 +169,14 @@ export const scheduleService = {
     const queryString = queryParams.toString();
     const url = `/schedules/all${queryString ? `?${queryString}` : ""}`;
 
-    const response = await user<PaginatedResponse<Schedule>>(url, {
+    const response = await user<PaginatedResponse<ScheduleApiResponse>>(url, {
       method: "GET",
     });
 
     const { data, pagination } = extractPaginatedData(response);
     return {
       schedules: Array.isArray(data)
-        ? data.map<ScheduleBrief>((s: Schedule) => ({
-            id: s.id,
-            date: s.date,
-            startTime: s.startTime,
-            endTime: s.endTime,
-            duration: s.duration,
-            vehicleName: s.vehicleName,
-            instructorName: s.instructorName,
-            studentName: s.studentName,
-            status: s.status,
-          }))
+        ? data.map<ScheduleBrief>((s: ScheduleApiResponse) => mapApiToScheduleBrief(s))
         : [],
       ...pagination,
     };
@@ -195,24 +219,14 @@ export const scheduleService = {
     const queryString = queryParams.toString();
     const url = `/schedules/filter${queryString ? `?${queryString}` : ""}`;
 
-    const response = await user<PaginatedResponse<Schedule>>(url, {
+    const response = await user<PaginatedResponse<ScheduleApiResponse>>(url, {
       method: "GET",
     });
 
     const { data, pagination } = extractPaginatedData(response);
     return {
       schedules: Array.isArray(data)
-        ? data.map<ScheduleBrief>((s: Schedule) => ({
-            id: s.id,
-            date: s.date,
-            startTime: s.startTime,
-            endTime: s.endTime,
-            duration: s.duration,
-            vehicleName: s.vehicleName,
-            instructorName: s.instructorName,
-            studentName: s.studentName,
-            status: s.status,
-          }))
+        ? data.map<ScheduleBrief>((s: ScheduleApiResponse) => mapApiToScheduleBrief(s))
         : [],
       ...pagination,
     };
@@ -226,11 +240,13 @@ export const scheduleService = {
     const targetDate = date || formatDateString(new Date());
 
     try {
-      const response = await user<ApiResponse<ScheduleBrief[]>>(
+      const response = await user<ApiResponse<ScheduleApiResponse[]>>(
         `/schedules/filter?date=${targetDate}`,
         { method: "GET" },
       );
-      return extractData(response);
+      const data = extractData(response);
+      // Map API response to ScheduleBrief format
+      return Array.isArray(data) ? data.map(mapApiToScheduleBrief) : [];
     } catch {
       return [];
     }
@@ -255,10 +271,12 @@ export const scheduleService = {
     const url = `/schedules/available${queryString ? `?${queryString}` : ""}`;
 
     try {
-      const response = await user<ApiResponse<ScheduleBrief[]>>(url, {
+      const response = await user<ApiResponse<ScheduleApiResponse[]>>(url, {
         method: "GET",
       });
-      return extractData(response);
+      const data = extractData(response);
+      // Map API response to ScheduleBrief format
+      return Array.isArray(data) ? data.map(mapApiToScheduleBrief) : [];
     } catch {
       return [];
     }

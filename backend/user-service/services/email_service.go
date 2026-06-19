@@ -176,7 +176,6 @@ The Team`, username)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"welcome", "onboarding"},
 	})
 
 	if err != nil {
@@ -222,7 +221,6 @@ The Team`, resetLink)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"password-reset", "security"},
 	})
 
 	if err != nil {
@@ -268,7 +266,6 @@ The Team`, otp)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"otp", "email-verification"},
 	})
 
 	if err != nil {
@@ -320,7 +317,6 @@ The Team`, studentName, instructorName, dateTime, lessonType)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"booking", "confirmation"},
 	})
 
 	if err != nil {
@@ -371,7 +367,6 @@ The Team`, studentName, instructorName, dateTime, lessonType)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"reminder", "lesson"},
 	})
 
 	if err != nil {

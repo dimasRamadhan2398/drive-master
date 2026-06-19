@@ -27,31 +27,34 @@ const localDateStr = computed(() => {
 const filterInstructor = ref("All Instructors");
 const filterVehicle = ref("All Vehicles");
 
+
+
 const {
-  slots: timeSlots,
   toggleSlotStatus: _toggleSlotStatus,
   deleteSlot: _deleteSlot,
-  updateSlotStatus,
-  addSlot,
-  editSlot,
-  bookSlot,
 } = useSchedules();
+
+// Use store's slots for display
+const timeSlots = computed(() => {
+  if (schedulesStore.isInitialized) {
+    return schedulesStore.slots;
+  }
+  return [];
+});
 
 const instructors = computed(() => {
 	return instructorsStore.instructors.map((value) => {
     return {
       label: value.name,
-      value: value.userId
+      value: value.name  // Use name for comparison in filteredSlots
     }
   })
 })
-const schedules = computed(() => {
-  var {slots: timeSlots} = useSchedules();
-  if(!schedulesStore.isInitialized){
-    return timeSlots
-  }
-  return schedulesStore.slots
-})
+
+const instructorOptions = computed(() => [
+  { label: 'All Instructors', value: 'All Instructors' },
+  ...instructors.value
+])
 const vehicles = ["BYD Atto 1"];
 
 // FITUR BARU: Sinkronisasi jam operasional dari settings
@@ -101,7 +104,7 @@ function changeDay(offset: number) {
 }
 
 function toggleSlotStatus(slotId: string) {
-  _toggleSlotStatus(slotId);
+  schedulesStore.updateSlotStatus(slotId, timeSlots.value.find((s) => s.id === slotId)?.status === "blocked" ? "available" : "blocked");
   const slot = timeSlots.value.find((s) => s.id === slotId);
   if (slot?.status === "blocked") {
     toast.add({ title: "Slot Blocked", color: "warning", icon: "i-lucide-lock" });
@@ -115,7 +118,7 @@ function toggleSlotStatus(slotId: string) {
 }
 
 function deleteSlot(slotId: string) {
-  _deleteSlot(slotId);
+  schedulesStore.deleteSlot(slotId);
   toast.add({ title: "Slot Deleted", color: "error", icon: "i-lucide-trash" });
 }
 
@@ -133,7 +136,7 @@ function startSession(slotId: string) {
   if (
     confirm('Apakah kursus sudah mau jalan? Sesi akan berubah menjadi "In Progress".')
   ) {
-    updateSlotStatus(slotId, "in-progress");
+    schedulesStore.updateSlotStatus(slotId, "in-progress");
     toast.add({
       title: "Session Started",
       description: "Driving session is now in progress.",
@@ -145,7 +148,7 @@ function startSession(slotId: string) {
 
 function completeSession(slotId: string) {
   if (confirm('Apakah kursus sudah selesai? Sesi akan ditandai sebagai "Completed".')) {
-    updateSlotStatus(slotId, "completed");
+    schedulesStore.updateSlotStatus(slotId, "completed");
     toast.add({
       title: "Session Completed",
       description: "Driving session has been finished.",
@@ -160,7 +163,7 @@ function handleManualBooking(slotId: string) {
     ? decodeURIComponent(studentNameToBook.value)
     : null;
   if (studentName) {
-    bookSlot(slotId, studentName);
+    schedulesStore.bookSlotLocal(slotId, studentName);
     toast.add({
       title: "Slot Booked",
       description: `Berhasil booking untuk ${studentName}`,
@@ -171,7 +174,7 @@ function handleManualBooking(slotId: string) {
   } else {
     const name = prompt("Masukkan nama siswa untuk booking manual:", "Siswa Manual");
     if (name) {
-      bookSlot(slotId, name);
+      schedulesStore.bookSlotLocal(slotId, name);
       toast.add({
         title: "Slot Booked",
         description: `Berhasil booking untuk ${name}`,
@@ -184,7 +187,7 @@ function handleManualBooking(slotId: string) {
 function handleSlotClick(slot: any) {
   if (studentNameToBook.value && slot.status === "available") {
     const studentName = decodeURIComponent(studentNameToBook.value as string);
-    bookSlot(slot.id, studentName);
+    schedulesStore.bookSlotLocal(slot.id, studentName);
     toast.add({
       title: "Slot Booked",
       description: `Berhasil booking untuk ${studentName}`,
@@ -198,7 +201,7 @@ function handleSlotClick(slot: any) {
 
 function cancelBooking(slotId: string) {
   if (confirm("Batalkan booking dan kembalikan slot menjadi Available?")) {
-    updateSlotStatus(slotId, "available");
+    schedulesStore.cancelBookingLocal(slotId);
     toast.add({
       title: "Booking Cancelled",
       description: "Slot is now available again.",
@@ -245,7 +248,7 @@ function handleAddSlot(form: { date?: string; time: string; duration: string; ca
   }
 
   const id = Date.now().toString();
-  addSlot({
+  schedulesStore.addSlot({
     id,
     date: form.date ?? localDateStr.value,
     time: form.time,
@@ -313,7 +316,7 @@ function handleEditSlot(updated: { id: string; time: string; duration: string; c
     return;
   }
 
-  editSlot(updated.id, {
+  schedulesStore.editSlot(updated.id, {
     time: updated.time,
     duration: updated.duration + " min",
     car: updated.car,
@@ -418,8 +421,7 @@ onMounted(() => {
           />
           <USelect
             v-model="filterInstructor"
-            :items="['All Instructors', ...instructors]"
-
+            :items="instructorOptions"
             placeholder="Filter by instructor"
             class="w-48"
             color="warning"

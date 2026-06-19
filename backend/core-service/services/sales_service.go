@@ -28,6 +28,7 @@ type ISalesService interface {
 	GetSalesTrend(ctx context.Context, startDate, endDate string) (*dto.SalesTrendResponse, error)
 	GetSalesBySource(ctx context.Context, startDate, endDate string) ([]dto.SalesBySourceResponse, error)
 	GetSalesByPackageType(ctx context.Context, startDate, endDate string) ([]dto.SalesByPackageTypeResponse, error)
+	GetSalesByPackage(ctx context.Context, startDate, endDate string) ([]dto.SalesByPackageResponse, error)
 
 	// Helpers
 	GenerateOrderNumber() string
@@ -370,6 +371,40 @@ func (s *SalesService) GetSalesByPackageType(ctx context.Context, startDate, end
 			TotalSales:   item.TotalSales,
 			TotalRevenue: item.TotalRevenue,
 			Percentage:   percentage,
+		}
+	}
+
+	return results, nil
+}
+
+// GetSalesByPackage retrieves sales breakdown by individual package (performance by package)
+func (s *SalesService) GetSalesByPackage(ctx context.Context, startDate, endDate string) ([]dto.SalesByPackageResponse, error) {
+	data, err := s.salesRepo.GetSalesByPackage(ctx, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate total for percentage calculation
+	var totalRevenue float64
+	for _, item := range data {
+		totalRevenue += item.TotalRevenue
+	}
+
+	results := make([]dto.SalesByPackageResponse, len(data))
+	for i, item := range data {
+		percentage := 0.0
+		if totalRevenue > 0 {
+			percentage = (item.TotalRevenue / totalRevenue) * 100
+		}
+
+		results[i] = dto.SalesByPackageResponse{
+			PackageID:     item.PackageID,
+			PackageName:   item.PackageName,
+			TotalSales:    item.TotalSales,
+			TotalQuantity: item.TotalQuantity,
+			TotalRevenue:  item.TotalRevenue,
+			AvgUnitPrice:  item.AvgUnitPrice,
+			Percentage:    percentage,
 		}
 	}
 

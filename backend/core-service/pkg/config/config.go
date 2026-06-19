@@ -7,15 +7,16 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig    `yaml:"server"`
-	Database  DatabaseConfig  `yaml:"database"`
-	Redis     RedisConfig     `yaml:"redis"`
-	ImageKit  ImageKitConfig  `yaml:"imagekit"`
-	JWT       JWTConfig       `yaml:"jwt"`
-	Log       LogConfig       `yaml:"log"`
-	Kafka     KafkaConfig     `yaml:"kafka"`
-	Analytics AnalyticsConfig `yaml:"analytics"`
-	App       AppConfig       `yaml:"app"`
+	Server        ServerConfig        `yaml:"server"`
+	Database      DatabaseConfig      `yaml:"database"`
+	Redis         RedisConfig         `yaml:"redis"`
+	ImageKit      ImageKitConfig      `yaml:"imagekit"`
+	JWT           JWTConfig           `yaml:"jwt"`
+	Log           LogConfig           `yaml:"log"`
+	Kafka         KafkaConfig         `yaml:"kafka"`
+	Analytics     AnalyticsConfig     `yaml:"analytics"`
+	App           AppConfig           `yaml:"app"`
+	PaymentService PaymentServiceConfig `yaml:"payment_service"`
 }
 
 type ServerConfig struct {
@@ -85,6 +86,13 @@ type AnalyticsConfig struct {
 	GA4CredentialsFile string `mapstructure:"ga_credentials_file" yaml:"ga_credentials_file"`
 }
 
+type PaymentServiceConfig struct {
+	BaseURL       string `mapstructure:"base_url" yaml:"base_url"`
+	ServiceName   string `mapstructure:"service_name" yaml:"service_name"`
+	SignatureKey  string `mapstructure:"signature_key" yaml:"signature_key"`
+	Enabled       bool   `mapstructure:"enabled" yaml:"enabled"`
+}
+
 var AppCfg *Config
 
 func setDefaults(){
@@ -147,6 +155,11 @@ func setDefaults(){
 	viper.SetDefault("analytics.ga_measurement_id", "G-07PS1N5DZ5")
 	viper.SetDefault("analytics.ga_property_id", "G-539969879")
 	viper.SetDefault("analytics.ga_credentials_file", "/app/analytics/ga_credentials.json")
+
+	// Payment Service
+	viper.SetDefault("payment_service.base_url", "http://localhost:8004/api/v1")
+	viper.SetDefault("payment_service.service_name", "core-service")
+	viper.SetDefault("payment_service.enabled", false)
 }
 
 func Load(path string) (*Config, error) {
@@ -199,6 +212,12 @@ func Load(path string) (*Config, error) {
 	_ = viper.BindEnv("analytics.ga_measurement_id", "GA4_MEASUREMENT_ID")
 	_ = viper.BindEnv("analytics.ga_property_id", "GA4_PROPERTY_ID")
 	_ = viper.BindEnv("analytics.ga_credentials_file", "GA4_CREDENTIALS_FILE")
+
+	// Payment Service env overrides
+	_ = viper.BindEnv("payment_service.base_url", "PAYMENT_SERVICE_URL")
+	_ = viper.BindEnv("payment_service.service_name", "PAYMENT_SERVICE_NAME")
+	_ = viper.BindEnv("payment_service.signature_key", "PAYMENT_SERVICE_SIGNATURE_KEY")
+	_ = viper.BindEnv("payment_service.enabled", "PAYMENT_SERVICE_ENABLED")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

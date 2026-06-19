@@ -103,24 +103,24 @@ export const mapApiToStudent = (item: StudentApiResponse): Student => {
   const activeEntitlement = entitlements.find((e) => e.status === "active");
 
   // Calculate total sessions across all entitlements
-  const totalSessions = entitlements.reduce((sum, e) => sum + e.totalSessions, 0);
+  const totalSessions = activeEntitlement?.totalSessions ?? 0;
 
   // Calculate total completed sessions across all entitlements
-  const completedSessions = entitlements.reduce((sum, e) => sum + e.usedSessions, 0);
+  const completedSessions = activeEntitlement?.usedSessions ?? 0;
 
   // Calculate progress based on completed sessions vs total sessions
-  const progress = totalSessions > 0
-    ? Math.round((completedSessions / totalSessions) * 100)
-    : 0;
+  const progress =
+    totalSessions! > 0
+      ? Math.round((completedSessions! / totalSessions!) * 100)
+      : 0;
 
-  // Determine overall status based on entitlements
   let status: "active" | "pending" | "completed" = "pending";
+
   const hasActiveEntitlement = entitlements.some((e) => e.status === "active");
-  const hasCompletedEntitlement = entitlements.some((e) => e.status === "completed");
 
   if (hasActiveEntitlement) {
     status = "active";
-  } else if (hasCompletedEntitlement || completedSessions > 0) {
+  } else if (entitlements.length > 0) {
     status = "completed";
   }
 
@@ -184,7 +184,7 @@ export const studentService = {
     const queryString = queryParams.toString();
     const url = `/members/all${queryString ? `?${queryString}` : ""}`;
 
-    const response = await user<PaginatedResponse<StudentWithStudent>>(url, {
+    const response = await user<PaginatedResponse<StudentApiResponse>>(url, {
       method: "GET",
     });
 
@@ -192,7 +192,7 @@ export const studentService = {
 
     // Handle both nested and flat response formats
     const students = Array.isArray(data)
-      ? data.map((item) => {
+      ? (data as Array<StudentApiResponse | StudentWithStudent>).map((item) => {
           // Handle nested "student" wrapper
           const studentData = "student" in item ? item.student : item;
           return mapApiToStudent(studentData);
@@ -316,10 +316,12 @@ export const studentService = {
 
       // Handle both nested and flat response formats
       const students = Array.isArray(data)
-        ? data.map((item) => {
-            const studentData = "student" in item ? item.student : item;
-            return mapApiToStudent(studentData);
-          })
+        ? (data as Array<StudentApiResponse | StudentWithStudent>).map(
+            (item) => {
+              const studentData = "student" in item ? item.student : item;
+              return mapApiToStudent(studentData);
+            },
+          )
         : [];
 
       return {

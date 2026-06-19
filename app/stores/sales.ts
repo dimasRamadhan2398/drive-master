@@ -122,14 +122,13 @@ export const useSalesStore = defineStore("sales", {
     filteredTransactions: (state) => {
       return state.transactions.filter((t) => {
         const pDate = new Date(t.purchaseDate);
-        if (state.startDate && pDate < new Date(state.startDate))
-          return false;
+        if (state.startDate && pDate < new Date(state.startDate)) return false;
         if (state.endDate && pDate > new Date(state.endDate)) return false;
         return true;
       });
     },
 
-    transactionsByPackage: (state) => (packageId: number) => {
+    transactionsByPackage: (state) => (packageId: string) => {
       return state.transactions.filter((t) => t.packageId === packageId);
     },
 
@@ -176,7 +175,11 @@ export const useSalesStore = defineStore("sales", {
       }));
     },
 
-    revenueByPackage(): { packageId: number; revenue: number; sales: number }[] {
+    revenueByPackage(): {
+      packageId: number;
+      revenue: number;
+      sales: number;
+    }[] {
       const map = new Map<number, { revenue: number; sales: number }>();
 
       this.filteredTransactions.forEach((t) => {
@@ -229,8 +232,7 @@ export const useSalesStore = defineStore("sales", {
     },
 
     getPackageSales(packageId: number) {
-      return this.transactions.filter((t) => t.packageId === packageId)
-        .length;
+      return this.transactions.filter((t) => t.packageId === packageId).length;
     },
 
     formatPrice(price: number) {

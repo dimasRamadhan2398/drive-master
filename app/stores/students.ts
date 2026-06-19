@@ -214,6 +214,34 @@ export const useStudentsStore = defineStore("students", {
   },
 
   actions: {
+    // Client-side filtering helper
+    applyClientSideFiltering() {
+      let filtered = [...initialStudents];
+
+      // Apply search filter
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase();
+        filtered = filtered.filter(
+          (s) =>
+            s.name.toLowerCase().includes(query) ||
+            s.email.toLowerCase().includes(query),
+        );
+      }
+
+      // Apply status filter
+      if (this.statusFilter !== "all") {
+        filtered = filtered.filter((s) => s.status === this.statusFilter);
+      }
+
+      this.students = filtered;
+      this.pagination = {
+        page: 1,
+        limit: this.pagination.limit,
+        total: filtered.length,
+        totalPages: 1,
+      };
+    },
+
     async fetchStudents(page = 1, resetPage = true) {
       this.isLoading = true;
       this.error = null;
@@ -250,8 +278,8 @@ export const useStudentsStore = defineStore("students", {
         this.error =
           err instanceof Error ? err.message : "Failed to fetch students";
         console.error("Error fetching students:", err);
-        // API failed, use dummy data
-        this.students = [...initialStudents];
+        // API failed, use dummy data with client-side filtering
+        this.applyClientSideFiltering();
       } finally {
         this.isLoading = false;
       }
@@ -269,8 +297,8 @@ export const useStudentsStore = defineStore("students", {
         this.error =
           err instanceof Error ? err.message : "Failed to fetch students";
         console.error("Error fetching students:", err);
-        // API failed, use dummy data
-        this.students = [...initialStudents];
+        // API failed, use dummy data with client-side filtering
+        this.applyClientSideFiltering();
       } finally {
         this.isLoading = false;
       }

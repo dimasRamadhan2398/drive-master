@@ -30,6 +30,7 @@ type ISalesController interface {
 	GetSalesTrend(ctx *gin.Context)
 	GetSalesBySource(ctx *gin.Context)
 	GetSalesByPackageType(ctx *gin.Context)
+	GetSalesByPackage(ctx *gin.Context)
 }
 
 func NewSalesController(salesService services.ISalesService) ISalesController {
@@ -344,6 +345,28 @@ func (c *SalesController) GetSalesByPackageType(ctx *gin.Context) {
 	}
 
 	response.OK(ctx, "Sales by package type retrieved successfully", data)
+}
+
+// GetSalesByPackage handles GET /api/v1/admin/sales/analytics/by-package
+// @Summary Get sales by package (performance by package)
+// @Description Retrieves sales breakdown by individual package with revenue metrics
+// @Tags Sales Analytics
+// @Produce json
+// @Param start_date query string false "Start date (YYYY-MM-DD)"
+// @Param end_date query string false "End date (YYYY-MM-DD)"
+// @Success 200 {object} response.Response
+// @Router /admin/sales/analytics/by-package [get]
+func (c *SalesController) GetSalesByPackage(ctx *gin.Context) {
+	startDate := ctx.DefaultQuery("start_date", "30daysAgo")
+	endDate := ctx.DefaultQuery("end_date", "today")
+
+	data, err := c.salesService.GetSalesByPackage(ctx, startDate, endDate)
+	if err != nil {
+		response.InternalServerError(ctx, "Failed to get sales by package: "+err.Error())
+		return
+	}
+
+	response.OK(ctx, "Sales by package retrieved successfully", data)
 }
 
 // Helper function to convert SaleStatus

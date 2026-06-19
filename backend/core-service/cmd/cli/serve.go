@@ -5,6 +5,7 @@ import (
 	"core-service/controllers"
 	"core-service/database"
 	"core-service/handlers"
+	"core-service/pkg/clients"
 	"core-service/pkg/config"
 	"core-service/pkg/kafka"
 	"core-service/pkg/logger"
@@ -166,7 +167,21 @@ func runServe(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize controller
-	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
+	var controllerRegistry controllers.IControllerRegistry
+	if loadedConfig.PaymentService.Enabled {
+		paymentClient := clients.NewTransactionClient(
+			loadedConfig.PaymentService.BaseURL,
+			loadedConfig.PaymentService.ServiceName,
+			loadedConfig.PaymentService.SignatureKey,
+		)
+		controllerRegistry = controllers.NewControllerRegistryWithPayment(serviceRegistry, paymentClient)
+		logger.Info("Payment service client initialized",
+			logger.NewLogField("base_url", loadedConfig.PaymentService.BaseURL),
+			logger.NewLogField("service_name", loadedConfig.PaymentService.ServiceName))
+	} else {
+		controllerRegistry = controllers.NewControllerRegistry(serviceRegistry)
+		logger.Info("Payment service client disabled, using basic controller registry")
+	}
 
 	// Use gin.New() instead of gin.Default() to have full control
 	router := gin.New()

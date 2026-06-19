@@ -10,7 +10,7 @@ const route = useRoute()
 const salesStore = useSalesStore()
 const packagesStore = usePackagesStore()
 
-const packageId = computed(() => route.query.packageId ? Number(route.query.packageId) : null)
+const packageId = computed(() => route.query.packageId ? route.query.packageId : null)
 
 // Get packages from store
 const packages = computed(() => packagesStore.packages)
