@@ -30,7 +30,7 @@ type RecurringScheduleResponse struct {
 
 // UserResponse represents a user from user-service
 type UserResponse struct {
-	ID        uuid.UUID   `json:"userId"`
+	ID        uuid.UUID   `json:"id"`
 	Email     string `json:"email"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
@@ -40,7 +40,7 @@ type UserResponse struct {
 type UserList = dto.PagedData[UserInfo]
 
 type UserInfo struct {
-	ID        uuid.UUID  `json:"userId"`
+	ID        uuid.UUID  `json:"id"`
 	Email     string `json:"email"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`

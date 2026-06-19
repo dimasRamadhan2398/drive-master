@@ -9,12 +9,14 @@ import (
 	"time"
 
 	"booking-service/models/dto"
+
+	"github.com/google/uuid"
 )
 
 // ICoreClient defines the interface for core-service operations
 type ICoreClient interface {
 	GetCars(ctx context.Context, page, limit int) (*dto.PagedData[CarResponse], error)
-	GetCarByID(ctx context.Context, carID uint) (*CarInfo, error)
+	GetCarByID(ctx context.Context, carID uuid.UUID) (*CarInfo, error)
 	GetSalesOverview(ctx context.Context, startDate, endDate string) (*SalesOverviewResponse, error)
 }
 
@@ -82,8 +84,8 @@ type APIResponse struct {
 }
 
 // GetCarByID retrieves a single car by ID from core-service
-func (c *CoreClient) GetCarByID(ctx context.Context, carID uint) (*CarInfo, error) {
-	url := fmt.Sprintf("%s/api/v1/cars/%d", c.baseURL, carID)
+func (c *CoreClient) GetCarByID(ctx context.Context, carID uuid.UUID) (*CarInfo, error) {
+	url := fmt.Sprintf("%s/api/v1/cars/%s", c.baseURL, carID.String())
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

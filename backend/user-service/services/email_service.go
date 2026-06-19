@@ -107,8 +107,10 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		return apperrors.ErrInternalServer
 	}
 
-	// Set headers with Bearer token
+	// Set headers for Mailtrap API
+	// Use both Authorization Bearer and Api-Token for compatibility
 	req.Header.Add("Authorization", "Bearer "+s.apiKey)
+	req.Header.Add("Api-Token", s.apiKey)
 	req.Header.Add("Content-Type", "application/json")
 
 	// Send request

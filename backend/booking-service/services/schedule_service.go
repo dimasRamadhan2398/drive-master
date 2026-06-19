@@ -237,7 +237,7 @@ func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.
 			match = false
 		}
 
-		if params.CarID != 0 && sched.CarID != params.CarID {
+		if params.CarID != "" && sched.CarID.String() != params.CarID {
 			match = false
 		}
 
@@ -316,7 +316,7 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 	// --- Collect unique IDs to minimize external calls ---
 	instructorIDSet := make(map[string]struct{})
 	userIDSet       := make(map[string]struct{})
-	carIDSet        := make(map[uint]struct{})
+	carIDSet        := make(map[uuid.UUID]struct{})
 
 	for _, sched := range schedules {
 		instructorIDSet[sched.InstructorID.String()] = struct{}{}
@@ -337,7 +337,7 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 		wg       sync.WaitGroup
 		fetchErr error
 		userMap  = make(map[string]uClient.UserInfo)
-		carMap   = make(map[uint]cClient.CarInfo)
+		carMap   = make(map[uuid.UUID]cClient.CarInfo)
 	)
 
 	for id := range allUserIDs {
@@ -364,13 +364,13 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 
 	for _, id := range carIDs {
 		wg.Add(1)
-		go func(carID uint) {
+		go func(carID uuid.UUID) {
 			defer wg.Done()
 			info, err := s.coreClient.GetCarByID(ctx, carID)
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
-				fetchErr = fmt.Errorf("failed to fetch car %d: %w", carID, err)
+				fetchErr = fmt.Errorf("failed to fetch car %s: %w", carID.String(), err)
 				return
 			}
 			carMap[carID] = *info

@@ -2,11 +2,13 @@ package core
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // CarResponse represents a car from core-service
 type CarResponse struct {
-	ID           uint      `json:"id"`
+	ID           uuid.UUID `json:"id"`
 	Brand        string    `json:"brand"`
 	Model        string    `json:"model"`
 	Year         int       `json:"year"`

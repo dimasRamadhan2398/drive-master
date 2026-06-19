@@ -93,12 +93,17 @@ func (r *Registry) GetEmailService() IMailtrapEmailService {
 	fmt.Printf("[EMAIL DEBUG] User: %s\n", cfg.Email.User)
 	fmt.Printf("[EMAIL DEBUG] SMTPEnabled: %s\n", cfg.Email.Password)
 
-	return NewMailtrapEmailService(cfg.Email.FromEmail, cfg.Email.FromName, cfg.Email.APIKey)
+	apiKey := cfg.Email.APIKey
+	if apiKey == "" {
+		apiKey = cfg.Email.Token
+	}
+
+	return NewMailtrapEmailService(cfg.Email.FromEmail, cfg.Email.FromName, apiKey)
 }
 
 func (r *Registry) GetMediaService() IMediaService {
 	cfg := config.Get()
-	return coreServices.NewMediaService(cfg.ImageKit.PrivateKey)
+	return coreServices.NewMediaService(cfg.ImageKit.PrivateKey, cfg.ImageKit.URLEndpoint)
 }
 
 func (r *Registry) GetWorkExperienceService() IWorkExperienceService {
