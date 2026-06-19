@@ -2,6 +2,7 @@ package services
 
 import (
 	coreServices "core-service/services"
+	"fmt"
 	"user-service/clients"
 	"user-service/clients/region"
 	"user-service/pkg/config"
@@ -82,6 +83,16 @@ func (r *Registry) GetAuthService() IAuthService {
 
 func (r *Registry) GetEmailService() IMailtrapEmailService {
 	cfg := config.Get()
+
+	// Debug logging for email configuration
+	fmt.Printf("[EMAIL DEBUG] FromEmail: %s\n", cfg.Email.FromEmail)
+	fmt.Printf("[EMAIL DEBUG] FromName: %s\n", cfg.Email.FromName)
+	fmt.Printf("[EMAIL DEBUG] APIKey: %s\n", cfg.Email.APIKey)
+	fmt.Printf("[EMAIL DEBUG] Host: %s\n", cfg.Email.Host)
+	fmt.Printf("[EMAIL DEBUG] Port: %d\n", cfg.Email.Port)
+	fmt.Printf("[EMAIL DEBUG] User: %s\n", cfg.Email.User)
+	fmt.Printf("[EMAIL DEBUG] SMTPEnabled: %s\n", cfg.Email.Password)
+
 	return NewMailtrapEmailService(cfg.Email.FromEmail, cfg.Email.FromName, cfg.Email.APIKey)
 }
 

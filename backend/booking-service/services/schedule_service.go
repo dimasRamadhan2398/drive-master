@@ -322,7 +322,7 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 		instructorIDSet[sched.InstructorID.String()] = struct{}{}
 		carIDSet[sched.CarID] = struct{}{}
 		if sched.UserID != nil {
-			userIDSet[fmt.Sprintf("%d", *sched.UserID)] = struct{}{}
+			userIDSet[sched.UserID.String()] = struct{}{}
 		}
 	}
 
@@ -395,7 +395,7 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 			resp.CarName = c.Brand + " " + c.Model
 		}
 		if sched.UserID != nil {
-			key := fmt.Sprintf("%d", *sched.UserID)
+			key := sched.UserID.String()
 			if u, ok := userMap[key]; ok {
 				name := u.FirstName + " " + u.LastName
 				resp.UserName = &name

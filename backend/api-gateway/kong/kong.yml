@@ -248,6 +248,14 @@ services:
         protocols: [http, https]
         methods: [GET, OPTIONS]
 
+      - name: core-analytics-sales-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/admin/sales
+        protocols: [http, https]
+        methods: [GET, OPTIONS]
+
   - name: core-service-docs-service
     url: http://core-service-upstream
     routes:

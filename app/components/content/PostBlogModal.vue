@@ -6,7 +6,7 @@ import type {
   Attractiveness,
   CreateBlogPostData,
 } from "~/services/contentService";
-
+import RichTextEditor from "./RichTextEditor.vue";
 
 export interface PostFormData {
   id: number;
@@ -232,16 +232,10 @@ async function savePost() {
 </script>
 
 <template>
-  <UModal
-    :open="open"
-    title="Post Blog"
-    @update:open="(val) => emit('update:open', val)"
-  >
+  <UModal :open="open" title="Post Blog" @update:open="(val) => emit('update:open', val)">
     <template #content>
       <div class="bg-default rounded-2xl w-full">
-        <div
-          class="px-6 py-4 border-b border-default flex items-center justify-between"
-        >
+        <div class="px-6 py-4 border-b border-default flex items-center justify-between">
           <h3 class="text-base font-semibold">
             {{ isEditing ? "Edit Post" : "New Post" }}
           </h3>
@@ -261,11 +255,7 @@ async function savePost() {
             />
           </UFormField>
           <UFormField label="Author">
-            <UInput
-              v-model="postForm.author"
-              placeholder="Admin"
-              class="w-full"
-            />
+            <UInput v-model="postForm.author" placeholder="Admin" class="w-full" />
           </UFormField>
           <UFormField label="Content">
             <RichTextEditor
@@ -287,10 +277,7 @@ async function savePost() {
             />
 
             <!-- Media Preview Grid -->
-            <div
-              v-if="postForm.media.length > 0"
-              class="grid grid-cols-3 gap-3 mb-3"
-            >
+            <div v-if="postForm.media.length > 0" class="grid grid-cols-3 gap-3 mb-3">
               <div
                 v-for="(item, idx) in postForm.media"
                 :key="idx"
@@ -307,10 +294,9 @@ async function savePost() {
                   class="w-full h-24 flex flex-col items-center justify-center gap-1"
                 >
                   <UIcon name="i-lucide-film" class="size-8 text-muted" />
-                  <span
-                    class="text-[10px] text-muted truncate max-w-full px-2"
-                    >{{ item.name }}</span
-                  >
+                  <span class="text-[10px] text-muted truncate max-w-full px-2">{{
+                    item.name
+                  }}</span>
                 </div>
                 <div
                   class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
@@ -327,9 +313,7 @@ async function savePost() {
                 <div
                   class="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-0.5 flex items-center justify-between"
                 >
-                  <span class="text-[10px] text-white truncate">{{
-                    item.name
-                  }}</span>
+                  <span class="text-[10px] text-white truncate">{{ item.name }}</span>
                   <span class="text-[10px] text-white/70 shrink-0 ml-1">{{
                     item.size
                   }}</span>

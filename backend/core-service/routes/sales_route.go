@@ -44,8 +44,10 @@ func (r *SalesRoute) Run() {
 			analytics.GET("/monthly/:year/:month", r.controller.GetSalesController().GetMonthlySales)
 			analytics.GET("/yearly/:year", r.controller.GetSalesController().GetYearlySales)
 
-			// Recent transactions from payment service
-			analytics.GET("/recent-transactions", r.controller.GetTransactionController().GetRecentTransactions)
+			// Recent transactions from payment service (only if transaction controller is available)
+			if tc := r.controller.GetTransactionController(); tc != nil {
+				analytics.GET("/recent-transactions", tc.GetRecentTransactions)
+			}
 		}
 	}
 }

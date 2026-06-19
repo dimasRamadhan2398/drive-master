@@ -257,7 +257,7 @@ export const studentService = {
   async delete(userId: string): Promise<boolean> {
     const { user } = useApiClients();
     try {
-      await user(`/members/${userId}`, { method: "DELETE" });
+      await user(`/users/${userId}`, { method: "DELETE" });
       return true;
     } catch {
       return false;

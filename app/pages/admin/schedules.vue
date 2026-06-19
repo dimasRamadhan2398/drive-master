@@ -27,12 +27,7 @@ const localDateStr = computed(() => {
 const filterInstructor = ref("All Instructors");
 const filterVehicle = ref("All Vehicles");
 
-
-
-const {
-  toggleSlotStatus: _toggleSlotStatus,
-  deleteSlot: _deleteSlot,
-} = useSchedules();
+const { toggleSlotStatus: _toggleSlotStatus, deleteSlot: _deleteSlot } = useSchedules();
 
 // Use store's slots for display
 const timeSlots = computed(() => {
@@ -43,18 +38,18 @@ const timeSlots = computed(() => {
 });
 
 const instructors = computed(() => {
-	return instructorsStore.instructors.map((value) => {
+  return instructorsStore.instructors.map((value) => {
     return {
       label: value.name,
-      value: value.name  // Use name for comparison in filteredSlots
-    }
-  })
-})
+      value: value.name, // Use name for comparison in filteredSlots
+    };
+  });
+});
 
 const instructorOptions = computed(() => [
-  { label: 'All Instructors', value: 'All Instructors' },
-  ...instructors.value
-])
+  { label: "All Instructors", value: "All Instructors" },
+  ...instructors.value,
+]);
 const vehicles = ["BYD Atto 1"];
 
 // FITUR BARU: Sinkronisasi jam operasional dari settings
@@ -104,7 +99,12 @@ function changeDay(offset: number) {
 }
 
 function toggleSlotStatus(slotId: string) {
-  schedulesStore.updateSlotStatus(slotId, timeSlots.value.find((s) => s.id === slotId)?.status === "blocked" ? "available" : "blocked");
+  schedulesStore.updateSlotStatus(
+    slotId,
+    timeSlots.value.find((s) => s.id === slotId)?.status === "blocked"
+      ? "available"
+      : "blocked"
+  );
   const slot = timeSlots.value.find((s) => s.id === slotId);
   if (slot?.status === "blocked") {
     toast.add({ title: "Slot Blocked", color: "warning", icon: "i-lucide-lock" });
@@ -211,7 +211,13 @@ function cancelBooking(slotId: string) {
 }
 
 // FITUR BARU: Add Slot State & Logic
-function handleAddSlot(form: { date?: string; time: string; duration: string; car: string; instructor: string; }) {
+function handleAddSlot(form: {
+  date?: string;
+  time: string;
+  duration: string;
+  car: string;
+  instructor: string;
+}) {
   if (!form.time || !form.car || !form.instructor) {
     toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
     return;
@@ -235,10 +241,7 @@ function handleAddSlot(form: { date?: string; time: string; duration: string; ca
   }
 
   const isDayShift = form.time >= start && form.time <= end;
-  const isNightShift =
-    nightEnabled &&
-    form.time >= nightStart &&
-    form.time <= nightEnd;
+  const isNightShift = nightEnabled && form.time >= nightStart && form.time <= nightEnd;
 
   if (!isDayShift && !isNightShift) {
     let msg = `Time must be between ${start} - ${end}`;
@@ -280,7 +283,13 @@ function openEditModal(slot: any) {
   showEditSlotModal.value = true;
 }
 
-function handleEditSlot(updated: { id: string; time: string; duration: string; car: string; instructor: string; }) {
+function handleEditSlot(updated: {
+  id: string;
+  time: string;
+  duration: string;
+  car: string;
+  instructor: string;
+}) {
   if (!updated.time || !updated.car || !updated.instructor) {
     toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
     return;
@@ -305,9 +314,7 @@ function handleEditSlot(updated: { id: string; time: string; duration: string; c
 
   const isDayShift = updated.time >= start && updated.time <= end;
   const isNightShift =
-    nightEnabled &&
-    updated.time >= nightStart &&
-    updated.time <= nightEnd;
+    nightEnabled && updated.time >= nightStart && updated.time <= nightEnd;
 
   if (!isDayShift && !isNightShift) {
     let msg = `Time must be between ${start} - ${end}`;
@@ -330,7 +337,7 @@ function handleEditSlot(updated: { id: string; time: string; duration: string; c
 onMounted(() => {
   instructorsStore.fetchInstructors();
   schedulesStore.initialize();
-})
+});
 </script>
 
 <template>

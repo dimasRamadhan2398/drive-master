@@ -304,20 +304,18 @@ export const useStudentsStore = defineStore("students", {
       }
     },
 
-    // Set search query and optionally trigger fetch
+    // Set search query and apply client-side filter
     setSearchQuery(query: string) {
       this.searchQuery = query;
-      if (this.useServerPagination) {
-        this.fetchStudents(1, true); // Reset to page 1 on new search
-      }
+      // Apply local filtering without API call
+      this.applyClientSideFiltering();
     },
 
-    // Set status filter and optionally trigger fetch
+    // Set status filter and apply client-side filter
     setStatusFilter(status: string) {
       this.statusFilter = status;
-      if (this.useServerPagination) {
-        this.fetchStudents(1, true); // Reset to page 1 on new filter
-      }
+      // Apply local filtering without API call
+      this.applyClientSideFiltering();
     },
 
     // Change page for server-side pagination
