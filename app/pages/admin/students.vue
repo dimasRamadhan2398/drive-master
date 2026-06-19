@@ -21,7 +21,6 @@ const newStudent = ref({
   lastName: "",
   email: "",
   phoneNumber: "",
-  package: "8x",
   status: "pending" as "active" | "pending",
 });
 
@@ -122,7 +121,6 @@ function addStudent() {
     lastName: "",
     email: "",
     phoneNumber: "",
-    package: "8x",
     status: "pending",
   };
 }
@@ -164,7 +162,11 @@ function getStatusLabel(status: string) {
 }
 
 function getPackageColor(pkg: string) {
-  return pkg === "8x" ? "warning" : "neutral";
+  if (pkg.toLowerCase().includes("gold")) return "warning";
+  if (pkg.toLowerCase().includes("platinum")) return "primary";
+  if (pkg.toLowerCase().includes("silver")) return "secondary";
+  if (pkg.toLowerCase().includes("bronze")) return "";
+  return "neutral";
 }
 
 onMounted(() => {
@@ -277,15 +279,10 @@ onMounted(() => {
                 </UFormField>
                 <div class="grid grid-cols-2 gap-4">
                   <UFormField label="Package" required>
-                    <USelect
-                      v-model="editingStudent.package"
-                      :items="[
-                        { label: '6x', value: '6x' },
-                        { label: '8x', value: '8x' },
-                        { label: '10x', value: '10x' },
-                        { label: '12x', value: '12x' },
-                      ]"
-                      placeholder="Select package"
+                    <UInput
+                      :model-value="editingStudent.package"
+                      disabled
+                      placeholder="Package from entitlements"
                       class="w-full"
                       color="warning"
                     />

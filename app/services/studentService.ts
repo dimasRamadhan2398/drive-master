@@ -27,6 +27,25 @@ export interface MemberProfile {
   trainingTime: number;
   averageRating: number;
   totalAvailableSessions: number;
+  entitlements: Entitlement[];
+}
+
+export interface Entitlement {
+  id: string;
+  memberId: string;
+  bookingId: string;
+  packageId: string;
+  packageName: string;
+  isNightSession: boolean;
+  isWeekendSession: boolean;
+  totalSessions: number;
+  remaining: number;
+  usedSessions: number;
+  startDate: string;
+  endDate: string | null;
+  status: "active" | "completed" | "cancelled";
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface StudentApiResponse {
@@ -45,6 +64,10 @@ export interface StudentApiResponse {
     name: string;
   };
   memberProfile?: MemberProfile;
+}
+
+export interface StudentWithStudent extends StudentApiResponse {
+  student: StudentApiResponse;
 }
 
 export interface CreateStudentData {
@@ -73,43 +96,62 @@ const packageSessionMap: { [key: string]: number } = {
 };
 
 export const mapApiToStudent = (item: StudentApiResponse): Student => {
-  const completedSessions = item.memberProfile?.sessionsCompleted || 0;
-  const totalSessions =
-    item.memberProfile?.totalAvailableSessions || packageSessionMap["8x"] || 8;
-  const progress =
-    totalSessions > 0
-      ? Math.round((completedSessions / totalSessions) * 100)
-      : 0;
+  // Get entitlements from memberProfile
+  const entitlements = item.memberProfile?.entitlements || [];
 
-  // Determine status based on progress
+  // Find the active entitlement (most recent active package)
+  const activeEntitlement = entitlements.find((e) => e.status === "active");
+
+  // Calculate total sessions across all entitlements
+  const totalSessions = entitlements.reduce((sum, e) => sum + e.totalSessions, 0);
+
+  // Calculate total completed sessions across all entitlements
+  const completedSessions = entitlements.reduce((sum, e) => sum + e.usedSessions, 0);
+
+  // Calculate progress based on completed sessions vs total sessions
+  const progress = totalSessions > 0
+    ? Math.round((completedSessions / totalSessions) * 100)
+    : 0;
+
+  // Determine overall status based on entitlements
   let status: "active" | "pending" | "completed" = "pending";
-  if (completedSessions > 0 && progress < 100) {
+  const hasActiveEntitlement = entitlements.some((e) => e.status === "active");
+  const hasCompletedEntitlement = entitlements.some((e) => e.status === "completed");
+
+  if (hasActiveEntitlement) {
     status = "active";
-  } else if (progress >= 100) {
+  } else if (hasCompletedEntitlement || completedSessions > 0) {
     status = "completed";
   }
+
+  // Get the primary package name from the most recent active entitlement
+  const packageName = activeEntitlement?.packageName || "No Package";
+
+  // Get join date from the first entitlement or member creation
+  const joinDate = activeEntitlement?.startDate
+    ? new Date(activeEntitlement.startDate).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : new Date().toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
 
   return {
     id: item.userId,
     name: `${item.firstName} ${item.lastName}`.trim(),
     email: item.email,
     phone: item.phoneNumber || "",
-    package: "8x", // Default package
+    package: packageName,
     progress,
     completedSessions,
     totalSessions,
-    joinDate: item.dateOfBirth
-      ? new Date(item.dateOfBirth).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
-      : new Date().toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
+    joinDate,
     status,
+    entitlements,
   };
 };
 
@@ -142,13 +184,23 @@ export const studentService = {
     const queryString = queryParams.toString();
     const url = `/members/all${queryString ? `?${queryString}` : ""}`;
 
-    const response = await user<PaginatedResponse<StudentApiResponse>>(url, {
+    const response = await user<PaginatedResponse<StudentWithStudent>>(url, {
       method: "GET",
     });
 
     const { data, pagination } = extractPaginatedData(response);
+
+    // Handle both nested and flat response formats
+    const students = Array.isArray(data)
+      ? data.map((item) => {
+          // Handle nested "student" wrapper
+          const studentData = "student" in item ? item.student : item;
+          return mapApiToStudent(studentData);
+        })
+      : [];
+
     return {
-      students: Array.isArray(data) ? data.map(mapApiToStudent) : [],
+      students,
       pagination,
     };
   },
@@ -253,7 +305,7 @@ export const studentService = {
     const { user, extractPaginatedData } = useApiClients();
     const lowerQuery = query.toLowerCase();
     try {
-      const response = await user<PaginatedResponse<StudentApiResponse>>(
+      const response = await user<PaginatedResponse<StudentWithStudent>>(
         `/members/search?page=1&limit=10&search=${encodeURIComponent(query)}`,
         {
           method: "GET",
@@ -261,8 +313,17 @@ export const studentService = {
       );
 
       const { data, pagination } = extractPaginatedData(response);
+
+      // Handle both nested and flat response formats
+      const students = Array.isArray(data)
+        ? data.map((item) => {
+            const studentData = "student" in item ? item.student : item;
+            return mapApiToStudent(studentData);
+          })
+        : [];
+
       return {
-        students: Array.isArray(data) ? data.map(mapApiToStudent) : [],
+        students,
         pagination,
       };
     } catch {

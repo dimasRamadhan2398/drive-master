@@ -45,6 +45,7 @@ interface PackagesState {
 }
 
 const initialPackages: Package[] = [
+  // 6 sessions (bronze)
   {
     id: "11111111-1111-1111-1111-111111111101",
     name: "6x",
@@ -114,6 +115,7 @@ const initialPackages: Package[] = [
     imageUrl: "",
     totalSold: 38,
   },
+  // 8 sessions (silver)
   {
     id: "11111111-1111-1111-1111-111111111201",
     name: "8x",
@@ -183,6 +185,7 @@ const initialPackages: Package[] = [
     imageUrl: "",
     totalSold: 12,
   },
+  // 10 sessions (gold)
   {
     id: "11111111-1111-1111-1111-111111111301",
     name: "10x",
@@ -257,6 +260,7 @@ const initialPackages: Package[] = [
     imageUrl: "",
     totalSold: 10,
   },
+  // 12 sessions (platinum)
   {
     id: "11111111-1111-1111-1111-111111111401",
     name: "12x",
@@ -381,6 +385,18 @@ export const usePackagesStore = defineStore("packages", {
   },
 
   actions: {
+    // Helper to sort packages by sessions (6 to 12)
+    sortPackagesBySessions(packages: Package[]): Package[] {
+      return [...packages].sort((a, b) => {
+        // First sort by sessions
+        if (a.sessions !== b.sessions) {
+          return a.sessions - b.sessions;
+        }
+        // Then sort by price within the same session count
+        return a.discountPrice - b.discountPrice;
+      });
+    },
+
     async fetchPackages() {
       this.isLoading = true;
       this.error = null;
@@ -388,13 +404,13 @@ export const usePackagesStore = defineStore("packages", {
       try {
         const result = await packageService.fetchAll();
 
-        this.packages = result.packages;
+        this.packages = this.sortPackagesBySessions(result.packages);
         this.pagination = result.pagination;
       } catch (err) {
         this.error =
           err instanceof Error ? err.message : "Failed to fetch packages";
         console.error("Error fetching packages:", err);
-        // API failed, use dummy data
+        // API failed, use dummy data (already sorted)
         this.packages = [...initialPackages];
       } finally {
         this.isLoading = false;

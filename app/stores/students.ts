@@ -3,6 +3,7 @@ import { studentService } from "~/services/studentService";
 import type {
   CreateStudentData,
   UpdateStudentData,
+  Entitlement,
 } from "~/services/studentService";
 
 export interface Student {
@@ -16,6 +17,7 @@ export interface Student {
   totalSessions: number;
   joinDate: string;
   status: "active" | "pending" | "completed";
+  entitlements: Entitlement[];
 }
 
 interface StudentsState {
@@ -50,60 +52,137 @@ const initialStudents: Student[] = [
     name: "John Doe",
     email: "john@example.com",
     phone: "081234567890",
-    package: "8x",
+    package: "Gold Package",
     progress: 40,
     completedSessions: 4,
     totalSessions: 10,
     joinDate: "Mar 10, 2026",
     status: "active",
+    entitlements: [
+      {
+        id: "ent-1",
+        memberId: "ee61c870-98ab-4c28-a03c-402103f94e56",
+        bookingId: "book-1",
+        packageId: "pkg-1",
+        packageName: "Gold Package",
+        isNightSession: false,
+        isWeekendSession: false,
+        totalSessions: 10,
+        remaining: 6,
+        usedSessions: 4,
+        startDate: "2026-03-10T10:00:00Z",
+        endDate: null,
+        status: "active",
+        createdAt: "2026-03-10T10:00:00Z",
+        updatedAt: "2026-03-10T10:00:00Z",
+      },
+    ],
   },
   {
     id: "8cb66c0e-a7fd-4626-8cd5-b210198bf74d",
     name: "Sarah Putri",
     email: "sarah@example.com",
     phone: "081234567891",
-    package: "12x",
+    package: "Platinum Package",
     progress: 75,
     completedSessions: 11,
     totalSessions: 15,
     joinDate: "Feb 20, 2026",
     status: "active",
+    entitlements: [
+      {
+        id: "ent-2",
+        memberId: "8cb66c0e-a7fd-4626-8cd5-b210198bf74d",
+        bookingId: "book-2",
+        packageId: "pkg-2",
+        packageName: "Platinum Package",
+        isNightSession: false,
+        isWeekendSession: false,
+        totalSessions: 15,
+        remaining: 4,
+        usedSessions: 11,
+        startDate: "2026-02-20T10:00:00Z",
+        endDate: null,
+        status: "active",
+        createdAt: "2026-02-20T10:00:00Z",
+        updatedAt: "2026-02-20T10:00:00Z",
+      },
+    ],
   },
   {
     id: "7523a0e1-5be7-4cb5-83af-c8f8c355a53c",
     name: "Budi Santoso",
     email: "budi@example.com",
     phone: "081234567892",
-    package: "6x",
+    package: "Silver Package",
     progress: 100,
     completedSessions: 5,
     totalSessions: 5,
     joinDate: "Jan 15, 2026",
     status: "completed",
+    entitlements: [
+      {
+        id: "ent-3",
+        memberId: "7523a0e1-5be7-4cb5-83af-c8f8c355a53c",
+        bookingId: "book-3",
+        packageId: "pkg-3",
+        packageName: "Silver Package",
+        isNightSession: false,
+        isWeekendSession: false,
+        totalSessions: 5,
+        remaining: 0,
+        usedSessions: 5,
+        startDate: "2026-01-15T10:00:00Z",
+        endDate: "2026-02-15T10:00:00Z",
+        status: "completed",
+        createdAt: "2026-01-15T10:00:00Z",
+        updatedAt: "2026-02-15T10:00:00Z",
+      },
+    ],
   },
   {
     id: "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
     name: "Amanda Chen",
     email: "amanda@example.com",
     phone: "081234567893",
-    package: "8x",
+    package: "Gold Package",
     progress: 20,
     completedSessions: 2,
     totalSessions: 10,
     joinDate: "Mar 25, 2026",
     status: "active",
+    entitlements: [
+      {
+        id: "ent-4",
+        memberId: "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+        bookingId: "book-4",
+        packageId: "pkg-1",
+        packageName: "Gold Package",
+        isNightSession: false,
+        isWeekendSession: false,
+        totalSessions: 10,
+        remaining: 8,
+        usedSessions: 2,
+        startDate: "2026-03-25T10:00:00Z",
+        endDate: null,
+        status: "active",
+        createdAt: "2026-03-25T10:00:00Z",
+        updatedAt: "2026-03-25T10:00:00Z",
+      },
+    ],
   },
   {
     id: "f2g3h4i5-j6k7-8901-f2g3-h4i5j6k78901",
     name: "Ricky Wijaya",
     email: "ricky@example.com",
     phone: "081234567894",
-    package: "8x",
+    package: "No Package",
     progress: 0,
     completedSessions: 0,
-    totalSessions: 10,
+    totalSessions: 0,
     joinDate: "Apr 1, 2026",
     status: "pending",
+    entitlements: [],
   },
 ];
 
@@ -230,8 +309,9 @@ export const useStudentsStore = defineStore("students", {
           name: `${data.firstName} ${data.lastName}`.trim(),
           email: data.email,
           phone: data.phoneNumber,
-          package: "8x",
+          package: "-",
           status: "pending",
+          entitlements: [],
         });
       }
     },
@@ -257,6 +337,7 @@ export const useStudentsStore = defineStore("students", {
         completedSessions: 0,
         joinDate: studentService.formatJoinDate(),
         status: data.status || "pending",
+        entitlements: [],
       };
 
       this.students.unshift(newStudent);
@@ -303,6 +384,7 @@ export const useStudentsStore = defineStore("students", {
           totalSessions: data.totalSessions ?? existing.totalSessions,
           joinDate: data.joinDate ?? existing.joinDate,
           status: data.status ?? existing.status,
+          entitlements: data.entitlements ?? existing.entitlements,
         };
 
         // Update totalSessions if package changed

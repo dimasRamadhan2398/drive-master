@@ -54,7 +54,7 @@ core_service:
   base_url: "http://core-service:8002"
 
 email:
-  api_key: a46d0971bbad11c555a678664db94e65
+  api_key: 7cff6b7e84f42612fad1c453da7a6a62
   from_email: "noreply@ai-forlearning.com"
   app_name: user_service
   enabled: true

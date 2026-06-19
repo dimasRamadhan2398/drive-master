@@ -36,6 +36,7 @@ type MailtrapEmailService struct {
 
 func NewMailtrapEmailService(fromEmail, fromName, apiKey string) IMailtrapEmailService {
 	return &MailtrapEmailService{
+		BaseService: base.NewBaseService(),
 		fromEmail: fromEmail,
 		fromName:  fromName,
 		apiKey:    apiKey,
@@ -68,8 +69,6 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		bccRecipients = append(bccRecipients, dto.EmailAddress{Email: addr.Email})
 	}
 
-	// Build request body - NOTE: Mailtrap Sending API does not support "tags" field
-	// Only Testing inbox supports tags, so we exclude it here
 	type mailtrapRequest struct {
 		To          []dto.EmailAddress    `json:"to"`
 		From        dto.EmailAddress      `json:"from"`
@@ -79,7 +78,7 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		CC          []dto.EmailAddress    `json:"cc,omitempty"`
 		BCC         []dto.EmailAddress    `json:"bcc,omitempty"`
 		Attachments []dto.EmailAttachment `json:"attachments,omitempty"`
-		CustomArgs  map[string]string     `json:"custom_args,omitempty"`
+		CustomVariables map[string]string     `json:"custom_variables,omitempty"`
 	}
 
 	reqBody := mailtrapRequest{
@@ -91,7 +90,7 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		CC:          ccRecipients,
 		BCC:         bccRecipients,
 		Attachments: input.Attachments,
-		CustomArgs:  input.CustomArgs,
+		CustomVariables:  input.CustomVariables,
 	}
 
 	jsonBody, err := json.Marshal(reqBody)
@@ -139,89 +138,6 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 
 	return nil
 }
-
-// SendEmail sends an email via Mailtrap
-// func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmailRequest) error {
-// 	if len(input.To) == 0 {
-// 		return apperrors.ErrBadRequest
-// 	}
-
-// 	// Use a dedicated timeout context for email sending (30 seconds)
-// 	// This prevents "context canceled" errors when caller's context is cancelled
-// 	emailCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-// 	defer cancel()
-
-// 	// Build recipients
-// 	toRecipients := make([]dto.EmailAddress, len(input.To))
-// 	for i := range input.To {
-// 		toRecipients[i] = dto.EmailAddress{Email: input.To[i].Email}
-// 	}
-
-// 	// Build CC if provided
-// 	var ccRecipients []dto.EmailAddress
-// 	for _, addr := range input.CC {
-// 		ccRecipients = append(ccRecipients, dto.EmailAddress{Email: addr.Email})
-// 	}
-
-// 	// Build BCC if provided
-// 	var bccRecipients []dto.EmailAddress
-// 	for _, addr := range input.BCC {
-// 		bccRecipients = append(bccRecipients, dto.EmailAddress{Email: addr.Email})
-// 	}
-
-// 	// Build request body
-// 	reqBody := dto.SendEmailRequest{
-// 		To:          toRecipients,
-// 		From:        dto.EmailAddress{Email: s.fromEmail, Name: s.fromName},
-// 		Subject:     input.Subject,
-// 		Text:        input.Text,
-// 		HTML:        input.HTML,
-// 		CC:          ccRecipients,
-// 		BCC:         bccRecipients,
-// 		Attachments: input.Attachments,
-// 		CustomArgs:  input.CustomArgs,
-// 		Tags:        input.Tags,
-// 	}
-
-// 	jsonBody, err := json.Marshal(reqBody)
-// 	if err != nil {
-// 		s.LogError("Failed to format marshal json", logger.LogField("error", err))
-// 		return apperrors.ErrInternalServer
-// 	}
-
-// 	// Create HTTP request
-// 	url := "https://send.api.mailtrap.io/api/send"
-// 	req, err := http.NewRequestWithContext(emailCtx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
-// 	if err != nil {
-// 		s.LogError("Failed to create http email request", logger.LogField("error", err))
-// 		return apperrors.ErrInternalServer
-// 	}
-
-// 	// Set headers
-// 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.apiToken))
-// 	req.Header.Set("Content-Type", "application/json")
-
-// 	// Send request
-// 	resp, err := s.client.Do(req)
-// 	if err != nil {
-// 		// Check if context was cancelled/timeout
-// 		if emailCtx.Err() == context.DeadlineExceeded {
-// 			s.LogError("Email request timed out", logger.LogField("error", err))
-// 		} else {
-// 			s.LogError("Failed to send email client", logger.LogField("error", err))
-// 		}
-// 		return apperrors.ErrInternalServer
-// 	}
-// 	defer resp.Body.Close()
-
-// 	// Check response
-// 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-// 		s.LogError("Failed to check response", logger.LogField("status", resp.StatusCode))
-// 		return apperrors.ErrInternalServer
-// 	}
-
-// 	return nil
-// }
 
 // SendWelcomeEmail sends a welcome email to a new user
 func (s *MailtrapEmailService) SendWelcomeEmail(ctx context.Context, toEmail, username string) error {
@@ -507,7 +423,6 @@ The Team`, studentName, instructorName, dateTime, reason)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"cancellation", "lesson"},
 	})
 
 	if err != nil {
