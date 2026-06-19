@@ -1,6 +1,6 @@
-/// <reference types="@nuxt/ui" />
 /// <reference types="@pinia/nuxt" />
 /// <reference types="nuxt-gtag" />
+/// <reference types="@nuxt/ui" />
 /// <reference types="@nuxtjs/i18n" />
 /// <reference types="@nuxt/devtools" />
 /// <reference types="@nuxt/telemetry" />

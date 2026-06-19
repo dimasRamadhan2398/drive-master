@@ -25,13 +25,13 @@ type Schedule struct {
 	Time         string         `json:"time" gorm:"size:10;not null"` // HH:MM format
 	Duration     int            `json:"duration" gorm:"default:60"`   // duration in minutes
 	InstructorID uuid.UUID      `json:"instructorId" gorm:"type:uuid;not null;index"` // ref: user-service (UUID)
-	CarID        uint           `json:"carId" gorm:"not null;index"`             // ref: core-service (car)
+	CarID        uuid.UUID      `json:"carId" gorm:"type:uuid;not null;index"`             // ref: core-service (car)
 	UserID       *uuid.UUID     `json:"userId" gorm:"index"`                    // ref: user-service (nullable, assigned when booked)
 	EnrollmentID *uuid.UUID     `json:"enrollmentId" gorm:"index"`             // ref: Enrollment (nullable)
 	Status       ScheduleStatus `json:"status" gorm:"type:varchar(20);default:'available'"`
 	Notes        string         `json:"notes" gorm:"type:text"`
 	CreatedAt    time.Time      `json:"createdAt"`
-	UpdatedAt    time.Time      `json:"updatedAt"`
+	UpdatedAt    time.Time     `json:"updatedAt"`
 }
 
 type CreateScheduleRequest struct {
@@ -39,7 +39,7 @@ type CreateScheduleRequest struct {
 	Time         string    `json:"time" binding:"required"`                  // HH:MM format
 	Duration     int       `json:"duration" binding:"omitempty"`             // in minutes, default 90
 	InstructorID uuid.UUID `json:"instructorId" binding:"required"`
-	CarID        uint      `json:"carId" binding:"required"`
+	CarID        uuid.UUID `json:"carId" binding:"required"`
 	Notes        string    `json:"notes"`
 }
 

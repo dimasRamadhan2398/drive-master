@@ -18,6 +18,7 @@ type CarResponse struct {
 
 
 type CarInfo struct {
-	Brand 	string 	`json:"brand"`
-	Model	string  `json:"model"`
+	ID    string `json:"id"`
+	Brand string `json:"brand"`
+	Model string `json:"model"`
 }

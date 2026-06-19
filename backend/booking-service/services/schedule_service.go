@@ -231,7 +231,7 @@ func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.
 			if sched.Date.Before(startDate) || sched.Date.After(endDate) {
 				match = false
 			}
-		}
+		} 
 
 		if params.InstructorID != "" && sched.InstructorID.String() != params.InstructorID {
 			match = false

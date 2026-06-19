@@ -38,6 +38,7 @@
     "@vitest/ui": "^4.0.18",
     "happy-dom": "^15.11.7",
     "typescript": "^5.7.2",
+    "unstorage": "^1.17.5",
     "vitest": "^4.0.18",
     "vue-tsc": "^2.2.12"
   }
