@@ -95,7 +95,7 @@
     "contactUs": "Contact Us",
     "phone": "Phone",
     "email": "Email",
-    "emailAddress": "'info@evdriveacademy.id'",
+    "emailAddress": "'info\\@evdriveacademy.id'",
     "chatWhatsApp": "Chat on WhatsApp",
     "getDirections": "Get Directions",
     "testimonials": "Testimonials",
@@ -353,7 +353,7 @@
     "placeholder": {
       "firstName": "Enter your first name",
       "lastName": "Enter your last name",
-      "email": "'you@example.com'",
+      "email": "'you\\@example.com'",
       "phone": "08123456789",
       "password": "Create a strong password",
       "confirmPassword": "Confirm your password"
