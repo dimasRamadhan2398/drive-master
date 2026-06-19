@@ -202,10 +202,50 @@ func (s *CertificationService) GetStats(ctx context.Context) (*dto.Certification
 		return nil, err
 	}
 
+	// Calculate growth rate compared to previous month
+	now := time.Now()
+	currentYear, currentMonth, _ := now.Date()
+	currentLocation := now.Location()
+
+	// Current month date range
+	currentStart := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
+	currentEnd := currentStart.AddDate(0, 1, -1)
+
+	// Last month date range
+	lastMonth := currentMonth - 1
+	lastYear := currentYear
+	if lastMonth < 1 {
+		lastMonth = 12
+		lastYear--
+	}
+	lastMonthStart := time.Date(lastYear, lastMonth, 1, 0, 0, 0, 0, currentLocation)
+	lastMonthEnd := lastMonthStart.AddDate(0, 1, -1)
+
+	// Get current month stats
+	currentStats, err := s.certRepo.GetStatsByDateRange(ctx, currentStart, currentEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get last month stats
+	lastMonthStats, err := s.certRepo.GetStatsByDateRange(ctx, lastMonthStart, lastMonthEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate growth rate
+	var monthlyGrowth float64
+	if lastMonthStats.Total > 0 {
+		monthlyGrowth = float64(currentStats.Total-lastMonthStats.Total) / float64(lastMonthStats.Total) * 100
+	}
+
 	return &dto.CertificationStatsResponse{
-		TotalCertifications:   stats.Total,
-		IssuedCertifications:  stats.Issued,
-		ActiveCertifications:  stats.Active,
-		RevokedCertifications: stats.Revoked,
+		TotalCertifications:    stats.Total,
+		IssuedCertifications:   stats.Issued,
+		ActiveCertifications:   stats.Active,
+		RevokedCertifications:  stats.Revoked,
+		MonthlyTotal:           currentStats.Total,
+		MonthlyGrowth:          monthlyGrowth,
+		GrowthPercentage:      monthlyGrowth,
 	}, nil
 }

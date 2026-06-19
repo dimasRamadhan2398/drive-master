@@ -155,6 +155,7 @@ services:
         strip_path: false
         preserve_host: false
         paths: 
+        - /api/v1/dashboard/certifications
         - /api/v1/dashboard/
         protocols: [http, https]
         methods: [GET, OPTIONS]

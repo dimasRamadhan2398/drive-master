@@ -68,8 +68,21 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		bccRecipients = append(bccRecipients, dto.EmailAddress{Email: addr.Email})
 	}
 
-	// Build request body
-	reqBody := dto.SendEmailRequest{
+	// Build request body - NOTE: Mailtrap Sending API does not support "tags" field
+	// Only Testing inbox supports tags, so we exclude it here
+	type mailtrapRequest struct {
+		To          []dto.EmailAddress    `json:"to"`
+		From        dto.EmailAddress      `json:"from"`
+		Subject     string                `json:"subject"`
+		Text        string                `json:"text,omitempty"`
+		HTML        string                `json:"html,omitempty"`
+		CC          []dto.EmailAddress    `json:"cc,omitempty"`
+		BCC         []dto.EmailAddress    `json:"bcc,omitempty"`
+		Attachments []dto.EmailAttachment `json:"attachments,omitempty"`
+		CustomArgs  map[string]string     `json:"custom_args,omitempty"`
+	}
+
+	reqBody := mailtrapRequest{
 		To:          toRecipients,
 		From:        dto.EmailAddress{Email: s.fromEmail, Name: s.fromName},
 		Subject:     input.Subject,
@@ -79,7 +92,6 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		BCC:         bccRecipients,
 		Attachments: input.Attachments,
 		CustomArgs:  input.CustomArgs,
-		Tags:        input.Tags,
 	}
 
 	jsonBody, err := json.Marshal(reqBody)

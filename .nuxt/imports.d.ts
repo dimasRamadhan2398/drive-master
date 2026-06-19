@@ -64,8 +64,10 @@ export { useResizable } from '../node_modules/@nuxt/ui/dist/runtime/composables/
 export { useScrollShadow } from '../node_modules/@nuxt/ui/dist/runtime/composables/useScrollShadow';
 export { useScrollspy } from '../node_modules/@nuxt/ui/dist/runtime/composables/useScrollspy';
 export { useToast } from '../node_modules/@nuxt/ui/dist/runtime/composables/useToast';
+export { useTour } from '../node_modules/@nuxt/ui/dist/runtime/composables/useTour';
 export { defineStore, acceptHMRUpdate, usePinia, storeToRefs } from '../node_modules/@pinia/nuxt/dist/runtime/composables';
 export { useGtag } from '../node_modules/nuxt-gtag/dist/runtime/composables/useGtag';
 export { useTrackEvent } from '../node_modules/nuxt-gtag/dist/runtime/composables/useTrackEvent';
 export { useI18n } from 'vue-i18n';
+export { useNuxtDevTools } from '../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';
 export { useColorMode } from '../node_modules/@nuxtjs/color-mode/dist/runtime/composables';

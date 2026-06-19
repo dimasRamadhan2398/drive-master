@@ -152,11 +152,8 @@
       "#imports": [
         "./imports"
       ],
-      "#color-mode-options": [
-        "./color-mode-options.mjs"
-      ],
       "#app-manifest": [
-        "./manifest/meta/d98c3c8f-4bc6-4b78-aaa0-88927e67dedd.json"
+        "./manifest/meta/dev"
       ],
       "#components": [
         "./components"
@@ -239,7 +236,7 @@
     "../node_modules/dist/runtime/server",
     "../node_modules/*.*",
     "../node_modules/dist/*.*",
-    "../.output",
+    "dev",
     "../server"
   ],
   "vueCompilerOptions": {

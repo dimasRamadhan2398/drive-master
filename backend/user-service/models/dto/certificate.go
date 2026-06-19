@@ -50,3 +50,15 @@ type IssueMemberCertificateResponse struct {
 	IssuedBy   string    `json:"issuedBy"`
 	Message    string    `json:"message"`
 }
+
+// CertificateStatsResponse represents certificate statistics with growth
+type CertificateStatsResponse struct {
+	Total            int64   `json:"total"`
+	Verified         int64   `json:"verified"`
+	Pending          int64   `json:"pending"`
+	Expired          int64   `json:"expired"`
+	Revoked          int64   `json:"revoked"`
+	MonthlyTotal     int64   `json:"monthlyTotal"`
+	MonthlyGrowth    float64 `json:"monthlyGrowth"`
+	GrowthPercentage float64 `json:"growthPercentage"`
+}

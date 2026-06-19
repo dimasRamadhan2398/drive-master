@@ -122,6 +122,13 @@ type CertificationResponse struct {
 // CertificationListResponse represents a paginated list of certifications
 type CertificationListResponse = PagedData[CertificationResponse]
 
+// CertificationStatsResponse represents certification statistics
+type CertificationStatsResponse struct {
+	TotalCertifications int64 `json:"totalCertifications"`
+	PendingCertifications int64 `json:"pendingCertifications"`
+	VerifiedCertifications int64 `json:"verifiedCertifications"`
+}
+
 // ============================================================
 // Entitlement DTOs
 // ============================================================

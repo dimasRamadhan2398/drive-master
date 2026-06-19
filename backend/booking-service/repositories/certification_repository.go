@@ -111,7 +111,7 @@ func (r *CertificationRepository) CountByStatus(ctx context.Context, status mode
 	return r.BaseRepository.Count(&models.Certification{}, opts)
 }
 
-// CertificationStats holds certification statistics
+// GetStats holds certification statistics
 type CertificationStats struct {
 	Total   int64
 	Issued  int64
@@ -143,6 +143,51 @@ func (r *CertificationRepository) GetStats(ctx context.Context) (*CertificationS
 
 	// Get revoked certifications
 	if err := r.db.Model(&models.Certification{}).
+		Where("status = ?", models.CertificationStatusRevoked).
+		Count(&stats.Revoked).Error; err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+func (r *CertificationRepository) CountByDateRange(ctx context.Context, startDate, endDate time.Time) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
+		Count(&count).Error
+	return count, err
+}
+
+func (r *CertificationRepository) GetStatsByDateRange(ctx context.Context, startDate, endDate time.Time) (*CertificationStats, error) {
+	stats := &CertificationStats{}
+
+	// Get total certifications in date range
+	if err := r.db.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
+		Count(&stats.Total).Error; err != nil {
+		return nil, err
+	}
+
+	// Get issued certifications in date range
+	if err := r.db.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
+		Where("status = ?", models.CertificationStatusIssued).
+		Count(&stats.Issued).Error; err != nil {
+		return nil, err
+	}
+
+	// Get active certifications in date range
+	if err := r.db.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
+		Where("status IN ?", []string{string(models.CertificationStatusIssued), string(models.CertificationStatusPending)}).
+		Count(&stats.Active).Error; err != nil {
+		return nil, err
+	}
+
+	// Get revoked certifications in date range
+	if err := r.db.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
 		Where("status = ?", models.CertificationStatusRevoked).
 		Count(&stats.Revoked).Error; err != nil {
 		return nil, err

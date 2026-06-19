@@ -234,8 +234,11 @@ type SessionStatsResponse struct {
 }
 
 type CertificationStatsResponse struct {
-	TotalCertifications int64 `json:"totalCertifications"`
-	IssuedCertifications int64 `json:"issuedCertifications"`
-	ActiveCertifications int64 `json:"activeCertifications"`
-	RevokedCertifications int64 `json:"revokedCertifications"`
+	TotalCertifications    int64   `json:"totalCertifications"`
+	IssuedCertifications   int64   `json:"issuedCertifications"`
+	ActiveCertifications   int64   `json:"activeCertifications"`
+	RevokedCertifications  int64   `json:"revokedCertifications"`
+	MonthlyTotal           int64   `json:"monthlyTotal"`
+	MonthlyGrowth          float64 `json:"monthlyGrowth"`
+	GrowthPercentage      float64 `json:"growthPercentage"`
 }
