@@ -9,6 +9,6 @@ database.db-journal
 vendor/
 backend/user-service/vendor/
 backend/user-service/user-service
-
+backend/core-service/docs/chrome-frame-498204-s3-*.json
 .output/
 .nuxt/

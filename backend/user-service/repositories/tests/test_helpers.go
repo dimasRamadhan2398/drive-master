@@ -65,15 +65,15 @@ func CreateMockMemberProfile(userID uuid.UUID) *models.MemberProfile {
 // CreateMockInstructorProfile creates an instructor profile for testing
 func CreateMockInstructorProfile(userID uuid.UUID) *models.InstructorProfile {
 	return &models.InstructorProfile{
-		UserID:               userID,
-		LicenseNumber:        "LIC123456",
+		UserID:                userID,
+		LicenseNumber:         "LIC123456",
 		BNSPCertificateNumber: "BNSP123456",
-		Bio:                  "Experienced instructor",
-		IsActive:             true,
-		NumberOfStudents:     25,
-		YearsOfExperience:    5,
-		SessionsCompleted:    150,
-		AverageRating:        4.8,
+		Bio:                   "Experienced instructor",
+		IsActive:              true,
+		NumberOfStudents:      25,
+		YearsOfExperience:     5,
+		SessionsCompleted:     150,
+		AverageRating:         4.8,
 	}
 }
 

@@ -36,8 +36,8 @@ func (d Date) MarshalJSON() ([]byte, error) {
 
 type LoginInput struct {
 	// accepts either email or username
-	Email string `json:"email" binding:"required"`
-	Password   string `json:"password"   binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password"   binding:"required"`
 }
 
 // LoginResponse is returned on successful login
@@ -49,22 +49,22 @@ type LoginResponse struct {
 }
 
 type RegisterRequest struct {
-	FirstName       string    `json:"firstName" binding:"required"`
-	LastName        string    `json:"lastName" binding:"required"`
-	Username        string    `json:"username" binding:"required"`
-	Password        string    `json:"password" binding:"required"`
-	ConfirmPassword string    `json:"confirmPassword" binding:"required"`
-	Email           string    `json:"email" binding:"required,email"`
-	PhoneNumber     string    `json:"phoneNumber" binding:"required"`
-	DateOfBirth     string      `json:"dateOfBirth" binding:"required" swaggertype:"string" format:"date" example:"1999-08-25"`
-	RoleID          uint      `json:"roleId"`
+	FirstName       string `json:"firstName" binding:"required"`
+	LastName        string `json:"lastName" binding:"required"`
+	Username        string `json:"username" binding:"required"`
+	Password        string `json:"password" binding:"required"`
+	ConfirmPassword string `json:"confirmPassword" binding:"required"`
+	Email           string `json:"email" binding:"required,email"`
+	PhoneNumber     string `json:"phoneNumber" binding:"required"`
+	DateOfBirth     string `json:"dateOfBirth" binding:"required" swaggertype:"string" format:"date" example:"1999-08-25"`
+	RoleID          uint   `json:"roleId"`
 }
 
 type RegisterResponse struct {
-	User CreateUserResponse `json:"user"`
-	AccessToken  string     `json:"accessToken"`
-	RefreshToken string     `json:"refreshToken"`
-	ExpiresIn    int64      `json:"expiresIn"`
+	User         CreateUserResponse `json:"user"`
+	AccessToken  string             `json:"accessToken"`
+	RefreshToken string             `json:"refreshToken"`
+	ExpiresIn    int64              `json:"expiresIn"`
 }
 
 // RefreshTokenInput is used for POST /auth/refresh

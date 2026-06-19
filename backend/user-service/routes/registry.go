@@ -8,8 +8,8 @@ import (
 )
 
 type Registry struct {
-	controller controllers.IControllerRegistry
-	group      *gin.RouterGroup
+	controller     controllers.IControllerRegistry
+	group          *gin.RouterGroup
 	authMiddleware middlewares.IAuthMiddleware
 }
 
@@ -30,6 +30,8 @@ func (r *Registry) Serve() {
 	r.GetEntitlementRoute().Run()
 	r.GetWorkExperienceRoute().Run()
 	r.GetCoverageAreaRoute().Run()
+	r.GetTestimonialRoute().Run()
+	r.GetDashboardRoute().Run()
 }
 
 func (r *Registry) GetAuthRoute() IAuthRoute {
@@ -62,4 +64,12 @@ func (r *Registry) GetCertificationRoute() ICertificationRoute {
 
 func (r *Registry) GetEntitlementRoute() IEntitlementRoute {
 	return NewEntitlementRoute(r.controller, r.group, r.authMiddleware)
+}
+
+func (r *Registry) GetTestimonialRoute() ITestimonialRoute {
+	return NewTestimonialRoute(r.controller, r.group)
+}
+
+func (r *Registry) GetDashboardRoute() IDashboardRoute {
+	return NewDashboardRoute(r.controller, r.group, r.authMiddleware)
 }

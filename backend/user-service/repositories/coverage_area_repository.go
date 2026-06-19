@@ -44,8 +44,8 @@ func (c *CoverageAreaRepository) FindByInstructorAndArea(ctx context.Context, in
 	if err := c.BaseRepository.FindWithOptions(&models.InstructorArea{}, &area, &base.QueryOptions{
 		Where: map[string]interface{}{
 			"instructor_id": instructorID,
-			"area_type":      areaType,
-			"area_id":        areaID,
+			"area_type":     areaType,
+			"area_id":       areaID,
 		},
 		Limit: 1,
 	}); err != nil {

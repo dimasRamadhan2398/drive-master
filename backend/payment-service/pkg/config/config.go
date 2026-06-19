@@ -72,6 +72,7 @@ type AppConfig struct {
 
 
 type MidtransConfig struct {
+	GopayCallbackURL string `mapstructure:"gopay_callback_url" yaml:"gopay_callback_url"`
 	ServerKey   string `mapstructure:"server_key" yaml:"server_key"`
 	ClientKey   string `mapstructure:"client_key" yaml:"client_key"`
 	Environment string `mapstructure:"environment" yaml:"environment"`

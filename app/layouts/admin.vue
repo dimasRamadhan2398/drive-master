@@ -4,6 +4,7 @@ import { computed } from "vue";
 
 definePageMeta({ layout: "dashboard" });
 
+const authStore = useAuthStore();
 const navItems = computed<NavigationMenuItem[]>(() => [
   {
     label: "Overview",
@@ -41,6 +42,11 @@ const navItems = computed<NavigationMenuItem[]>(() => [
     to: "/admin/content",
   },
   {
+    label: "Testimonials",
+    icon: "i-lucide-message-square",
+    to: "/admin/testimonials",
+  },
+  {
     label: "Analytics",
     icon: "i-lucide-bar-chart-3",
     to: "/admin/analytics",
@@ -66,7 +72,14 @@ const adminMenuItems = [
       external: true,
     },
   ],
-  [{ label: "Sign Out", icon: "i-lucide-log-out", to: "/auth/login" }],
+  [
+    {
+      label: "Sign Out",
+      icon: "i-lucide-log-out",
+      to: "/admin/login",
+      onClick: () => authStore.logout(),
+    },
+  ],
 ];
 
 const admin = {

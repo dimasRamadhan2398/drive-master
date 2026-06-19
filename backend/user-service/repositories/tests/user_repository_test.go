@@ -23,14 +23,14 @@ func TestUserRepository_Create(t *testing.T) {
 	require.NoError(t, err)
 
 	req := &dto.RegisterRequest{
-		FirstName: "test",
-		LastName: "user",
-		Username: "testuser",
-		Email: "test@example.com",
+		FirstName:   "test",
+		LastName:    "user",
+		Username:    "testuser",
+		Email:       "test@example.com",
 		PhoneNumber: "1234567890",
-		Password: "password",
+		Password:    "password",
 		DateOfBirth: "2006-01-02",
-		RoleID: 1,
+		RoleID:      1,
 	}
 
 	user, err := repo.Create(context.Background(), req)

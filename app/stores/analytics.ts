@@ -69,7 +69,7 @@ export const useAnalyticsStore = defineStore("analytics", {
       const height = 150;
       const maxVal = Math.max(
         ...this.gaOverviewData.map((d) => d.pageviews),
-        100
+        100,
       );
 
       return this.gaOverviewData
@@ -95,7 +95,7 @@ export const useAnalyticsStore = defineStore("analytics", {
       const height = 150;
       const maxVal = Math.max(
         ...this.gaOverviewData.map((d) => d.pageviews),
-        100
+        100,
       );
 
       return this.gaOverviewData
@@ -115,7 +115,11 @@ export const useAnalyticsStore = defineStore("analytics", {
     hasData: (state) =>
       state.gaOverview.length > 0 || state.gaFunnel.length > 0,
 
-    funnelStepConversion(): { step: string; count: number; percentage: number }[] {
+    funnelStepConversion(): {
+      step: string;
+      count: number;
+      percentage: number | string;
+    }[] {
       if (this.gaFunnelData.length === 0) return [];
       const base = this.gaFunnelData[0]?.count || 1;
       return this.gaFunnelData.map((step, idx) => ({

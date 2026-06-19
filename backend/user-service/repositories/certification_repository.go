@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"time"
 	"user-service/models"
 	"user-service/pkg/base"
 
@@ -15,9 +16,14 @@ type ICertificationRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	FindByID(ctx context.Context, id uuid.UUID) (*models.Certification, error)
 	FindByInstructorID(ctx context.Context, instructorID uuid.UUID, page, limit int) ([]models.Certification, int64, error)
-	FindByMemberID(ctx context.Context, memberID uuid.UUID, page, limit int) (*models.Certification, error)
+	FindByMemberID(ctx context.Context, memberID uuid.UUID, page, limit int) ([]models.Certification, error)
+	FindAllByMemberID(ctx context.Context, memberID uuid.UUID) ([]models.Certification, error)
+	FindByMemberIDAndCertID(ctx context.Context, memberID, certID uuid.UUID) (*models.Certification, error)
 	FindByInstructorAndID(ctx context.Context, instructorID, certID uuid.UUID) (*models.Certification, error)
 	CountByInstructorID(ctx context.Context, instructorID uuid.UUID) (int64, error)
+	CountByDateRange(ctx context.Context, startDate, endDate time.Time) (int64, error)
+	GetStats(ctx context.Context) (*CertificateStats, error)
+	GetStatsByDateRange(ctx context.Context, startDate, endDate time.Time) (*CertificateStats, error)
 }
 
 type CertificationRepository struct {
@@ -48,13 +54,13 @@ func (r *CertificationRepository) FindByID(ctx context.Context, id uuid.UUID) (*
 	return &cert, nil
 }
 
-func (r *CertificationRepository) FindByMemberID(ctx context.Context, memberID uuid.UUID, page int, limit int) (*models.Certification, error) {
-	var cert models.Certification
+func (r *CertificationRepository) FindByMemberID(ctx context.Context, memberID uuid.UUID, page int, limit int) ([]models.Certification, error) {
+	var certs []models.Certification
 	offset := (page - 1) * limit
 
-	if err := r.BaseRepository.FindOne(&models.Certification{}, &cert, &base.QueryOptions{
+	if err := r.BaseRepository.FindWithOptions(&models.Certification{}, &certs, &base.QueryOptions{
 		Where: map[string]interface{}{
-			"memberId": memberID,
+			"instructorId": memberID,
 		},
 		Order:  "created_at DESC",
 		Limit:  limit,
@@ -63,9 +69,37 @@ func (r *CertificationRepository) FindByMemberID(ctx context.Context, memberID u
 		return nil, err
 	}
 
-	return &cert, nil
+	return certs, nil
 }
 
+func (r *CertificationRepository) FindAllByMemberID(ctx context.Context, memberID uuid.UUID) ([]models.Certification, error) {
+	var certs []models.Certification
+
+	if err := r.BaseRepository.FindWithOptions(&models.Certification{}, &certs, &base.QueryOptions{
+		Where: map[string]interface{}{
+			"instructorId": memberID,
+		},
+		Order: "created_at DESC",
+	}); err != nil {
+		return nil, err
+	}
+
+	return certs, nil
+}
+
+func (r *CertificationRepository) FindByMemberIDAndCertID(ctx context.Context, memberID, certID uuid.UUID) (*models.Certification, error) {
+	var cert models.Certification
+	if err := r.BaseRepository.FindWithOptions(&models.Certification{}, &cert, &base.QueryOptions{
+		Where: map[string]interface{}{
+			"id":            certID,
+			"instructor_id": memberID,
+		},
+		Limit: 1,
+	}); err != nil {
+		return nil, err
+	}
+	return &cert, nil
+}
 
 func (r *CertificationRepository) FindByInstructorID(ctx context.Context, instructorID uuid.UUID, page, limit int) ([]models.Certification, int64, error) {
 	var certs []models.Certification
@@ -110,4 +144,105 @@ func (r *CertificationRepository) CountByInstructorID(ctx context.Context, instr
 			"instructor_id": instructorID,
 		},
 	})
+}
+
+// CertificateStats holds certificate statistics
+type CertificateStats struct {
+	Total      int64
+	Verified   int64
+	Pending    int64
+	Expired    int64
+	Revoked    int64
+}
+
+func (r *CertificationRepository) CountByDateRange(ctx context.Context, startDate, endDate time.Time) (int64, error) {
+	var count int64
+	err := r.DB.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
+		Count(&count).Error
+	return count, err
+}
+
+func (r *CertificationRepository) GetStats(ctx context.Context) (*CertificateStats, error) {
+	stats := &CertificateStats{}
+
+	// Get total certifications
+	if err := r.DB.Model(&models.Certification{}).Count(&stats.Total).Error; err != nil {
+		return nil, err
+	}
+
+	// Get verified certifications
+	if err := r.DB.Model(&models.Certification{}).
+		Where("status = ?", models.CertificationStatusVerified).
+		Count(&stats.Verified).Error; err != nil {
+		return nil, err
+	}
+
+	// Get pending certifications
+	if err := r.DB.Model(&models.Certification{}).
+		Where("status = ?", models.CertificationStatusPending).
+		Count(&stats.Pending).Error; err != nil {
+		return nil, err
+	}
+
+	// Get expired certifications
+	if err := r.DB.Model(&models.Certification{}).
+		Where("status = ?", models.CertificationStatusExpired).
+		Count(&stats.Expired).Error; err != nil {
+		return nil, err
+	}
+
+	// Get revoked certifications
+	if err := r.DB.Model(&models.Certification{}).
+		Where("status = ?", models.CertificationStatusRevoked).
+		Count(&stats.Revoked).Error; err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+func (r *CertificationRepository) GetStatsByDateRange(ctx context.Context, startDate, endDate time.Time) (*CertificateStats, error) {
+	stats := &CertificateStats{}
+
+	// Get total certifications in date range
+	if err := r.DB.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
+		Count(&stats.Total).Error; err != nil {
+		return nil, err
+	}
+
+	// Get verified certifications in date range
+	if err := r.DB.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
+		Where("status = ?", models.CertificationStatusVerified).
+		Count(&stats.Verified).Error; err != nil {
+		return nil, err
+	}
+
+	// Get pending certifications in date range
+	if err := r.DB.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
+		Where("status = ?", models.CertificationStatusPending).
+		Count(&stats.Pending).Error; err != nil {
+		return nil, err
+	}
+
+	// Get expired certifications in date range
+	if err := r.DB.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
+		Where("status = ?", models.CertificationStatusExpired).
+		Count(&stats.Expired).Error; err != nil {
+		return nil, err
+	}
+
+	// Get revoked certifications in date range
+	if err := r.DB.Model(&models.Certification{}).
+		Where("created_at >= ? AND created_at <= ?", startDate, endDate).
+		Where("status = ?", models.CertificationStatusRevoked).
+		Count(&stats.Revoked).Error; err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }

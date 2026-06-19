@@ -4,186 +4,179 @@ import (
 	"context"
 	"time"
 
-	"booking-service/models"
 	"booking-service/models/dto"
+	"booking-service/pkg/base"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// ScheduleRepository handles schedule database operations
+type IScheduleRepository interface {
+	Create(ctx context.Context, schedule *dto.Schedule) error
+	CreateTx(tx *gorm.DB, schedule *dto.Schedule) error
+	FindByID(ctx context.Context, id uint) (*dto.Schedule, error)
+	Update(ctx context.Context, schedule *dto.Schedule) error
+	Delete(ctx context.Context, schedule *dto.Schedule) error
+	FindAll(ctx context.Context) ([]dto.Schedule, error)
+	FindByDateAndInstructor(ctx context.Context, date time.Time, instructorID uuid.UUID) ([]dto.Schedule, error)
+	FindByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uint) (*dto.Schedule, error)
+	FindAvailableByDateRange(ctx context.Context, startDate, endDate time.Time) ([]dto.Schedule, error)
+	UpdateStatus(ctx context.Context, id uint, status dto.ScheduleStatus) error
+	BookSlot(ctx context.Context, id uint, userID, enrollmentID uuid.UUID) error
+	ReleaseSlot(ctx context.Context, id uint) error
+	ExistsForInstructorAndDateTime(ctx context.Context, instructorID uuid.UUID, date time.Time, timeStr string) (bool, error)
+	CountAll(ctx context.Context) (int64, error)
+	GetStats(ctx context.Context) (*dto.ScheduleStatsResponse, error)
+	ToResponse(schedule *dto.Schedule) dto.ScheduleResponse
+	ToListResponse(schedules []dto.Schedule, total int64, page, limit int) dto.ScheduleListResponse
+}
+
 type ScheduleRepository struct {
+	*base.BaseRepository
 	db *gorm.DB
 }
 
-func NewScheduleRepository(db *gorm.DB) *ScheduleRepository {
-	return &ScheduleRepository{db: db}
+func NewScheduleRepository(db *gorm.DB) IScheduleRepository {
+	return &ScheduleRepository{BaseRepository: base.NewBaseRepository(db), db: db}
 }
 
-func (r *ScheduleRepository) Create(ctx context.Context, schedule *models.Schedule) error {
-	return r.db.WithContext(ctx).Create(schedule).Error
+func (r *ScheduleRepository) Create(ctx context.Context, schedule *dto.Schedule) error {
+	return r.BaseRepository.Create(schedule)
 }
 
-func (r *ScheduleRepository) GetByID(ctx context.Context, id uint) (*models.Schedule, error) {
-	var schedule models.Schedule
-	if err := r.db.WithContext(ctx).First(&schedule, id).Error; err != nil {
+func (r *ScheduleRepository) CreateTx(tx *gorm.DB, schedule *dto.Schedule) error {
+	return r.BaseRepository.CreateTx(tx, schedule)
+}
+
+func (r *ScheduleRepository) FindByID(ctx context.Context, id uint) (*dto.Schedule, error) {
+	var schedule dto.Schedule
+	if err := r.BaseRepository.FindByIDWithPreload(&schedule, id); err != nil {
 		return nil, err
 	}
 	return &schedule, nil
 }
 
-func (r *ScheduleRepository) Update(ctx context.Context, schedule *models.Schedule) error {
-	return r.db.WithContext(ctx).Save(schedule).Error
+func (r *ScheduleRepository) Update(ctx context.Context, schedule *dto.Schedule) error {
+	return r.BaseRepository.Update(schedule)
 }
 
-func (r *ScheduleRepository) Delete(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&models.Schedule{}, id).Error
+func (r *ScheduleRepository) Delete(ctx context.Context, schedule *dto.Schedule) error {
+	return r.BaseRepository.Delete(schedule)
 }
 
-func (r *ScheduleRepository) List(ctx context.Context, page, limit int) ([]models.Schedule, int64, error) {
-	var schedules []models.Schedule
-	var total int64
-
-	offset := (page - 1) * limit
-
-	if err := r.db.WithContext(ctx).Model(&models.Schedule{}).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := r.db.WithContext(ctx).
-		Order("date ASC, time ASC").
-		Offset(offset).
-		Limit(limit).
-		Find(&schedules).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return schedules, total, nil
-}
-
-func (r *ScheduleRepository) ListFiltered(ctx context.Context, params dto.ScheduleFilterParams) ([]models.Schedule, int64, error) {
-	var schedules []models.Schedule
-	var total int64
-
-	offset := (params.Page - 1) * params.Limit
-	if params.Limit <= 0 {
-		params.Limit = 10
-	}
-
-	query := r.db.WithContext(ctx).Model(&models.Schedule{})
-
-	// Apply filters
-	if params.Date != "" {
-		parsedDate, err := time.Parse("2006-01-02", params.Date)
-		if err == nil {
-			query = query.Where("date = ?", parsedDate)
-		}
-	}
-
-	if params.StartDate != "" {
-		parsedDate, err := time.Parse("2006-01-02", params.StartDate)
-		if err == nil {
-			query = query.Where("date >= ?", parsedDate)
-		}
-	}
-
-	if params.EndDate != "" {
-		parsedDate, err := time.Parse("2006-01-02", params.EndDate)
-		if err == nil {
-			query = query.Where("date <= ?", parsedDate)
-		}
-	}
-
-	if params.InstructorID != "" {
-		query = query.Where("instructor_id = ?", params.InstructorID)
-	}
-
-	if params.CarID != 0 {
-		query = query.Where("car_id = ?", params.CarID)
-	}
-
-	if params.Status != "" {
-		query = query.Where("status = ?", params.Status)
-	}
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.
-		Order("date ASC, time ASC").
-		Offset(offset).
-		Limit(params.Limit).
-		Find(&schedules).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return schedules, total, nil
-}
-
-func (r *ScheduleRepository) GetByDateAndInstructor(ctx context.Context, date time.Time, instructorID uuid.UUID) ([]models.Schedule, error) {
-	var schedules []models.Schedule
-	if err := r.db.WithContext(ctx).
-		Where("date = ? AND instructor_id = ?", date, instructorID).
-		Order("time ASC").
-		Find(&schedules).Error; err != nil {
+func (r *ScheduleRepository) FindAll(ctx context.Context) ([]dto.Schedule, error) {
+	var schedules []dto.Schedule
+	opts := base.NewQueryOptions().WithOrder("date ASC, time ASC")
+	if err := r.BaseRepository.FindMany(&dto.Schedule{}, &schedules, opts); err != nil {
 		return nil, err
 	}
 	return schedules, nil
 }
 
-func (r *ScheduleRepository) GetByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uint) (*models.Schedule, error) {
-	var schedule models.Schedule
-	if err := r.db.WithContext(ctx).
-		Where("date = ? AND time = ? AND instructor_id = ? AND car_id = ?", date, time, instructorID, carID).
-		First(&schedule).Error; err != nil {
+func (r *ScheduleRepository) FindByDateAndInstructor(ctx context.Context, date time.Time, instructorID uuid.UUID) ([]dto.Schedule, error) {
+	var schedules []dto.Schedule
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"date": date, "instructor_id": instructorID}).
+		WithOrder("time ASC")
+	if err := r.BaseRepository.FindMany(&dto.Schedule{}, &schedules, opts); err != nil {
+		return nil, err
+	}
+	return schedules, nil
+}
+
+func (r *ScheduleRepository) FindByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uint) (*dto.Schedule, error) {
+	var schedule dto.Schedule
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"date": date, "time": time, "instructor_id": instructorID, "car_id": carID})
+	if err := r.BaseRepository.FindMany(&dto.Schedule{}, &schedule, opts); err != nil {
 		return nil, err
 	}
 	return &schedule, nil
 }
 
-func (r *ScheduleRepository) GetAvailableByDateRange(ctx context.Context, startDate, endDate time.Time) ([]models.Schedule, error) {
-	var schedules []models.Schedule
-	if err := r.db.WithContext(ctx).
-		Where("date >= ? AND date <= ? AND status = ?", startDate, endDate, models.ScheduleStatusAvailable).
-		Order("date ASC, time ASC").
-		Find(&schedules).Error; err != nil {
+func (r *ScheduleRepository) FindAvailableByDateRange(ctx context.Context, startDate, endDate time.Time) ([]dto.Schedule, error) {
+	var schedules []dto.Schedule
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"date >= ?": startDate, "date <= ?": endDate, "status": dto.ScheduleStatusAvailable}).
+		WithOrder("date ASC, time ASC")
+	if err := r.BaseRepository.FindMany(&dto.Schedule{}, &schedules, opts); err != nil {
 		return nil, err
 	}
 	return schedules, nil
 }
 
-func (r *ScheduleRepository) UpdateStatus(ctx context.Context, id uint, status models.ScheduleStatus) error {
-	return r.db.WithContext(ctx).
-		Model(&models.Schedule{}).
-		Where("id = ?", id).
-		Update("status", status).Error
+func (r *ScheduleRepository) UpdateStatus(ctx context.Context, id uint, status dto.ScheduleStatus) error {
+	return r.BaseRepository.Exec(
+		"UPDATE schedules SET status = ?, updated_at = ? WHERE id = ?",
+		status, time.Now(), id,
+	)
 }
 
-func (r *ScheduleRepository) BookSlot(ctx context.Context, id uint, userID, enrollmentID uint) error {
-	return r.db.WithContext(ctx).
-		Model(&models.Schedule{}).
-		Where("id = ? AND status = ?", id, models.ScheduleStatusAvailable).
-		Updates(map[string]interface{}{
-			"user_id":       userID,
-			"enrollment_id": enrollmentID,
-			"status":        models.ScheduleStatusBooked,
-		}).Error
+func (r *ScheduleRepository) BookSlot(ctx context.Context, id uint, userID, enrollmentID uuid.UUID) error {
+	return r.BaseRepository.Exec(
+		"UPDATE schedules SET user_id = ?, enrollment_id = ?, status = ?, updated_at = ? WHERE id = ? AND status = ?",
+		userID, enrollmentID, dto.ScheduleStatusBooked, time.Now(), id, dto.ScheduleStatusAvailable,
+	)
 }
 
 func (r *ScheduleRepository) ReleaseSlot(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).
-		Model(&models.Schedule{}).
-		Where("id = ?", id).
-		Updates(map[string]interface{}{
-			"user_id":       nil,
-			"enrollment_id": nil,
-			"status":        models.ScheduleStatusAvailable,
-		}).Error
+	return r.BaseRepository.Exec(
+		"UPDATE schedules SET user_id = NULL, enrollment_id = NULL, status = ?, updated_at = ? WHERE id = ?",
+		dto.ScheduleStatusAvailable, time.Now(), id,
+	)
+}
+
+func (r *ScheduleRepository) ExistsForInstructorAndDateTime(ctx context.Context, instructorID uuid.UUID, date time.Time, timeStr string) (bool, error) {
+	return r.BaseRepository.Exists(&dto.Schedule{}, "instructor_id = ? AND date = ? AND time = ?", instructorID, date, timeStr)
+}
+
+func (r *ScheduleRepository) CountAll(ctx context.Context) (int64, error) {
+	return r.BaseRepository.Count(&dto.Schedule{}, base.NewQueryOptions())
+}
+
+func (r *ScheduleRepository) GetStats(ctx context.Context) (*dto.ScheduleStatsResponse, error) {
+	stats := &dto.ScheduleStatsResponse{}
+
+	// Get available schedules
+	if err := r.db.Model(&dto.Schedule{}).
+		Where("status = ?", dto.ScheduleStatusAvailable).
+		Count(&stats.AvailableSchedule).Error; err != nil {
+		return nil, err
+	}
+
+	// Get booked schedules
+	if err := r.db.Model(&dto.Schedule{}).
+		Where("status = ?", dto.ScheduleStatusBooked).
+		Count(&stats.BookedSchedule).Error; err != nil {
+		return nil, err
+	}
+
+	// Get in-progress schedules
+	if err := r.db.Model(&dto.Schedule{}).
+		Where("status = ?", dto.ScheduleStatusInProgress).
+		Count(&stats.InProgressSchedule).Error; err != nil {
+		return nil, err
+	}
+
+	// Get completed schedules
+	if err := r.db.Model(&dto.Schedule{}).
+		Where("status = ?", dto.ScheduleStatusCompleted).
+		Count(&stats.CompletedSchedule).Error; err != nil {
+		return nil, err
+	}
+
+	// Get blocked schedules
+	if err := r.db.Model(&dto.Schedule{}).
+		Where("status = ?", dto.ScheduleStatusBlocked).
+		Count(&stats.BlockedSchedule).Error; err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // ToResponse converts a Schedule model to ScheduleResponse DTO
-func (r *ScheduleRepository) ToResponse(schedule *models.Schedule) dto.ScheduleResponse {
+func (r *ScheduleRepository) ToResponse(schedule *dto.Schedule) dto.ScheduleResponse {
 	dateStr := ""
 	if !schedule.Date.IsZero() {
 		dateStr = schedule.Date.Format("2006-01-02")
@@ -205,7 +198,7 @@ func (r *ScheduleRepository) ToResponse(schedule *models.Schedule) dto.ScheduleR
 }
 
 // ToListResponse converts a slice of Schedules to ScheduleListResponse DTO
-func (r *ScheduleRepository) ToListResponse(schedules []models.Schedule, total int64, page, limit int) dto.ScheduleListResponse {
+func (r *ScheduleRepository) ToListResponse(schedules []dto.Schedule, total int64, page, limit int) dto.ScheduleListResponse {
 	items := make([]dto.ScheduleResponse, len(schedules))
 	for i, s := range schedules {
 		items[i] = r.ToResponse(&s)
@@ -218,9 +211,11 @@ func (r *ScheduleRepository) ToListResponse(schedules []models.Schedule, total i
 
 	return dto.ScheduleListResponse{
 		Data:       items,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Pagination: dto.PaginationMeta{
+			Page: page,
+			Total: total,
+			Limit: limit,
+			TotalPages: totalPages,
+		},
 	}
 }

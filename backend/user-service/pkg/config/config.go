@@ -26,16 +26,16 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Host               string `mapstructure:"host" yaml:"host"`
-	Port               int    `mapstructure:"port" yaml:"port"`
-	Username           string `mapstructure:"username" yaml:"username"`
-	Password           string `mapstructure:"password" yaml:"password"`
-	Name               string `mapstructure:"name" yaml:"name"`
-	SSLMode            string `mapstructure:"sslmode" yaml:"sslmode"`
-	MaxOpenConnections int    `mapstructure:"max_open_connections" yaml:"maxOpenConnections"`
-	MaxLifeTimeConnection int `mapstructure:"max_life_time_connection" yaml:"maxLifeTimeConnection"`
-	MaxIdleConnections int    `mapstructure:"max_idle_connections" yaml:"maxIdleConnections"`
-	MaxIdleTime        int    `mapstructure:"max_idle_time" yaml:"maxIdleTime"`
+	Host                  string `mapstructure:"host" yaml:"host"`
+	Port                  int    `mapstructure:"port" yaml:"port"`
+	Username              string `mapstructure:"username" yaml:"username"`
+	Password              string `mapstructure:"password" yaml:"password"`
+	Name                  string `mapstructure:"name" yaml:"name"`
+	SSLMode               string `mapstructure:"sslmode" yaml:"sslmode"`
+	MaxOpenConnections    int    `mapstructure:"max_open_connections" yaml:"maxOpenConnections"`
+	MaxLifeTimeConnection int    `mapstructure:"max_life_time_connection" yaml:"maxLifeTimeConnection"`
+	MaxIdleConnections    int    `mapstructure:"max_idle_connections" yaml:"maxIdleConnections"`
+	MaxIdleTime           int    `mapstructure:"max_idle_time" yaml:"maxIdleTime"`
 }
 
 type EmailConfig struct {
@@ -62,12 +62,13 @@ type ImageKitConfig struct {
 	ID          string `mapstructure:"id" yaml:"id"`
 	PrivateKey  string `mapstructure:"private_key" yaml:"private_key"`
 	URLEndpoint string `mapstructure:"url_endpoint" yaml:"url_endpoint"`
+	PublicKey   string `mapstructure:"public_key" yaml:"public_key"`
 }
 
 type JWTConfig struct {
 	Secret                 string `mapstructure:"secret" yaml:"secret"`
 	ExpiryHour             int    `mapstructure:"expiry_hour" yaml:"expiry_hour"`
-	RefreshTokenExpiryDays  int    `mapstructure:"refresh_token_expiry_days" yaml:"refresh_token_expiry_days"`
+	RefreshTokenExpiryDays int    `mapstructure:"refresh_token_expiry_days" yaml:"refresh_token_expiry_days"`
 }
 
 type LogConfig struct {
@@ -83,11 +84,11 @@ type KafkaConfig struct {
 }
 
 type AppConfig struct {
-	AppName        string `mapstructure:"app_name" yaml:"app_name"`
-	AppEnv         string `mapstructure:"app_env" yaml:"app_env"`
-	SignatureKey   string `mapstructure:"signature_key" yaml:"signature_key"`
-	RateLimiterMax int    `mapstructure:"rate_limiter_max" yaml:"rate_limiter_max"`
-	RateLimiterTime int   `mapstructure:"rate_limiter_time" yaml:"rate_limiter_time"`
+	AppName         string `mapstructure:"app_name" yaml:"app_name"`
+	AppEnv          string `mapstructure:"app_env" yaml:"app_env"`
+	SignatureKey    string `mapstructure:"signature_key" yaml:"signature_key"`
+	RateLimiterMax  int    `mapstructure:"rate_limiter_max" yaml:"rate_limiter_max"`
+	RateLimiterTime int    `mapstructure:"rate_limiter_time" yaml:"rate_limiter_time"`
 }
 
 type CoreServiceConfig struct {
@@ -96,7 +97,7 @@ type CoreServiceConfig struct {
 
 var AppCfg *Config
 
-func setDefaults(){
+func setDefaults() {
 	viper.SetDefault("server.port", 8001)
 	viper.SetDefault("server.mode", "debug")
 	viper.SetDefault("server.read_timeout", 60)
@@ -156,13 +157,12 @@ func setDefaults(){
 	// Core Service
 	viper.SetDefault("core_service.base_url", "http://localhost:8002")
 
-	viper.SetDefault("email.smtp_host",     "sandbox.smtp.mailtrap.io")
-	viper.SetDefault("email.smtp_port",     587)
-	viper.SetDefault("email.smtp_user",     "49bbd2a554bd3e")
+	viper.SetDefault("email.smtp_host", "sandbox.smtp.mailtrap.io")
+	viper.SetDefault("email.smtp_port", 587)
+	viper.SetDefault("email.smtp_user", "49bbd2a554bd3e")
 	viper.SetDefault("email.smtp_password", "4f4bc1b03a1d70")
-	viper.SetDefault("email.from_name",     "Drive Master Indonesia")
+	viper.SetDefault("email.from_name", "Drive Master Indonesia")
 }
-
 
 func Load(path string) (*Config, error) {
 	// IMPORTANT: Set defaults FIRST before reading config file
@@ -205,9 +205,18 @@ func Load(path string) (*Config, error) {
 	_ = viper.BindEnv("jwt.expiry_hour", "JWT_EXPIRY_HOUR")
 	_ = viper.BindEnv("jwt.refresh_token_expiry_days", "JWT_REFRESH_TOKEN_EXPIRY_DAYS")
 
-	// App env overrides
-	_ = viper.BindEnv("app.app_env", "APP_ENV")
-	_ = viper.BindEnv("app.signature_key", "APP_SIGNATURE_KEY")
+	// Email env overrides
+	_ = viper.BindEnv("email.token", "EMAIL_TOKEN")
+	_ = viper.BindEnv("email.api_key", "EMAIL_API_KEY")
+	_ = viper.BindEnv("email.from_email", "EMAIL_FROM_EMAIL")
+	_ = viper.BindEnv("email.from_name", "EMAIL_FROM_NAME")
+	_ = viper.BindEnv("email.enabled", "EMAIL_ENABLED")
+
+	// SMTP env overrides
+	_ = viper.BindEnv("email.smtp_host", "EMAIL_SMTP_HOST")
+	_ = viper.BindEnv("email.smtp_port", "EMAIL_SMTP_PORT")
+	_ = viper.BindEnv("email.smtp_username", "EMAIL_SMTP_USERNAME")
+	_ = viper.BindEnv("email.smtp_password", "EMAIL_SMTP_PASSWORD")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

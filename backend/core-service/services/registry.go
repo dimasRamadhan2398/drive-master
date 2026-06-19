@@ -1,6 +1,7 @@
 package services
 
 import (
+	"core-service/pkg/config"
 	"core-service/pkg/kafka"
 	"core-service/repositories"
 )
@@ -37,19 +38,14 @@ func (r *Registry) GetPackageService() IPackageService {
 	return NewPackageService(r.repoRegistry.GetPackage(), r.eventPublisher)
 }
 
-// GetTestimonialService implements [IServiceRegistry].
-func (r *Registry) GetTestimonialService() ITestimonialService {
-	return NewTestimonialService(r.repoRegistry.GetTestimonial(), r.eventPublisher)
-}
-
 // GetArticleService implements [IServiceRegistry].
 func (r *Registry) GetArticleService() IArticleService {
-	return NewArticleService(r.repoRegistry.GetArticle(), r.eventPublisher)
+	return NewArticleService(r.repoRegistry.GetArticle(), r.repoRegistry.GetFAQ(), r.eventPublisher)
 }
 
 // GetAnalyticsService implements [IServiceRegistry].
 func (r *Registry) GetAnalyticsService() IAnalyticsService {
-	return r.analyticsSvc
+	return NewAnalyticsService()
 }
 
 // GetSalesService implements [IServiceRegistry].
@@ -57,16 +53,35 @@ func (r *Registry) GetSalesService() ISalesService {
 	return NewSalesService(r.repoRegistry.GetSales())
 }
 
+// GetGeneralSettingsService implements [IServiceRegistry].
+func (r *Registry) GetGeneralSettingsService() IGeneralSettingsService {
+	return NewGeneralSettingsService(r.repoRegistry.GetGeneralSettings())
+}
+
+// GetFAQService implements [IServiceRegistry].
+func (r *Registry) GetFAQService() IFAQService {
+	return NewFAQService(r.repoRegistry.GetFAQ())
+}
+
+func (r *Registry) GetMediaService() IMediaService {
+	cfg := config.Get()
+	return NewMediaService(cfg.ImageKit.PrivateKey, cfg.ImageKit.URLEndpoint)
+}
+
+
+
 type IServiceRegistry interface {
 	GetEventService() IEventService
 	GetRegionService() IRegionService
 	GetCarService() ICarService
 	GetPackageService() IPackageService
-	GetTestimonialService() ITestimonialService
 	GetArticleService() IArticleService
 	GetAnalyticsService() IAnalyticsService
 	GetCacheService() ICacheService
 	GetSalesService() ISalesService
+	GetGeneralSettingsService() IGeneralSettingsService
+	GetFAQService() IFAQService
+	GetMediaService() IMediaService
 }
 
 func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPublisher *kafka.EventPublisher) IServiceRegistry {

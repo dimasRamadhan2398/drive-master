@@ -4,13 +4,13 @@ package dto
 type PaginationMeta struct {
 	Page       int   `json:"page"`
 	Limit      int   `json:"limit"`
-	Total 	   int64 `json:"total"`
+	Total      int64 `json:"total"`
 	TotalPages int   `json:"totalPages"`
 }
 
 // PagedData wraps a slice of any type with pagination metadata
 type PagedData[T any] struct {
-	Data       []T           `json:"data"`
+	Data       []T            `json:"data"`
 	Pagination PaginationMeta `json:"pagination"`
 }
 

@@ -9,17 +9,31 @@ import (
 	"booking-service/models/dto"
 	"booking-service/repositories"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+
+type IEnrollmentService interface {
+	CreateEnrollment(ctx context.Context, req dto.CreateEnrollmentRequest) (*dto.EnrollmentResponse, error)
+	GetEnrollment(ctx context.Context, id uuid.UUID) (*dto.EnrollmentResponse, error)
+	UpdateEnrollment(ctx context.Context, id uuid.UUID, req dto.UpdateEnrollmentRequest) (*dto.EnrollmentResponse, error)
+	CancelEnrollment(ctx context.Context, id uuid.UUID) error
+	MarkAsPaid(ctx context.Context, id uuid.UUID, totalPrice float64) (*dto.EnrollmentResponse, error)
+	ListEnrollments(ctx context.Context, page, limit int) (*dto.EnrollmentListResponse, error)
+	ListUserEnrollments(ctx context.Context, userID uint, page, limit int) (*dto.EnrollmentListResponse, error)
+	ListEnrollmentsByStatus(ctx context.Context, status string, page, limit int) (*dto.EnrollmentListResponse, error)
+	CreateEntitlementFromEnrollment(ctx context.Context, enrollmentID uuid.UUID, sourceType, sourceID string, totalSessions int, expiresAt time.Time) (*dto.EntitlementResponse, error)
+}
+
 type EnrollmentService struct {
-	enrollmentRepo  *repositories.EnrollmentRepository
-	entitlementRepo *repositories.EntitlementRepository
+	enrollmentRepo  repositories.IEnrollmentRepository
+	entitlementRepo repositories.IEntitlementRepository
 }
 
 func NewEnrollmentService(
-	enrollmentRepo *repositories.EnrollmentRepository,
-	entitlementRepo *repositories.EntitlementRepository,
+	enrollmentRepo repositories.IEnrollmentRepository,
+	entitlementRepo repositories.IEntitlementRepository,
 ) IEnrollmentService {
 	return &EnrollmentService{
 		enrollmentRepo:  enrollmentRepo,
@@ -44,8 +58,8 @@ func (s *EnrollmentService) CreateEnrollment(ctx context.Context, req dto.Create
 	return &resp, nil
 }
 
-func (s *EnrollmentService) GetEnrollment(ctx context.Context, id uint) (*dto.EnrollmentResponse, error) {
-	enrollment, err := s.enrollmentRepo.GetByID(ctx, id)
+func (s *EnrollmentService) GetEnrollment(ctx context.Context, id uuid.UUID) (*dto.EnrollmentResponse, error) {
+	enrollment, err := s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("enrollment not found")
@@ -57,8 +71,8 @@ func (s *EnrollmentService) GetEnrollment(ctx context.Context, id uint) (*dto.En
 	return &resp, nil
 }
 
-func (s *EnrollmentService) UpdateEnrollment(ctx context.Context, id uint, req dto.UpdateEnrollmentRequest) (*dto.EnrollmentResponse, error) {
-	enrollment, err := s.enrollmentRepo.GetByID(ctx, id)
+func (s *EnrollmentService) UpdateEnrollment(ctx context.Context, id uuid.UUID, req dto.UpdateEnrollmentRequest) (*dto.EnrollmentResponse, error) {
+	enrollment, err := s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("enrollment not found")
@@ -81,8 +95,8 @@ func (s *EnrollmentService) UpdateEnrollment(ctx context.Context, id uint, req d
 	return &resp, nil
 }
 
-func (s *EnrollmentService) CancelEnrollment(ctx context.Context, id uint) error {
-	enrollment, err := s.enrollmentRepo.GetByID(ctx, id)
+func (s *EnrollmentService) CancelEnrollment(ctx context.Context, id uuid.UUID) error {
+	enrollment, err := s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("enrollment not found")
@@ -101,8 +115,8 @@ func (s *EnrollmentService) CancelEnrollment(ctx context.Context, id uint) error
 	return s.enrollmentRepo.UpdateStatus(ctx, id, models.EnrollmentStatusCancelled)
 }
 
-func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uint, totalPrice float64) (*dto.EnrollmentResponse, error) {
-	enrollment, err := s.enrollmentRepo.GetByID(ctx, id)
+func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalPrice float64) (*dto.EnrollmentResponse, error) {
+	enrollment, err := s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("enrollment not found")
@@ -120,7 +134,7 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uint, totalPrice 
 	}
 
 	// Reload enrollment
-	enrollment, err = s.enrollmentRepo.GetByID(ctx, id)
+	enrollment, err = s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +144,12 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uint, totalPrice 
 }
 
 func (s *EnrollmentService) ListEnrollments(ctx context.Context, page, limit int) (*dto.EnrollmentListResponse, error) {
-	enrollments, total, err := s.enrollmentRepo.List(ctx, page, limit)
+	enrollments, err := s.enrollmentRepo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.enrollmentRepo.CountAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -140,27 +159,35 @@ func (s *EnrollmentService) ListEnrollments(ctx context.Context, page, limit int
 }
 
 func (s *EnrollmentService) ListUserEnrollments(ctx context.Context, userID uint, page, limit int) (*dto.EnrollmentListResponse, error) {
-	enrollments, total, err := s.enrollmentRepo.GetByUserID(ctx, userID, page, limit)
+	enrollments, err := s.enrollmentRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
+
+	total := int64(len(enrollments))
 
 	resp := s.enrollmentRepo.ToListResponse(enrollments, total, page, limit)
 	return &resp, nil
 }
 
 func (s *EnrollmentService) ListEnrollmentsByStatus(ctx context.Context, status string, page, limit int) (*dto.EnrollmentListResponse, error) {
-	enrollments, total, err := s.enrollmentRepo.GetByStatus(ctx, models.EnrollmentStatus(status), page, limit)
+	enrollments, total, err := s.enrollmentRepo.FindByStatus(ctx, models.EnrollmentStatus(status))
 	if err != nil {
 		return nil, err
 	}
 
-	resp := s.enrollmentRepo.ToListResponse(enrollments, total, page, limit)
-	return &resp, nil
+	resp := &dto.EnrollmentListResponse{
+		Data:       make([]dto.EnrollmentResponse, len(enrollments)),
+		Pagination: dto.NewPaginationMeta(total, page, limit),
+	}
+	for i, e := range enrollments {
+		resp.Data[i] = s.enrollmentRepo.ToResponse(&e)
+	}
+	return resp, nil
 }
 
-func (s *EnrollmentService) CreateEntitlementFromEnrollment(ctx context.Context, enrollmentID uint, sourceType, sourceID string, totalSessions int, expiresAt time.Time) (*dto.EntitlementResponse, error) {
-	enrollment, err := s.enrollmentRepo.GetByID(ctx, enrollmentID)
+func (s *EnrollmentService) CreateEntitlementFromEnrollment(ctx context.Context, enrollmentID uuid.UUID, sourceType, sourceID string, totalSessions int, expiresAt time.Time) (*dto.EntitlementResponse, error) {
+	enrollment, err := s.enrollmentRepo.FindByID(ctx, enrollmentID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("enrollment not found")
@@ -169,7 +196,7 @@ func (s *EnrollmentService) CreateEntitlementFromEnrollment(ctx context.Context,
 	}
 
 	entitlement := &models.UserEntitlement{
-		EnrollmentID:  enrollmentID,
+		EnrollmentID:  enrollment.ID,
 		UserID:        enrollment.UserID,
 		SourceType:    sourceType,
 		SourceID:      sourceID,

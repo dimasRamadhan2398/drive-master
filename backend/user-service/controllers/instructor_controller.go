@@ -14,18 +14,20 @@ import (
 )
 
 type InstructorController struct {
-	userService       services.IUserService
-	authService       services.IAuthService
-	memberService     services.IMemberService
-	instructorService services.IInstructorService
-	roleService       services.IRoleService
-	emailService      services.IMailtrapEmailService
-	mediaService      services.IMediaService
+	userService              services.IUserService
+	authService              services.IAuthService
+	memberService            services.IMemberService
+	instructorService        services.IInstructorService
+	roleService              services.IRoleService
+	emailService             services.IMailtrapEmailService
+	mediaService             services.IMediaService
+	recurringScheduleService services.IRecurringScheduleService
 }
 
 type IInstructorController interface {
 	GetInstructorProfile(ctx *gin.Context)
 	UpdateInstructorProfile(ctx *gin.Context)
+	DeleteInstructor(ctx *gin.Context)
 	GetInstructorLists(ctx *gin.Context)
 	CreateInstructorProfile(ctx *gin.Context)
 	RegisterInstructor(ctx *gin.Context)
@@ -33,6 +35,7 @@ type IInstructorController interface {
 	DeleteProfilePic(ctx *gin.Context)
 	UploadBase64Media(ctx *gin.Context)
 	GetMediaMetadata(ctx *gin.Context)
+	GetAllInstructorsWithRecurringSchedules(ctx *gin.Context)
 }
 
 func NewInstructorController(
@@ -43,15 +46,17 @@ func NewInstructorController(
 	roleService services.IRoleService,
 	emailService services.IMailtrapEmailService,
 	mediaService services.IMediaService,
+	recurringScheduleService services.IRecurringScheduleService,
 ) IInstructorController {
 	return &InstructorController{
-		userService:       userService,
-		authService:       authService,
-		memberService:     memberService,
-		instructorService: instructorService,
-		roleService:       roleService,
-		emailService:      emailService,
-		mediaService:      mediaService,
+		userService:              userService,
+		authService:              authService,
+		memberService:            memberService,
+		instructorService:        instructorService,
+		roleService:              roleService,
+		emailService:             emailService,
+		mediaService:             mediaService,
+		recurringScheduleService: recurringScheduleService,
 	}
 }
 
@@ -267,6 +272,55 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 	responseRes.Success(ctx, http.StatusOK, "Instructor profile updated successfully", profile)
 }
 
+// @Summary Delete Instructor
+// @Description Soft delete an instructor by changing role to 'member'
+// @Tags Instructors
+// @Produce json
+// @Param id path string true "User ID (UUID)"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /instructors/{id} [delete]
+func (c *InstructorController) DeleteInstructor(ctx *gin.Context) {
+	userID, err := getUserIDFromPath(ctx, "id")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Get the instructor profile first to verify it exists
+	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Delete the instructor profile
+	if err := c.instructorService.DeleteInstructorProfile(ctx.Request.Context(), userID); err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Get member role and update user role
+	memberRole, err := c.roleService.GetRoleByName(ctx, "member")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Update user role to member
+	if err := c.roleService.UpdateUserRole(ctx.Request.Context(), userID, memberRole.ID); err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Instructor deleted successfully", gin.H{
+		"userId":    profile.UserID,
+		"newRole":   "member",
+		"deletedAt": time.Now(),
+	})
+}
+
 // @Summary Upload Media
 // @Description Upload a profile picture for an instructor
 // @Tags Media
@@ -315,29 +369,8 @@ func (c *InstructorController) UploadProfilePic(ctx *gin.Context) {
 		return
 	}
 
-	// Update instructor profile with the new photo URL
-	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	// Construct model from DTO response
-	profileModel := &models.InstructorProfile{
-		UserID:                profile.UserID,
-		LicenseNumber:         profile.LicenseNumber,
-		YearsOfExperience:     profile.YearsOfExperience,
-		Bio:                   profile.Bio,
-		LicenseExpiry:         profile.LicenseExpiry,
-		PhotoURL:              resp.URL,
-		IsActive:              profile.IsActive,
-		NumberOfStudents:      profile.NumberOfStudents,
-		SessionsCompleted:     profile.SessionsCompleted,
-		AverageRating:         profile.AverageRating,
-		BNSPCertificateNumber: profile.BNSPCertificateNumber,
-	}
-
-	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel); err != nil {
+	// Update only the photo URL field
+	if err := c.instructorService.UpdateInstructorPhotoURL(ctx.Request.Context(), userID, resp.URL); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
@@ -379,35 +412,14 @@ func (c *InstructorController) UploadBase64Media(ctx *gin.Context) {
 		return
 	}
 
-	// Update instructor profile with the new photo URL
-	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	profileModel := &models.InstructorProfile{
-		UserID:                profile.UserID,
-		LicenseNumber:         profile.LicenseNumber,
-		YearsOfExperience:     profile.YearsOfExperience,
-		Bio:                   profile.Bio,
-		LicenseExpiry:         profile.LicenseExpiry,
-		PhotoURL:              resp.URL,
-		IsActive:              profile.IsActive,
-		NumberOfStudents:      profile.NumberOfStudents,
-		SessionsCompleted:     profile.SessionsCompleted,
-		AverageRating:         profile.AverageRating,
-		BNSPCertificateNumber: profile.BNSPCertificateNumber,
-	}
-
-	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel); err != nil {
+	// Update only the photo URL field
+	if err := c.instructorService.UpdateInstructorPhotoURL(ctx.Request.Context(), userID, resp.URL); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Media uploaded successfully", resp)
 }
-
 
 // @Summary Delete Media
 // @Description Delete a media file and clear instructor photo URL
@@ -498,4 +510,50 @@ func (c *InstructorController) GetMediaMetadata(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Media metadata retrieved successfully", resp)
+}
+
+// @Summary Get All Instructors with Recurring Schedules
+// @Description Get all instructors with their recurring schedules for schedule generation
+// @Tags Instructors
+// @Produce json
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /instructors/with-schedules [get]
+func (c *InstructorController) GetAllInstructorsWithRecurringSchedules(ctx *gin.Context) {
+	// Get all instructors
+	instructors, err := c.userService.GetAllInstructorsForScheduling(ctx.Request.Context())
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Build response with recurring schedules
+	type InstructorWithSchedules struct {
+		ID                 string                          `json:"id"`
+		FirstName          string                          `json:"firstName"`
+		LastName           string                          `json:"lastName"`
+		Email              string                          `json:"email"`
+		RecurringSchedules []dto.RecurringScheduleResponse `json:"recurringSchedules"`
+	}
+
+	var result []InstructorWithSchedules
+	for _, instructor := range instructors {
+		// Get recurring schedules for this instructor
+		schedules, err := c.recurringScheduleService.GetRecurringSchedules(ctx.Request.Context(), instructor.ID)
+		if err != nil {
+			responseRes.ErrorFromGeneric(ctx, err)
+			return
+		}
+
+		item := InstructorWithSchedules{
+			ID:                 instructor.ID.String(),
+			FirstName:          instructor.FirstName,
+			LastName:           instructor.LastName,
+			Email:              instructor.EmailAddress,
+			RecurringSchedules: schedules,
+		}
+		result = append(result, item)
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Instructors with recurring schedules retrieved successfully", result)
 }

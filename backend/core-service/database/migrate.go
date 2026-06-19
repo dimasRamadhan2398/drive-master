@@ -22,6 +22,7 @@ func Migrate(db *gorm.DB) error {
 		&models.Package{},
 		&models.PackageBenefit{},
 
+
 		// Sales tables
 		&models.Sale{},
 		&models.SaleItem{},
@@ -33,6 +34,12 @@ func Migrate(db *gorm.DB) error {
 		&models.Tag{},
 		&models.ArticleTag{},
 		&models.RelatedArticle{},
+
+		// General settings
+		&models.GeneralSettings{},
+
+		// FAQ tables
+		&models.FAQ{},
 	)
 }
 
@@ -75,6 +82,16 @@ func MigrateSales(db *gorm.DB) error {
 	)
 }
 
+// MigrateGeneralSettings runs general settings migrations
+func MigrateGeneralSettings(db *gorm.DB) error {
+	return db.AutoMigrate(&models.GeneralSettings{})
+}
+
+// MigrateFAQs runs FAQ migrations
+func MigrateFAQs(db *gorm.DB) error {
+	return db.AutoMigrate(&models.FAQ{})
+}
+
 // RunMigration runs a specific migration by name
 func RunMigration(db *gorm.DB, name string) error {
 	switch name {
@@ -88,6 +105,10 @@ func RunMigration(db *gorm.DB, name string) error {
 		return MigrateArticles(db)
 	case "sales":
 		return MigrateSales(db)
+	case "general_settings":
+		return MigrateGeneralSettings(db)
+	case "faqs":
+		return MigrateFAQs(db)
 	case "all":
 		return Migrate(db)
 	default:
@@ -107,6 +128,8 @@ func GetMigrationStatus(db *gorm.DB) ([]models.TableStatus, error) {
 		"articles",
 		"categories",
 		"tags",
+		"general_settings",
+		"faqs",
 	}
 
 	var status []models.TableStatus

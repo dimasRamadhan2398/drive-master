@@ -7,5 +7,4 @@ type RoleResponse struct {
 
 type UpdateRoleInput struct {
 	RoleID uint `json:"roleId" binding:"required"`
-	
 }

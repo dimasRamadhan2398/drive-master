@@ -60,13 +60,13 @@ func NewConsumer(cfg ConsumerConfig, logger *zap.Logger) (*Consumer, error) {
 	}
 
 	// Session config
-	config.Consumer.Group.Session.Timeout = 10 * 1000 * 1000 * 1000 // 10s (nanoseconds for older versions)
+	config.Consumer.Group.Session.Timeout = 10 * 1000 * 1000 * 1000   // 10s (nanoseconds for older versions)
 	config.Consumer.Group.Heartbeat.Interval = 3 * 1000 * 1000 * 1000 // 3s
-	config.Consumer.MaxProcessingTime = 5 * 1000 * 1000 * 1000 // 5s
+	config.Consumer.MaxProcessingTime = 5 * 1000 * 1000 * 1000        // 5s
 
 	// Fetch config
 	config.Consumer.Fetch.Min = 1
-	config.Consumer.Fetch.Default = 1024 * 1024 // 1MB
+	config.Consumer.Fetch.Default = 1024 * 1024     // 1MB
 	config.Consumer.MaxWaitTime = 500 * 1000 * 1000 // 500ms
 
 	// Offset reset policy

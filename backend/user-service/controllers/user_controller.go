@@ -25,7 +25,6 @@ type UserController struct {
 	mediaService      services.IMediaService
 }
 
-
 func NewUserController(
 	userService services.IUserService,
 	authService services.IAuthService,
@@ -263,4 +262,3 @@ func getUintIDFromPath(c *gin.Context, paramName string) (uint, error) {
 	}
 	return uint(id), nil
 }
-

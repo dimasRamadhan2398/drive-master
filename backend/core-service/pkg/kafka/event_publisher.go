@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"core-service/models"
@@ -26,13 +25,6 @@ const (
 	EventArticleDeleted   = "article.deleted"
 	EventArticlePublished = "article.published"
 	EventArticleArchived  = "article.archived"
-
-	// ========== TESTIMONIAL EVENTS ==========
-	EventTestimonialCreated   = "testimonial.created"
-	EventTestimonialUpdated   = "testimonial.updated"
-	EventTestimonialDeleted   = "testimonial.deleted"
-	EventTestimonialPublished = "testimonial.published"
-	EventTestimonialArchived  = "testimonial.archived"
 
 	// ========== USER EVENTS (upstream - consumed from other services) ==========
 	EventUserCreated = "user.created"
@@ -182,64 +174,6 @@ func (e *EventPublisher) PublishArticleArchived(ctx context.Context, articleID s
 		ArchivedAt: time.Now().Format(time.RFC3339),
 	}
 	return e.producer.Publish(ctx, EventArticleArchived, event)
-}
-
-// ========== TESTIMONIAL EVENTS ==========
-
-// PublishTestimonialCreated publishes a testimonial created event
-func (e *EventPublisher) PublishTestimonialCreated(ctx context.Context, testimonial *models.Testimonial) error {
-	event := models.TestimonialCreatedEvent{
-		TestimonialID: strconv.FormatUint(uint64(testimonial.ID), 10),
-		UserID:        testimonial.UserID.String(),
-		UserName:      testimonial.UserName,
-		Rating:        testimonial.Rating,
-		Status:        string(testimonial.Status),
-		IsFeatured:    testimonial.IsFeatured,
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	return e.producer.Publish(ctx, EventTestimonialCreated, event)
-}
-
-// PublishTestimonialUpdated publishes a testimonial updated event
-func (e *EventPublisher) PublishTestimonialUpdated(ctx context.Context, testimonial *models.Testimonial) error {
-	event := models.TestimonialUpdatedEvent{
-		TestimonialID: strconv.FormatUint(uint64(testimonial.ID), 10),
-		UserName:      testimonial.UserName,
-		Content:       testimonial.Content,
-		Rating:       testimonial.Rating,
-		Status:       string(testimonial.Status),
-		UpdatedAt:    time.Now().Format(time.RFC3339),
-	}
-	return e.producer.Publish(ctx, EventTestimonialUpdated, event)
-}
-
-// PublishTestimonialDeleted publishes a testimonial deleted event
-func (e *EventPublisher) PublishTestimonialDeleted(ctx context.Context, testimonialID string) error {
-	event := models.TestimonialDeletedEvent{
-		TestimonialID: testimonialID,
-		DeletedAt:      time.Now().Format(time.RFC3339),
-	}
-	return e.producer.Publish(ctx, EventTestimonialDeleted, event)
-}
-
-// PublishTestimonialPublished publishes a testimonial published event
-func (e *EventPublisher) PublishTestimonialPublished(ctx context.Context, testimonialID, publishedBy string) error {
-	event := models.TestimonialPublishedEvent{
-		TestimonialID: testimonialID,
-		PublishedBy:   publishedBy,
-		PublishedAt:   time.Now().Format(time.RFC3339),
-	}
-	return e.producer.Publish(ctx, EventTestimonialPublished, event)
-}
-
-// PublishTestimonialArchived publishes a testimonial archived event
-func (e *EventPublisher) PublishTestimonialArchived(ctx context.Context, testimonialID, archivedBy string) error {
-	event := models.TestimonialArchivedEvent{
-		TestimonialID: testimonialID,
-		ArchivedBy:    archivedBy,
-		ArchivedAt:    time.Now().Format(time.RFC3339),
-	}
-	return e.producer.Publish(ctx, EventTestimonialArchived, event)
 }
 
 // ========== REGION EVENTS ==========

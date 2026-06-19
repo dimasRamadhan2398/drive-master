@@ -113,7 +113,6 @@ func (r *EntitlementRepository) DecrementRemaining(ctx context.Context, id uuid.
 	return r.BaseRepository.Exec("UPDATE entitlements SET remaining = remaining - 1, used_sessions = used_sessions + 1 WHERE id = ? AND remaining > 0", id)
 }
 
-
 // FindActiveByMemberIDs returns active entitlements for multiple members
 func (r *EntitlementRepository) FindActiveByMemberIDs(ctx context.Context, memberIDs []uuid.UUID) (map[uuid.UUID][]models.Entitlement, error) {
 	result := make(map[uuid.UUID][]models.Entitlement)
@@ -128,12 +127,9 @@ func (r *EntitlementRepository) FindActiveByMemberIDs(ctx context.Context, membe
 	}
 
 	var entitlements []models.Entitlement
-	if err := r.BaseRepository.FindWithOptions(&models.Entitlement{}, &entitlements, &base.QueryOptions{
-		Where: map[string]interface{}{
-			"member_id IN": memberIDs,
-			"status":       models.EntitlementStatusActive,
-		},
-	}); err != nil {
+	// Use raw query for IN clause since FindWithOptions doesn't handle " IN" suffix properly
+	// Return entitlements regardless of status so member listing can show all entitlements
+	if err := r.DB.Where("member_id IN ?", memberIDs).Find(&entitlements).Error; err != nil {
 		return nil, err
 	}
 

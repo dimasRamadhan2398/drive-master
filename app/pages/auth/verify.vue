@@ -5,10 +5,12 @@ definePageMeta({
   layout: 'blank'
 })
 
-const router = useRouter()
-
 const otp = ref('')
-const email = ref('user@example.com') // Would come from registration
+const route = useRoute()
+const email = computed(() => {
+  const value = route.query.email
+  return typeof value === 'string' ? decodeURIComponent(value) : 'user@example.com'
+})
 const loading = ref(false)
 const showResend = ref(false)
 const resendCountdown = ref(0)

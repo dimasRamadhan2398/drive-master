@@ -20,7 +20,7 @@ type UpdateEnrollmentRequest struct {
 }
 
 type EnrollmentResponse struct {
-	ID         uint      `json:"id"`
+	ID         uuid.UUID `json:"id"`
 	UserID     uint      `json:"userId"`
 	PackageID  uint      `json:"packageId"`
 	Status     string    `json:"status"`
@@ -31,61 +31,55 @@ type EnrollmentResponse struct {
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
-type EnrollmentListResponse struct {
-	Data       []EnrollmentResponse `json:"data"`
-	Total      int64                `json:"total"`
-	Page       int                  `json:"page"`
-	Limit      int                  `json:"limit"`
-	TotalPages int                  `json:"totalPages"`
-}
+type EnrollmentListResponse = PagedData[EnrollmentResponse]
 
 // Booking DTOs (DEPRECATED: use Enrollment instead)
 
-type CreateBookingRequest struct {
-	UserID        uint      `json:"userId" binding:"required"`
-	InstructorID  uint      `json:"instructorId" binding:"required"`
-	EntitlementID uint      `json:"entitlementId" binding:"required"`
-	DateOfSession time.Time `json:"dateOfSession" binding:"required"`
-	FromTime      time.Time `json:"fromTime" binding:"required"`
-	ToTime        time.Time `json:"toTime" binding:"required"`
-	CarID         uint      `json:"carId" binding:"required"`
-	Area          string    `json:"area"`
-	Notes         string    `json:"notes"`
-}
+// type CreateBookingRequest struct {
+// 	UserID        uint      `json:"userId" binding:"required"`
+// 	InstructorID  uint      `json:"instructorId" binding:"required"`
+// 	EntitlementID uint      `json:"entitlementId" binding:"required"`
+// 	DateOfSession time.Time `json:"dateOfSession" binding:"required"`
+// 	FromTime      time.Time `json:"fromTime" binding:"required"`
+// 	ToTime        time.Time `json:"toTime" binding:"required"`
+// 	CarID         uint      `json:"carId" binding:"required"`
+// 	Area          string    `json:"area"`
+// 	Notes         string    `json:"notes"`
+// }
 
-type UpdateBookingRequest struct {
-	DateOfSession *time.Time `json:"dateOfSession" binding:"omitempty"`
-	FromTime      *time.Time `json:"fromTime" binding:"omitempty"`
-	ToTime        *time.Time `json:"toTime" binding:"omitempty"`
-	CarID         *uint      `json:"carId" binding:"omitempty"`
-	Area          *string    `json:"area" binding:"omitempty"`
-	Notes         *string    `json:"notes" binding:"omitempty"`
-	Status        *string    `json:"status" binding:"omitempty"`
-}
+// type UpdateBookingRequest struct {
+// 	DateOfSession *time.Time `json:"dateOfSession" binding:"omitempty"`
+// 	FromTime      *time.Time `json:"fromTime" binding:"omitempty"`
+// 	ToTime        *time.Time `json:"toTime" binding:"omitempty"`
+// 	CarID         *uint      `json:"carId" binding:"omitempty"`
+// 	Area          *string    `json:"area" binding:"omitempty"`
+// 	Notes         *string    `json:"notes" binding:"omitempty"`
+// 	Status        *string    `json:"status" binding:"omitempty"`
+// }
 
-type BookingResponse struct {
-	ID            uint      `json:"id"`
-	UserID        uint      `json:"userId"`
-	InstructorID  uint      `json:"instructorId"`
-	EntitlementID uint      `json:"entitlementId"`
-	DateOfSession time.Time `json:"dateOfSession"`
-	FromTime      time.Time `json:"fromTime"`
-	ToTime        time.Time `json:"toTime"`
-	CarID         uint      `json:"carId"`
-	Area          string    `json:"area"`
-	Notes         string    `json:"notes"`
-	Status        string    `json:"status"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
-}
+// type BookingResponse struct {
+// 	ID            uint      `json:"id"`
+// 	UserID        uint      `json:"userId"`
+// 	InstructorID  uint      `json:"instructorId"`
+// 	EntitlementID uint      `json:"entitlementId"`
+// 	DateOfSession time.Time `json:"dateOfSession"`
+// 	FromTime      time.Time `json:"fromTime"`
+// 	ToTime        time.Time `json:"toTime"`
+// 	CarID         uint      `json:"carId"`
+// 	Area          string    `json:"area"`
+// 	Notes         string    `json:"notes"`
+// 	Status        string    `json:"status"`
+// 	CreatedAt     time.Time `json:"createdAt"`
+// 	UpdatedAt     time.Time `json:"updatedAt"`
+// }
 
-type BookingListResponse struct {
-	Data       []BookingResponse `json:"data"`
-	Total      int64             `json:"total"`
-	Page       int               `json:"page"`
-	Limit      int               `json:"limit"`
-	TotalPages int               `json:"totalPages"`
-}
+// type BookingListResponse struct {
+// 	Data       []BookingResponse `json:"data"`
+// 	Total      int64             `json:"total"`
+// 	Page       int               `json:"page"`
+// 	Limit      int               `json:"limit"`
+// 	TotalPages int               `json:"totalPages"`
+// }
 
 // DrivingSession DTOs
 
@@ -154,7 +148,7 @@ type UpdateEntitlementRequest struct {
 }
 
 type EntitlementResponse struct {
-	ID                uint      `json:"id"`
+	ID                uuid.UUID `json:"id"`
 	UserID            uint      `json:"userId"`
 	SourceType        string    `json:"sourceType"`
 	SourceID          string    `json:"sourceId"`
@@ -187,7 +181,7 @@ type UpdateCertificationRequest struct {
 }
 
 type CertificationResponse struct {
-	ID         uint      `json:"id"`
+	ID         uuid.UUID `json:"id"`
 	Type       string    `json:"type"`
 	Recipient  string    `json:"recipient"`
 	IssueDate  time.Time `json:"issueDate"`
@@ -208,13 +202,13 @@ type CertificationListResponse struct {
 // UserCertification DTOs
 
 type IssueCertificationRequest struct {
-	UserID         uint `json:"userId" binding:"required"`
-	CertificationID uint `json:"certificationId" binding:"required"`
+	UserID         uuid.UUID `json:"userId" binding:"required"`
+	CertificationID uuid.UUID `json:"certificationId" binding:"required"`
 }
 
 type UserCertificationResponse struct {
-	UserID          uint      `json:"userId"`
-	CertificationID uint      `json:"certificationId"`
+	UserID          uuid.UUID      `json:"userId"`
+	CertificationID uuid.UUID      `json:"certificationId"`
 	IssuedAt        time.Time `json:"issuedAt"`
 	Certification   CertificationResponse `json:"certification"`
 }
@@ -224,70 +218,27 @@ type ListParams struct {
 	Page  int `form:"page,default=1"`
 	Limit int `form:"limit,default=10"`
 }
-
-// Schedule DTOs
-
-type CreateScheduleRequest struct {
-	Date         string `json:"date" binding:"required"`                   // YYYY-MM-DD format
-	Time         string `json:"time" binding:"required"`                  // HH:MM format
-	Duration     int    `json:"duration" binding:"omitempty"`             // in minutes, default 90
-	InstructorID uuid.UUID `json:"instructorId" binding:"required"`
-	CarID        uint   `json:"carId" binding:"required"`
-	Notes        string `json:"notes"`
-}
-
-type UpdateScheduleRequest struct {
-	Date         *string `json:"date" binding:"omitempty"`    // YYYY-MM-DD format
-	Time         *string `json:"time" binding:"omitempty"`     // HH:MM format
-	Duration     *int    `json:"duration" binding:"omitempty"`
-	InstructorID *uuid.UUID `json:"instructorId" binding:"omitempty"`
-	CarID        *uint   `json:"carId" binding:"omitempty"`
-	Notes        *string `json:"notes" binding:"omitempty"`
-	Status       *string `json:"status" binding:"omitempty"`  // update slot status
-}
-
-type ScheduleResponse struct {
-	ID           uint      `json:"id"`
-	Date         string    `json:"date"`         // YYYY-MM-DD format
-	Time         string    `json:"time"`         // HH:MM format
-	Duration     int       `json:"duration"`     // in minutes
-	InstructorID uuid.UUID `json:"instructorId"`
-	CarID        uint      `json:"carId"`
-	UserID       *uint     `json:"userId"`        // nullable
-	BookingID    *uint     `json:"bookingId"`     // nullable
-	Status       string    `json:"status"`
-	Notes        string    `json:"notes"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
-}
-
-type ScheduleWithDetailsResponse struct {
-	ScheduleResponse
-	InstructorName string `json:"instructorName,omitempty"`
-	CarName        string `json:"carName,omitempty"`
-	StudentName    string `json:"studentName,omitempty"`
-}
-
-type ScheduleListResponse struct {
-	Data       []ScheduleResponse         `json:"data"`
-	Total      int64                       `json:"total"`
-	Page       int                         `json:"page"`
-	Limit      int                         `json:"limit"`
-	TotalPages int                         `json:"totalPages"`
-}
-
-type ScheduleFilterParams struct {
-	ListParams
-	Date         string `form:"date"`          // YYYY-MM-DD format
-	StartDate    string `form:"startDate"`      // YYYY-MM-DD format
-	EndDate      string `form:"endDate"`        // YYYY-MM-DD format
-	InstructorID string `form:"instructorId"`
-	CarID        uint   `form:"carId"`
-	Status       string `form:"status"`
-}
-
 type BookSlotRequest struct {
-	UserID        uint   `json:"userId" binding:"required"`
-	EntitlementID uint   `json:"entitlementId" binding:"required"`
+	UserID        uuid.UUID   `json:"userId" binding:"required"`
+	EntitlementID uuid.UUID   `json:"entitlementId" binding:"required"`
 	Notes         string `json:"notes"`
+}
+
+// Stats Response DTOs
+
+type SessionStatsResponse struct {
+	TotalSessions     int64 `json:"totalSessions"`
+	ActiveSessions    int64 `json:"activeSessions"`
+	CompletedSessions int64 `json:"completedSessions"`
+	PendingSessions   int64 `json:"pendingSessions"`
+}
+
+type CertificationStatsResponse struct {
+	TotalCertifications    int64   `json:"totalCertifications"`
+	IssuedCertifications   int64   `json:"issuedCertifications"`
+	ActiveCertifications   int64   `json:"activeCertifications"`
+	RevokedCertifications  int64   `json:"revokedCertifications"`
+	MonthlyTotal           int64   `json:"monthlyTotal"`
+	MonthlyGrowth          float64 `json:"monthlyGrowth"`
+	GrowthPercentage      float64 `json:"growthPercentage"`
 }

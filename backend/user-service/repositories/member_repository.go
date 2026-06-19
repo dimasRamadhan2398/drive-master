@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"strings"
 	"user-service/models"
 	"user-service/pkg/base"
 
@@ -17,7 +18,7 @@ type IMemberRepository interface {
 	Update(ctx context.Context, profile *models.MemberProfile) error
 	Delete(ctx context.Context, userID uuid.UUID) error
 	// Pagination support
-	FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int) ([]models.User, error)
+	FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int, query string) ([]models.User, error)
 	CountByRoleID(ctx context.Context, roleID uint) (int64, error)
 	// Update total available sessions
 	UpdateTotalAvailableSessions(ctx context.Context, userID uuid.UUID, total int) error
@@ -74,21 +75,24 @@ func (m *MemberRepository) CountByRoleID(ctx context.Context, roleID uint) (int6
 }
 
 // FindByRoleIDWithPagination retrieves users with a specific role ID with pagination
-func (m *MemberRepository) FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int) ([]models.User, error) {
+func (m *MemberRepository) FindByRoleIDWithPagination(ctx context.Context, roleID uint, offset, limit int, query string) ([]models.User, error) {
 	var users []models.User
 
-	// Use raw SQL with proper column selection to avoid any ORM mapping issues
-	query := `
+	// Convert query to lowercase for case-insensitive search
+	lowerQuery := "%" + strings.ToLower(query) + "%"
+
+	// Use raw SQL with LOWER() for case-insensitive search
+	sqlQuery := `
 		SELECT id, first_name, last_name, username, password_hash,
 		       email_address, phone_number, image, date_of_birth,
 		       address, is_active, is_verified, role_id,
 		       created_at, updated_at
 		FROM users
-		WHERE role_id = ?
+		WHERE role_id = ? AND (LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(username) LIKE ?)
 		ORDER BY created_at DESC
 		LIMIT ? OFFSET ?
 	`
-	if err := m.DB.Raw(query, roleID, limit, offset).Scan(&users).Error; err != nil {
+	if err := m.DB.Raw(sqlQuery, roleID, lowerQuery, lowerQuery, lowerQuery, limit, offset).Scan(&users).Error; err != nil {
 		return nil, err
 	}
 

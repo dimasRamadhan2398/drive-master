@@ -20,19 +20,33 @@ type IUserService interface {
 	DeleteUser(ctx context.Context, user *models.User) error
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetInstructorsWithPagination(ctx context.Context, page, limit int) (*dto.InstructorListResponse, error)
+	FindRecentRegistrations(ctx context.Context, limit int, filters *dto.RegistrationFilters) ([]models.User, error)
+	GetAllInstructorsForScheduling(ctx context.Context) ([]models.User, error)
 }
 
 type UserService struct {
 	*base.BaseService
-	roleRepo      repositories.IRoleRepository
-	repo          repositories.IUserRepository
-	instructorSvc IInstructorService
+	roleRepo       repositories.IRoleRepository
+	repo           repositories.IUserRepository
+	instructorSvc  IInstructorService
+	eventPublisher interface {
+		PublishUserDeleted(ctx context.Context, userID string, username, email string) error
+	}
+}
+
+// FindRecentRegistrations implements [IUserService].
+func (s *UserService) FindRecentRegistrations(ctx context.Context, limit int, filters *dto.RegistrationFilters) ([]models.User, error) {
+	return s.repo.FindRecentRegistrations(ctx, limit, filters)
 }
 
 // GetMembersWithPagination implements [IUserService].
 
-func NewUserService(repo repositories.IUserRepository, roleRepo repositories.IRoleRepository, instructorSvc IInstructorService) IUserService {
-	return &UserService{repo: repo, roleRepo: roleRepo, instructorSvc: instructorSvc, BaseService: base.NewBaseService()}
+type EventPublisherInterface interface {
+	PublishUserDeleted(ctx context.Context, userID string, username, email string) error
+}
+
+func NewUserService(repo repositories.IUserRepository, roleRepo repositories.IRoleRepository, instructorSvc IInstructorService, eventPublisher EventPublisherInterface) IUserService {
+	return &UserService{repo: repo, roleRepo: roleRepo, instructorSvc: instructorSvc, eventPublisher: eventPublisher, BaseService: base.NewBaseService()}
 }
 
 func (s *UserService) CreateUser(ctx context.Context, input dto.CreateUserRequest) (*models.User, error) {
@@ -104,7 +118,16 @@ func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, user *models.User) error {
-	return s.repo.Delete(ctx, user)
+	if err := s.repo.Delete(ctx, user); err != nil {
+		return err
+	}
+
+	// Publish user.deleted event so other services can anonymize their data
+	if s.eventPublisher != nil {
+		_ = s.eventPublisher.PublishUserDeleted(ctx, user.ID.String(), user.Username, user.EmailAddress)
+	}
+
+	return nil
 }
 
 func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
@@ -165,6 +188,19 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 		Data:       data,
 		Pagination: dto.NewPaginationMeta(total, page, limit),
 	}, nil
+}
+
+// GetAllInstructorsForScheduling retrieves all instructors (role_id = 3) for schedule generation
+// This is used by the booking-service to generate schedule slots automatically
+func (s *UserService) GetAllInstructorsForScheduling(ctx context.Context) ([]models.User, error) {
+	// Get instructor role
+	roleModel, err := s.roleRepo.FindRoleByName(ctx, "instructor")
+	if err != nil {
+		return nil, err
+	}
+
+	// Find all users with instructor role
+	return s.repo.FindByRoleID(ctx, roleModel.ID)
 }
 
 // Error definitions

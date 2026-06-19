@@ -25,10 +25,11 @@ func NewPackageRoute(controller controllers.IControllerRegistry, group *gin.Rout
 func (r *PackageRoute) Run() {
 	packages := r.group.Group("/packages")
 	{
-		packages.GET("", r.controller.GetPackageController().GetAllPackages)
+		packages.GET("/all", r.controller.GetPackageController().GetAllPackages)
 		packages.GET("/:id", r.controller.GetPackageController().GetPackageByID)
-		packages.POST("", r.controller.GetPackageController().CreatePackage)
+		packages.POST("/create", r.controller.GetPackageController().CreatePackage)
 		packages.PUT("/:id", r.controller.GetPackageController().UpdatePackage)
 		packages.DELETE("/:id", r.controller.GetPackageController().DeletePackage)
+		packages.PUT("/toggle-status/:id", r.controller.GetPackageController().ToggleStatusPackage)
 	}
 }

@@ -8,8 +8,8 @@ import (
 )
 
 type AuthRoute struct {
-	controller controllers.IControllerRegistry
-	group      *gin.RouterGroup
+	controller     controllers.IControllerRegistry
+	group          *gin.RouterGroup
 	authMiddleware middlewares.IAuthMiddleware
 }
 
@@ -31,4 +31,3 @@ func (u *AuthRoute) Run() {
 	auth.POST("/resend-otp", u.controller.GetAuthController().ResendOTP)
 	auth.POST("/refresh", u.controller.GetAuthController().RefreshToken)
 }
-

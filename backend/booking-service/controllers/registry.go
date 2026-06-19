@@ -8,12 +8,6 @@ type Registry struct {
 	service services.IServiceRegistry
 }
 
-func (r *Registry) GetBookingController() IBookingController {
-	return NewBookingController(
-		r.service.GetBookingService(),
-	)
-}
-
 func (r *Registry) GetSessionController() ISessionController {
 	return NewSessionController(
 		r.service.GetSessionService(),
@@ -44,14 +38,28 @@ func (r *Registry) GetScheduleController() IScheduleController {
 	)
 }
 
+func (r *Registry) GetDashboardController() IDashboardController {
+	return NewDashboardController(
+		r.service.GetSessionService(),
+		r.service.GetRevenueService(),
+	)
+}
+
+func (r *Registry) GetPaymentController() IPaymentController {
+	return NewPaymentController(
+		r.service.GetPaymentService(),
+	)
+}
+
 // IControllerRegistry defines methods for getting controllers
 type IControllerRegistry interface {
-	GetBookingController() IBookingController
 	GetSessionController() ISessionController
 	GetEntitlementController() IEntitlementController
 	GetCertificationController() ICertificationController
 	GetEnrollmentController() IEnrollmentController
 	GetScheduleController() IScheduleController
+	GetDashboardController() IDashboardController
+	GetPaymentController() IPaymentController
 }
 
 // NewControllerRegistry creates a new controller registry

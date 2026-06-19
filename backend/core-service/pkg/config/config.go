@@ -14,6 +14,7 @@ type Config struct {
 	JWT       JWTConfig       `yaml:"jwt"`
 	Log       LogConfig       `yaml:"log"`
 	Kafka     KafkaConfig     `yaml:"kafka"`
+	Analytics AnalyticsConfig `yaml:"analytics"`
 	App       AppConfig       `yaml:"app"`
 }
 
@@ -78,6 +79,12 @@ type AppConfig struct {
 	BasePath       string `mapstructure:"base_path" yaml:"base_path"`
 }
 
+type AnalyticsConfig struct {
+	GA4MeasurementID  string `mapstructure:"ga_measurement_id" yaml:"ga_measurement_id"`
+	GA4PropertyID     string `mapstructure:"ga_property_id" yaml:"ga_property_id"`
+	GA4CredentialsFile string `mapstructure:"ga_credentials_file" yaml:"ga_credentials_file"`
+}
+
 var AppCfg *Config
 
 func setDefaults(){
@@ -136,6 +143,10 @@ func setDefaults(){
 	viper.SetDefault("email.smtp_user",     "49bbd2a554bd3e")
 	viper.SetDefault("email.smtp_password", "4f4bc1b03a1d70")
 	viper.SetDefault("email.from_name",     "Drive Master Indonesia")
+
+	viper.SetDefault("analytics.ga_measurement_id", "G-07PS1N5DZ5")
+	viper.SetDefault("analytics.ga_property_id", "G-539969879")
+	viper.SetDefault("analytics.ga_credentials_file", "/app/analytics/ga_credentials.json")
 }
 
 func Load(path string) (*Config, error) {
@@ -183,6 +194,11 @@ func Load(path string) (*Config, error) {
 	_ = viper.BindEnv("app.app_env", "APP_ENV")
 	_ = viper.BindEnv("app.signature_key", "APP_SIGNATURE_KEY")
 	_ = viper.BindEnv("app.base_path", "BASE_PATH")
+
+	// Analytics env overrides
+	_ = viper.BindEnv("analytics.ga_measurement_id", "GA4_MEASUREMENT_ID")
+	_ = viper.BindEnv("analytics.ga_property_id", "GA4_PROPERTY_ID")
+	_ = viper.BindEnv("analytics.ga_credentials_file", "GA4_CREDENTIALS_FILE")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

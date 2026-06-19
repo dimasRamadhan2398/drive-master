@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"payment-service/controllers"
 	"payment-service/models"
 	"payment-service/pkg/config"
 	pkgKafka "payment-service/pkg/kafka"
@@ -13,6 +14,7 @@ import (
 	"payment-service/pkg/middlewares"
 	"payment-service/pkg/redis"
 	"payment-service/repositories"
+	"payment-service/routes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -183,6 +185,11 @@ func runServe(cmd *cobra.Command, args []string) {
 			"limit": 10,
 		})
 	})
+
+	// Initialize and register transaction routes
+	transactionController := controllers.NewTransactionController(repoRegistry.GetTransaction())
+	transactionRoute := routes.NewTransactionRoute(transactionController, apiGroup, authMiddleware)
+	transactionRoute.Run()
 
 	addr := fmt.Sprintf("%s:%d", serveHost, loadedConfig.Server.Port)
 	log.Printf("Payment Service listening on %s", addr)

@@ -22,8 +22,13 @@ export interface LoginCredentials {
 export interface RegisterData {
   email: string;
   password: string;
-  name: string;
-  phone?: string;
+  confirmPassword?: string;
+  firstName: string;
+  lastName: string;
+  username?: string;
+  phoneNumber?: string;
+  dateOfBirth?: string;
+  roleId?: number;
 }
 
 export interface AuthResponse {
@@ -80,18 +85,17 @@ export interface BackendUserResponse {
 }
 
 export interface RegisterResponse {
-  userId: string;
-  username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  role: {
-    id: number;
-    name: string;
+  user: {
+    userId: string;
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string;
+    dateOfBirth: string;
+    roleId: number;
   };
-  isEmailVerified: boolean;
-  createdAt: string;
-  dateOfBirth: string;
   accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
 }

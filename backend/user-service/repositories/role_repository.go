@@ -53,7 +53,6 @@ func (r *RoleRepository) FindRoleByName(ctx context.Context, name string) (*mode
 	return &roles[0], nil
 }
 
-
 // FindAllRoles implements IRoleRepository
 func (r *RoleRepository) FindAllRoles(ctx context.Context) ([]models.Role, error) {
 	var roles []models.Role

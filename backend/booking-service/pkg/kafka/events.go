@@ -47,6 +47,12 @@ const (
 	EventNewDeviceLogin    EventType = "security.new_device"
 	EventTrustedDeviceAdded EventType = "device.trusted_added"
 	EventTrustedDeviceRemoved EventType = "device.trusted_removed"
+
+	// User Lifecycle Events
+	EventUserDeleted EventType = "user.deleted"
+
+	// Certification Events
+	EventCertificationIssued EventType = "certification.issued"
 )
 
 // Event represents a generic auth event
@@ -84,6 +90,7 @@ type IEventPublisher interface {
 	PublishAccountEvent(ctx context.Context, userID, username string, eventType EventType) error
 	PublishSecurityEvent(ctx context.Context, userID, username string, eventType EventType, ip string, data map[string]interface{}) error
 	PublishRoleEvent(ctx context.Context, userID, username, role string, eventType EventType) error
+	PublishCertificationIssued(ctx context.Context, userID string, userEmail, userName, certType string, issueDate time.Time) error
 
 	// Consumer management
 	StartConsumer(ctx context.Context) error
@@ -279,6 +286,23 @@ func (r *EventPublisher) PublishRoleEvent(ctx context.Context, userID, username,
 		Success:  true,
 		Data: map[string]interface{}{
 			"role": role,
+		},
+		Timestamp: time.Now().UTC(),
+	}
+	return r.Publish(ctx, event)
+}
+
+// PublishCertificationIssued publishes a certification issued event
+func (r *EventPublisher) PublishCertificationIssued(ctx context.Context, userID string, userEmail, userName, certType string, issueDate time.Time) error {
+	event := &Event{
+		Type:     EventCertificationIssued,
+		UserID:   userID,
+		Username: userName,
+		Success:  true,
+		Data: map[string]interface{}{
+			"user_email":  userEmail,
+			"cert_type":   certType,
+			"issue_date":  issueDate.Format(time.RFC3339),
 		},
 		Timestamp: time.Now().UTC(),
 	}
@@ -493,4 +517,37 @@ func getLogLevel(eventType EventType) string {
 	default:
 		return "info"
 	}
+}
+
+// ============================================
+// User Lifecycle Event Handlers
+// ============================================
+
+// UserDeletedHandler handles user.deleted events to anonymize user data
+// in the booking service while preserving transactional records
+type UserDeletedHandler struct {
+	anonymizer func(ctx context.Context, userID string) error
+}
+
+// NewUserDeletedHandler creates a new user deleted handler
+func NewUserDeletedHandler(anonymizer func(ctx context.Context, userID string) error) *UserDeletedHandler {
+	return &UserDeletedHandler{anonymizer: anonymizer}
+}
+
+// HandleEvent handles the user.deleted event
+func (h *UserDeletedHandler) HandleEvent(ctx context.Context, event *Event) error {
+	if event.Type != EventUserDeleted {
+		return nil
+	}
+
+	if h.anonymizer == nil {
+		return nil
+	}
+
+	return h.anonymizer(ctx, event.UserID)
+}
+
+// GetEventTypes returns the event types this handler handles
+func (h *UserDeletedHandler) GetEventTypes() []EventType {
+	return []EventType{EventUserDeleted}
 }

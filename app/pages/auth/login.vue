@@ -1,71 +1,71 @@
 <script setup lang="ts">
-import { z } from 'zod'
-import type { FormSubmitEvent } from '@nuxt/ui'
-import { reactive, ref, onMounted } from 'vue'
-import { useAuthStore } from '~/stores/auth'
+import { z } from "zod";
+import type { FormSubmitEvent } from "@nuxt/ui";
+import { reactive, ref, onMounted } from "vue";
+import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
-  layout: 'blank'
-})
+  layout: "blank",
+});
 
 const schema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  remember: z.boolean().optional()
-})
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  remember: z.boolean().optional(),
+});
 
-type Schema = z.output<typeof schema>
+type Schema = z.output<typeof schema>;
 
 const state = reactive({
-  email: '',
-  password: '',
-  remember: false
-})
+  email: "",
+  password: "",
+  remember: false,
+});
 
-const loading = ref(false)
-const error = ref<string | null>(null)
+const loading = ref(false);
+const error = ref<string | null>(null);
 
 // Direct cookie access to ensure rehydration works
-const authToken = useCookie('auth_token')
-const userData = useCookie('user_data')
-const refreshToken = useCookie('refresh_token')
+const authToken = useCookie("auth_token");
+const userData = useCookie("user_data");
+const refreshToken = useCookie("refresh_token");
 
-const authStore = useAuthStore()
+const authStore = useAuthStore();
 
 // Rehydrate from cookies on mount if valid cookies exist
 onMounted(() => {
   if (authToken.value && userData.value) {
     try {
-      const user = JSON.parse(userData.value)
-      authStore.setAuth(user, authToken.value, refreshToken.value || undefined)
+      const user = JSON.parse(userData.value);
+      authStore.setAuth(user, authToken.value, refreshToken.value || undefined);
     } catch {
       // Invalid cookie data, clear them
-      authToken.value = null
-      userData.value = null
+      authToken.value = null;
+      userData.value = null;
     }
   }
-})
+});
 
 async function onSubmit(_event: FormSubmitEvent<Schema>) {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
 
   try {
     await authStore.login({
       email: state.email,
-      password: state.password
-    })
+      password: state.password,
+    });
 
     // Navigate based on user role after successful login
-    if (authStore.userRole?.toLowerCase().includes('admin')) {
-      navigateTo('/admin')
+    if (authStore.userRole?.toLowerCase().includes("admin")) {
+      navigateTo("/admin");
     } else {
-      navigateTo('/dashboard')
+      navigateTo("/dashboard");
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Login failed'
+    error.value = err instanceof Error ? err.message : "Login failed";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>
@@ -87,8 +87,8 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
 
       <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
         <UFormField name="email" label="Email Address">
-          <UInput 
-            v-model="state.email" 
+          <UInput
+            v-model="state.email"
             type="email"
             placeholder="you@example.com"
             icon="i-lucide-mail"
@@ -98,8 +98,8 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
         </UFormField>
 
         <UFormField name="password" label="Password">
-          <UInput 
-            v-model="state.password" 
+          <UInput
+            v-model="state.password"
             type="password"
             placeholder="Enter your password"
             icon="i-lucide-lock"
@@ -110,30 +110,44 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
 
         <div class="flex items-center justify-between">
           <UCheckbox v-model="state.remember" label="Remember me" color="warning" />
-          <NuxtLink to="/forgot-password" class="text-sm text-warning hover:underline">
+          <NuxtLink to="/auth/forgot-password" class="text-sm text-warning hover:underline">
             Forgot password?
           </NuxtLink>
         </div>
 
-        <UButton type="submit" label="Sign In" color="warning" :loading="loading" block size="lg" />
+        <UButton
+          type="submit"
+          label="Sign In"
+          color="warning"
+          :loading="loading"
+          block
+          size="lg"
+        />
       </UForm>
 
       <template #footer>
         <div class="text-center space-y-4">
           <p class="text-sm text-muted">
             Don&apos;t have an account?
-            <NuxtLink to="/auth/register" class="text-warning font-medium hover:underline">
+            <NuxtLink
+              to="/auth/register"
+              class="text-warning font-medium hover:underline"
+            >
               Register here
             </NuxtLink>
           </p>
-          
+
           <USeparator label="or" />
 
-          <NuxtLink to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi" target="_blank" class="block">
-            <UButton 
-              label="Contact Support" 
-              icon="i-simple-icons-whatsapp" 
-              color="primary" 
+          <NuxtLink
+            to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20perlu%20bantuan%20di%20website%20ketika...."
+            target="_blank"
+            class="block"
+          >
+            <UButton
+              label="Contact Support"
+              icon="i-simple-icons-whatsapp"
+              color="primary"
               variant="outline"
               block
             />

@@ -22,20 +22,21 @@ import (
 )
 
 const (
-	DefaultMaxRequests        = 100               // requests per window
-	DefaultExpirationTTLSeconds = 60              // 1 minute window
+	DefaultMaxRequests          = 100 // requests per window
+	DefaultExpirationTTLSeconds = 60  // 1 minute window
 )
 
 type Claims struct {
 	User *dto.GetUserResponse `json:"User"`
-	Exp  int64                 `json:"exp"`
+	Exp  int64                `json:"exp"`
 }
 
 // AuthMiddleware validates JWT tokens
 
 type IAuthMiddleware interface {
 	Authenticate() gin.HandlerFunc
-    AuthenticateWithoutToken() gin.HandlerFunc
+	AuthenticateWithoutToken() gin.HandlerFunc
+	AuthorizeAdmin() gin.HandlerFunc
 }
 
 type AuthMiddleware struct {
@@ -47,7 +48,6 @@ func NewAuthMiddleware(secret string) IAuthMiddleware {
 		secret: secret,
 	}
 }
-
 
 // Authenticate validates both the API key signature and Bearer token
 func (m *AuthMiddleware) Authenticate() gin.HandlerFunc {
@@ -93,6 +93,76 @@ func (m *AuthMiddleware) AuthenticateWithoutToken() gin.HandlerFunc {
 			responseUnauthorized(c, err.Error())
 			return
 		}
+		c.Next()
+	}
+}
+
+// AuthorizeAdmin validates authentication and checks for admin role
+func (m *AuthMiddleware) AuthorizeAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.GetHeader(constants.Authorization)
+		if token == "" {
+			responseUnauthorized(c, apperrors.ErrUnauthorized.Error())
+			return
+		}
+
+		err := validateAPIKey(c)
+		if err != nil {
+			responseUnauthorized(c, err.Error())
+			return
+		}
+
+		tokenString := extractBearerToken(token)
+		if tokenString == "" {
+			responseUnauthorized(c, apperrors.ErrUnauthorized.Error())
+			return
+		}
+
+		newToken, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			return []byte(m.secret), nil
+		}, jwt.WithValidMethods([]string{"HS256"}))
+
+		if err != nil || !newToken.Valid {
+			response.Unauthorized(c, "Invalid or expired token")
+			c.Abort()
+			return
+		}
+
+		claims, ok := newToken.Claims.(jwt.MapClaims)
+		if !ok {
+			response.Unauthorized(c, "Invalid token claims")
+			c.Abort()
+			return
+		}
+
+		userMap, ok := claims["User"].(map[string]interface{})
+		if !ok {
+			response.Unauthorized(c, "Invalid user data in token")
+			c.Abort()
+			return
+		}
+
+		roleMap, ok := userMap["role"].(map[string]interface{})
+		if !ok {
+			response.Unauthorized(c, "Invalid role data in token")
+			c.Abort()
+			return
+		}
+
+		roleName, ok := roleMap["name"].(string)
+		if !ok {
+			response.Unauthorized(c, "Invalid role name in token")
+			c.Abort()
+			return
+		}
+
+		if roleName != constants.Admin && roleName != constants.SuperAdmin {
+			response.ErrorFromAppError(c, apperrors.ErrForbidden)
+			c.Abort()
+			return
+		}
+
+		c.Set(constants.Token, tokenString)
 		c.Next()
 	}
 }

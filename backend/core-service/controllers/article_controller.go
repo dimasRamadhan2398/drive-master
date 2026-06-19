@@ -15,6 +15,109 @@ type ArticleController struct {
 	articleService services.IArticleService
 }
 
+// DeleteBlogArticle implements [IArticleController].
+func (c *ArticleController) DeleteBlogArticle(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		response.BadRequest(ctx, "Invalid article ID format")
+		return
+	}
+
+	if err := c.articleService.DeleteBlogArticle(ctx.Request.Context(), id); err != nil {
+		response.InternalServerError(ctx, "Failed to delete blog article")
+		return
+	}
+
+	response.OK(ctx, "Blog article deleted successfully", nil)
+}
+
+// DeleteFAQArticle implements [IArticleController].
+func (c *ArticleController) DeleteFAQArticle(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		response.BadRequest(ctx, "Invalid FAQ ID format")
+		return
+	}
+
+	if err := c.articleService.DeleteFAQ(ctx.Request.Context(), id); err != nil {
+		response.InternalServerError(ctx, "Failed to delete FAQ")
+		return
+	}
+
+	response.OK(ctx, "FAQ deleted successfully", nil)
+}
+
+// CreateBlogArticle implements [IArticleController].
+func (c *ArticleController) CreateBlogArticle(ctx *gin.Context) {
+	var req dto.CreateBlogArticleRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(ctx, "Invalid request body: "+err.Error())
+		return
+	}
+
+	article, err := c.articleService.CreateBlogArticle(ctx.Request.Context(), &req)
+	if err != nil {
+		response.InternalServerError(ctx, "Failed to create blog article: "+err.Error())
+		return
+	}
+
+	response.Created(ctx, "Blog article created successfully", article)
+}
+
+// CreateFAQArticle implements [IArticleController].
+func (c *ArticleController) CreateFAQArticle(ctx *gin.Context) {
+	var req dto.CreateFAQRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(ctx, "Invalid request body: "+err.Error())
+		return
+	}
+
+	faq, err := c.articleService.CreateFAQ(ctx.Request.Context(), &req)
+	if err != nil {
+		response.InternalServerError(ctx, "Failed to create FAQ: "+err.Error())
+		return
+	}
+
+	response.Created(ctx, "FAQ created successfully", faq)
+}
+
+// GetBlogArticles implements [IArticleController].
+func (c *ArticleController) GetBlogArticles(ctx *gin.Context) {
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	result, err := c.articleService.GetBlogArticles(ctx.Request.Context(), page, limit)
+	if err != nil {
+		response.InternalServerError(ctx, "Failed to fetch blog articles")
+		return
+	}
+
+	response.OK(ctx, "Blog articles fetched successfully", result)
+}
+
+// GetFAQArticles implements [IArticleController].
+func (c *ArticleController) GetFAQArticles(ctx *gin.Context) {
+	faqs, err := c.articleService.GetFAQs(ctx.Request.Context())
+	if err != nil {
+		response.InternalServerError(ctx, "Failed to fetch FAQs")
+		return
+	}
+
+	response.OK(ctx, "FAQs fetched successfully", faqs)
+}
+
 // IArticleController defines the interface for article controller
 type IArticleController interface {
 	GetAllArticles(ctx *gin.Context)
@@ -35,6 +138,16 @@ type IArticleController interface {
 	// Admin endpoints
 	PublishArticle(ctx *gin.Context)
 	ArchiveArticle(ctx *gin.Context)
+
+	// Blog endpoints
+	GetBlogArticles(ctx *gin.Context)
+	CreateBlogArticle(ctx *gin.Context)
+	DeleteBlogArticle(ctx *gin.Context)
+
+	// FAQ endpoints
+	GetFAQArticles(ctx *gin.Context)
+	CreateFAQArticle(ctx *gin.Context)
+	DeleteFAQArticle(ctx *gin.Context)
 }
 
 // NewArticleController creates a new article controller

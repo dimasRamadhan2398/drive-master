@@ -24,6 +24,7 @@ type ICertificationController interface {
 	DeleteCertification(ctx *gin.Context)
 	ListCertifications(ctx *gin.Context)
 	VerifyCertification(ctx *gin.Context)
+	GetCertificateStats(ctx *gin.Context)
 }
 
 func NewCertificationController(certificationService services.ICertificationService) ICertificationController {
@@ -239,4 +240,20 @@ func (c *CertificationController) VerifyCertification(ctx *gin.Context) {
 func parseUUID(ctx *gin.Context, param string) (uuid.UUID, error) {
 	idStr := ctx.Param(param)
 	return uuid.Parse(idStr)
+}
+
+// @Summary Get Certificate Stats
+// @Description Get certificate statistics with growth compared to previous month
+// @Tags Certificates
+// @Produce json
+// @Success 200 {object} response.Response
+// @Router /certificates/stats [get]
+func (c *CertificationController) GetCertificateStats(ctx *gin.Context) {
+	resp, err := c.certificationService.GetStats(ctx.Request.Context())
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Certificate stats retrieved successfully", resp)
 }

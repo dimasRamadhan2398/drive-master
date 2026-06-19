@@ -47,5 +47,20 @@ func (r *ArticleRoute) Run() {
 		articles.POST("/:id/view", r.controller.GetArticleController().IncrementViewCount)
 		articles.POST("/:id/publish", r.controller.GetArticleController().PublishArticle)
 		articles.POST("/:id/archive", r.controller.GetArticleController().ArchiveArticle)
+
+		// blog endpoints
+		articles.GET("/blog", r.controller.GetArticleController().GetBlogArticles)
+		articles.POST("/blog", r.controller.GetArticleController().CreateBlogArticle)
+		articles.DELETE("/blog/:id", r.controller.GetArticleController().DeleteBlogArticle)
+
+		// FAQ endpoints
+		articles.GET("/faq", r.controller.GetFAQController().GetAllFAQs)
+		articles.GET("/faq/active", r.controller.GetFAQController().GetActiveFAQs)
+		articles.POST("/faq", r.controller.GetFAQController().CreateFAQ)
+		// Specific routes MUST come before parameterized routes
+		articles.PUT("/faq/:id/reorder", r.controller.GetFAQController().ReorderFAQ)
+		articles.GET("/faq/:id", r.controller.GetFAQController().GetFAQByID)
+		articles.PUT("/faq/:id", r.controller.GetFAQController().UpdateFAQ)
+		articles.DELETE("/faq/:id", r.controller.GetFAQController().DeleteFAQ)
 	}
 }

@@ -13,10 +13,11 @@ type IControllerRegistry interface {
 	GetRegionController() IRegionController
 	GetCarController() ICarController
 	GetPackageController() IPackageController
-	GetTestimonialController() ITestimonialController
 	GetArticleController() IArticleController
 	GetAnalyticsController() IAnalyticsController
 	GetSalesController() ISalesController
+	GetGeneralSettingsController() IGeneralSettingsController
+	GetFAQController() IFAQController
 }
 
 // NewControllerRegistry creates a new controller registry
@@ -41,11 +42,6 @@ func (r *Registry) GetPackageController() IPackageController {
 	return NewPackageController(r.svcRegistry.GetPackageService())
 }
 
-// GetTestimonialController returns the testimonial controller
-func (r *Registry) GetTestimonialController() ITestimonialController {
-	return NewTestimonialController(r.svcRegistry.GetTestimonialService())
-}
-
 // GetArticleController returns the article controller
 func (r *Registry) GetArticleController() IArticleController {
 	return NewArticleController(r.svcRegistry.GetArticleService())
@@ -59,6 +55,16 @@ func (r *Registry) GetAnalyticsController() IAnalyticsController {
 // GetSalesController returns the sales controller
 func (r *Registry) GetSalesController() ISalesController {
 	return NewSalesController(r.svcRegistry.GetSalesService())
+}
+
+// GetGeneralSettingsController returns the general settings controller
+func (r *Registry) GetGeneralSettingsController() IGeneralSettingsController {
+	return NewGeneralSettingsController(r.svcRegistry.GetGeneralSettingsService())
+}
+
+// GetFAQController returns the FAQ controller
+func (r *Registry) GetFAQController() IFAQController {
+	return NewFAQController(r.svcRegistry.GetFAQService())
 }
 
 // GetRepositoryRegistry returns the repository registry (for dependency injection)

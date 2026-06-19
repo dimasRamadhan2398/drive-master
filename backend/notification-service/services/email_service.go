@@ -271,3 +271,52 @@ func (s *EmailService) SendNewsletterEmail(ctx context.Context, toEmails []strin
 		Tags:    []string{"newsletter"},
 	})
 }
+
+// SendCertificationEmail sends a certification issued email
+func (s *EmailService) SendCertificationEmail(ctx context.Context, toEmail, userName, certType, issueDate string) error {
+	subject := fmt.Sprintf("Congratulations! Your %s Certification Has Been Issued", certType)
+
+	text := fmt.Sprintf(`Hello %s,
+
+Congratulations on completing your %s certification!
+
+Your certification has been officially issued on %s. This is a great achievement in your driving journey.
+
+You can now view and download your certificate from your Drive Master dashboard. Your certificate is a testament to your dedication and skill.
+
+Keep up the great work, and remember to always drive safely!
+
+Best regards,
+Drive Master Team`, userName, certType, issueDate)
+
+	html := fmt.Sprintf(`<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+	<div style="text-align: center;">
+		<h1 style="color: #28a745;">Congratulations!</h1>
+		<p style="font-size: 18px;">Hello <strong>%s</strong>,</p>
+		<p style="font-size: 16px;">Your <strong>%s</strong> certification has been officially issued!</p>
+
+		<div style="background-color: #f8f9fa; padding: 30px; border-radius: 12px; margin: 30px 0; border: 2px solid #28a745;">
+			<p style="font-size: 14px; color: #666;">Issue Date</p>
+			<p style="font-size: 18px; font-weight: bold;">%s</p>
+		</div>
+
+		<p style="color: #666;">You can now view and download your certificate from your Drive Master dashboard.</p>
+		<p style="color: #666;">Your certificate is a testament to your dedication and skill.</p>
+
+		<p style="color: #666; margin-top: 30px;">Keep up the great work, and remember to always drive safely!</p>
+
+		<hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+		<p style="color: #999; font-size: 12px;">Best regards,<br>Drive Master Team</p>
+	</div>
+</body>
+</html>`, userName, certType, issueDate)
+
+	return s.SendEmail(ctx, SendEmailInput{
+		To:      []string{toEmail},
+		Subject: subject,
+		Text:    text,
+		HTML:    html,
+		Tags:    []string{"certification", "issued"},
+	})
+}

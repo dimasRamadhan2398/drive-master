@@ -25,6 +25,34 @@
       "@nuxtjs/color-mode": [
         "../node_modules/@nuxtjs/color-mode"
       ],
+      "vue-i18n": [
+        "../node_modules/vue-i18n/dist/vue-i18n",
+        "../node_modules/vue-i18n"
+      ],
+      "@intlify/shared": [
+        "../node_modules/@intlify/shared/dist/shared",
+        "../node_modules/@intlify/shared"
+      ],
+      "@intlify/core": [
+        "../node_modules/@intlify/core/dist/core.node",
+        "../node_modules/@intlify/core"
+      ],
+      "@intlify/core-base": [
+        "../node_modules/@intlify/core-base/dist/core-base",
+        "../node_modules/@intlify/core-base"
+      ],
+      "@intlify/utils": [
+        "../node_modules/@intlify/utils/dist/index",
+        "../node_modules/@intlify/utils"
+      ],
+      "@intlify/utils/h3": [
+        "../node_modules/@intlify/utils/dist/h3",
+        "../node_modules/@intlify/utils"
+      ],
+      "@intlify/message-compiler": [
+        "../node_modules/@intlify/message-compiler/dist/message-compiler",
+        "../node_modules/@intlify/message-compiler"
+      ],
       "defu": [
         "../node_modules/defu"
       ],
@@ -103,6 +131,18 @@
       "#ui/*": [
         "../node_modules/@nuxt/ui/dist/runtime/*"
       ],
+      "#i18n": [
+        "../node_modules/@nuxtjs/i18n/dist/runtime/composables/index"
+      ],
+      "#i18n-kit": [
+        "../node_modules/@nuxtjs/i18n/dist/runtime/kit"
+      ],
+      "#i18n-kit/*": [
+        "../node_modules/@nuxtjs/i18n/dist/runtime/kit/*"
+      ],
+      "#internal-i18n-types": [
+        "../node_modules/@nuxtjs/i18n/dist/types"
+      ],
       "#vue-router": [
         "../node_modules/vue-router"
       ],
@@ -111,9 +151,6 @@
       ],
       "#imports": [
         "./imports"
-      ],
-      "#color-mode-options": [
-        "./color-mode-options.mjs"
       ],
       "#app-manifest": [
         "./manifest/meta/dev"
@@ -158,6 +195,7 @@
     "allowSyntheticDefaultImports": true
   },
   "include": [
+    "../i18n/**/*",
     "./nuxt.d.ts",
     "../app/**/*",
     "../modules/*/runtime/**/*",
@@ -176,6 +214,8 @@
     "../node_modules/nuxt/node_modules",
     "../node_modules/@nuxt/ui/node_modules",
     "../node_modules/@pinia/nuxt/node_modules",
+    "../node_modules/nuxt-gtag/node_modules",
+    "../node_modules/@nuxtjs/i18n/node_modules",
     "../node_modules/@nuxt/devtools/node_modules",
     "../node_modules/@nuxt/telemetry/node_modules",
     "../node_modules/@nuxt/icon/node_modules",

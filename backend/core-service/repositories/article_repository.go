@@ -12,13 +12,13 @@ import (
 
 // ArticleFilter holds filter options for article queries
 type ArticleFilter struct {
-	CategoryID   *uuid.UUID
-	Tags         []string
-	AuthorID     *uuid.UUID
-	Status       string
-	IsFeatured   *bool
+	CategoryID  *uuid.UUID
+	Tags        []string
+	AuthorID    *uuid.UUID
+	Status      string
+	IsFeatured  *bool
 	IsSpotlight *bool
-	SearchQuery  string
+	SearchQuery string
 }
 
 // IArticleRepository defines the interface for article repository
@@ -41,6 +41,10 @@ type IArticleRepository interface {
 	CountByCategory(ctx context.Context, categoryID uuid.UUID) (int64, error)
 	Publish(ctx context.Context, id uuid.UUID) error
 	Archive(ctx context.Context, id uuid.UUID) error
+
+	// Blog-specific queries
+	GetBlogArticles(ctx context.Context, opts *base.QueryOptions) ([]models.Article, error)
+	CountBlogArticles(ctx context.Context) (int64, error)
 }
 
 // ArticleRepository implements IArticleRepository
@@ -287,4 +291,30 @@ func (r *ArticleRepository) ApplyQueryOptions(query *gorm.DB, opts *base.QueryOp
 	}
 
 	return query
+}
+
+// GetBlogArticles retrieves published blog articles
+func (r *ArticleRepository) GetBlogArticles(ctx context.Context, opts *base.QueryOptions) ([]models.Article, error) {
+	var articles []models.Article
+	query := r.DB.WithContext(ctx).Model(&models.Article{}).
+		Where("status = ?", models.ArticleStatusPublished)
+
+	query = r.ApplyQueryOptions(query, opts)
+	if opts.Order == "" {
+		query = query.Order("published_at DESC, created_at DESC")
+	}
+
+	if err := query.Find(&articles).Error; err != nil {
+		return nil, err
+	}
+	return articles, nil
+}
+
+// CountBlogArticles counts published blog articles
+func (r *ArticleRepository) CountBlogArticles(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.DB.WithContext(ctx).Model(&models.Article{}).
+		Where("status = ?", models.ArticleStatusPublished).
+		Count(&count).Error
+	return count, err
 }

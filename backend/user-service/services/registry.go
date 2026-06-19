@@ -1,6 +1,7 @@
 package services
 
 import (
+	coreServices "core-service/services"
 	"user-service/clients"
 	"user-service/clients/region"
 	"user-service/pkg/config"
@@ -30,6 +31,10 @@ type IServiceRegistry interface {
 	GetRegionService() IRegionService
 	GetCertificationService() ICertificationService
 	GetEntitlementService() IEntitlementService
+	GetMemberCertificateService() IMemberCertificateService
+	GetTestimonialService() ITestimonialService
+	GetRecurringScheduleService() IRecurringScheduleService
+	GetDashboardService() IDashboardService
 }
 
 func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgKafka.IEventPublisher, redisClient *redis.Client) IServiceRegistry {
@@ -50,7 +55,7 @@ func NewServiceRegistry(repoRegistry *repositories.Registry, eventPublisher pkgK
 }
 
 func (r *Registry) GetUserService() IUserService {
-	return NewUserService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole(), r.GetInstructorService())
+	return NewUserService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole(), r.GetInstructorService(), r.eventPublisher)
 }
 
 func (r *Registry) GetMemberService() IMemberService {
@@ -77,12 +82,12 @@ func (r *Registry) GetAuthService() IAuthService {
 
 func (r *Registry) GetEmailService() IMailtrapEmailService {
 	cfg := config.Get()
-	return NewMailtrapEmailService(cfg.Email.Host, cfg.Email.Port, cfg.Email.User, cfg.Email.Password, cfg.Email.FromEmail, cfg.Email.FromName)
+	return NewMailtrapEmailService(cfg.Email.FromEmail, cfg.Email.FromName, cfg.Email.APIKey)
 }
 
 func (r *Registry) GetMediaService() IMediaService {
 	cfg := config.Get()
-	return NewMediaService(cfg.ImageKit.PrivateKey)
+	return coreServices.NewMediaService(cfg.ImageKit.PrivateKey)
 }
 
 func (r *Registry) GetWorkExperienceService() IWorkExperienceService {
@@ -112,4 +117,24 @@ func (r *Registry) GetEntitlementService() IEntitlementService {
 		r.eventPublisher,
 		listener,
 	)
+}
+
+func (r *Registry) GetMemberCertificateService() IMemberCertificateService {
+	return NewMemberCertificateService(
+		r.repoRegistry.GetUser(),
+		r.repoRegistry.GetEntitlement(),
+		r.repoRegistry.GetCertification(),
+	)
+}
+
+func (r *Registry) GetTestimonialService() ITestimonialService {
+	return NewTestimonialService(r.repoRegistry.GetTestimonial(), r.eventPublisher)
+}
+
+func (r *Registry) GetRecurringScheduleService() IRecurringScheduleService {
+	return NewRecurringScheduleService(r.repoRegistry.GetRecurringSchedule())
+}
+
+func (r *Registry) GetDashboardService() IDashboardService {
+	return NewDashboardService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole())
 }

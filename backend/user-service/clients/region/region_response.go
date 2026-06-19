@@ -17,34 +17,34 @@ type RegionData struct {
 
 // Master Data Models
 type Province struct {
-    ID   string `json:"id"`
-    Name string `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type Regency struct {
-    ID         string `json:"id"`
-    Name       string `json:"name"`
-    ProvinceID string `json:"provinceId"`
-	Type       string `json:"type"`  
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	ProvinceID string `json:"provinceId"`
+	Type       string `json:"type"`
 }
 
 type District struct {
-    ID          string `json:"id"`
-    Name        string `json:"name"`
-    RegencyID string `json:"regencyId"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	RegencyID string `json:"regencyId"`
 }
 
 // List Response (jika API menggunakan list endpoint terpisah)
 type ProvincesListResponse struct {
-    Code    int        `json:"code"`
-    Status  string     `json:"status"`
-    Message string     `json:"message"`
-    Data    []Province `json:"data"`
+	Code    int        `json:"code"`
+	Status  string     `json:"status"`
+	Message string     `json:"message"`
+	Data    []Province `json:"data"`
 }
 
 type RegenciesListResponse struct {
-    Code    int         `json:"code"`
-    Status  string      `json:"status"`
-    Message string      `json:"message"`
-    Data    []Regency `json:"data"`
+	Code    int       `json:"code"`
+	Status  string    `json:"status"`
+	Message string    `json:"message"`
+	Data    []Regency `json:"data"`
 }

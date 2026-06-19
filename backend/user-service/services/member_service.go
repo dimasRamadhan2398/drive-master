@@ -14,20 +14,20 @@ type IMemberService interface {
 	CreateMemberProfile(ctx context.Context, userID uuid.UUID) (*models.MemberProfile, error)
 	UpdateMemberProfile(ctx context.Context, profile *models.MemberProfile) error
 	DeleteMemberProfile(ctx context.Context, userID uuid.UUID) error
-	GetMembersWithPagination(ctx context.Context, page, limit int) (*dto.MemberListResponse, error)
+	GetMembersWithPagination(ctx context.Context, page, limit int, searchQuery *string) (*dto.MemberListResponse, error)
 }
 
 type MemberService struct {
-	repo            repositories.IMemberRepository
-	roleRepo        repositories.IRoleRepository
-	entitlementSvc  IEntitlementService
+	repo           repositories.IMemberRepository
+	roleRepo       repositories.IRoleRepository
+	entitlementSvc IEntitlementService
 }
 
 func NewMemberService(repo repositories.IMemberRepository, roleRepo repositories.IRoleRepository, entitlementSvc IEntitlementService) IMemberService {
 	return &MemberService{
-		repo:            repo,
-		roleRepo:        roleRepo,
-		entitlementSvc:  entitlementSvc,
+		repo:           repo,
+		roleRepo:       roleRepo,
+		entitlementSvc: entitlementSvc,
 	}
 }
 
@@ -62,7 +62,7 @@ func (s *MemberService) DeleteMemberProfile(ctx context.Context, userID uuid.UUI
 
 // GetMembersWithPagination returns paginated list of members with their profiles
 // Calculates totalAvailableSessions dynamically from active entitlements
-func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limit int) (*dto.MemberListResponse, error) {
+func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limit int, searchQuery *string) (*dto.MemberListResponse, error) {
 	// Find the "member" role
 	roleModel, err := s.roleRepo.FindRoleByName(ctx, "member")
 	if err != nil {
@@ -75,15 +75,17 @@ func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limi
 		return nil, err
 	}
 
-	// Calculate pagination
+	// Calculate pagination offset
 	offset := (page - 1) * limit
-	totalPages := int(total) / limit
-	if int(total)%limit > 0 {
-		totalPages++
+
+	// Determine search query - use empty string if nil
+	query := ""
+	if searchQuery != nil {
+		query = *searchQuery
 	}
 
 	// Get paginated users
-	users, err := s.repo.FindByRoleIDWithPagination(ctx, roleModel.ID, offset, limit)
+	users, err := s.repo.FindByRoleIDWithPagination(ctx, roleModel.ID, offset, limit, query)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +141,7 @@ func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limi
 				Address:     user.Address,
 				RoleID:      user.RoleID,
 				Role: dto.RoleResponse{
-					ID: user.RoleID,
+					ID:   user.RoleID,
 					Name: user.Role.Name,
 				},
 			},

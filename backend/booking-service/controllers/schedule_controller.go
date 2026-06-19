@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
 	"booking-service/models/dto"
+	"booking-service/pkg/base"
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
@@ -28,6 +30,7 @@ type IScheduleController interface {
 	GetAvailableSchedules(c *gin.Context)
 	BookSlot(c *gin.Context)
 	CancelBooking(c *gin.Context)
+	GetScheduleStats(c *gin.Context)
 }
 
 // CreateSchedule godoc
@@ -69,7 +72,10 @@ func (c *ScheduleController) CreateSchedule(ctx *gin.Context) {
 // @Failure 404 {object} map[string]string
 // @Router /schedules/{id} [get]
 func (c *ScheduleController) GetSchedule(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	idParam := ctx.Param("id")
+	log.Printf("[DEBUG] GetSchedule called with id: %s, path: %s", idParam, ctx.Request.URL.Path)
+
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
 		return
@@ -97,7 +103,7 @@ func (c *ScheduleController) GetSchedule(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /schedules/{id} [put]
 func (c *ScheduleController) UpdateSchedule(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
 		return
@@ -130,7 +136,7 @@ func (c *ScheduleController) UpdateSchedule(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /schedules/{id} [delete]
 func (c *ScheduleController) DeleteSchedule(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
 		return
@@ -263,7 +269,7 @@ func (c *ScheduleController) GetAvailableSchedules(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /schedules/{id}/book [post]
 func (c *ScheduleController) BookSlot(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
 		return
@@ -296,7 +302,7 @@ func (c *ScheduleController) BookSlot(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /schedules/{id}/cancel [post]
 func (c *ScheduleController) CancelBooking(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
 		return
@@ -308,4 +314,29 @@ func (c *ScheduleController) CancelBooking(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "booking cancelled"})
+}
+
+// GetScheduleStats godoc
+// @Summary Get schedule statistics
+// @Description Retrieves statistics for schedules grouped by status
+// @Tags schedules
+// @Accept json
+// @Produce json
+// @Success 200 {object} dto.ScheduleStatsResponse
+// @Failure 500 {object} map[string]string
+// @Router /schedules/stats [get]
+func (c *ScheduleController) GetScheduleStats(ctx *gin.Context) {
+	log.Printf("[DEBUG] GetScheduleStats called with path: %s", ctx.Request.URL.Path)
+
+	stats, err := c.scheduleService.GetStats(ctx.Request.Context())
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Schedule stats retrieved successfully",
+		"data":    stats,
+	})
 }

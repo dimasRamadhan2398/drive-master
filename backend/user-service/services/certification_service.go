@@ -21,10 +21,11 @@ type ICertificationService interface {
 	ListCertifications(ctx context.Context, instructorID uuid.UUID, page, limit int) (*dto.CertificationListResponse, error)
 	VerifyCertification(ctx context.Context, instructorID, certID, verifiedBy uuid.UUID, input dto.VerifyCertificationInput) (*dto.CertificationResponse, error)
 	IssueCertification(ctx context.Context, input dto.IssueCertificationInput) (*dto.CertificationResponse, error)
+	GetStats(ctx context.Context) (*dto.CertificateStatsResponse, error)
 }
 
 type CertificationService struct {
-	repo repositories.ICertificationRepository
+	repo     repositories.ICertificationRepository
 	listener listeners.IEntitlementCompletedListener
 }
 
@@ -221,4 +222,60 @@ func toCertificationResponse(cert *models.Certification) *dto.CertificationRespo
 	}
 
 	return resp
+}
+
+// GetStats retrieves certificate statistics with growth compared to previous month
+func (s *CertificationService) GetStats(ctx context.Context) (*dto.CertificateStatsResponse, error) {
+	stats, err := s.repo.GetStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate growth rate compared to previous month
+	now := time.Now()
+	currentYear, currentMonth, _ := now.Date()
+	currentLocation := now.Location()
+
+	// Current month date range
+	currentStart := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
+	currentEnd := currentStart.AddDate(0, 1, -1)
+
+	// Last month date range
+	lastMonth := currentMonth - 1
+	lastYear := currentYear
+	if lastMonth < 1 {
+		lastMonth = 12
+		lastYear--
+	}
+	lastMonthStart := time.Date(lastYear, lastMonth, 1, 0, 0, 0, 0, currentLocation)
+	lastMonthEnd := lastMonthStart.AddDate(0, 1, -1)
+
+	// Get current month stats
+	currentStats, err := s.repo.GetStatsByDateRange(ctx, currentStart, currentEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get last month stats
+	lastMonthStats, err := s.repo.GetStatsByDateRange(ctx, lastMonthStart, lastMonthEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate growth rate
+	var monthlyGrowth float64
+	if lastMonthStats.Total > 0 {
+		monthlyGrowth = float64(currentStats.Total-lastMonthStats.Total) / float64(lastMonthStats.Total) * 100
+	}
+
+	return &dto.CertificateStatsResponse{
+		Total:              stats.Total,
+		Verified:           stats.Verified,
+		Pending:            stats.Pending,
+		Expired:            stats.Expired,
+		Revoked:            stats.Revoked,
+		MonthlyTotal:       currentStats.Total,
+		MonthlyGrowth:      monthlyGrowth,
+		GrowthPercentage:   monthlyGrowth,
+	}, nil
 }

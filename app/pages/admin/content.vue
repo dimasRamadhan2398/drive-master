@@ -1,363 +1,445 @@
 <script setup lang="ts">
-import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
-import { ref } from 'vue'
-import { useContentStore } from '~/stores/content'
-import type { Page, BlogPost, Faq, BlogPostMedia } from '~/stores/content'
+import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
+import { ref } from "vue";
+import FaqModal from "~/components/content/FaqModal.vue";
+import ArticlePageModal from "~/components/content/ArticlePageModal.vue";
+import PostBlogModal, { type PostFormData } from "~/components/content/PostBlogModal.vue";
+import { useContentStore } from "~/stores/content";
+import type { Page, BlogPost, Faq, BlogPostMedia } from "~/stores/content";
+import type { CreateBlogPostData } from "~/services/contentService";
+import type { CreateFaqData } from "~/components/content/FaqModal.vue";
+import type { CreatePageData } from "~/components/content/ArticlePageModal.vue";
 
-definePageMeta({ layout: 'admin' })
+definePageMeta({ layout: "admin" });
 
-const toast = useToast()
-const contentStore = useContentStore()
-const activeTab = ref('pages')
+const toast = useToast();
+const contentStore = useContentStore();
+const activeTab = ref("blog");
 
 // ==================== MODAL STATES ====================
-const showPageModal = ref(false)
-const showPostModal = ref(false)
-const showFaqModal = ref(false)
-const isEditing = ref(false)
+const showPageModal = ref(false);
+const showPostModal = ref(false);
+const showFaqModal = ref(false);
+const isEditing = ref(false);
 
 // ==================== FORM DATA ====================
-const pageForm = ref({ id: 0, title: '', slug: '', status: 'draft' })
-const postForm = ref({ id: 0, title: '', author: 'Admin', content: '', status: 'draft', media: [] as BlogPostMedia[] })
-const faqForm = ref({ id: 0, question: '', answer: '', order: 0 })
+const pageForm = ref({ id: 0, title: "", slug: "", status: "draft" as "draft" | "published" | "archived" });
+const postForm = ref<PostFormData>({
+  id: 0,
+  title: "",
+  author: "Admin",
+  content: "",
+  status: "draft",
+  media: [],
+  publishing: {
+    status: "draft",
+    publishedAt: undefined,
+    scheduledAt: undefined,
+  },
+  attractiveness: {
+    isFeatured: false,
+    isSpotlight: false,
+    priority: 0,
+    highlight: false,
+  },
+});
+const faqForm = ref({ id: "", question: "", answer: "", sortOrder: 0 });
 
 // Get data from store
-const pages = computed(() => contentStore.pages)
-const blogPosts = computed(() => contentStore.blogPosts)
-const faqs = computed(() => contentStore.sortedFaqs)
+const pages = computed(() => contentStore.pages);
+const blogPosts = computed(() => contentStore.blogPosts);
+const faqs = computed(() => contentStore.sortedFaqs);
 
 const tabs = [
-  { label: 'Pages', value: 'pages', icon: 'i-lucide-file-text' },
-  { label: 'Blog Posts', value: 'blog', icon: 'i-lucide-newspaper' },
-  { label: 'FAQs', value: 'faq', icon: 'i-lucide-help-circle' }
-]
-
-// ==================== HELPER ====================
-function generateSlug(title: string) {
-  return contentStore.generateSlug(title)
-}
+  // { label: "Pages", value: "pages", icon: "i-lucide-file-text" },
+  { label: "Blog Posts", value: "blog", icon: "i-lucide-newspaper" },
+  { label: "FAQs", value: "faq", icon: "i-lucide-help-circle" },
+];
 
 // ==================== PAGES CRUD ====================
-const currentEditingPage = ref<Page | null>(null)
+const currentEditingPage = ref<Page | null>(null);
 
 function openPageBuilder(page: Page) {
-  currentEditingPage.value = page
+  currentEditingPage.value = page;
 }
 
 function savePageBuilder(updatedPage: Page) {
-  contentStore.updatePage(updatedPage.id, updatedPage)
-  currentEditingPage.value = null
+  contentStore.updatePage(updatedPage.id, updatedPage);
+  currentEditingPage.value = null;
 }
 
 function openNewPage() {
-  isEditing.value = false
-  pageForm.value = { id: 0, title: '', slug: '', status: 'draft' }
-  showPageModal.value = true
+  isEditing.value = false;
+  pageForm.value = { id: 0, title: "", slug: "", status: "draft" };
+  showPageModal.value = true;
 }
 
 function openEditPage(page: Page) {
-  isEditing.value = true
-  pageForm.value = { id: page.id, title: page.title, slug: page.slug, status: page.status }
-  showPageModal.value = true
+  isEditing.value = true;
+  pageForm.value = {
+    id: page.id,
+    title: page.title,
+    slug: page.slug,
+    status: page.status,
+  };
+  showPageModal.value = true;
 }
 
-async function savePage() {
-  if (!pageForm.value.title.trim()) {
-    toast.add({ title: 'Error', description: 'Page title is required.', color: 'error' })
-    return
-  }
-
-  const isEditingMode = isEditing.value
-
-  try {
-    const pageData = {
-      title: pageForm.value.title,
-      slug: pageForm.value.slug || generateSlug(pageForm.value.title),
-      status: pageForm.value.status as 'published' | 'draft',
-    }
-
-    if (isEditingMode) {
-      contentStore.updatePage(pageForm.value.id, pageData)
-    } else {
-      contentStore.addPage(pageData)
-    }
-
-    toast.add({ title: isEditingMode ? 'Page Updated' : 'Page Created', description: `"${pageData.title}" has been saved.`, color: 'success' })
-    showPageModal.value = false
-  } catch (error) {
-    console.error('Failed to save page:', error)
-    toast.add({ title: 'Save Failed', description: 'Could not save the page. Please try again.', color: 'error' })
+function handlePageSaved(data: CreatePageData) {
+  if (isEditing.value) {
+    contentStore.updatePage(pageForm.value.id, data);
+    toast.add({
+      title: "Page Updated",
+      description: `"${data.title}" has been updated.`,
+      color: "success",
+    });
+  } else {
+    contentStore.addPage(data);
+    toast.add({
+      title: "Page Created",
+      description: `"${data.title}" has been created.`,
+      color: "success",
+    });
   }
 }
 
 function previewPage(page: Page) {
-  toast.add({ title: 'Preview', description: `Opening preview for "${page.title}" (${page.slug})...`, color: 'info' })
-  if (!page.slug || page.slug === '/') {
-    return window.open('/', 'noopener,noreferrer');
+  toast.add({
+    title: "Preview",
+    description: `Opening preview for "${page.title}" (${page.slug})...`,
+    color: "info",
+  });
+  if (!page.slug || page.slug === "/") {
+    return window.open("/", "noopener,noreferrer");
   }
 
-  const targetUrl = page.slug.startsWith('/')
-    ? page.slug
-    : `/${page.slug}`;
+  const targetUrl = page.slug.startsWith("/") ? page.slug : `/${page.slug}`;
 
-  window.open(targetUrl, '_blank', 'noopener,noreferrer');
+  window.open(targetUrl, "_blank", "noopener,noreferrer");
 }
 
 function deletePage(page: Page) {
-  contentStore.deletePage(page.id)
-  toast.add({ title: 'Page Deleted', description: `"${page.title}" has been removed.`, color: 'error' })
+  contentStore.deletePage(page.id);
+  toast.add({
+    title: "Page Deleted",
+    description: `"${page.title}" has been removed.`,
+    color: "error",
+  });
 }
 
 function togglePageStatus(page: Page) {
-  const newStatus = contentStore.togglePageStatus(page.id)
+  const newStatus = contentStore.togglePageStatus(page.id);
   if (newStatus) {
-    toast.add({ title: 'Status Updated', description: `"${page.title}" is now ${newStatus}.`, color: 'success' })
+    toast.add({
+      title: "Status Updated",
+      description: `"${page.title}" is now ${newStatus}.`,
+      color: "success",
+    });
   }
 }
 
 function getPageActions(page: Page) {
   return [
     [
-      { label: 'Edit Content', icon: 'i-lucide-layout-template', onSelect: () => openPageBuilder(page) },
-      { label: 'Edit Settings', icon: 'i-lucide-settings', onSelect: () => openEditPage(page) },
-      { label: 'Preview', icon: 'i-lucide-eye', onSelect: () => previewPage(page) },
-      { label: page.status === 'published' ? 'Unpublish' : 'Publish', icon: page.status === 'published' ? 'i-lucide-eye-off' : 'i-lucide-globe', onSelect: () => togglePageStatus(page) }
+      {
+        label: "Edit Content",
+        icon: "i-lucide-layout-template",
+        onSelect: () => openPageBuilder(page),
+      },
+      {
+        label: "Edit Settings",
+        icon: "i-lucide-settings",
+        onSelect: () => openEditPage(page),
+      },
+      {
+        label: "Preview",
+        icon: "i-lucide-eye",
+        onSelect: () => previewPage(page),
+      },
+      {
+        label: page.status === "published" ? "Unpublish" : "Publish",
+        icon:
+          page.status === "published" ? "i-lucide-eye-off" : "i-lucide-globe",
+        onSelect: () => togglePageStatus(page),
+      },
     ],
     [
-      { label: 'Delete', icon: 'i-lucide-trash', color: 'error' as const, onSelect: () => deletePage(page) }
-    ]
-  ]
+      {
+        label: "Delete",
+        icon: "i-lucide-trash",
+        color: "error" as const,
+        onSelect: () => deletePage(page),
+      },
+    ],
+  ];
 }
 
 // ==================== BLOG POSTS CRUD ====================
 function openNewPost() {
-  isEditing.value = false
-  postForm.value = { id: 0, title: '', author: 'Admin', content: '', status: 'draft', media: [] }
-  showPostModal.value = true
+  isEditing.value = false;
+  postForm.value = {
+    id: 0,
+    title: "",
+    author: "Admin",
+    content: "",
+    status: "draft",
+    media: [],
+    publishing: {
+      status: "draft",
+      publishedAt: undefined,
+      scheduledAt: undefined,
+    },
+    attractiveness: {
+      isFeatured: false,
+      isSpotlight: false,
+      priority: 0,
+      highlight: false,
+    },
+  };
+  showPostModal.value = true;
 }
 
 function openEditPost(post: BlogPost) {
-  isEditing.value = true
-  postForm.value = { id: post.id, title: post.title, author: post.author, content: post.content || '', status: post.status, media: post.media ? [...post.media] : [] }
-  showPostModal.value = true
+  isEditing.value = true;
+  postForm.value = {
+    id: post.id,
+    title: post.title,
+    author: post.author,
+    content: post.content || "",
+    status: post.status,
+    media: post.media ? [...post.media] : [],
+    publishing: {
+      status: post.publishing.status,
+      publishedAt: post.publishing.publishedAt,
+      scheduledAt: post.publishing.scheduledAt,
+    },
+    attractiveness: {
+      isFeatured: post.attractiveness.isFeatured,
+      isSpotlight: post.attractiveness.isSpotlight,
+      priority: post.attractiveness.priority,
+      highlight: post.attractiveness.highlight,
+    },
+  };
+  showPostModal.value = true;
 }
 
-function savePost() {
-  if (!postForm.value.title.trim()) {
-    toast.add({ title: 'Error', description: 'Post title is required.', color: 'error' })
-    return
-  }
+async function handlePostSaved(data: CreateBlogPostData) {
+  const postData = {
+    title: data.title,
+    author: data.author,
+    content: data.content,
+    media: data.media,
+    publishing: data.publishing,
+    attractiveness: data.attractiveness,
+  };
+
   if (isEditing.value) {
-    contentStore.updatePost(postForm.value.id, {
-      title: postForm.value.title,
-      author: postForm.value.author,
-      content: postForm.value.content,
-      status: postForm.value.status as 'published' | 'draft',
-      media: [...postForm.value.media]
-    })
-    toast.add({ title: 'Post Updated', description: `"${postForm.value.title}" has been updated.`, color: 'success' })
+    await contentStore.updatePost(postForm.value.id, postData);
+    toast.add({
+      title: "Post Updated",
+      description: `"${data.title}" has been updated.`,
+      color: "success",
+    });
   } else {
-    contentStore.addPost({
-      title: postForm.value.title,
-      author: postForm.value.author,
-      content: postForm.value.content,
-      status: postForm.value.status as 'published' | 'draft',
-      media: [...postForm.value.media]
-    })
-    toast.add({ title: 'Post Created', description: `"${postForm.value.title}" has been created.`, color: 'success' })
+    await contentStore.addPost(postData);
+    toast.add({
+      title: "Post Created",
+      description: `"${data.title}" has been created.`,
+      color: "success",
+    });
   }
-  showPostModal.value = false
-}
-
-// ==================== MEDIA UPLOAD ====================
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm']
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024 // 50MB
-const mediaInputRef = ref<HTMLInputElement | null>(null)
-
-function triggerMediaUpload() {
-  mediaInputRef.value?.click()
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-}
-
-function handleMediaSelect(event: Event) {
-  const input = event.target as HTMLInputElement
-  if (!input.files) return
-
-  for (const file of Array.from(input.files)) {
-    const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type)
-    const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type)
-
-    if (!isImage && !isVideo) {
-      toast.add({ title: 'Invalid File', description: `"${file.name}" is not a supported format. Use JPG, PNG, WebP for images or MP4, WebM for videos.`, color: 'error' })
-      continue
-    }
-
-    if (isImage && file.size > MAX_IMAGE_SIZE) {
-      toast.add({ title: 'File Too Large', description: `"${file.name}" exceeds the 5MB limit for images.`, color: 'error' })
-      continue
-    }
-
-    if (isVideo && file.size > MAX_VIDEO_SIZE) {
-      toast.add({ title: 'File Too Large', description: `"${file.name}" exceeds the 50MB limit for videos.`, color: 'error' })
-      continue
-    }
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      postForm.value.media.push({
-        name: file.name,
-        type: file.type,
-        size: formatFileSize(file.size),
-        url: e.target?.result as string,
-        fileType: isImage ? 'image' : 'video'
-      })
-    }
-    reader.readAsDataURL(file)
-  }
-
-  // Reset input so same file can be re-selected
-  input.value = ''
-}
-
-function removeMedia(index: number) {
-  postForm.value.media.splice(index, 1)
 }
 
 function previewPost(post: BlogPost) {
-  toast.add({ title: 'Preview', description: `Opening preview for "${post.title}"...`, color: 'info' })
-  if (!post.date || post.date === '/') {
-    return window.open('/', 'noopener,noreferrer');
+  toast.add({
+    title: "Preview",
+    description: `Opening preview for "${post.title}"...`,
+    color: "info",
+  });
+  if (!post.date || post.date === "/") {
+    return window.open("/", "noopener,noreferrer");
   }
-  window.open(post.date, '_blank', 'noopener,noreferrer');
+  window.open(post.date, "_blank", "noopener,noreferrer");
 }
 
-function deletePost(post: BlogPost) {
-  contentStore.deletePost(post.id)
-  toast.add({ title: 'Post Deleted', description: `"${post.title}" has been removed.`, color: 'error' })
+async function deletePost(post: BlogPost) {
+  await contentStore.deletePost(post.id);
+  toast.add({
+    title: "Post Deleted",
+    description: `"${post.title}" has been removed.`,
+    color: "error",
+  });
 }
 
 function togglePostStatus(post: BlogPost) {
-  const newStatus = contentStore.togglePostStatus(post.id)
+  const newStatus = contentStore.togglePostStatus(post.id);
   if (newStatus) {
-    toast.add({ title: 'Status Updated', description: `"${post.title}" is now ${newStatus}.`, color: 'success' })
+    toast.add({
+      title: "Status Updated",
+      description: `"${post.title}" is now ${newStatus}.`,
+      color: "success",
+    });
   }
 }
 
 function getPostActions(post: BlogPost) {
   return [
     [
-      { label: 'Edit', icon: 'i-lucide-pencil', onSelect: () => openEditPost(post) },
-      { label: 'Preview', icon: 'i-lucide-eye', onSelect: () => previewPost(post) },
-      { label: post.status === 'published' ? 'Unpublish' : 'Publish', icon: post.status === 'published' ? 'i-lucide-eye-off' : 'i-lucide-globe', onSelect: () => togglePostStatus(post) }
+      {
+        label: "Edit",
+        icon: "i-lucide-pencil",
+        onSelect: () => openEditPost(post),
+      },
+      {
+        label: "Preview",
+        icon: "i-lucide-eye",
+        onSelect: () => previewPost(post),
+      },
+      {
+        label: post.status === "published" ? "Unpublish" : "Publish",
+        icon:
+          post.status === "published" ? "i-lucide-eye-off" : "i-lucide-globe",
+        onSelect: () => togglePostStatus(post),
+      },
     ],
     [
-      { label: 'Delete', icon: 'i-lucide-trash', color: 'error' as const, onSelect: () => deletePost(post) }
-    ]
-  ]
+      {
+        label: "Delete",
+        icon: "i-lucide-trash",
+        color: "error" as const,
+        onSelect: () => deletePost(post),
+      },
+    ],
+  ];
 }
 
 // ==================== FAQ CRUD ====================
 function openNewFaq() {
-  isEditing.value = false
-  faqForm.value = { id: 0, question: '', answer: '', order: 0 }
-  showFaqModal.value = true
+  isEditing.value = false;
+  faqForm.value = { id: "", question: "", answer: "", sortOrder: 0 };
+  showFaqModal.value = true;
 }
 
 function openEditFaq(faq: Faq) {
-  isEditing.value = true
-  faqForm.value = { id: faq.id, question: faq.question, answer: faq.answer, order: faq.order }
-  showFaqModal.value = true
+  isEditing.value = true;
+  faqForm.value = {
+    id: faq.id,
+    question: faq.question,
+    answer: faq.answer,
+    sortOrder: faq.sortOrder,
+  };
+  showFaqModal.value = true;
 }
 
-function saveFaq() {
-  if (!faqForm.value.question.trim() || !faqForm.value.answer.trim()) {
-    toast.add({ title: 'Error', description: 'Both question and answer are required.', color: 'error' })
-    return
-  }
+function handleFaqSaved(data: CreateFaqData) {
   if (isEditing.value) {
     contentStore.updateFaq(faqForm.value.id, {
-      question: faqForm.value.question,
-      answer: faqForm.value.answer
-    })
-    toast.add({ title: 'FAQ Updated', description: 'FAQ has been updated.', color: 'success' })
+      question: data.question,
+      answer: data.answer,
+    });
+    toast.add({
+      title: "FAQ Updated",
+      description: "FAQ has been updated.",
+      color: "success",
+    });
   } else {
-    contentStore.addFaq({
-      question: faqForm.value.question,
-      answer: faqForm.value.answer
-    })
-    toast.add({ title: 'FAQ Created', description: 'New FAQ has been added.', color: 'success' })
+    contentStore.createFaq({
+      question: data.question,
+      answer: data.answer,
+    });
+    toast.add({
+      title: "FAQ Created",
+      description: "New FAQ has been added.",
+      color: "success",
+    });
   }
-  showFaqModal.value = false
 }
 
 function deleteFaq(faq: Faq) {
-  contentStore.deleteFaq(faq.id)
-  toast.add({ title: 'FAQ Deleted', description: 'FAQ has been removed.', color: 'error' })
+  contentStore.deleteFaq(faq.id);
+  toast.add({
+    title: "FAQ Deleted",
+    description: "FAQ has been removed.",
+    color: "error",
+  });
 }
 
 // ==================== FAQ DRAG & DROP ====================
-const dragIndex = ref<number | null>(null)
+const dragIndex = ref<number | null>(null);
 
 function onDragStart(index: number, event: DragEvent) {
-  dragIndex.value = index
+  dragIndex.value = index;
   if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.effectAllowed = "move";
   }
 }
 
 function onDragOver(event: DragEvent) {
-  event.preventDefault()
+  event.preventDefault();
   if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move'
+    event.dataTransfer.dropEffect = "move";
   }
 }
 
-function onDrop(targetIndex: number) {
-  if (dragIndex.value === null || dragIndex.value === targetIndex) return
-  contentStore.reorderFaqs(dragIndex.value, targetIndex)
-  dragIndex.value = null
-  toast.add({ title: 'Reordered', description: 'FAQ order has been updated.', color: 'success' })
+async function onDrop(targetIndex: number) {
+  if (dragIndex.value === null || dragIndex.value === targetIndex) return;
+  await contentStore.reorderFaqs(dragIndex.value, targetIndex);
+  dragIndex.value = null;
+  toast.add({
+    title: "Reordered",
+    description: "FAQ order has been updated.",
+    color: "success",
+  });
 }
 
 function onDragEnd() {
-  dragIndex.value = null
+  dragIndex.value = null;
 }
 
 // ==================== HEADER BUTTON HANDLER ====================
 function handleHeaderAction() {
-  if (activeTab.value === 'pages') openNewPage()
-  else if (activeTab.value === 'blog') openNewPost()
-  else openNewFaq()
+  if (activeTab.value === "pages") openNewPage();
+  else if (activeTab.value === "blog") openNewPost();
+  else openNewFaq();
 }
+
+onMounted(() => {
+  // contentStore.fetchPages()
+  contentStore.fetchBlogPosts();
+  contentStore.fetchFaqs();
+});
 </script>
 
 <template>
-  <!-- PAGE BUILDER VIEW -->
   <UDashboardPanel v-if="currentEditingPage">
     <div class="h-full w-full overflow-y-auto p-6 bg-background">
-      <AdminPageEditor 
-        :page="currentEditingPage" 
-        @close="currentEditingPage = null" 
-        @save="savePageBuilder" 
+      <AdminPageEditor
+        :page="currentEditingPage"
+        @close="currentEditingPage = null"
+        @save="savePageBuilder"
       />
     </div>
   </UDashboardPanel>
 
-  <!-- MAIN DASHBOARD -->
   <UDashboardPanel v-else>
-      <template #header>
+    <template #header>
       <UDashboardNavbar title="Content Management">
         <template #right>
-          <UButton 
-            :icon="activeTab === 'pages' ? 'i-lucide-file-plus' : activeTab === 'blog' ? 'i-lucide-pen-square' : 'i-lucide-plus-circle'"
-            :label="activeTab === 'pages' ? 'New Page' : activeTab === 'blog' ? 'New Post' : 'Add FAQ'"
+          <UButton
+            :icon="
+              activeTab === 'pages'
+                ? 'i-lucide-file-plus'
+                : activeTab === 'blog'
+                  ? 'i-lucide-pen-square'
+                  : 'i-lucide-plus-circle'
+            "
+            :label="
+              activeTab === 'pages'
+                ? 'New Page'
+                : activeTab === 'blog'
+                  ? 'New Post'
+                  : 'Add FAQ'
+            "
             color="warning"
             @click="handleHeaderAction"
           />
@@ -367,7 +449,7 @@ function handleHeaderAction() {
 
       <UDashboardToolbar>
         <template #left>
-          <UTabs 
+          <UTabs
             v-model="activeTab"
             :items="tabs"
             class="py-4"
@@ -379,15 +461,14 @@ function handleHeaderAction() {
 
     <template #body>
       <div class="p-6">
-        <!-- ==================== PAGES TAB ==================== -->
         <UCard v-if="activeTab === 'pages'">
           <template #header>
             <h2 class="font-semibold">Website Pages</h2>
           </template>
 
           <div class="space-y-3">
-            <div 
-              v-for="page in pages" 
+            <div
+              v-for="page in pages"
               :key="page.id"
               class="flex items-center justify-between p-4 rounded-lg border border-default hover:bg-muted/30 transition-colors"
             >
@@ -395,33 +476,38 @@ function handleHeaderAction() {
                 <UIcon name="i-lucide-file-text" class="size-5 text-muted" />
                 <div>
                   <p class="font-medium">{{ page.title }}</p>
-                  <code class="text-md bg-muted px-2 py-0.5 rounded">{{ page.slug }}</code>
+                  <code class="text-md bg-muted px-2 py-0.5 rounded">{{
+                    page.slug
+                  }}</code>
                 </div>
               </div>
               <div class="flex items-center gap-4">
                 <span class="text-md text-muted">{{ page.lastUpdated }}</span>
-                <UBadge 
+                <UBadge
                   :label="page.status"
                   :color="page.status === 'published' ? 'success' : 'neutral'"
                   variant="subtle"
                 />
                 <UDropdownMenu :items="getPageActions(page)">
-                  <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" size="sm" />
+                  <UButton
+                    icon="i-lucide-ellipsis-vertical"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                  />
                 </UDropdownMenu>
               </div>
             </div>
           </div>
         </UCard>
-
-        <!-- ==================== BLOG POSTS TAB ==================== -->
         <UCard v-if="activeTab === 'blog'">
           <template #header>
             <h2 class="font-semibold">Blog Posts</h2>
           </template>
 
-          <div class="space-y-3">
-            <div 
-              v-for="post in blogPosts" 
+          <div v-if="blogPosts.length > 0" class="space-y-3">
+            <div
+              v-for="post in blogPosts"
               :key="post.id"
               class="flex items-center justify-between p-4 rounded-lg border border-default hover:bg-muted/30 transition-colors"
             >
@@ -437,20 +523,46 @@ function handleHeaderAction() {
                 </div>
               </div>
               <div class="flex items-center gap-4">
-                <UBadge 
+                <UBadge
                   :label="post.status"
                   :color="post.status === 'published' ? 'success' : 'neutral'"
                   variant="subtle"
                 />
                 <UDropdownMenu :items="getPostActions(post)">
-                  <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" size="sm" />
+                  <UButton
+                    icon="i-lucide-ellipsis-vertical"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                  />
                 </UDropdownMenu>
               </div>
             </div>
           </div>
+
+          <div v-else class="py-16 text-center">
+            <div class="flex flex-col items-center gap-4">
+              <div class="p-4 rounded-full bg-muted">
+                <UIcon name="i-lucide-newspaper" class="size-12 text-muted" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-foreground">
+                  No blog posts yet
+                </h3>
+                <p class="text-md text-muted mt-1 max-w-sm mx-auto">
+                  Start creating engaging content for your audience. Click the button below to create your first post.
+                </p>
+              </div>
+              <UButton
+                label="Create Your First Post"
+                icon="i-lucide-plus"
+                color="warning"
+                @click="openNewPost"
+              />
+            </div>
+          </div>
         </UCard>
 
-        <!-- ==================== FAQS TAB ==================== -->
         <UCard v-if="activeTab === 'faq'">
           <template #header>
             <div class="flex items-center justify-between">
@@ -459,187 +571,98 @@ function handleHeaderAction() {
             </div>
           </template>
 
-          <div class="space-y-3">
-            <div 
-              v-for="(faq, index) in faqs" 
+          <div v-if="faqs.length > 0" class="space-y-3">
+            <div
+              v-for="(faq, index) in faqs"
               :key="faq.id"
               draggable="true"
               class="flex items-start gap-4 p-4 rounded-lg border border-default hover:bg-muted/30 transition-colors"
-              :class="{ 'opacity-50 border-dashed border-primary': dragIndex === index }"
+              :class="{
+                'opacity-50 border-dashed border-primary': dragIndex === index,
+              }"
               @dragstart="onDragStart(index, $event)"
               @dragover="onDragOver"
               @drop="onDrop(index)"
               @dragend="onDragEnd"
             >
-              <UIcon name="i-lucide-grip-vertical" class="size-5 text-muted cursor-grab mt-0.5 shrink-0" />
+              <UIcon
+                name="i-lucide-grip-vertical"
+                class="size-5 text-muted cursor-grab mt-0.5 shrink-0"
+              />
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-1">
-                  <UBadge :label="`#${faq.order}`" variant="subtle" size="md" />
+                  <UBadge
+                    :label="`#${faq.sortOrder}`"
+                    variant="subtle"
+                    size="md"
+                  />
                   <h3 class="font-medium">{{ faq.question }}</h3>
                 </div>
                 <p class="text-md text-muted line-clamp-2">{{ faq.answer }}</p>
               </div>
               <div class="flex gap-1 shrink-0">
-                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="sm" @click="openEditFaq(faq)" />
-                <UButton icon="i-lucide-trash" color="error" variant="ghost" size="sm" @click="deleteFaq(faq)" />
+                <UButton
+                  icon="i-lucide-pencil"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  @click="openEditFaq(faq)"
+                />
+                <UButton
+                  icon="i-lucide-trash"
+                  color="error"
+                  variant="ghost"
+                  size="sm"
+                  @click="deleteFaq(faq)"
+                />
               </div>
             </div>
           </div>
 
+          <div v-else class="py-16 text-center">
+            <div class="flex flex-col items-center gap-4">
+              <div class="p-4 rounded-full bg-muted">
+                <UIcon name="i-lucide-help-circle" class="size-12 text-muted" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-foreground">
+                  No FAQs yet
+                </h3>
+                <p class="text-md text-muted mt-1 max-w-sm mx-auto">
+                  Add frequently asked questions to help your customers find answers quickly.
+                </p>
+              </div>
+              <UButton
+                label="Add Your First FAQ"
+                icon="i-lucide-plus"
+                color="warning"
+                @click="openNewFaq"
+              />
+            </div>
+          </div>
         </UCard>
       </div>
     </template>
   </UDashboardPanel>
-
-  <!-- ==================== PAGE MODAL ==================== -->
   <ClientOnly>
-    <UModal v-model:open="showPageModal">
-      <template #content>
-        <div class="bg-default rounded-2xl w-full">
-          <div class="px-6 py-4 border-b border-default flex items-center justify-between">
-            <h3 class="text-base font-semibold">{{ isEditing ? 'Edit Page' : 'New Page' }}</h3>
-            <UButton icon="i-lucide-x" color="neutral" variant="ghost" @click="showPageModal = false" />
-          </div>
-          <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-            <div>
-              <label class="block text-sm font-medium mb-1.5">Page Title *</label>
-              <UInput v-model="pageForm.title" placeholder="e.g. Contact Us" class="w-full" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1.5">Slug</label>
-              <UInput v-model="pageForm.slug" :placeholder="pageForm.title ? generateSlug(pageForm.title) : '/contact-us'" class="w-full" />
-              <p class="text-xs text-muted mt-1">Leave empty to auto-generate from title</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1.5">Status</label>
-              <USelect v-model="pageForm.status" :items="['draft', 'published']" class="w-full" />
-            </div>
-          </div>
-          <div class="px-6 py-4 border-t border-default flex justify-end gap-3">
-            <UButton :label="isEditing ? 'Save Changes' : 'Create Page'" icon="i-lucide-check" @click="savePage" />
-          </div>
-        </div>
-      </template>
-    </UModal>
+    <!-- <ArticlePageModal
+      v-model:open="showPageModal"
+      :page="isEditing ? pageForm : null"
+      @saved="handlePageSaved"
+    /> -->
   </ClientOnly>
-
-  <!-- ==================== POST MODAL ==================== -->
   <ClientOnly>
-    <UModal v-model:open="showPostModal">
-      <template #content>
-        <div class="bg-default rounded-2xl w-full">
-          <div class="px-6 py-4 border-b border-default flex items-center justify-between">
-            <h3 class="text-base font-semibold">{{ isEditing ? 'Edit Post' : 'New Post' }}</h3>
-            <UButton icon="i-lucide-x" color="neutral" variant="ghost" @click="showPostModal = false" />
-          </div>
-          <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-            <div>
-              <label class="block text-sm font-medium mb-1.5">Post Title *</label>
-              <UInput v-model="postForm.title" placeholder="e.g. How to Charge Your EV at Home" class="w-full" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1.5">Author</label>
-              <UInput v-model="postForm.author" placeholder="Admin" class="w-full" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1.5">Content</label>
-              <UTextarea v-model="postForm.content" placeholder="Write your blog post content here..." :rows="6" class="w-full" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-2">Media</label>
-              <input 
-                ref="mediaInputRef"
-                type="file" 
-                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
-                multiple
-                class="hidden"
-                @change="handleMediaSelect"
-              />
-              
-              <!-- Media Preview Grid -->
-              <div v-if="postForm.media.length > 0" class="grid grid-cols-3 gap-3 mb-3">
-                <div 
-                  v-for="(item, idx) in postForm.media" 
-                  :key="idx"
-                  class="relative group rounded-lg border border-default overflow-hidden bg-muted/30"
-                >
-                  <img 
-                    v-if="item.fileType === 'image'" 
-                    :src="item.url" 
-                    :alt="item.name"
-                    class="w-full h-24 object-cover"
-                  />
-                  <div 
-                    v-else 
-                    class="w-full h-24 flex flex-col items-center justify-center gap-1"
-                  >
-                    <UIcon name="i-lucide-film" class="size-8 text-muted" />
-                    <span class="text-[10px] text-muted truncate max-w-full px-2">{{ item.name }}</span>
-                  </div>
-                  <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <UButton 
-                      icon="i-lucide-trash-2" 
-                      color="error" 
-                      variant="ghost" 
-                      size="xs" 
-                      @click="removeMedia(idx)"
-                      class="text-white"
-                    />
-                  </div>
-                  <div class="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-0.5 flex items-center justify-between">
-                    <span class="text-[10px] text-white truncate">{{ item.name }}</span>
-                    <span class="text-[10px] text-white/70 shrink-0 ml-1">{{ item.size }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Upload Button -->
-              <button 
-                @click="triggerMediaUpload"
-                class="w-full border-2 border-dashed border-default rounded-lg p-4 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer flex flex-col items-center gap-2"
-              >
-                <UIcon name="i-lucide-image-plus" class="size-6 text-muted" />
-                <span class="text-sm font-medium text-muted">Click to add images or videos</span>
-                <span class="text-xs text-muted/60">JPG, PNG, WebP (max 5MB) · MP4, WebM (max 50MB)</span>
-              </button>
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1.5">Status</label>
-              <USelect v-model="postForm.status" :items="['draft', 'published']" class="w-full" />
-            </div>
-          </div>
-          <div class="px-6 py-4 border-t border-default flex justify-end gap-3">
-            <UButton :label="isEditing ? 'Save Changes' : 'Create Post'" icon="i-lucide-check" @click="savePost" />
-          </div>
-        </div>
-      </template>
-    </UModal>
+    <PostBlogModal
+      v-model:open="showPostModal"
+      :post="isEditing ? postForm : null"
+      @saved="handlePostSaved"
+    />
   </ClientOnly>
-
-  <!-- ==================== FAQ MODAL ==================== -->
   <ClientOnly>
-    <UModal v-model:open="showFaqModal">
-      <template #content>
-        <div class="bg-default rounded-2xl w-full">
-          <div class="px-6 py-4 border-b border-default flex items-center justify-between">
-            <h3 class="text-base font-semibold">{{ isEditing ? 'Edit FAQ' : 'Add New FAQ' }}</h3>
-            <UButton icon="i-lucide-x" color="neutral" variant="ghost" @click="showFaqModal = false" />
-          </div>
-          <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-            <div>
-              <label class="block text-sm font-medium mb-1.5">Question *</label>
-              <UInput v-model="faqForm.question" placeholder="e.g. What payment methods do you accept?" class="w-full" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1.5">Answer *</label>
-              <UTextarea v-model="faqForm.answer" placeholder="Type the answer here..." :rows="4" class="w-full" />
-            </div>
-          </div>
-          <div class="px-6 py-4 border-t border-default flex justify-end gap-3">
-            <UButton :label="isEditing ? 'Save Changes' : 'Add FAQ'" icon="i-lucide-check" @click="saveFaq" />
-          </div>
-        </div>
-      </template>
-    </UModal>
+    <FaqModal
+      v-model:open="showFaqModal"
+      :faq="isEditing ? faqForm : null"
+      @saved="handleFaqSaved"
+    />
   </ClientOnly>
 </template>

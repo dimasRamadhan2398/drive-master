@@ -67,7 +67,7 @@ func main() {
 		consumer := kafka.NewConsumer(
 			kafkaBrokers,
 			"notification-service",
-			[]string{"session-upcoming", "booking-created", "promotional"},
+			[]string{"session-upcoming", "booking-created", "promotional", "certification-issued"},
 		)
 		consumer.Start(notificationService)
 	}()

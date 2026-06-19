@@ -8,8 +8,8 @@ import (
 )
 
 type CoverageAreaRoute struct {
-	controller controllers.IControllerRegistry
-	group      *gin.RouterGroup
+	controller     controllers.IControllerRegistry
+	group          *gin.RouterGroup
 	authMiddleware middlewares.IAuthMiddleware
 }
 
@@ -24,6 +24,6 @@ func NewCoverageAreaRoute(controller controllers.IControllerRegistry, group *gin
 func (r *CoverageAreaRoute) Run() {
 	group := r.group.Group("/instructors")
 	group.POST("/:id/coverage-areas", r.controller.GetCoverageAreaController().AddCoverageArea)
-	group.GET("/:id/coverage-areas",  r.controller.GetCoverageAreaController().GetCoverageAreas)
+	group.GET("/:id/coverage-areas", r.controller.GetCoverageAreaController().GetCoverageAreas)
 	group.DELETE("/:id/coverage-areas/:areaType/:areaId", r.controller.GetCoverageAreaController().RemoveCoverageArea)
 }

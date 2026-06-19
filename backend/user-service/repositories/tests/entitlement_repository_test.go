@@ -366,16 +366,16 @@ func TestEntitlementRepository_FindActiveByMemberIDs(t *testing.T) {
 // CreateMockEntitlement creates a mock entitlement for testing
 func CreateMockEntitlement() *models.Entitlement {
 	return &models.Entitlement{
-		ID:              uuid.New(),
-		MemberID:        uuid.New(),
-		PackageID:       uuid.New(),
-		PackageName:     "Test Package",
-		TotalSessions:   10,
-		Remaining:       10,
-		UsedSessions:    0,
-		StartDate:       time.Now(),
-		Status:          models.EntitlementStatusActive,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		ID:            uuid.New(),
+		MemberID:      uuid.New(),
+		PackageID:     uuid.New(),
+		PackageName:   "Test Package",
+		TotalSessions: 10,
+		Remaining:     10,
+		UsedSessions:  0,
+		StartDate:     time.Now(),
+		Status:        models.EntitlementStatusActive,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 }

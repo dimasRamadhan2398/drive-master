@@ -170,33 +170,6 @@ func (k *KafkaConsumer) handleMessage(ctx context.Context, msg kafkago.Message) 
 			err = k.eventService.HandleArticleArchived(ctx, event)
 		}
 
-	// Testimonial events
-	case pkgkafka.EventTestimonialCreated:
-		var event models.TestimonialCreatedEvent
-		if err = json.Unmarshal(msg.Value, &event); err == nil {
-			err = k.eventService.HandleTestimonialCreated(ctx, event)
-		}
-	case pkgkafka.EventTestimonialUpdated:
-		var event models.TestimonialUpdatedEvent
-		if err = json.Unmarshal(msg.Value, &event); err == nil {
-			err = k.eventService.HandleTestimonialUpdated(ctx, event)
-		}
-	case pkgkafka.EventTestimonialDeleted:
-		var event models.TestimonialDeletedEvent
-		if err = json.Unmarshal(msg.Value, &event); err == nil {
-			err = k.eventService.HandleTestimonialDeleted(ctx, event)
-		}
-	case pkgkafka.EventTestimonialPublished:
-		var event models.TestimonialPublishedEvent
-		if err = json.Unmarshal(msg.Value, &event); err == nil {
-			err = k.eventService.HandleTestimonialPublished(ctx, event)
-		}
-	case pkgkafka.EventTestimonialArchived:
-		var event models.TestimonialArchivedEvent
-		if err = json.Unmarshal(msg.Value, &event); err == nil {
-			err = k.eventService.HandleTestimonialArchived(ctx, event)
-		}
-
 	// Region events
 	case pkgkafka.EventRegionProvinceUpdated:
 		var event models.RegionProvinceUpdatedEvent

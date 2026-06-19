@@ -33,13 +33,6 @@ type IEventService interface {
 	HandleArticlePublished(ctx context.Context, event models.ArticlePublishedEvent) error
 	HandleArticleArchived(ctx context.Context, event models.ArticleArchivedEvent) error
 
-	// Testimonial events (consumed by other services like notification)
-	HandleTestimonialCreated(ctx context.Context, event models.TestimonialCreatedEvent) error
-	HandleTestimonialUpdated(ctx context.Context, event models.TestimonialUpdatedEvent) error
-	HandleTestimonialDeleted(ctx context.Context, event models.TestimonialDeletedEvent) error
-	HandleTestimonialPublished(ctx context.Context, event models.TestimonialPublishedEvent) error
-	HandleTestimonialArchived(ctx context.Context, event models.TestimonialArchivedEvent) error
-
 	// Region events (consumed by other services)
 	HandleRegionProvinceUpdated(ctx context.Context, event models.RegionProvinceUpdatedEvent) error
 	HandleRegionRegencyUpdated(ctx context.Context, event models.RegionRegencyUpdatedEvent) error
@@ -254,61 +247,6 @@ func (s *EventService) HandleArticleArchived(ctx context.Context, event models.A
 	}
 
 	return s.storeProcessedEvent(ctx, "article.archived", event)
-}
-
-// HandleTestimonialCreated handles testimonial.created events
-func (s *EventService) HandleTestimonialCreated(ctx context.Context, event models.TestimonialCreatedEvent) error {
-	log.Printf("[EventService] Processing testimonial.created for testimonialId=%s", event.TestimonialID)
-
-	// Notify admin/moderator for approval queue if moderation enabled
-
-	return s.storeProcessedEvent(ctx, "testimonial.created", event)
-}
-
-// HandleTestimonialUpdated handles testimonial.updated events
-func (s *EventService) HandleTestimonialUpdated(ctx context.Context, event models.TestimonialUpdatedEvent) error {
-	log.Printf("[EventService] Processing testimonial.updated for testimonialId=%s", event.TestimonialID)
-
-	if s.cacheRepo != nil {
-		cacheKey := fmt.Sprintf("testimonial:%s", event.TestimonialID)
-		s.cacheRepo.Delete(ctx, cacheKey)
-	}
-
-	return s.storeProcessedEvent(ctx, "testimonial.updated", event)
-}
-
-// HandleTestimonialDeleted handles testimonial.deleted events
-func (s *EventService) HandleTestimonialDeleted(ctx context.Context, event models.TestimonialDeletedEvent) error {
-	log.Printf("[EventService] Processing testimonial.deleted for testimonialId=%s", event.TestimonialID)
-
-	if s.cacheRepo != nil {
-		cacheKey := fmt.Sprintf("testimonial:%s", event.TestimonialID)
-		s.cacheRepo.Delete(ctx, cacheKey)
-	}
-
-	return s.storeProcessedEvent(ctx, "testimonial.deleted", event)
-}
-
-// HandleTestimonialPublished handles testimonial.published events
-func (s *EventService) HandleTestimonialPublished(ctx context.Context, event models.TestimonialPublishedEvent) error {
-	log.Printf("[EventService] Processing testimonial.published for testimonialId=%s", event.TestimonialID)
-
-	// Notify user that their testimonial is now live
-	// Update related statistics
-
-	return s.storeProcessedEvent(ctx, "testimonial.published", event)
-}
-
-// HandleTestimonialArchived handles testimonial.archived events
-func (s *EventService) HandleTestimonialArchived(ctx context.Context, event models.TestimonialArchivedEvent) error {
-	log.Printf("[EventService] Processing testimonial.archived for testimonialId=%s", event.TestimonialID)
-
-	if s.cacheRepo != nil {
-		cacheKey := fmt.Sprintf("testimonial:%s", event.TestimonialID)
-		s.cacheRepo.Delete(ctx, cacheKey)
-	}
-
-	return s.storeProcessedEvent(ctx, "testimonial.archived", event)
 }
 
 // HandleRegionProvinceUpdated handles region.province.updated events

@@ -13,7 +13,7 @@ type EmailServiceMock struct {
 	mu sync.RWMutex
 
 	// Configuration
-	ShouldError bool
+	ShouldError   bool
 	ErrorToReturn error
 
 	// Call tracking
@@ -26,26 +26,26 @@ type EmailServiceMock struct {
 	SendCancellationCallCount   int
 
 	// Captured data for assertions
-	LastSendEmailRequest   dto.SendEmailRequest
-	SentEmails             []dto.SendEmailRequest
-	WelcomeEmailRecipients []string
-	WelcomeEmailUsernames  []string
+	LastSendEmailRequest    dto.SendEmailRequest
+	SentEmails              []dto.SendEmailRequest
+	WelcomeEmailRecipients  []string
+	WelcomeEmailUsernames   []string
 	PasswordResetRecipients []string
-	PasswordResetTokens    []string
-	OTPRecipients          []string
-	OTPCodes               []string
+	PasswordResetTokens     []string
+	OTPRecipients           []string
+	OTPCodes                []string
 }
 
 // NewEmailServiceMock creates a new EmailServiceMock instance
 func NewEmailServiceMock() *EmailServiceMock {
 	return &EmailServiceMock{
-		SentEmails:             make([]dto.SendEmailRequest, 0),
-		WelcomeEmailRecipients: make([]string, 0),
-		WelcomeEmailUsernames:  make([]string, 0),
+		SentEmails:              make([]dto.SendEmailRequest, 0),
+		WelcomeEmailRecipients:  make([]string, 0),
+		WelcomeEmailUsernames:   make([]string, 0),
 		PasswordResetRecipients: make([]string, 0),
-		PasswordResetTokens:    make([]string, 0),
-		OTPRecipients:          make([]string, 0),
-		OTPCodes:               make([]string, 0),
+		PasswordResetTokens:     make([]string, 0),
+		OTPRecipients:           make([]string, 0),
+		OTPCodes:                make([]string, 0),
 	}
 }
 

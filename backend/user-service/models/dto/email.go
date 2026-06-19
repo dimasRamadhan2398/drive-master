@@ -20,8 +20,7 @@ type SendEmailRequest struct {
 	CC          []EmailAddress    `json:"cc,omitempty"`
 	BCC         []EmailAddress    `json:"bcc,omitempty"`
 	Attachments []EmailAttachment `json:"attachments,omitempty"`
-	CustomArgs  map[string]string `json:"custom_args,omitempty"`
-	Tags        []string          `json:"tags,omitempty"`
+	CustomVariables  map[string]string `json:"custom_variables,omitempty"`
 }
 
 type SendEmailResponse struct {

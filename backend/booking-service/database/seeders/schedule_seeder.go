@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"booking-service/models"
+	"booking-service/models/dto"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -24,7 +24,7 @@ func (s *ScheduleSeeder) Run(db *gorm.DB) error {
 
 	// Check if schedules already exist
 	var count int64
-	db.Model(&models.Schedule{}).Count(&count)
+	db.Model(&dto.Schedule{}).Count(&count)
 	if count > 0 {
 		log.Println("Schedules already exist, skipping...")
 		return nil
@@ -72,7 +72,7 @@ func (s *ScheduleSeeder) Run(db *gorm.DB) error {
 
 	// Generate schedules for the next 14 days
 	today := time.Now().Truncate(24 * time.Hour)
-	schedules := []models.Schedule{}
+	schedules := []dto.Schedule{}
 
 	// Time slots (Morning and Afternoon sessions)
 	timeSlots := []struct {
@@ -97,7 +97,7 @@ func (s *ScheduleSeeder) Run(db *gorm.DB) error {
 					// Skip night sessions on weekends (or keep them based on business rules)
 					// Here we allow night sessions but could restrict based on instructor preferences
 
-					schedule := models.Schedule{
+					schedule := dto.Schedule{
 						Date:         date,
 						Time:         slot.Time,
 						Duration:     slot.Duration,
@@ -105,7 +105,7 @@ func (s *ScheduleSeeder) Run(db *gorm.DB) error {
 						CarID:        carID,
 						UserID:       nil,
 						EnrollmentID: nil,
-						Status:       models.ScheduleStatusAvailable,
+						Status:       dto.ScheduleStatusAvailable,
 						Notes:        generateScheduleNotes(slot.Time, dayOfWeek),
 					}
 
@@ -113,9 +113,9 @@ func (s *ScheduleSeeder) Run(db *gorm.DB) error {
 					// Every 5th slot per instructor per day is booked
 					slotIndex := dayOffset%5 + 1
 					if slotIndex%3 == 0 {
-						userID := uint(1)
+						userID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 						schedule.UserID = &userID
-						schedule.Status = models.ScheduleStatusBooked
+						schedule.Status = dto.ScheduleStatusBooked
 					}
 
 					schedules = append(schedules, schedule)

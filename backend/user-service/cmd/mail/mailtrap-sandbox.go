@@ -5,7 +5,7 @@ import (
 	"net/smtp"
 )
 
-func main(){
+func main() {
 	host := "sandbox.smtp.mailtrap.io"
 	port := 2525
 	user := "49bbd2a554bd3e"
@@ -16,8 +16,8 @@ func main(){
 	auth := smtp.PlainAuth("", user, password, host)
 
 	subject := "Subject: Test Email from Drive Master\r\n"
-	mime    := "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\n"
-	body    := `
+	mime := "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\n"
+	body := `
 		<h1>Hello from Drive Master!</h1>
 		<p>This is a test email from the user-service.</p>
 	`

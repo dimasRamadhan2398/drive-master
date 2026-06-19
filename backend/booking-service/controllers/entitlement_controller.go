@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"booking-service/models/dto"
+	"booking-service/pkg/base"
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
@@ -60,13 +61,13 @@ func (c *EntitlementController) CreateEntitlement(ctx *gin.Context) {
 // @Tags entitlements
 // @Accept json
 // @Produce json
-// @Param id path int true "Entitlement ID"
+// @Param id path string true "Entitlement ID"
 // @Success 200 {object} dto.EntitlementResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /entitlements/{id} [get]
 func (c *EntitlementController) GetEntitlement(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUUIDIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid entitlement id"})
 		return
@@ -87,14 +88,14 @@ func (c *EntitlementController) GetEntitlement(ctx *gin.Context) {
 // @Tags entitlements
 // @Accept json
 // @Produce json
-// @Param id path int true "Entitlement ID"
+// @Param id path string true "Entitlement ID"
 // @Param entitlement body dto.UpdateEntitlementRequest true "Entitlement data"
 // @Success 200 {object} dto.EntitlementResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /entitlements/{id} [put]
 func (c *EntitlementController) UpdateEntitlement(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUUIDIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid entitlement id"})
 		return
@@ -121,13 +122,13 @@ func (c *EntitlementController) UpdateEntitlement(ctx *gin.Context) {
 // @Tags entitlements
 // @Accept json
 // @Produce json
-// @Param id path int true "Entitlement ID"
+// @Param id path string true "Entitlement ID"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /entitlements/{id} [delete]
 func (c *EntitlementController) DeleteEntitlement(ctx *gin.Context) {
-	id, err := getUintIDFromPath(ctx, "id")
+	id, err := base.GetUUIDIDFromPath(ctx, "id")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid entitlement id"})
 		return
@@ -177,7 +178,7 @@ func (c *EntitlementController) ListEntitlements(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /entitlements/user/{userId} [get]
 func (c *EntitlementController) GetUserEntitlements(ctx *gin.Context) {
-	userID, err := getUintIDFromPath(ctx, "userId")
+	userID, err := base.GetUintIDFromPath(ctx, "userId")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return

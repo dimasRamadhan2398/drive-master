@@ -26,6 +26,10 @@ redis:
 
 imagekit:
   id: oy4rsvid5
+  public_key: public_AZCaagGdNgXJ+5F2fz+Qa4l07uM=
+  private_key: private_7v1KeVubLnomWI6NoTpOvm5/HBQ=
+  url_endpoint: https://ik.imagekit.io/oy4rsvid5
+
 
 jwt:
   secret: fec20f8c86f9c2657ef2423d6859c9b1355472e995d512753a710575fd4c3cd5
@@ -39,8 +43,8 @@ kafka:
   enabled: true
   brokers:
     - "kafka:9092"
-  topic: "service-logs"  # Default topic for producer (legacy)
-  topics:  # Topics to consume
+  topic: "service-logs" # Default topic for producer (legacy)
+  topics: # Topics to consume
     - "user-events"
     - "car-events"
     - "package-events"
@@ -57,3 +61,8 @@ app:
   rate_limiter_max: 100
   rate_limiter_time: 1
   base_path: /app
+
+analytics:
+  ga_measurement_id: G-07PS1N5DZ5
+  ga_property_id: G-539969879
+  ga_credentials_file: /app/analytics/ga_credentials.json

@@ -12,6 +12,7 @@ import (
 type IInstructorRepository interface {
 	FindInstructorProfileByUserID(ctx context.Context, userID uuid.UUID) (*models.InstructorProfile, error)
 	UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error
+	UpdateInstructorPhotoURL(ctx context.Context, userID uuid.UUID, photoURL string) error
 	CreateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error
 	CreateInstructorProfileTx(tx *gorm.DB, profile *models.InstructorProfile) error
 	DeleteInstructorProfile(ctx context.Context, instructorID uuid.UUID) error
@@ -48,6 +49,16 @@ func (i *InstructorRepository) FindInstructorProfileByUserID(ctx context.Context
 // UpdateInstructorProfile implements [IInstructorRepository].
 func (i *InstructorRepository) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error {
 	return i.BaseRepository.Update(profile)
+}
+
+// UpdateInstructorPhotoURL updates only the photo URL field for an instructor profile
+func (i *InstructorRepository) UpdateInstructorPhotoURL(ctx context.Context, userID uuid.UUID, photoURL string) error {
+	return i.BaseRepository.UpdateByField(
+		&models.InstructorProfile{},
+		map[string]interface{}{"photo_url": photoURL},
+		"user_id = ?",
+		userID,
+	)
 }
 
 func NewInstructorRepository(db *gorm.DB) IInstructorRepository {

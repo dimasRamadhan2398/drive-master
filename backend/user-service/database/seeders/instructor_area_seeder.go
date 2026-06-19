@@ -35,7 +35,7 @@ func (s *InstructorAreaSeeder) Seed() error {
 	// For demonstration, we'll use placeholder area IDs
 	type instructorArea struct {
 		instructorID uuid.UUID
-		areaID      uint
+		areaID       uint
 	}
 
 	areas := []instructorArea{
@@ -48,21 +48,23 @@ func (s *InstructorAreaSeeder) Seed() error {
 
 	if len(instructors) > 1 {
 		areas = append(areas,
-			instructorArea{instructors[1].ID, 6},  // Surabaya
-			instructorArea{instructors[1].ID, 7},   // Sidoarjo
-			instructorArea{instructors[1].ID, 8},   // Gresik
+			instructorArea{instructors[1].ID, 6}, // Surabaya
+			instructorArea{instructors[1].ID, 7}, // Sidoarjo
+			instructorArea{instructors[1].ID, 8}, // Gresik
 		)
 	}
 
 	for _, area := range areas {
 		record := models.InstructorArea{
 			InstructorID: area.instructorID,
+			AreaType:     models.AreaTypeDistrict,
 			AreaID:       area.areaID,
 		}
 
 		// Use FirstOrCreate to avoid duplicates
 		if err := s.db.FirstOrCreate(&record, models.InstructorArea{
 			InstructorID: area.instructorID,
+			AreaType:     models.AreaTypeDistrict,
 			AreaID:       area.areaID,
 		}).Error; err != nil {
 			return err

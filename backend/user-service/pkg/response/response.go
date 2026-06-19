@@ -13,11 +13,11 @@ import (
 )
 
 type Response struct {
-	Success    bool        `json:"success"`
-	Message    string      `json:"message,omitempty"`
-	Data       interface{} `json:"data,omitempty"`
+	Success    bool                `json:"success"`
+	Message    string              `json:"message,omitempty"`
+	Data       interface{}         `json:"data,omitempty"`
 	Pagination *dto.PaginationMeta `json:"pagination,omitempty"`
-	Error      *ErrorDetail `json:"error,omitempty"`
+	Error      *ErrorDetail        `json:"error,omitempty"`
 }
 
 type ErrorDetail struct {

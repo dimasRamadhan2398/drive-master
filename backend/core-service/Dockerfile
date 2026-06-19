@@ -26,8 +26,14 @@ COPY --from=builder /app/core-service .
 # Copy config file
 COPY --from=builder /app/pkg/config/config.yaml ./pkg/config/config.yaml
 
+# Create analytics directory for credentials file
+RUN mkdir -p /app/analytics
+
 # Copy database reference files (CSV for seeders)
 COPY --from=builder /app/database/refs ./database/refs
+
+# Copy analytics folder (including ga_credentials.json) to /app/analytics
+COPY --from=builder /app/app/analytics ./analytics
 
 # Environment variables
 ENV CONFIG_PATH=./pkg/config/config.yaml

@@ -38,6 +38,7 @@ func NewConsumer(brokers, groupID string, topics []string) *Consumer {
 type MessageHandler interface {
 	ProcessSessionEvent(ctx context.Context, eventType string, payload []byte) error
 	ProcessPromotionalEvent(ctx context.Context, payload []byte) error
+	ProcessCertificationEvent(ctx context.Context, eventType string, payload []byte) error
 }
 
 // Start begins consuming messages from Kafka
@@ -67,6 +68,8 @@ func (c *Consumer) Start(handler MessageHandler) {
 					errHandler = handler.ProcessSessionEvent(ctx, "booking-created", msg.Value)
 				case "promotional":
 					errHandler = handler.ProcessPromotionalEvent(ctx, msg.Value)
+				case "certification-issued":
+					errHandler = handler.ProcessCertificationEvent(ctx, "certification-issued", msg.Value)
 				default:
 					log.Printf("Unknown topic: %s", msg.Topic)
 					continue
