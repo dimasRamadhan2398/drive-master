@@ -5,6 +5,7 @@ import { useTestimonialsStore, type Testimonial } from "~/stores/testimonials";
 import AddTestimonialModal from "~/components/testimonials/AddTestimonialModal.vue";
 import EditTestimonialModal from "~/components/testimonials/EditTestimonialModal.vue";
 
+const { t } = useI18n()
 definePageMeta({ layout: "admin" });
 
 const toast = useToast();
@@ -134,12 +135,12 @@ onMounted(() => {
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Testimonials Management">
+      <UDashboardNavbar :title="t('admin.testimonials')">
         <template #right>
           <UButton
             icon="i-lucide-plus"
             color="warning"
-            label="Add Testimonial"
+            :label="t('admin.addNew')"
             @click="onShowModal"
           />
           <UColorModeButton />
@@ -161,7 +162,7 @@ onMounted(() => {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ totalTestimonials }}</p>
-                <p class="text-md text-muted">Total Testimonials</p>
+                <p class="text-md text-muted">Total {{ t('admin.testimonials') }}</p>
               </div>
             </div>
           </UCard>
@@ -175,7 +176,7 @@ onMounted(() => {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ totalPublished }}</p>
-                <p class="text-md text-muted">Published</p>
+                <p class="text-md text-muted">{{ t('admin.published') }}</p>
               </div>
             </div>
           </UCard>
@@ -186,7 +187,7 @@ onMounted(() => {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ totalPending }}</p>
-                <p class="text-md text-muted">Pending Review</p>
+                <p class="text-md text-muted">{{ t('admin.pendingReview') }}</p>
               </div>
             </div>
           </UCard>
@@ -197,7 +198,7 @@ onMounted(() => {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ averageRating }}</p>
-                <p class="text-md text-muted">Average Rating</p>
+                <p class="text-md text-muted">{{ t('admin.averageRating') }}</p>
               </div>
             </div>
           </UCard>
@@ -207,7 +208,7 @@ onMounted(() => {
         <UCard>
           <template #header>
             <div class="flex items-center justify-between">
-              <h2 class="font-semibold">All Testimonials</h2>
+              <h2 class="font-semibold">All {{ t('admin.testimonials') }}</h2>
               <div class="flex items-center gap-2">
                 <UButton
                   v-for="status in [
@@ -341,7 +342,7 @@ onMounted(() => {
                         :items="[
                           [
                             {
-                              label: 'Edit',
+                              label: t('common.edit'),
                               icon: 'i-lucide-pencil',
                               onSelect: () => openEditModal(testimonial),
                             },
@@ -369,7 +370,7 @@ onMounted(() => {
                           ],
                           [
                             {
-                              label: 'Delete',
+                              label: t('common.delete'),
                               icon: 'i-lucide-trash',
                               color: 'error',
                               onSelect: () =>
@@ -398,7 +399,7 @@ onMounted(() => {
                 name="i-lucide-message-square"
                 class="size-12 text-muted mx-auto mb-2"
               />
-              <p class="text-muted">No testimonials found</p>
+              <p class="text-muted">{{ t('admin.noTestimonials') }}</p>
             </div>
           </div>
         </UCard>

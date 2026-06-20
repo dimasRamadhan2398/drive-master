@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+const { t } = useI18n()
 definePageMeta({
   layout: 'blank'
 })
@@ -36,9 +37,9 @@ const packageInfo = {
   twelve_package_weekend_night: { name: '12x Session + Weekend & Night Session', price: 3150000, sessions: 12 }
 }
 
-const paymentMethodDetails = {
+const paymentMethodDetails = computed(() => ({
   va: {
-    title: 'Virtual Account',
+    title: t('billing.vaNumber'),
     icon: 'i-lucide-building',
     instructions: [
       'You will receive a Virtual Account number via email',
@@ -47,10 +48,10 @@ const paymentMethodDetails = {
       'Payment will be confirmed automatically within minutes',
       'You will receive confirmation via WhatsApp'
     ],
-    note: 'Make sure to transfer the exact amount to ensure automatic confirmation.'
+    note: t('billing.vaInstruction')
   },
   qris: {
-    title: 'QRIS',
+    title: t('billing.scanQris'),
     icon: 'i-lucide-qr-code',
     instructions: [
       'A QR code will be displayed on the next screen',
@@ -59,7 +60,7 @@ const paymentMethodDetails = {
       'Payment confirmation is instant',
       'You will receive confirmation via WhatsApp'
     ],
-    note: 'All major e-wallets are supported. Scan with your preferred app.'
+    note: t('billing.qrisInstruction')
   },
   bank_transfer: {
     title: 'Bank Transfer',
@@ -85,10 +86,10 @@ const paymentMethodDetails = {
     ],
     note: 'E-wallets accepted: GoPay, OVO, DANA, LinkAja.'
   }
-}
+}))
 
 const currentMethod = computed(() => 
-  paymentMethodDetails[paymentMethod as keyof typeof paymentMethodDetails] || paymentMethodDetails.va
+  paymentMethodDetails.value[paymentMethod as keyof typeof paymentMethodDetails.value] || paymentMethodDetails.value.va
 )
 
 const pkg = computed(() => 
@@ -141,7 +142,7 @@ onMounted(() => {
           <UIcon :name="currentMethod.icon" class="size-8 text-warning" />
           <span class="text-xl font-bold">{{ currentMethod.title }}</span>
         </div>
-        <h1 class="text-2xl font-bold">Complete Payment</h1>
+        <h1 class="text-2xl font-bold">{{ t('billing.makePayment') }}</h1>
         <p class="text-muted mt-2">{{ pkg.name }} - Rp {{ (pkg.price).toLocaleString('id-ID') }}</p>
       </div>
 
@@ -151,7 +152,7 @@ onMounted(() => {
           <!-- Payment Instructions -->
           <UCard>
             <template #header>
-              <h2 class="font-semibold">Payment Instructions</h2>
+              <h2 class="font-semibold">{{ t('billing.paymentInstruction') }}</h2>
             </template>
 
             <ol class="space-y-4">
@@ -180,12 +181,12 @@ onMounted(() => {
           <!-- Payment Method Specific Info -->
           <UCard v-if="paymentMethod === 'va'">
             <template #header>
-              <h2 class="font-semibold">Your Virtual Account Details</h2>
+              <h2 class="font-semibold">{{ t('billing.vaNumber') }}</h2>
             </template>
 
             <div class="space-y-4">
               <div class="p-4 bg-muted rounded-lg">
-                <p class="text-xs text-muted uppercase tracking-wide mb-2">Virtual Account Number</p>
+                <p class="text-xs text-muted uppercase tracking-wide mb-2">{{ t('billing.vaNumber') }}</p>
                 <p class="text-2xl font-mono font-bold break-all">8800123456789</p>
               </div>
 
@@ -195,7 +196,7 @@ onMounted(() => {
                   <p class="font-medium">BCA</p>
                 </div>
                 <div>
-                  <p class="text-xs text-muted uppercase tracking-wide mb-1">Amount</p>
+                  <p class="text-xs text-muted uppercase tracking-wide mb-1">{{ t('billing.amountDue').split(' ').shift() }}</p>
                   <p class="font-medium">Rp {{ ((pkg.price * 1.1).toLocaleString('id-ID')) }}</p>
                 </div>
               </div>
@@ -212,7 +213,7 @@ onMounted(() => {
 
           <UCard v-else-if="paymentMethod === 'qris'">
             <template #header>
-              <h2 class="font-semibold">Scan QRIS Code</h2>
+              <h2 class="font-semibold">{{ t('billing.scanQris') }}</h2>
             </template>
 
             <div class="space-y-4">
@@ -226,7 +227,7 @@ onMounted(() => {
               </div>
 
               <p class="text-sm text-muted text-center">
-                Open your e-wallet and scan this QR code to complete payment
+                {{ t('billing.qrisInstruction') }}
               </p>
             </div>
           </UCard>
@@ -274,7 +275,7 @@ onMounted(() => {
             </template>
 
             <p class="text-sm text-muted mb-4">
-              A payment link has been sent to {{ email }}. Click the link to proceed with payment using your preferred e-wallet.
+              {{ t('billing.paymentInstructionDesc', { method: 'E-Wallet' }) }}
             </p>
 
             <UButton 
@@ -305,12 +306,12 @@ onMounted(() => {
 
             <div class="space-y-4">
               <div>
-                <p class="text-sm text-muted">Package</p>
+                <p class="text-sm text-muted">{{ t('billing.package') }}</p>
                 <p class="font-medium">{{ pkg.name }}</p>
               </div>
 
               <div>
-                <p class="text-sm text-muted">Sessions</p>
+                <p class="text-sm text-muted">{{ t('billing.sessions') }}</p>
                 <p class="font-medium">{{ pkg.sessions }}</p>
               </div>
 
@@ -334,7 +335,7 @@ onMounted(() => {
             <template #footer>
               <div class="space-y-3">
                 <UButton 
-                  label="Confirm Payment Sent"
+                  :label="t('common.confirm')"
                   icon="i-lucide-check"
                   color="warning"
                   :loading="loading"

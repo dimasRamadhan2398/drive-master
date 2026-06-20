@@ -2,6 +2,7 @@
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
 import { reactive, ref } from "vue";
 
+const { t } = useI18n()
 definePageMeta({ layout: "admin" });
 
 const toast = useToast();
@@ -319,10 +320,10 @@ onMounted(() => {
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Settings">
+      <UDashboardNavbar :title="t('admin.settings')">
         <template #right>
           <UButton
-            label="Save All Changes"
+            :label="t('admin.saveChanges')"
             color="warning"
             icon="i-lucide-save"
             @click="saveSettings"
@@ -339,12 +340,12 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-settings" class="size-5 text-warning" />
-              <h2 class="font-semibold">General Settings</h2>
+              <h2 class="font-semibold">{{ t('admin.generalSettings') }}</h2>
             </div>
           </template>
 
           <div class="grid md:grid-cols-2 gap-4">
-            <UFormField label="Business Name">
+            <UFormField :label="t('admin.businessName')">
               <UInput
                 v-model="generalSettings.businessName"
                 icon="i-lucide-building"
@@ -361,7 +362,7 @@ onMounted(() => {
                 color="warning"
               />
             </UFormField>
-            <UFormField label="Phone Number">
+            <UFormField :label="t('profile.phone')">
               <UInput
                 v-model="generalSettings.phone"
                 icon="i-lucide-phone"
@@ -369,7 +370,7 @@ onMounted(() => {
                 color="warning"
               />
             </UFormField>
-            <UFormField label="WhatsApp Number">
+            <UFormField :label="t('admin.whatsappNumber')">
               <UInput
                 v-model="generalSettings.whatsappNumber"
                 icon="i-simple-icons-whatsapp"
@@ -377,7 +378,7 @@ onMounted(() => {
                 color="warning"
               />
             </UFormField>
-            <UFormField label="Promo End Date">
+            <UFormField :label="t('admin.promoEndDate')">
               <UInput
                 v-model="promoEndDate"
                 type="datetime-local"
@@ -385,7 +386,7 @@ onMounted(() => {
                 color="warning"
               />
             </UFormField>
-            <UFormField label="Address" class="md:col-span-2">
+            <UFormField :label="t('profile.address')" class="md:col-span-2">
               <UTextarea
                 v-model="generalSettings.address"
                 class="w-full"
@@ -400,20 +401,20 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-clock" class="size-5 text-warning" />
-              <h2 class="font-semibold">Operating Hours</h2>
+              <h2 class="font-semibold">{{ t('home.operatingHours') }}</h2>
             </div>
           </template>
 
           <div class="space-y-4">
             <div class="flex items-center gap-4">
-              <span class="w-32 text-md font-medium">Monday - Friday</span>
+              <span class="w-32 text-md font-medium">{{ t('admin.mondayFriday') }}</span>
               <UInput
                 v-model="operatingHours.mondayStart"
                 type="time"
                 class="w-full"
                 color="warning"
               />
-              <span class="text-muted">to</span>
+              <span class="text-muted">{{ t('admin.to') }}</span>
               <UInput
                 v-model="operatingHours.mondayEnd"
                 type="time"
@@ -422,14 +423,14 @@ onMounted(() => {
               />
             </div>
             <div class="flex items-center gap-4">
-              <span class="w-32 text-sm font-medium">Saturday & Sunday</span>
+              <span class="w-32 text-sm font-medium">{{ t('admin.saturdaySunday') }}</span>
               <UInput
                 v-model="operatingHours.weekendStart"
                 type="time"
                 class="w-full"
                 color="warning"
               />
-              <span class="text-muted">to</span>
+              <span class="text-muted">{{ t('admin.to') }}</span>
               <UInput
                 v-model="operatingHours.weekendEnd"
                 type="time"
@@ -438,7 +439,7 @@ onMounted(() => {
               />
             </div>
             <div class="flex items-center gap-4">
-              <span class="w-32 text-md font-medium">Night Shift</span>
+              <span class="w-32 text-md font-medium">{{ t('admin.nightShift') }}</span>
               <UInput
                 v-model="operatingHours.nightStart"
                 type="time"
@@ -462,10 +463,10 @@ onMounted(() => {
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-car" class="size-5 text-warning" />
-                <h2 class="font-semibold">Vehicles</h2>
+                <h2 class="font-semibold">{{ t('dashboard.vehicle') }}s</h2>
               </div>
               <UButton
-                label="Add Vehicle"
+                :label="t('admin.addVehicle')"
                 icon="i-lucide-plus"
                 size="sm"
                 variant="outline"
@@ -502,7 +503,7 @@ onMounted(() => {
               <div class="flex items-center gap-3">
                 <UBadge
                   :label="
-                    vehicle.status === 'active' ? 'Active' : 'Maintenance'
+                    vehicle.status === 'active' ? t('billing.active') : 'Maintenance'
                   "
                   :color="vehicle.status === 'active' ? 'info' : 'error'"
                   variant="subtle"
@@ -525,10 +526,10 @@ onMounted(() => {
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-users" class="size-5 text-warning" />
-                <h2 class="font-semibold">Instructors</h2>
+                <h2 class="font-semibold">{{ t('admin.students').replace('Murid', 'Instruktur') }}</h2>
               </div>
               <UButton
-                label="Add Instructor"
+                :label="t('admin.addInstructor')"
                 icon="i-lucide-user-plus"
                 size="sm"
                 variant="outline"
@@ -565,7 +566,7 @@ onMounted(() => {
               <div class="flex items-center gap-3">
                 <UBadge
                   :label="
-                    instructor.status === 'active' ? 'Active' : 'Inactive'
+                    instructor.status === 'active' ? t('billing.active') : 'Inactive'
                   "
                   :color="instructor.status === 'active' ? 'info' : 'neutral'"
                   variant="subtle"
@@ -587,18 +588,18 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-bell" class="size-5 text-warning" />
-              <h2 class="font-semibold">Notification Settings</h2>
+              <h2 class="font-semibold">{{ t('profile.notificationPrefs') }}</h2>
             </div>
           </template>
 
           <div class="space-y-4">
             <USwitch
               v-model="notificationSettings.emailNotifications"
-              label="Send email notifications to students"
+              :label="t('profile.notifEmail').replace('mendatang', 'kepada murid')"
             />
             <USwitch
               v-model="notificationSettings.whatsappNotifications"
-              label="Send WhatsApp reminders to students"
+              :label="t('profile.notifWa').replace('(24 jam sebelum sesi)', 'kepada murid')"
             />
             <USwitch
               v-model="notificationSettings.adminAlerts"
@@ -630,7 +631,7 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center gap-2 text-red-500">
               <UIcon name="i-lucide-alert-triangle" class="size-5" />
-              <h2 class="font-semibold">Danger Zone</h2>
+              <h2 class="font-semibold">{{ t('profile.dangerZone') }}</h2>
             </div>
           </template>
 
@@ -639,13 +640,13 @@ onMounted(() => {
               class="flex items-center justify-between p-4 rounded-lg border border-red-200 dark:border-red-900"
             >
               <div>
-                <p class="font-medium">Export All Data</p>
+                <p class="font-medium">{{ t('admin.exportData') }}</p>
                 <p class="text-md text-muted">
-                  Download all system data as a backup file.
+                  {{ t('admin.exportDataDesc') }}
                 </p>
               </div>
               <UButton
-                label="Export"
+                :label="t('admin.export')"
                 icon="i-lucide-download"
                 color="neutral"
                 variant="outline"
@@ -666,7 +667,7 @@ onMounted(() => {
             class="px-6 py-4 border-b border-default flex items-center justify-between"
           >
             <h3 class="text-base font-semibold">
-              {{ isEditingVehicle ? "Edit Vehicle" : "Add New Vehicle" }}
+              {{ isEditingVehicle ? t('common.edit') + ' ' + t('dashboard.vehicle') : t('admin.addNew') + ' ' + t('dashboard.vehicle') }}
             </h3>
             <UButton
               icon="i-lucide-x"
@@ -678,7 +679,7 @@ onMounted(() => {
           <div class="p-6 space-y-4">
             <div>
               <label class="block text-sm font-medium mb-1.5"
-                >Vehicle Photo</label
+                >{{ t('admin.vehiclePhoto') }}</label
               >
               <input
                 ref="vehicleImageRef"
@@ -705,13 +706,13 @@ onMounted(() => {
                 </div>
                 <div v-else class="flex flex-col items-center gap-2 py-4">
                   <UIcon name="i-lucide-image-plus" class="size-6 text-muted" />
-                  <span class="text-sm text-muted">Click to upload photo</span>
+                  <span class="text-sm text-muted">{{ t('admin.clickToUpload') }}</span>
                 </div>
               </div>
             </div>
             <div>
               <label class="block text-sm font-medium mb-1.5"
-                >Vehicle Name</label
+                >{{ t('admin.vehicleName') }}</label
               >
               <UInput
                 v-model="vehicleForm.name"
@@ -721,7 +722,7 @@ onMounted(() => {
             </div>
             <div>
               <label class="block text-sm font-medium mb-1.5"
-                >License Plate</label
+                >{{ t('admin.licensePlate') }}</label
               >
               <UInput
                 v-model="vehicleForm.plate"
@@ -730,7 +731,7 @@ onMounted(() => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1.5">Status</label>
+              <label class="block text-sm font-medium mb-1.5">{{ t('billing.status') }}</label>
               <USelect
                 v-model="vehicleForm.status"
                 :items="['active', 'maintenance']"
@@ -744,7 +745,7 @@ onMounted(() => {
             <div>
               <UButton
                 v-if="isEditingVehicle"
-                label="Delete"
+                :label="t('common.delete')"
                 icon="i-lucide-trash"
                 color="error"
                 variant="ghost"
@@ -753,13 +754,13 @@ onMounted(() => {
             </div>
             <div class="flex gap-3">
               <UButton
-                label="Cancel"
+                :label="t('common.cancel')"
                 color="neutral"
                 variant="outline"
                 @click="isVehicleModalOpen = false"
               />
               <UButton
-                :label="isEditingVehicle ? 'Save Changes' : 'Add Vehicle'"
+                :label="isEditingVehicle ? t('admin.saveChanges') : t('admin.addNew').replace('Tambah Baru', 'Tambah Kendaraan')"
                 icon="i-lucide-check"
                 @click="saveVehicle"
               />
@@ -780,7 +781,7 @@ onMounted(() => {
           >
             <h3 class="text-base font-semibold">
               {{
-                isEditingInstructor ? "Edit Instructor" : "Add New Instructor"
+                isEditingInstructor ? t('common.edit') + ' Instruktur' : t('admin.addNew').replace('Tambah Baru', 'Tambah Instruktur')
               }}
             </h3>
             <UButton
@@ -794,7 +795,7 @@ onMounted(() => {
             <div class="grid grid-cols-2 gap-4">
               <div class="col-span-2 sm:col-span-1">
                 <label class="block text-sm font-medium mb-1.5"
-                  >First Name</label
+                  >{{ t('register.form.firstName') }}</label
                 >
                 <UInput
                   v-model="instructorForm.firstName"
@@ -804,7 +805,7 @@ onMounted(() => {
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <label class="block text-sm font-medium mb-1.5"
-                  >Last Name</label
+                  >{{ t('register.form.lastName') }}</label
                 >
                 <UInput
                   v-model="instructorForm.lastName"
@@ -814,7 +815,7 @@ onMounted(() => {
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <label class="block text-sm font-medium mb-1.5"
-                  >Phone Number</label
+                  >{{ t('profile.phone') }}</label
                 >
                 <UInput
                   v-model="instructorForm.phoneNumber"
@@ -824,7 +825,7 @@ onMounted(() => {
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <label class="block text-sm font-medium mb-1.5"
-                  >Years of Experience</label
+                  >{{ t('instructors.yearsExperience') }}</label
                 >
                 <UInput
                   v-model="instructorForm.yearsOfExperience"
@@ -835,7 +836,7 @@ onMounted(() => {
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <label class="block text-sm font-medium mb-1.5"
-                  >BNSP Certificate No.</label
+                  >{{ t('admin.bnspNo') }}</label
                 >
                 <UInput
                   v-model="instructorForm.bnspCertificateNumber"
@@ -845,7 +846,7 @@ onMounted(() => {
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <label class="block text-sm font-medium mb-1.5"
-                  >SIM / License Number</label
+                  >{{ t('admin.licenseNo') }}</label
                 >
                 <UInput
                   v-model="instructorForm.licenseNumber"
@@ -855,7 +856,7 @@ onMounted(() => {
               </div>
               <div class="col-span-2">
                 <label class="block text-sm font-medium mb-1.5"
-                  >Instructor Photo</label
+                  >{{ t('admin.instructorPhoto') }}</label
                 >
                 <input
                   ref="instructorImageRef"
@@ -890,14 +891,14 @@ onMounted(() => {
                       class="size-6 text-muted"
                     />
                     <span class="text-sm text-muted"
-                      >Click to upload photo</span
+                      >{{ t('admin.clickToUpload') }}</span
                     >
                   </div>
                 </div>
               </div>
               <div class="col-span-2">
                 <label class="block text-sm font-medium mb-1.5"
-                  >Bio Description</label
+                  >{{ t('admin.bioDescription') }}</label
                 >
                 <UTextarea
                   v-model="instructorForm.description"
@@ -914,7 +915,7 @@ onMounted(() => {
             <div>
               <UButton
                 v-if="isEditingInstructor"
-                label="Delete"
+                :label="t('common.delete')"
                 icon="i-lucide-trash"
                 color="error"
                 variant="ghost"
@@ -923,13 +924,13 @@ onMounted(() => {
             </div>
             <div class="flex gap-3">
               <UButton
-                label="Cancel"
+                :label="t('common.cancel')"
                 color="neutral"
                 variant="outline"
                 @click="isInstructorModalOpen = false"
               />
               <UButton
-                :label="isEditingInstructor ? 'Save Changes' : 'Add Instructor'"
+                :label="isEditingInstructor ? t('admin.saveChanges') : t('admin.addNew').replace('Tambah Baru', 'Tambah Instruktur')"
                 icon="i-lucide-check"
                 @click="saveInstructor"
               />

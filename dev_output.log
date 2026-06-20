@@ -1,0 +1,44 @@
+
+> dev
+> nuxt dev
+
+│
+●  Nuxt 4.4.5 (with Nitro 2.13.4, Vite 7.3.5 and Vue 3.5.38)
+[get-port] Unable to find an available port (tried 3000 on host "localhost"). Using alternative port 3001.
+
+  ➜ Local:    http://localhost:3001/
+  ➜ Network:  use --host to expose
+
+  ➜ DevTools: press Shift + Alt + D in the browser (v3.2.4)
+
+ℹ Nuxt Icon server bundle mode is set to local
+✔ Nuxt Icon discovered local-installed 2 collections: lucide, simple-icons
+
+ WARN  Duplicated imports "Faq", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "BlogPost", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "Page", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "PageSection", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "Faq", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "BlogPost", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "Page", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "PageSection", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+✔ Vite client built in 65ms
+✔ Vite server built in 20ms
+[nitro] ✔ Nuxt Nitro server built in 2156ms
+ℹ Vite server warmed up in 1ms
+ℹ Vite client warmed up in 4ms

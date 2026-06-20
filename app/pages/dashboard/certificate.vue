@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
 // Mock certificate data
@@ -29,7 +30,7 @@ const hasCertificate = ref(true)
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="My Certificate">
+      <UDashboardNavbar :title="t('certificate.title')">
         <template #right>
           <UColorModeButton />
         </template>
@@ -41,26 +42,26 @@ const hasCertificate = ref(true)
         <!-- Certificate Status -->
         <UCard v-if="!hasCertificate">
           <template #header>
-            <h2 class="font-semibold">Certificate Progress</h2>
+            <h2 class="font-semibold">{{ t('certificate.progress') }}</h2>
           </template>
 
           <div class="text-center py-8">
             <div class="mx-auto w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
               <UIcon name="i-lucide-award" class="size-10 text-muted" />
             </div>
-            <h3 class="text-xl font-bold mb-2">Certificate Not Yet Available</h3>
+            <h3 class="text-xl font-bold mb-2">{{ t('certificate.notAvailable') }}</h3>
             <p class="text-muted max-w-md mx-auto">
-              Complete all your training sessions to receive your official EV Driving Certificate.
+              {{ t('certificate.notAvailableDesc') }}
             </p>
 
             <div class="max-w-md mx-auto mt-8 space-y-4">
               <div class="flex justify-between text-md">
-                <span class="text-muted">Progress</span>
-                <span class="font-medium">{{ certificateStatus.completedSessions }}/{{ certificateStatus.totalSessions }} sessions</span>
+                <span class="text-muted">{{ t('common.progress') }}</span>
+                <span class="font-medium">{{ certificateStatus.completedSessions }}/{{ certificateStatus.totalSessions }} {{ t('billing.sessions') }}</span>
               </div>
               <UProgress :value="certificateStatus.progress" />
               <p class="text-md text-muted">
-                {{ certificateStatus.remainingSessions }} more sessions to complete
+                {{ t('certificate.remainingSessions', { count: certificateStatus.remainingSessions }) }}
               </p>
             </div>
           </div>
@@ -68,7 +69,7 @@ const hasCertificate = ref(true)
           <template #footer>
             <div class="flex justify-center">
               <NuxtLink to="/dashboard/schedule">
-                <UButton label="Book Next Session" icon="i-lucide-calendar-plus" />
+                <UButton :label="t('dashboard.bookNextSession')" icon="i-lucide-calendar-plus" />
               </NuxtLink>
             </div>
           </template>
@@ -76,9 +77,9 @@ const hasCertificate = ref(true)
 
         <!-- Available Certificates -->
         <template v-if="hasCertificate">
-          <UAlert icon="i-lucide-award" color="success" title="Congratulations!">
+          <UAlert icon="i-lucide-award" color="success" :title="t('certificate.congratulations')">
             <template #description>
-              You have successfully completed your training and your certificate is ready for download.
+              {{ t('certificate.readyDownload') }}
             </template>
           </UAlert>
 
@@ -92,7 +93,7 @@ const hasCertificate = ref(true)
         <!-- Certificate Info -->
         <UCard>
           <template #header>
-            <h2 class="font-semibold">About Drive Master Certificates</h2>
+            <h2 class="font-semibold">{{ t('certificate.aboutTitle') }}</h2>
           </template>
 
           <div class="grid md:grid-cols-3 gap-6">
@@ -100,22 +101,22 @@ const hasCertificate = ref(true)
               <div class="mx-auto w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center mb-3">
                 <UIcon name="i-lucide-file-badge" class="size-7 text-warning" />
               </div>
-              <h3 class="font-semibold mb-1">Official Recognition</h3>
-              <p class="text-md text-muted">Our certificates are recognized by industry partners and employers.</p>
+              <h3 class="font-semibold mb-1">{{ t('certificate.officialRecognition') }}</h3>
+              <p class="text-md text-muted">{{ t('certificate.officialRecognitionDesc') }}</p>
             </div>
             <div class="text-center">
               <div class="mx-auto w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center mb-3">
                 <UIcon name="i-lucide-qr-code" class="size-7 text-warning" />
               </div>
-              <h3 class="font-semibold mb-1">Digital Verification</h3>
-              <p class="text-md text-muted">Each certificate includes a unique ID for easy online verification.</p>
+              <h3 class="font-semibold mb-1">{{ t('certificate.digitalVerification') }}</h3>
+              <p class="text-md text-muted">{{ t('certificate.digitalVerificationDesc') }}</p>
             </div>
             <div class="text-center">
               <div class="mx-auto w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center mb-3">
                 <UIcon name="i-lucide-infinity" class="size-7 text-warning" />
               </div>
-              <h3 class="font-semibold mb-1">Lifetime Validity</h3>
-              <p class="text-md text-muted">Your certificate never expires and remains valid indefinitely.</p>
+              <h3 class="font-semibold mb-1">{{ t('certificate.lifetimeValidity') }}</h3>
+              <p class="text-md text-muted">{{ t('certificate.lifetimeValidityDesc') }}</p>
             </div>
           </div>
         </UCard>

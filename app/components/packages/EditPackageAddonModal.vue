@@ -12,6 +12,7 @@ const emit = defineEmits<{
   (e: "update:open", value: boolean): void;
 }>();
 
+const { t } = useI18n()
 const toast = useToast();
 const packagesStore = usePackagesStore();
 
@@ -41,14 +42,14 @@ function saveEditedAddon() {
   );
   if (updated) {
     toast.add({
-      title: "Add-on Updated",
-      description: `"${editingAddon.value.name}" has been saved.`,
+      title: t('admin.addon.updated'),
+      description: `"${editingAddon.value.name}" ${t('admin.studentUpdatedDesc').replace("{name}'s data has been updated.", "telah disimpan.")}`,
       color: "success",
     });
   } else {
     toast.add({
-      title: "Error",
-      description: "Add-on not found.",
+      title: t('common.error'),
+      description: t('admin.addon.notFound'),
       color: "error",
     });
   }
@@ -58,17 +59,17 @@ function saveEditedAddon() {
 </script>
 
 <template>
-  <UModal :open="open" title="Edit Add-on" @update:open="(val) => emit('update:open', val)">
+  <UModal :open="open" :title="t('admin.addon.edit')" @update:open="(val) => emit('update:open', val)">
     <template #body>
       <div v-if="editingAddon" class="space-y-4">
-        <UFormField label="Add-on Name" required>
+        <UFormField :label="t('admin.addon.name')" required>
           <UInput
             v-model="editingAddon.name"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Price (IDR)" required>
+        <UFormField :label="t('admin.package.price')" required>
           <UInput
             v-model="editingAddon.price"
             type="number"
@@ -77,7 +78,7 @@ function saveEditedAddon() {
             color="warning"
           />
         </UFormField>
-        <UFormField label="Description">
+        <UFormField :label="t('admin.package.description')">
           <UTextarea
             v-model="editingAddon.description"
             placeholder="Briefly describe what this add-on includes."
@@ -90,13 +91,13 @@ function saveEditedAddon() {
     <template #footer>
       <div class="flex justify-end gap-3">
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           variant="ghost"
           color="neutral"
           @click="handleClose"
         />
         <UButton
-          label="Save Changes"
+          :label="t('admin.saveChanges')"
           icon="i-lucide-save"
           color="warning"
           @click="saveEditedAddon"

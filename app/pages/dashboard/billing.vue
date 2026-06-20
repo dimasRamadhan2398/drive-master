@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-
+const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
 // Billing data
@@ -34,7 +34,7 @@ const billingData = {
 const showBillingModal = ref(false)
 const selectedPaymentMethod = ref('va')
 
-const paymentMethods = [
+const paymentMethods = computed(() => [
   {
     id: 'va',
     name: 'Virtual Account (VA)',
@@ -63,14 +63,14 @@ const paymentMethods = [
     icon: 'i-lucide-wallet',
     color: 'orange' as const
   }
-]
+])
 
-const pricingTabs = [
+const pricingTabs = computed(() => [
   { label: '6x Sessions', icon: 'i-lucide-package' },
   { label: '8x Sessions', icon: 'i-lucide-package' },
   { label: '10x Sessions', icon: 'i-lucide-package', default: true },
   { label: '12x Sessions', icon: 'i-lucide-package' }
-]
+])
 
 
 function getBillingStatusColor() {
@@ -79,9 +79,9 @@ function getBillingStatusColor() {
 
 
 function getBillingStatusLabel() {
- if (billingData.status === 'payment-due') return 'Payment Due'
- if (billingData.status === 'paid') return 'Paid'
- return 'Active'
+ if (billingData.status === 'payment-due') return t('billing.paymentDue')
+ if (billingData.status === 'paid') return t('billing.paid')
+ return t('billing.active')
 }
 
 const planMap: { [key: string]: string } = {
@@ -109,7 +109,7 @@ function makePayment() {
 <template>
     <UDashboardPanel>
         <template #header>
-            <UDashboardNavbar title="Billing & Payments">
+            <UDashboardNavbar :title="t('billing.title')">
                 <template #right>
                     <UButton icon="i-lucide-bell" color="neutral" variant="ghost" />
                     <UColorModeButton />
@@ -126,13 +126,13 @@ function makePayment() {
              <UIcon name="i-lucide-alert-circle" class="size-6 text-warning" />
            </div>
            <div class="flex-1">
-             <h3 class="font-semibold text-foreground">Payment Due</h3>
+             <h3 class="font-semibold text-foreground">{{ t('billing.paymentDue') }}</h3>
              <p class="text-sm text-muted mt-1">
-               Your payment of <span class="font-medium">{{ billingData.amount }}</span> is due on <span class="font-medium">{{ billingData.dueDate }}</span> ({{ billingData.daysRemaining }} days remaining).
+               {{ t('billing.paymentDueDesc', { amount: billingData.amount, date: billingData.dueDate, days: billingData.daysRemaining }) }}
              </p>
              <p class="text-xs text-muted mt-2">{{ billingData.package }}</p>
              <div class="flex flex-wrap gap-3 mt-4">
-               <UButton label="Proceed to Payment" size="sm" icon="i-lucide-credit-card" color="warning" @click="showBillingModal = true"/>
+               <UButton :label="t('billing.proceedToPayment')" size="sm" icon="i-lucide-credit-card" color="warning" @click="showBillingModal = true"/>
              </div>
            </div>
            <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" />
@@ -148,11 +148,11 @@ function makePayment() {
                <UIcon name="i-lucide-check-circle" class="size-6 text-success" />
              </div>
              <div>
-               <h3 class="font-semibold">Your subscription is active</h3>
-               <p class="text-sm text-muted">Next renewal on {{ billingData.nextRenewalDate }}</p>
+               <h3 class="font-semibold">{{ t('billing.subscriptionActive') }}</h3>
+               <p class="text-sm text-muted">{{ t('billing.nextRenewal', { date: billingData.nextRenewalDate }) }}</p>
              </div>
            </div>
-           <UButton label="Manage Billing" variant="outline" color="neutral" size="sm" @click="showBillingModal = true" />
+           <UButton :label="t('billing.manageBilling')" variant="outline" color="neutral" size="sm" @click="showBillingModal = true" />
          </div>
        </div>
 
@@ -160,11 +160,11 @@ function makePayment() {
        <UCard class="bg-primary/5 border-primary/20">
          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
            <div>
-             <h2 class="text-xl font-semibold">You have {{ userData.remainingSessions }} sessions remaining</h2>
-             <p class="text-muted mt-1">in your {{ userData.package }}.</p>
+             <h2 class="text-xl font-semibold">{{ t('billing.sessionsRemaining', { count: userData.remainingSessions }) }}</h2>
+             <p class="text-muted mt-1">{{ t('billing.inPackage', { package: userData.package }) }}</p>
            </div>
            <NuxtLink to="/dashboard/schedule">
-            <UButton label="Book Next Session" color="warning" icon="i-lucide-calendar-plus" />
+            <UButton :label="t('dashboard.bookNextSession')" color="warning" icon="i-lucide-calendar-plus" />
            </NuxtLink>
          </div>
        </UCard>
@@ -172,7 +172,7 @@ function makePayment() {
        <!-- Billing Plan Section -->
        <UCard>
          <template #header>
-           <h2 class="font-semibold">Your Package & Pricing</h2>
+           <h2 class="font-semibold">{{ t('billing.packagePricing') }}</h2>
          </template>
          
          <!-- Package Tabs -->
@@ -185,26 +185,26 @@ function makePayment() {
            <div class="flex items-center justify-between mb-4">
              <div class="flex items-center gap-3">
                <UIcon name="i-lucide-check-circle" class="size-6 text-success" />
-               <h3 class="font-semibold">{{ billingData.package }} - Active</h3>
+               <h3 class="font-semibold">{{ billingData.package }} - {{ t('billing.active') }}</h3>
              </div>
              <div class="text-right">
                <p class="text-2xl font-bold text-primary">{{ billingData.amount }}</p>
-               <p class="text-sm text-muted">Next billing: {{ billingData.nextRenewalDate }}</p>
+               <p class="text-sm text-muted">{{ t('billing.nextBilling', { date: billingData.nextRenewalDate }) }}</p>
              </div>
            </div>
            
            <div class="grid md:grid-cols-2 gap-4 mb-4">
              <div class="text-sm">
-               <div class="text-muted">Sessions</div>
-               <div class="font-medium">10 Sessions</div>
+               <div class="text-muted">{{ t('billing.sessions') }}</div>
+               <div class="font-medium">10 {{ t('billing.sessions') }}</div>
              </div>
              <div class="text-sm">
-               <div class="text-muted">Total Cost</div>
+               <div class="text-muted">{{ t('billing.totalCost') }}</div>
                <div class="font-medium">{{ billingData.amount }}</div>
              </div>
            </div>
            <NuxtLink :to="`/auth/select-plan?current_plan=${planMap[billingData.package]}`">
-            <UButton label="Change Package" color="warning" icon="i-lucide-credit-card" />
+            <UButton :label="t('billing.changePackage')" color="warning" icon="i-lucide-credit-card" />
            </NuxtLink>
          </div>
        </UCard>
@@ -212,7 +212,7 @@ function makePayment() {
        <!-- Last Payment -->
        <UCard>
          <template #header>
-           <h2 class="font-semibold">Payment History</h2>
+           <h2 class="font-semibold">{{ t('billing.paymentHistory') }}</h2>
          </template>
            
            <div class="space-y-3">
@@ -223,7 +223,7 @@ function makePayment() {
                </div>
                <div class="text-right">
                  <p class="font-semibold">{{ billingData.amount }}</p>
-                 <UBadge label="Paid" color="success" variant="subtle" size="xs" />
+                 <UBadge :label="t('billing.paid')" color="success" variant="subtle" size="xs" />
                </div>
              </div>
            
@@ -232,7 +232,7 @@ function makePayment() {
     </div>
 
    <!-- Billing Modal -->
-   <UModal v-model:open="showBillingModal" title="Billing & Payment">
+   <UModal v-model:open="showBillingModal" :title="t('billing.title')">
      <template #body>
        <div class="space-y-6">
          <!-- Current Due -->
@@ -240,25 +240,25 @@ function makePayment() {
            <div class="flex items-center justify-between mb-4">
              <h3 class="font-semibold flex items-center gap-2">
                <UIcon name="i-lucide-receipt" class="size-5" />
-               Current Bill
+               {{ t('billing.paymentDue') }}
              </h3>
              <UBadge :label="getBillingStatusLabel()" :color="getBillingStatusColor()" variant="subtle" />
            </div>
            <div class="space-y-3">
              <div class="flex items-center justify-between">
-               <span class="text-muted">Amount Due</span>
+               <span class="text-muted">{{ t('billing.amountDue') }}</span>
                <span class="font-semibold text-lg">{{ billingData.amount }}</span>
              </div>
              <div class="flex items-center justify-between">
-               <span class="text-muted">Due Date</span>
+               <span class="text-muted">{{ t('billing.dueDate') }}</span>
                <span class="font-medium">{{ billingData.dueDate }}</span>
              </div>
              <div class="flex items-center justify-between">
-               <span class="text-muted">Package</span>
+               <span class="text-muted">{{ t('billing.package') }}</span>
                <span class="font-medium">{{ billingData.package }}</span>
              </div>
              <div class="flex items-center justify-between">
-               <span class="text-muted">Next Renewal</span>
+               <span class="text-muted">{{ t('billing.nextRenewal', { date: '' }).replace(' on ', '') }}</span>
                <span class="font-medium">{{ billingData.nextRenewalDate }}</span>
              </div>
            </div>
@@ -268,7 +268,7 @@ function makePayment() {
          <div>
            <h3 class="font-semibold mb-3 flex items-center gap-2">
              <UIcon name="i-lucide-credit-card" class="size-5" />
-             Payment Methods
+             {{ t('billing.paymentMethods') }}
            </h3>
            <div class="space-y-2">
              <button 
@@ -294,31 +294,31 @@ function makePayment() {
            <!-- Payment Details (Direct Payment) -->
            <div v-if="selectedPaymentMethod" class="mt-4 p-4 rounded-lg bg-muted/30 border border-default">
              <div v-if="selectedPaymentMethod === 'va'" class="space-y-3">
-               <p class="text-sm font-medium">Virtual Account Number</p>
+               <p class="text-sm font-medium">{{ t('billing.vaNumber') }}</p>
                <div class="flex items-center justify-between p-3 bg-background rounded border border-default">
                  <span class="font-mono font-bold text-lg tracking-wider">8801 2345 6789</span>
                  <UButton icon="i-lucide-copy" size="sm" color="neutral" variant="ghost" />
                </div>
-               <p class="text-xs text-muted">Please transfer the exact amount before the due date.</p>
+               <p class="text-xs text-muted">{{ t('billing.vaInstruction') }}</p>
              </div>
              <div v-else-if="selectedPaymentMethod === 'qris'" class="space-y-3 flex flex-col items-center">
-               <p class="text-sm font-medium w-full text-left">Scan QR Code</p>
+               <p class="text-sm font-medium w-full text-left">{{ t('billing.scanQris') }}</p>
                <div class="p-2 bg-white rounded-lg inline-block">
                  <UIcon name="i-lucide-qr-code" class="size-32 text-black" />
                </div>
-               <p class="text-xs text-muted text-center">Open your e-wallet or banking app and scan the QR code above.</p>
+               <p class="text-xs text-muted text-center">{{ t('billing.qrisInstruction') }}</p>
              </div>
              <div v-else class="space-y-3">
-               <p class="text-sm font-medium">Payment Instructions</p>
-               <p class="text-sm text-muted">Please follow the instructions sent to your email to complete the payment via {{ paymentMethods.find(m => m.id === selectedPaymentMethod)?.name }}.</p>
+               <p class="text-sm font-medium">{{ t('billing.paymentInstruction') }}</p>
+               <p class="text-sm text-muted">{{ t('billing.paymentInstructionDesc', { method: paymentMethods.find(m => m.id === selectedPaymentMethod)?.name }) }}</p>
              </div>
            </div>
          </div>
 
          <!-- Billing Info -->
-         <UAlert icon="i-lucide-info" title="Billing Information" variant="subtle">
+         <UAlert icon="i-lucide-info" :title="t('billing.billingInfo')" variant="subtle">
            <template #description>
-             Invoices are sent to your registered email. You can download, view, or manage your subscription anytime.
+             {{ t('billing.billingInfoDesc') }}
            </template>
          </UAlert>
         
@@ -326,7 +326,7 @@ function makePayment() {
      </template>
      <template #footer>
        <div class="flex justify-end gap-3">
-         <UButton label="Make Payment" color="warning" icon="i-lucide-credit-card" @click="makePayment" />
+         <UButton :label="t('billing.makePayment')" color="warning" icon="i-lucide-credit-card" @click="makePayment" />
        </div>
      </template>
    </UModal>

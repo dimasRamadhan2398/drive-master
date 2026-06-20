@@ -14,6 +14,7 @@ export interface CreatePageData {
   status: "draft" | "published";
 }
 
+const { t } = useI18n()
 const props = defineProps<{
   open: boolean;
   page?: PageFormData | null;
@@ -124,7 +125,7 @@ async function savePage() {
               class="w-full"
             />
             <template #hint>
-              <span>Leave empty to auto-generate from title</span>
+              <span>{{ t('admin.content.slugHint') }}</span>
             </template>
           </UFormField>
           <UFormField label="Status">

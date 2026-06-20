@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
 // Onboarding modal state - would check if user has completed profile
@@ -39,11 +40,11 @@ const userData = {
   }
 }
 
-const recentActivity = [
+const recentActivity = computed(() => [
   { 
     id: 1, 
     type: 'session', 
-    title: 'Training Session #4', 
+    title: `${t('history.session')} #4`,
     description: 'Highway driving basics completed',
     date: 'Mar 25, 2026',
     status: 'completed'
@@ -51,7 +52,7 @@ const recentActivity = [
   { 
     id: 2, 
     type: 'session', 
-    title: 'Training Session #3', 
+    title: `${t('history.session')} #3`,
     description: 'Parking and maneuvering',
     date: 'Mar 22, 2026',
     status: 'completed'
@@ -59,24 +60,24 @@ const recentActivity = [
   { 
     id: 3, 
     type: 'booking', 
-    title: 'Session Booked', 
+    title: t('schedule.bookingSuccess'),
     description: 'Training Session #5 scheduled',
     date: 'Mar 20, 2026',
     status: 'info'
   }
-]
+])
 
-const quickActions = [
-  { label: 'Book Session', icon: 'i-lucide-calendar-plus', to: '/dashboard/schedule', color: 'primary' as const },
-  { label: 'View History', icon: 'i-lucide-history', to: '/dashboard/history', color: 'neutral' as const },
-  { label: 'Get Support', icon: 'i-simple-icons-whatsapp', to: 'https://wa.me/6281234567890', external: true, color: 'neutral' as const }
-]
+const quickActions = computed(() => [
+  { label: t('dashboard.bookSession'), icon: 'i-lucide-calendar-plus', to: '/dashboard/schedule', color: 'primary' as const },
+  { label: t('dashboard.viewHistory'), icon: 'i-lucide-history', to: '/dashboard/history', color: 'neutral' as const },
+  { label: t('dashboard.getSupport'), icon: 'i-simple-icons-whatsapp', to: 'https://wa.me/6281234567890', external: true, color: 'neutral' as const }
+])
 </script>
 
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Dashboard">
+      <UDashboardNavbar :title="t('common.dashboard')">
         <template #right>
           <UButton icon="i-lucide-bell" color="neutral" variant="ghost" />
           <UColorModeButton />
@@ -96,11 +97,11 @@ const quickActions = [
         <UCard class="bg-primary/5 border-primary/20">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 class="text-2xl font-bold">Welcome back, {{ userData.name.split(' ')[0] }}!</h1>
-              <p class="text-muted mt-1">You have {{ userData.remainingSessions }} sessions remaining in your {{ userData.package }}.</p>
+              <h1 class="text-2xl font-bold">{{ t('dashboard.welcome', { name: userData.name.split(' ')[0] }) }}</h1>
+              <p class="text-muted mt-1">{{ t('dashboard.sessionsRemaining', { count: userData.remainingSessions, package: userData.package }) }}</p>
             </div>
             <NuxtLink to="/dashboard/schedule">
-              <UButton label="Book Next Session" icon="i-lucide-calendar-plus" />
+              <UButton :label="t('dashboard.bookNextSession')" icon="i-lucide-calendar-plus" />
             </NuxtLink>
           </div>
         </UCard>
@@ -114,7 +115,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ userData.completedSessions }}</p>
-                <p class="text-sm text-muted">Sessions Completed</p>
+                <p class="text-sm text-muted">{{ t('dashboard.sessionsCompleted') }}</p>
               </div>
             </div>
           </UCard>
@@ -126,7 +127,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ userData.remainingSessions }}</p>
-                <p class="text-sm text-muted">Sessions Remaining</p>
+                <p class="text-sm text-muted">{{ t('dashboard.sessionsRemainingCount') }}</p>
               </div>
             </div>
           </UCard>
@@ -138,7 +139,7 @@ const quickActions = [
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ userData.progress }}%</p>
-                <p class="text-sm text-muted">Course Progress</p>
+                <p class="text-sm text-muted">{{ t('dashboard.courseProgress') }}</p>
               </div>
             </div>
           </UCard>
@@ -149,8 +150,8 @@ const quickActions = [
                 <UIcon name="i-lucide-award" class="size-6 text-green-500" />
               </div>
               <div>
-                <p class="text-2xl font-bold">Pending</p>
-                <p class="text-sm text-muted">Certificate Status</p>
+                <p class="text-2xl font-bold">{{ t('common.pending') }}</p>
+                <p class="text-sm text-muted">{{ t('dashboard.certificateStatus') }}</p>
               </div>
             </div>
           </UCard>
@@ -161,8 +162,8 @@ const quickActions = [
           <UCard class="lg:col-span-2">
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">Next Session</h2>
-                <UBadge label="Confirmed" color="success" variant="subtle" />
+                <h2 class="font-semibold">{{ t('dashboard.nextSession') }}</h2>
+                <UBadge :label="t('dashboard.confirmed')" color="success" variant="subtle" />
               </div>
             </template>
 
@@ -173,7 +174,7 @@ const quickActions = [
                     <UIcon name="i-lucide-calendar" class="size-5 text-primary" />
                   </div>
                   <div>
-                    <p class="text-sm text-muted">Date</p>
+                    <p class="text-sm text-muted">{{ t('dashboard.date') }}</p>
                     <p class="font-medium">{{ userData.nextSession.date }}</p>
                   </div>
                 </div>
@@ -183,7 +184,7 @@ const quickActions = [
                     <UIcon name="i-lucide-clock" class="size-5 text-primary" />
                   </div>
                   <div>
-                    <p class="text-sm text-muted">Time</p>
+                    <p class="text-sm text-muted">{{ t('dashboard.time') }}</p>
                     <p class="font-medium">{{ userData.nextSession.time }}</p>
                   </div>
                 </div>
@@ -195,7 +196,7 @@ const quickActions = [
                     <UIcon name="i-lucide-car" class="size-5 text-primary" />
                   </div>
                   <div>
-                    <p class="text-sm text-muted">Vehicle</p>
+                    <p class="text-sm text-muted">{{ t('dashboard.vehicle') }}</p>
                     <p class="font-medium">{{ userData.nextSession.car }}</p>
                   </div>
                 </div>
@@ -205,7 +206,7 @@ const quickActions = [
                     <UIcon name="i-lucide-user" class="size-5 text-primary" />
                   </div>
                   <div>
-                    <p class="text-sm text-muted">Instructor</p>
+                    <p class="text-sm text-muted">{{ t('dashboard.instructor') }}</p>
                     <p class="font-medium">{{ userData.nextSession.instructor }}</p>
                   </div>
                 </div>
@@ -214,8 +215,8 @@ const quickActions = [
 
             <template #footer>
               <div class="flex gap-3">
-                <UButton label="View Details" variant="outline" color="neutral" />
-                <UButton label="Reschedule" variant="ghost" color="neutral" icon="i-lucide-calendar-days" />
+                <UButton :label="t('dashboard.viewDetails')" variant="outline" color="neutral" />
+                <UButton :label="t('dashboard.reschedule')" variant="ghost" color="neutral" icon="i-lucide-calendar-days" />
               </div>
             </template>
           </UCard>
@@ -223,7 +224,7 @@ const quickActions = [
           <!-- Progress Card -->
           <UCard>
             <template #header>
-              <h2 class="font-semibold">Course Progress</h2>
+              <h2 class="font-semibold">{{ t('dashboard.courseProgressTitle') }}</h2>
             </template>
 
             <div class="space-y-4">
@@ -258,7 +259,7 @@ const quickActions = [
 
               <div class="space-y-2">
                 <div class="flex justify-between text-sm">
-                  <span class="text-muted">Completed</span>
+                  <span class="text-muted">{{ t('common.completed') }}</span>
                   <span class="font-medium">{{ userData.completedSessions }}/{{ userData.totalSessions }}</span>
                 </div>
                 <UProgress :value="userData.progress" />
@@ -267,7 +268,7 @@ const quickActions = [
 
             <template #footer>
               <p class="text-sm text-muted text-center">
-                {{ userData.remainingSessions }} more sessions to complete your course
+                {{ t('dashboard.moreSessions', { count: userData.remainingSessions }) }}
               </p>
             </template>
           </UCard>
@@ -278,9 +279,9 @@ const quickActions = [
           <UCard class="lg:col-span-2">
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">Recent Activity</h2>
+                <h2 class="font-semibold">{{ t('dashboard.recentActivity') }}</h2>
                 <NuxtLink to="/dashboard/history">
-                  <UButton label="View All" variant="ghost" size="sm" trailingIcon="i-lucide-arrow-right" />
+                  <UButton :label="t('dashboard.viewAll')" variant="ghost" size="sm" trailingIcon="i-lucide-arrow-right" />
                 </NuxtLink>
               </div>
             </template>
@@ -312,7 +313,7 @@ const quickActions = [
 
           <UCard>
             <template #header>
-              <h2 class="font-semibold">Quick Actions</h2>
+              <h2 class="font-semibold">{{ t('dashboard.quickActions') }}</h2>
             </template>
 
             <div class="space-y-3">
@@ -335,7 +336,7 @@ const quickActions = [
             <template #footer>
               <UAlert icon="i-lucide-info" variant="subtle">
                 <template #description>
-                  Need help? Contact our support team via WhatsApp.
+                  {{ t('dashboard.needHelp') }}
                 </template>
               </UAlert>
             </template>

@@ -13,6 +13,7 @@ interface Props {
   apiKey?: string;
 }
 
+const { t } = useI18n()
 const props = withDefaults(defineProps<Props>(), {
   modelValue: "",
   placeholder: "Write your content here...",
@@ -89,7 +90,7 @@ onBeforeUnmount(() => {
       <div ref="editorContainer" class="bg-background" />
       <template #fallback>
         <div class="min-h-[200px] flex items-center justify-center bg-muted/30">
-          <span class="text-sm text-muted">Loading editor...</span>
+          <span class="text-sm text-muted">{{ t('common.loadingEditor') }}</span>
         </div>
       </template>
     </ClientOnly>

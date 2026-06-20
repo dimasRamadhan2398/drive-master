@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const props = defineProps({
   page: {
     type: Object,
@@ -19,10 +20,10 @@ if (!formData.value.sections) {
 const generateId = () => Math.random().toString(36).substr(2, 9)
 
 const sectionTypes = [
-  { label: 'Hero Section', value: 'hero', icon: 'i-lucide-layout-template' },
-  { label: 'Text Block', value: 'text', icon: 'i-lucide-align-left' },
-  { label: 'Image + Text', value: 'image_text', icon: 'i-lucide-image' },
-  { label: 'Call to Action (CTA)', value: 'cta', icon: 'i-lucide-megaphone' }
+  { label: t('admin.heroSection'), value: 'hero', icon: 'i-lucide-layout-template' },
+  { label: t('admin.textBlock'), value: 'text', icon: 'i-lucide-align-left' },
+  { label: t('admin.imageText'), value: 'image_text', icon: 'i-lucide-image' },
+  { label: t('admin.ctaSection'), value: 'cta', icon: 'i-lucide-megaphone' }
 ]
 
 function addSection(type: string) {
@@ -83,7 +84,7 @@ function onDragEnd() {
 // ==================== ACTIONS ====================
 function handleSave() {
   emit('save', formData.value)
-  toast.add({ title: 'Page Saved', description: `Sections for "${formData.value.title}" have been saved.`, color: 'success' })
+  toast.add({ title: t('admin.pageSaved'), description: t('admin.pageSavedDesc', { title: formData.value.title }), color: 'success' })
 }
 
 function handleClose() {
@@ -98,14 +99,14 @@ function handleClose() {
       <div>
         <div class="flex items-center gap-3 mb-1">
           <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" @click="handleClose" />
-          <h2 class="text-xl font-semibold">Editing: {{ formData.title }}</h2>
+          <h2 class="text-xl font-semibold">{{ t('admin.editPage') }}: {{ formData.title }}</h2>
           <UBadge :label="formData.status" :color="formData.status === 'published' ? 'success' : 'warning'" variant="subtle" />
         </div>
         <p class="text-sm text-muted ml-11">Path: <code>{{ formData.slug }}</code></p>
       </div>
       <div class="flex items-center gap-3">
-        <UButton label="Discard Changes" color="neutral" variant="ghost" @click="handleClose" />
-        <UButton label="Save Page" icon="i-lucide-save" @click="handleSave" />
+        <UButton :label="t('admin.discardChanges')" color="neutral" variant="ghost" @click="handleClose" />
+        <UButton :label="t('admin.savePage')" icon="i-lucide-save" @click="handleSave" />
       </div>
     </div>
 
@@ -115,8 +116,8 @@ function handleClose() {
       <!-- Empty State -->
       <div v-if="formData.sections.length === 0" class="text-center py-16 border-2 border-dashed border-default rounded-xl">
         <UIcon name="i-lucide-layout-dashboard" class="size-12 text-muted mb-3 mx-auto" />
-        <h3 class="text-lg font-medium mb-1">No sections yet</h3>
-        <p class="text-muted text-sm mb-4">Start building your page by adding a section below.</p>
+        <h3 class="text-lg font-medium mb-1">{{ t('admin.noSections') }}</h3>
+        <p class="text-muted text-sm mb-4">{{ t('admin.addSectionDesc') }}</p>
       </div>
 
       <!-- Sections List -->
@@ -147,33 +148,33 @@ function handleClose() {
             <!-- HERO FORM -->
             <div v-if="section.type === 'hero'" class="grid grid-cols-2 gap-4">
               <div class="col-span-2">
-                <label class="block text-xs font-medium text-muted mb-1.5">Heading</label>
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.heading') }}</label>
                 <UInput v-model="section.data.heading" placeholder="Main big title" class="w-full" />
               </div>
               <div class="col-span-2">
-                <label class="block text-xs font-medium text-muted mb-1.5">Subheading</label>
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.subheading') }}</label>
                 <UTextarea v-model="section.data.subheading" placeholder="Description under the title" :rows="2" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-muted mb-1.5">CTA Button Text</label>
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.ctaButtonText') }}</label>
                 <UInput v-model="section.data.ctaText" placeholder="e.g. Get Started" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-muted mb-1.5">Background Image URL</label>
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.bgImageUrl') }}</label>
                 <UInput v-model="section.data.bgImage" icon="i-lucide-image" placeholder="https://..." class="w-full" />
               </div>
             </div>
 
             <!-- TEXT BLOCK FORM -->
             <div v-if="section.type === 'text'">
-              <label class="block text-xs font-medium text-muted mb-1.5">Content</label>
+              <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.content') }}</label>
               <UTextarea v-model="section.data.content" placeholder="Write your paragraph here..." :rows="4" class="w-full" />
             </div>
 
             <!-- IMAGE + TEXT FORM -->
             <div v-if="section.type === 'image_text'" class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-medium text-muted mb-1.5">Image URL</label>
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.imageUrl') }}</label>
                 <div class="border-2 border-dashed border-default rounded-lg p-4 text-center h-32 flex flex-col items-center justify-center relative overflow-hidden">
                   <template v-if="section.data.image">
                     <img :src="section.data.image" class="absolute inset-0 w-full h-full object-cover opacity-30" />
@@ -186,7 +187,7 @@ function handleClose() {
                 </div>
               </div>
               <div>
-                <label class="block text-xs font-medium text-muted mb-1.5">Text Content</label>
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.textContent') }}</label>
                 <UTextarea v-model="section.data.content" placeholder="Description text..." class="w-full h-32" />
               </div>
             </div>
@@ -194,15 +195,15 @@ function handleClose() {
             <!-- CTA FORM -->
             <div v-if="section.type === 'cta'" class="grid grid-cols-2 gap-4 bg-primary/5 p-4 rounded-lg border border-primary/20">
               <div class="col-span-2">
-                <label class="block text-xs font-medium text-primary mb-1.5">CTA Heading</label>
+                <label class="block text-xs font-medium text-primary mb-1.5">{{ t('admin.ctaSection') }} {{ t('admin.heading') }}</label>
                 <UInput v-model="section.data.heading" placeholder="e.g. Ready to start driving?" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-primary mb-1.5">Button Text</label>
+                <label class="block text-xs font-medium text-primary mb-1.5">{{ t('admin.buttonText') }}</label>
                 <UInput v-model="section.data.buttonText" placeholder="e.g. Contact Us" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-primary mb-1.5">Button Link</label>
+                <label class="block text-xs font-medium text-primary mb-1.5">{{ t('admin.buttonLink') }}</label>
                 <UInput v-model="section.data.buttonLink" placeholder="e.g. /contact" class="w-full" />
               </div>
             </div>
@@ -215,14 +216,14 @@ function handleClose() {
       <div class="flex justify-center mt-8">
         <UDropdownMenu
           :items="[
-            sectionTypes.map(t => ({ 
-              label: t.label, 
-              icon: t.icon, 
-              onSelect: () => addSection(t.value) 
+            sectionTypes.map(st => ({
+              label: st.label,
+              icon: st.icon,
+              onSelect: () => addSection(st.value)
             }))
           ]"
         >
-          <UButton label="Add Section" icon="i-lucide-plus" color="primary" variant="soft" size="lg" class="shadow-sm" />
+          <UButton :label="t('admin.addSection')" icon="i-lucide-plus" color="primary" variant="soft" size="lg" class="shadow-sm" />
         </UDropdownMenu>
       </div>
       

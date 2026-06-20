@@ -3,9 +3,8 @@ import { ref, computed } from "vue";
 const { t } = useI18n();
 
 useSeoMeta({
-  title: "Home | Drive Master Academy",
-  description:
-    "Drive Master Academy offers comprehensive EV and manual driving courses in Alam Sutera with expert instructors and certified programs.",
+  title: t('nav.home') + " | Drive Master Academy",
+  description: t('home.hero.description'),
 });
 
 // Course Material with i18n
@@ -340,15 +339,19 @@ const selectedSlot = ref<string | null>(null);
 const currentDate = ref(new Date("2026-04-10T00:00:00"));
 
 const currentMonth = computed(() => {
-  return currentDate.value.toLocaleDateString("en-US", {
+  return currentDate.value.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', {
     month: "long",
     year: "numeric",
   });
 });
 const currentMonthShortStr = computed(() => {
-  return currentDate.value.toLocaleDateString("en-US", { month: "short" });
+  return currentDate.value.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', { month: "short" });
 });
-const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const weekDays = computed(() => {
+  return locale.value === 'id'
+    ? ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
+    : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+});
 
 // FITUR BARU: Kalender dinamis untuk halaman Home
 const calendarDays = computed(() => {
@@ -580,8 +583,8 @@ onMounted(() => {
                   <div
                     v-for="(val, unit) in {
                       hours: timeLeft.hours,
-                      mins: timeLeft.minutes,
-                      secs: timeLeft.seconds,
+                      minutes: timeLeft.minutes,
+                      seconds: timeLeft.seconds,
                     }"
                     :key="unit"
                     class="text-center"
@@ -594,7 +597,7 @@ onMounted(() => {
                       }}</span>
                     </div>
                     <span class="text-[10px] font-bold text-muted uppercase">{{
-                      unit
+                      t(`common.${unit}`)
                     }}</span>
                   </div>
                 </div>
@@ -653,12 +656,7 @@ onMounted(() => {
                       Rp {{ plan.price.toLocaleString("id-ID") }}
                     </p>
                     <p class="text-xs text-green-600 font-medium">
-                      Save Rp
-                      {{
-                        (plan.price - plan.discountPrice).toLocaleString(
-                          "id-ID",
-                        )
-                      }}
+                      {{ t('home.saveAmount', { amount: (plan.price - plan.discountPrice).toLocaleString("id-ID") }) }}
                     </p>
                   </div>
                   <div v-else>
@@ -671,7 +669,7 @@ onMounted(() => {
                 <!-- Sessions Badge -->
                 <div class="text-center">
                   <UBadge
-                    :label="`${plan.sessions} Sessions`"
+                    :label="`${plan.sessions} ${t('home.sessions')}`"
                     color="warning"
                     variant="subtle"
                   />
@@ -828,7 +826,7 @@ onMounted(() => {
                   </p>
                 </div>
                 <UBadge
-                  :label="slot.available ? 'Available' : 'Booked'"
+                  :label="slot.available ? t('home.available') : t('home.booked')"
                   :color="slot.available ? 'success' : 'error'"
                   variant="subtle"
                 />

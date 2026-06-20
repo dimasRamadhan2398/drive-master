@@ -44,7 +44,7 @@ const userMenuItems = computed(() => [
   ],
   [
     {
-      label: t('dashboard.welcome').replace('{name}', user.value?.name || ''),
+      label: t('dashboard.welcome', { name: user.value?.name || '' }),
       icon: 'i-lucide-layout-dashboard',
       to: '/dashboard'
     },

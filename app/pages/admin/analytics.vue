@@ -3,8 +3,8 @@
     <!-- Google Analytics (GA4) Real-Time Insights -->
         <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-lg font-bold">Google Analytics (GA4) Real-Time Insights</h2>
-            <p class="text-sm text-muted font-normal">Pelacakan traffic situs web dan funnel konversi secara real-time</p>
+            <h2 class="text-lg font-bold">{{ t('admin.gaInsights') }}</h2>
+            <p class="text-sm text-muted font-normal">{{ t('admin.gaInsightsDesc') }}</p>
         </div>
         <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" size="xs" :loading="gaLoading" @click="fetchGAData" />
         </div>
@@ -20,7 +20,7 @@
                 <span v-if="gaLoading">...</span>
                 <span v-else>{{ analyticsStore.totalGaUsers }}</span>
                 </p>
-                <p class="text-sm text-muted">Total Visitors (30 Days)</p>
+                <p class="text-sm text-muted">{{ t('admin.totalVisitors') }}</p>
             </div>
             </div>
         </UCard>
@@ -35,7 +35,7 @@
                 <span v-if="gaLoading">...</span>
                 <span v-else>{{ analyticsStore.totalGaPageViews }}</span>
                 </p>
-                <p class="text-sm text-muted">Page Views (30 Days)</p>
+                <p class="text-sm text-muted">{{ t('admin.pageViews') }}</p>
             </div>
             </div>
         </UCard>
@@ -50,7 +50,7 @@
                 <span v-if="gaLoading">...</span>
                 <span v-else>{{ analyticsStore.overallConversionRate }}%</span>
                 </p>
-                <p class="text-sm text-muted">Checkout Conversion Rate</p>
+                <p class="text-sm text-muted">{{ t('admin.conversionRate') }}</p>
             </div>
             </div>
         </UCard>
@@ -61,19 +61,19 @@
         <UCard>
             <template #header>
             <div class="flex items-center justify-between">
-                <h3 class="font-semibold">Visitor Trend</h3>
+                <h3 class="font-semibold">{{ t('admin.visitorTrend') }}</h3>
                 <div class="flex items-center gap-4 text-[10px] text-muted">
-                <span class="flex items-center gap-1"><span class="size-2 rounded-full bg-orange-500"></span> Page Views</span>
-                <span class="flex items-center gap-1"><span class="size-2 rounded-full bg-blue-500"></span> Active Users</span>
+                <span class="flex items-center gap-1"><span class="size-2 rounded-full bg-orange-500"></span> {{ t('admin.pageViews') }}</span>
+                <span class="flex items-center gap-1"><span class="size-2 rounded-full bg-blue-500"></span> {{ t('admin.activeUsers') }}</span>
                 </div>
             </div>
             </template>
 
             <div v-if="gaLoading" class="h-[150px] flex items-center justify-center">
-            <p class="text-sm text-muted">Loading chart data...</p>
+            <p class="text-sm text-muted">{{ t('admin.loadingChart') }}</p>
             </div>
             <div v-else-if="analyticsStore.gaOverviewData.length === 0" class="h-[150px] flex items-center justify-center">
-            <p class="text-sm text-muted">No visitor data available.</p>
+            <p class="text-sm text-muted">{{ t('admin.noVisitorData') }}</p>
             </div>
             <div v-else class="relative pt-2">
             <svg viewBox="0 0 500 150" class="w-full h-[150px] overflow-visible">
@@ -108,14 +108,14 @@
         <!-- Conversion Funnel -->
         <UCard>
             <template #header>
-            <h3 class="font-semibold">Booking Conversion Funnel</h3>
+            <h3 class="font-semibold">{{ t('admin.funnelTitle') }}</h3>
             </template>
 
             <div v-if="gaLoading" class="h-[150px] flex items-center justify-center">
-            <p class="text-sm text-muted">Loading funnel data...</p>
+            <p class="text-sm text-muted">{{ t('admin.loadingFunnel') }}</p>
             </div>
             <div v-else-if="analyticsStore.gaFunnelData.length === 0" class="h-[150px] flex items-center justify-center">
-            <p class="text-sm text-muted">No funnel data available.</p>
+            <p class="text-sm text-muted">{{ t('admin.noFunnelData') }}</p>
             </div>
             <div v-else class="space-y-3.5 py-1">
             <div v-for="(step, idx) in analyticsStore.gaFunnelData" :key="idx" class="space-y-1">
@@ -140,6 +140,7 @@
 <script setup lang="ts">
 import { useAnalyticsStore } from '~/stores/analytics'
 
+const { t } = useI18n()
 definePageMeta({
     layout: "admin",
 });

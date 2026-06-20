@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const { activeAlerts } = useSmartAlerts()
 const { updateSlotStatus } = useSchedules()
 const toast = useToast()
@@ -6,7 +7,7 @@ const toast = useToast()
 function startSession(id: string, student: string) {
   updateSlotStatus(id, 'in-progress')
   toast.add({ 
-    title: 'Session Started', 
+    title: t('admin.startSession'),
     description: `Kursus untuk ${student} resmi dimulai.`, 
     color: 'success', 
     icon: 'i-lucide-play' 
@@ -35,7 +36,7 @@ function startSession(id: string, student: string) {
 
     <template>
       <div class="p-4 border-b border-default flex items-center justify-between">
-        <h3 class="font-bold text-sm">Upcoming Sessions</h3>
+        <h3 class="font-bold text-sm">{{ t('schedule.upcomingSessions') }}</h3>
         <UBadge :label="activeAlerts.length.toString()" color="error" variant="subtle" size="sm" />
       </div>
       
@@ -47,11 +48,11 @@ function startSession(id: string, student: string) {
         >
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-bold text-primary">{{ alert.time }}</span>
-            <span class="text-[10px] text-muted font-medium uppercase tracking-wider">Starts Soon</span>
+            <span class="text-[10px] text-muted font-medium uppercase tracking-wider">{{ t('admin.startsSoon') }}</span>
           </div>
           <p class="text-sm font-medium mb-3">{{ alert.student }}</p>
           <UButton 
-            label="Start Session" 
+            :label="t('admin.startSession')"
             icon="i-lucide-play" 
             size="xs" 
             block 

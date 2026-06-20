@@ -9,6 +9,7 @@ import AddPackageModal from "~/components/packages/AddPackageModal.vue";
 import EditPackageModal from "~/components/packages/EditPackageModal.vue";
 import type { CreatePackageData } from "~/services/packageService";
 
+const { t } = useI18n()
 definePageMeta({ layout: "admin" });
 
 const toast = useToast();
@@ -105,7 +106,7 @@ async function handleAddPackage(pkg: CreatePackageData) {
     showAddModal.value = false;
   } catch (error) {
     toast.add({
-      title: "Error",
+      title: t('common.error'),
       description: "Gagal membuat paket. Silakan coba lagi.",
       color: "error",
     });
@@ -120,12 +121,12 @@ onMounted(() => {
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Package Management">
+      <UDashboardNavbar :title="t('admin.packages')">
         <template #right>
           <UButton
             icon="i-lucide-plus"
             color="warning"
-            label="Add Package"
+            :label="t('admin.addNew')"
             @click="showAddModal = true"
           />
           <UColorModeButton />
@@ -144,7 +145,7 @@ onMounted(() => {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ totalPackages }}</p>
-                <p class="text-md text-muted">Total Packages</p>
+                <p class="text-md text-muted">Total {{ t('admin.packages') }}</p>
               </div>
             </div>
           </UCard>
@@ -158,7 +159,7 @@ onMounted(() => {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ totalSold }}</p>
-                <p class="text-md text-muted">Total Sold</p>
+                <p class="text-md text-muted">{{ t('admin.unitsSold') }}</p>
               </div>
             </div>
           </UCard>
@@ -171,7 +172,7 @@ onMounted(() => {
                 <p class="text-2xl font-bold">
                   {{ formatPrice(totalRevenue) }}
                 </p>
-                <p class="text-md text-muted">Total Revenue</p>
+                <p class="text-md text-muted">{{ t('admin.totalRevenue') }}</p>
               </div>
             </div>
           </UCard>
@@ -191,7 +192,7 @@ onMounted(() => {
                     <h3 class="text-xl font-bold">{{ pkg.name }}</h3>
                     <UBadge
                       v-if="pkg.isPopular"
-                      label="Popular"
+                      :label="t('packages.popular')"
                       color="warning"
                       size="md"
                     />
@@ -213,11 +214,11 @@ onMounted(() => {
               <div class="grid grid-cols-2 gap-3 text-md">
                 <div class="p-2 rounded-lg bg-muted/50 text-center">
                   <p class="font-bold">{{ pkg.sessions }}</p>
-                  <p class="text-md text-muted">Sessions</p>
+                  <p class="text-md text-muted">{{ t('billing.sessions') }}</p>
                 </div>
                 <div class="p-2 rounded-lg bg-muted/50 text-center">
                   <p class="font-bold">{{ pkg.duration }} min</p>
-                  <p class="text-md text-muted">Per Session</p>
+                  <p class="text-md text-muted">Per {{ t('history.session') }}</p>
                 </div>
               </div>
 
@@ -235,15 +236,15 @@ onMounted(() => {
               <USeparator />
 
               <div class="flex items-center justify-between text-md">
-                <span class="text-muted">Total Sold</span>
-                <span class="font-bold">{{ pkg.totalSold }} students</span>
+                <span class="text-muted">{{ t('admin.unitsSold') }}</span>
+                <span class="font-bold">{{ pkg.totalSold }} {{ t('admin.students').toLowerCase() }}</span>
               </div>
             </div>
 
             <template #footer>
               <div class="flex gap-2">
                 <UButton
-                  label="Edit"
+                  :label="t('common.edit')"
                   icon="i-lucide-pencil"
                   variant="outline"
                   color="neutral"
@@ -254,19 +255,19 @@ onMounted(() => {
                   :items="[
                     [
                       {
-                        label: 'View Sales',
+                        label: t('admin.viewSales'),
                         icon: 'i-lucide-chart-bar',
                         onSelect: () => viewPackageSales(pkg),
                       },
                       {
-                        label: 'Duplicate',
+                        label: t('admin.duplicate'),
                         icon: 'i-lucide-copy',
                         onSelect: () => duplicatePackage(pkg),
                       },
                     ],
                     [
                       {
-                        label: 'Delete',
+                        label: t('common.delete'),
                         icon: 'i-lucide-trash',
                         color: 'error',
                         onSelect: () => deletePackage(pkg.id),
@@ -311,9 +312,9 @@ onMounted(() => {
         <UCard>
           <template #header>
             <div class="flex items-center justify-between">
-              <h2 class="font-semibold">Package Add-ons</h2>
+              <h2 class="font-semibold">{{ t('admin.packageAddons') }}</h2>
               <UButton
-                label="Add Add-on"
+                :label="t('admin.addon.add')"
                 icon="i-lucide-plus"
                 size="md"
                 color="warning"
@@ -343,7 +344,7 @@ onMounted(() => {
               <div class="flex items-center gap-4">
                 <div class="text-right">
                   <p class="font-bold">{{ addon.sold }}</p>
-                  <p class="text-md text-muted">Sold</p>
+                  <p class="text-md text-muted">{{ t('admin.unitsSold').replace('Total ', '') }}</p>
                 </div>
                 <UButton
                   icon="i-lucide-pencil"

@@ -3,6 +3,7 @@ import { h, ref, onMounted, computed } from "vue";
 import type { TableColumn } from "@nuxt/ui";
 import { useDashboardStore } from "~/stores/dashboard";
 
+const { t } = useI18n()
 definePageMeta({ layout: "admin" });
 
 const dashboardStore = useDashboardStore();
@@ -21,28 +22,28 @@ const stats = computed(() => {
   const dashboardStats = dashboardStore.stats;
   return [
     {
-      label: "Total Students",
+      label: t('admin.totalStudents'),
       value: dashboardStats.totalMembers.toString() || "0",
       change: `${dashboardStats.growthTotalMembers * 100}%`,
       icon: "i-lucide-users",
       color: "primary",
     },
     {
-      label: "Active Sessions",
+      label: t('admin.activeSessions'),
       value: dashboardStats.activeSessions.toString() || "0",
       change: "+5%",
       icon: "i-lucide-calendar-check",
       color: "blue",
     },
     {
-      label: "Revenue (MTD)",
+      label: t('admin.revenueMtd'),
       value: formatCurrency(dashboardStats.revenueMTD),
       change: "+18%",
       icon: "i-lucide-banknote",
       color: "amber",
     },
     {
-      label: "Certificates Issued",
+      label: t('admin.certsIssued'),
       value: dashboardStats.certificatesIssued.toString() || "0",
       change: "+8%",
       icon: "i-lucide-award",
@@ -107,17 +108,17 @@ const todaySessions = ref<Session[]>([
 ]);
 
 const sessionColumns: TableColumn<Session>[] = [
-  { accessorKey: "time", header: "Time" },
-  { accessorKey: "student", header: "Student" },
-  { accessorKey: "car", header: "Vehicle" },
-  { accessorKey: "instructor", header: "Instructor" },
+  { accessorKey: "time", header: t('dashboard.time') },
+  { accessorKey: "student", header: t('admin.students') },
+  { accessorKey: "car", header: t('dashboard.vehicle') },
+  { accessorKey: "instructor", header: t('dashboard.instructor') },
   {
     accessorKey: "status",
-    header: "Status",
+    header: t('billing.status'),
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       const color = status === "completed" ? "success" : status === "in-progress" ? "info" : "neutral";
-      const label = status === "completed" ? "Completed" : status === "in-progress" ? "In Progress" : "Upcoming";
+      const label = status === "completed" ? t('common.completed') : status === "in-progress" ? "In Progress" : t('common.pending');
       return h(UBadge, { label, color, variant: "subtle", size: "md" });
     },
   },
@@ -147,7 +148,7 @@ type Registration = {
 const registrationColumns: TableColumn<Registration>[] = [
   {
     accessorKey: "name",
-    header: "Student",
+    header: t('admin.students'),
     cell: ({ row }) => {
       const name = row.getValue("name") as string;
       const initials = name
@@ -161,23 +162,23 @@ const registrationColumns: TableColumn<Registration>[] = [
       ]);
     },
   },
-  { accessorKey: "email", header: "Email" },
+  { accessorKey: "email", header: t('auth.email') },
   {
     accessorKey: "package",
-    header: "Package",
+    header: t('billing.package'),
     cell: ({ row }) => {
       const pkg = row.getValue("package") as string;
       return h(UBadge, { label: pkg, color: "neutral", variant: "subtle", size: "md" });
     },
   },
-  { accessorKey: "date", header: "Registration Date" },
+  { accessorKey: "date", header: t('register.form.startDate').replace(' (Opsional)', '').replace(' (Optional)', '') },
   {
     accessorKey: "status",
-    header: "Status",
+    header: t('billing.status'),
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       const color = status === "active" ? "info" : "warning";
-      const label = status === "active" ? "Active" : "Pending";
+      const label = status === "active" ? t('billing.active') : t('common.pending');
       return h(UBadge, { label, color, variant: "subtle", size: "md" });
     },
   },
@@ -187,10 +188,10 @@ const registrationColumns: TableColumn<Registration>[] = [
     cell: () => {
       const items = [
         [
-          { label: "View Details", icon: "i-lucide-eye" },
-          { label: "Edit", icon: "i-lucide-pencil" },
+          { label: t('dashboard.viewDetails'), icon: "i-lucide-eye" },
+          { label: t('common.edit'), icon: "i-lucide-pencil" },
         ],
-        [{ label: "Delete", icon: "i-lucide-trash", color: "error" }],
+        [{ label: t('common.delete'), icon: "i-lucide-trash", color: "error" }],
       ];
       return h(UDropdownMenu, { items }, () =>
         h(UButton, {
@@ -205,28 +206,28 @@ const registrationColumns: TableColumn<Registration>[] = [
 ];
 
 // Mock quick actions
-const quickActions = [
-  { label: "Add Student", icon: "i-lucide-user-plus", to: "/admin/students" },
+const quickActions = computed(() => [
+  { label: t('admin.addNew'), icon: "i-lucide-user-plus", to: "/admin/students" },
   {
-    label: "Manage Schedule",
+    label: t('admin.schedules'),
     icon: "i-lucide-calendar-plus",
     to: "/admin/schedules",
   },
   {
-    label: "Issue Certificate",
+    label: t('admin.certificates'),
     icon: "i-lucide-file-badge",
     to: "/admin/certificates",
   },
-];
+]);
 </script>
 
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Admin Dashboard">
+      <UDashboardNavbar :title="t('admin.title')">
         <template #right>
           <UInput
-            placeholder="Search..."
+            :placeholder="t('common.search') + '...'"
             icon="i-lucide-search"
             color="warning"
             class="w-64 hidden md:flex"
@@ -249,7 +250,7 @@ const quickActions = [
                 <p class="text-md text-muted">{{ stat.label }}</p>
                 <p class="text-2xl font-bold mt-1">{{ stat.value }}</p>
                 <p class="text-md text-green-500 mt-1">
-                  {{ stat.change }} from last month
+                  {{ stat.change }} {{ t('admin.fromLastMonth') }}
                 </p>
               </div>
               <div
@@ -281,10 +282,10 @@ const quickActions = [
           <UCard class="lg:col-span-2">
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">Today&apos;s Sessions</h2>
+                <h2 class="font-semibold">{{ t('admin.todaysSessions') }}</h2>
                 <NuxtLink to="/admin/schedules">
                   <UButton
-                    label="View All"
+                    :label="t('common.viewAll')"
                     color="neutral"
                     variant="ghost"
                     size="md"
@@ -300,7 +301,7 @@ const quickActions = [
           <!-- Quick Actions -->
           <UCard>
             <template #header>
-              <h2 class="font-semibold">Quick Actions</h2>
+              <h2 class="font-semibold">{{ t('dashboard.quickActions') }}</h2>
             </template>
 
             <div class="grid grid-cols-1 space-y-3">
@@ -321,13 +322,13 @@ const quickActions = [
 
             <template #footer>
               <div class="space-y-2">
-                <h3 class="font-medium text-md">Vehicle Status</h3>
+                <h3 class="font-medium text-md">{{ t('dashboard.vehicle') }} Status</h3>
                 <div
                   class="flex items-center justify-between p-2 rounded-lg bg-muted/50"
                 >
                   <span class="text-md">BYD Atto 1</span>
                   <UBadge
-                    label="Available"
+                    :label="t('common.available')"
                     color="primary"
                     variant="subtle"
                     size="md"
@@ -342,10 +343,10 @@ const quickActions = [
         <UCard>
           <template #header>
             <div class="flex items-center justify-between">
-              <h2 class="font-semibold">Recent Registrations</h2>
+              <h2 class="font-semibold">{{ t('admin.recentReg') }}</h2>
               <NuxtLink to="/admin/students">
                 <UButton
-                  label="Manage Students"
+                  :label="t('admin.manageStudents')"
                   color="neutral"
                   variant="ghost"
                   size="md"

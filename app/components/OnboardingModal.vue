@@ -3,14 +3,15 @@ import { ref } from 'vue'
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
+const { t } = useI18n()
 const isOpen = ref(false)
 const step = ref(1)
 const loading = ref(false)
 
-const schema = z.object({
-  fullName: z.string().min(3, 'Name must be at least 3 characters'),
-  ktpNumber: z.string().min(16, 'KTP number must be 16 digits').max(16, 'KTP number must be 16 digits')
-})
+const schema = computed(() => z.object({
+  fullName: z.string().min(3, t('validation.minLength', { min: 3 })),
+  ktpNumber: z.string().min(16, t('validation.ktp')).max(16, t('validation.ktp'))
+}))
 
 const formData = reactive({
   fullName: '',
@@ -56,13 +57,13 @@ function closeModal() {
 </script>
 
 <template>
-  <UModal v-model="show" prevent-close>
+  <UModal v-model:open="show" prevent-close>
     <UCard class="w-full max-w-md">
       <template #header>
         <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold">Complete Your Profile</h2>
+          <h2 class="text-xl font-bold">{{ t('auth.completeProfile') }}</h2>
           <UButton 
-            color="gray" 
+            color="neutral"
             variant="ghost" 
             icon="i-lucide-x" 
             @click="closeModal"
@@ -94,16 +95,16 @@ function closeModal() {
         <!-- Step 1: Full Name -->
         <div v-if="step === 1" class="space-y-4">
           <div>
-            <h3 class="font-semibold mb-2">What's your full name?</h3>
+            <h3 class="font-semibold mb-2">{{ t('auth.fullNameKtp') }}?</h3>
             <p class="text-sm text-muted mb-4">
-              This will be used on your official certificate
+              {{ t('auth.nameHint') }}
             </p>
           </div>
 
-          <UFormField name="fullName" label="Full Name" required>
+          <UFormField name="fullName" :label="t('profile.fullName')" required>
             <UInput 
               v-model="formData.fullName"
-              placeholder="Enter your full name"
+              :placeholder="t('auth.fullNamePlaceholder')"
               icon="i-lucide-user"
               autofocus
               size="lg"
@@ -114,13 +115,13 @@ function closeModal() {
         <!-- Step 2: KTP Number -->
         <div v-if="step === 2" class="space-y-4">
           <div>
-            <h3 class="font-semibold mb-2">Verify with Your KTP</h3>
+            <h3 class="font-semibold mb-2">{{ t('auth.ktpNumber') }}</h3>
             <p class="text-sm text-muted mb-4">
-              Enter your 16-digit KTP number for certificate verification
+              {{ t('auth.ktpHint') }}
             </p>
           </div>
 
-          <UFormField name="ktpNumber" label="KTP Number (16 Digits)" required>
+          <UFormField name="ktpNumber" :label="t('profile.ktpNumber') + ' (16 Digits)'" required>
             <UInput 
               v-model="formData.ktpNumber"
               placeholder="e.g., 3520123456789012"
@@ -133,7 +134,7 @@ function closeModal() {
 
           <UAlert icon="i-lucide-shield-check" color="primary" size="sm">
             <template #description>
-              Your data is encrypted and secure
+              {{ t('auth.dataSecure') }}
             </template>
           </UAlert>
         </div>
@@ -143,7 +144,7 @@ function closeModal() {
           <UButton 
             v-if="step > 1"
             type="button"
-            label="Back"
+            :label="t('common.back')"
             color="neutral"
             variant="outline"
             @click="step--"
@@ -151,7 +152,7 @@ function closeModal() {
           />
           <UButton 
             type="submit"
-            :label="step === 2 ? 'Complete' : 'Next'"
+            :label="step === 2 ? t('common.confirm') : t('common.next')"
             :loading="loading"
             :icon="step === 2 ? 'i-lucide-check' : 'i-lucide-arrow-right'"
             :block="step === 1"

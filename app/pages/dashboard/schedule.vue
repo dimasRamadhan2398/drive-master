@@ -2,6 +2,7 @@
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
 import { computed, ref } from "vue";
 
+const { t } = useI18n()
 definePageMeta({ layout: "dashboard" });
 
 const toast = useToast();
@@ -179,8 +180,8 @@ function confirmReschedule() {
     }
     showRescheduleModal.value = false;
     toast.add({
-      title: "Rescheduled!",
-      description: "Your session has been successfully updated.",
+      title: t('schedule.rescheduleSuccess'),
+      description: t('schedule.rescheduleSuccessDesc'),
       color: "success",
     });
   }
@@ -203,8 +204,8 @@ function confirmCancel() {
     showCancelModal.value = false;
     // PERUBAHAN: Pesan toast yang lebih informatif
     toast.add({
-      title: "Session Cancelled",
-      description: "Your session has been cancelled and the slot is now available again.",
+      title: t('schedule.cancelSuccess'),
+      description: t('schedule.cancelSuccessDesc'),
       color: "neutral",
     });
   }
@@ -246,8 +247,8 @@ function confirmBooking() {
 
     showBookingModal.value = false;
     toast.add({
-      title: "Session Booked!",
-      description: `Your session on ${newSession.date} at ${newSession.time} has been confirmed.`,
+      title: t('schedule.bookingSuccess'),
+      description: t('schedule.bookingSuccessDesc', { date: newSession.date, time: newSession.time }),
       icon: "i-lucide-check-circle",
       color: "success",
     });
@@ -259,7 +260,7 @@ function confirmBooking() {
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="My Schedule">
+      <UDashboardNavbar :title="t('schedule.title')">
         <template #right>
           <UButton icon="i-lucide-bell" color="neutral" variant="ghost" />
           <UColorModeButton />
@@ -271,7 +272,7 @@ function confirmBooking() {
       <div class="p-6 space-y-6">
         <!-- Upcoming Sessions -->
         <div>
-          <h2 class="text-lg font-semibold mb-4">Upcoming Sessions</h2>
+          <h2 class="text-lg font-semibold mb-4">{{ t('schedule.upcomingSessions') }}</h2>
 
           <div v-if="upcomingSessions.length > 0" class="grid md:grid-cols-2 gap-4">
             <UCard v-for="session in upcomingSessions" :key="session.id">
@@ -282,9 +283,9 @@ function confirmBooking() {
                   </div>
                   <div>
                     <div class="flex items-center gap-2">
-                      <h3 class="font-semibold">Session #{{ session.sessionNumber }}</h3>
+                      <h3 class="font-semibold">{{ t('history.session') }} #{{ session.sessionNumber }}</h3>
                       <UBadge
-                        label="Confirmed"
+                        :label="t('dashboard.confirmed')"
                         color="success"
                         variant="subtle"
                         size="md"
@@ -297,12 +298,12 @@ function confirmBooking() {
 
               <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-default">
                 <div>
-                  <p class="text-md text-muted">Date & Time</p>
+                  <p class="text-md text-muted">{{ t('dashboard.date') }} & {{ t('dashboard.time') }}</p>
                   <p class="text-md font-medium">{{ session.date }}</p>
                   <p class="text-md">{{ session.time }}</p>
                 </div>
                 <div>
-                  <p class="text-md text-muted">Instructor</p>
+                  <p class="text-md text-muted">{{ t('dashboard.instructor') }}</p>
                   <p class="text-md font-medium">{{ session.instructor }}</p>
                   <p class="text-md text-muted">{{ session.car }}</p>
                 </div>
@@ -311,7 +312,7 @@ function confirmBooking() {
               <template #footer>
                 <div class="flex gap-2">
                   <UButton
-                    label="Reschedule"
+                    :label="t('dashboard.reschedule')"
                     variant="outline"
                     color="warning"
                     size="md"
@@ -319,7 +320,7 @@ function confirmBooking() {
                     @click="openRescheduleModal(session)"
                   />
                   <UButton
-                    label="Cancel"
+                    :label="t('common.cancel')"
                     variant="ghost"
                     color="error"
                     size="md"
@@ -334,22 +335,22 @@ function confirmBooking() {
           <UEmpty
             v-else
             icon="i-lucide-calendar-x"
-            title="No Upcoming Sessions"
-            description="You don't have any scheduled sessions. Book one below!"
+            :title="t('schedule.noUpcoming')"
+            :description="t('schedule.noUpcoming')"
           />
         </div>
 
         <!-- Book New Session -->
         <UCard>
           <template #header>
-            <h2 class="font-semibold">Book a New Session</h2>
+            <h2 class="font-semibold">{{ t('schedule.bookNewSession') }}</h2>
           </template>
 
           <div class="grid lg:grid-cols-2 gap-8">
             <!-- Calendar -->
             <div>
               <div class="flex items-center justify-between mb-4">
-                <h3 class="text-md font-medium">Select Date</h3>
+                <h3 class="text-md font-medium">{{ t('schedule.selectDate') }}</h3>
                 <div class="flex items-center gap-2">
                   <UButton
                     icon="i-lucide-chevron-left"
@@ -412,11 +413,11 @@ function confirmBooking() {
                     <div
                       class="size-3 rounded bg-primary/10 border border-primary/30"
                     ></div>
-                    <span class="text-muted">Available</span>
+                    <span class="text-muted">{{ t('common.available') }}</span>
                   </div>
                   <div class="flex items-center gap-2">
                     <div class="size-3 rounded bg-primary"></div>
-                    <span class="text-muted">Selected</span>
+                    <span class="text-muted">{{ t('home.selected') }}</span>
                   </div>
                 </div>
               </div>
@@ -425,7 +426,7 @@ function confirmBooking() {
             <!-- Time Slots -->
             <div>
               <div class="flex items-center justify-between mb-4">
-                <h3 class="text-md font-medium">Available Time Slots</h3>
+                <h3 class="text-md font-medium">{{ t('schedule.availableSlots') }}</h3>
                 <UBadge :label="`Apr ${selectedDate}`" color="primary" variant="subtle" />
               </div>
 
@@ -463,7 +464,7 @@ function confirmBooking() {
                       </div>
                     </div>
                     <UBadge
-                      :label="slot.available ? 'Available' : 'Booked'"
+                      :label="slot.available ? t('common.available') : t('home.booked')"
                       :color="slot.available ? 'success' : 'error'"
                       variant="subtle"
                       size="md"
@@ -477,33 +478,32 @@ function confirmBooking() {
           <template #footer>
             <div class="flex items-center justify-between">
               <p v-if="selectedSlot" class="text-md text-muted">
-                Selected: Apr {{ selectedDate }}, 2026 at
-                {{ selectedSlotDetails?.time }} with {{ selectedSlotDetails?.instructor }}
+                {{ t('schedule.selectedInfo', { date: `Apr ${selectedDate}`, time: selectedSlotDetails?.time, instructor: selectedSlotDetails?.instructor }) }}
               </p>
               <p v-else class="text-md text-muted">
-                Select a date and time slot to continue
+                {{ t('schedule.selectDateCont') }}
               </p>
               <UButton
-                label="Book Session"
+                :label="t('schedule.bookNow')"
                 :disabled="!selectedSlot"
                 icon="i-lucide-check"
                 color="warning"
                 @click="showBookingModal = true"
               />
               <!-- Booking Confirmation Modal -->
-              <UModal v-model:open="showBookingModal" title="Confirm Booking">
+              <UModal v-model:open="showBookingModal" :title="t('schedule.confirmBooking')">
                 <template #body>
                   <div class="space-y-4">
-                    <UAlert icon="i-lucide-info" color="warning" title="Session Details">
+                    <UAlert icon="i-lucide-info" color="warning" :title="t('schedule.sessionDetails')">
                       <template #description>
                         <ul class="mt-2 space-y-1 text-md">
-                          <li><strong>Date:</strong> April {{ selectedDate }}, 2026</li>
-                          <li><strong>Time:</strong> {{ selectedSlotDetails?.time }}</li>
+                          <li><strong>{{ t('dashboard.date') }}:</strong> April {{ selectedDate }}, 2026</li>
+                          <li><strong>{{ t('dashboard.time') }}:</strong> {{ selectedSlotDetails?.time }}</li>
                           <li>
-                            <strong>Vehicle:</strong> {{ selectedSlotDetails?.car }}
+                            <strong>{{ t('dashboard.vehicle') }}:</strong> {{ selectedSlotDetails?.car }}
                           </li>
                           <li>
-                            <strong>Instructor:</strong>
+                            <strong>{{ t('dashboard.instructor') }}:</strong>
                             {{ selectedSlotDetails?.instructor }}
                           </li>
                         </ul>
@@ -511,21 +511,20 @@ function confirmBooking() {
                     </UAlert>
 
                     <p class="text-md text-muted">
-                      By confirming, you agree to attend this session. Cancellations must
-                      be made at least 24 hours in advance.
+                      {{ t('register.terms.agree') }} {{ t('register.terms.termsOfService') }}.
                     </p>
                   </div>
                 </template>
                 <template #footer>
                   <div class="flex justify-end gap-3">
                     <UButton
-                      label="Cancel"
+                      :label="t('common.cancel')"
                       variant="ghost"
                       color="neutral"
                       @click="showBookingModal = false"
                     />
                     <UButton
-                      label="Confirm Booking"
+                      :label="t('schedule.confirmBooking')"
                       color="warning"
                       icon="i-lucide-check"
                       @click="confirmBooking"
@@ -540,13 +539,13 @@ function confirmBooking() {
         <!-- Reschedule Modal -->
         <UModal
           v-model:open="showRescheduleModal"
-          title="Reschedule Session"
+          :title="t('schedule.rescheduleTitle')"
           class="max-w-2xl"
         >
           <template #body>
             <div class="grid md:grid-cols-2 gap-6">
               <div>
-                <h4 class="text-sm font-medium mb-3">Choose New Date</h4>
+                <h4 class="text-sm font-medium mb-3">{{ t('schedule.chooseNewDate') }}</h4>
                 <div class="border border-default rounded-lg p-3">
                   <div class="grid grid-cols-7 gap-1">
                     <div
@@ -572,7 +571,7 @@ function confirmBooking() {
               </div>
               <div>
                 <h4 class="text-sm font-medium mb-3">
-                  Available Time Slots (Date {{ rescheduleDate }})
+                  {{ t('schedule.availableSlots') }} ({{ t('dashboard.date') }} {{ rescheduleDate }})
                 </h4>
                 <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                   <button
@@ -602,13 +601,13 @@ function confirmBooking() {
               >
               <div class="flex gap-2">
                 <UButton
-                  label="Cancel"
+                  :label="t('common.cancel')"
                   variant="ghost"
                   color="neutral"
                   @click="showRescheduleModal = false"
                 />
                 <UButton
-                  label="Confirm Reschedule"
+                  :label="t('schedule.confirmReschedule')"
                   color="warning"
                   :disabled="!rescheduleSlot"
                   @click="confirmReschedule"
@@ -619,7 +618,7 @@ function confirmBooking() {
         </UModal>
 
         <!-- Cancel Confirmation Modal -->
-        <UModal v-model:open="showCancelModal" title="Batalkan Sesi?">
+        <UModal v-model:open="showCancelModal" :title="t('schedule.cancelSession')">
           <template #body>
             <div class="text-center py-4">
               <div
@@ -627,24 +626,23 @@ function confirmBooking() {
               >
                 <UIcon name="i-lucide-alert-triangle" class="size-8 text-error" />
               </div>
-              <h3 class="text-lg font-bold">Are you sure?</h3>
+              <h3 class="text-lg font-bold">{{ t('common.confirm') }}</h3>
               <p class="text-sm text-muted mt-1">
-                The session on {{ sessionToCancel?.date }} at
-                {{ sessionToCancel?.time }} will be deleted.
+                {{ t('schedule.confirmCancel') }}
               </p>
             </div>
           </template>
           <template #footer>
             <div class="flex justify-center gap-3 w-full">
               <UButton
-                label="Cancel"
+                :label="t('common.cancel')"
                 variant="outline"
                 color="neutral"
                 class="flex-1"
                 @click="showCancelModal = false"
               />
               <UButton
-                label="Confirm Cancel"
+                :label="t('schedule.confirm')"
                 color="error"
                 class="flex-1"
                 @click="confirmCancel"

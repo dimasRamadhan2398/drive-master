@@ -4,26 +4,27 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { reactive, ref } from 'vue'
 
+const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
 const toast = useToast()
 const loading = ref(false)
 
-const profileSchema = z.object({
-  fullName: z.string().min(3, 'Name must be at least 3 characters'),
-  email: z.string().email('Please enter a valid email'),
-  phone: z.string().min(10, 'Please enter a valid phone number'),
+const profileSchema = computed(() => z.object({
+  fullName: z.string().min(3, t('validation.minLength', { min: 3 })),
+  email: z.string().email(t('validation.email')),
+  phone: z.string().min(10, t('validation.phone')),
   address: z.string().optional()
-})
+}))
 
-const passwordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+const passwordSchema = computed(() => z.object({
+  currentPassword: z.string().min(1, t('validation.required')),
+  newPassword: z.string().min(8, t('validation.password')),
   confirmPassword: z.string()
 }).refine(data => data.newPassword === data.confirmPassword, {
-  message: 'Passwords do not match',
+  message: t('validation.passwordMatch'),
   path: ['confirmPassword']
-})
+}))
 
 // Mock user data
 const profileData = reactive({
@@ -46,20 +47,20 @@ const memberInfo = {
   expiryDate: 'September 10, 2026'
 }
 
-async function updateProfile(event: FormSubmitEvent<z.output<typeof profileSchema>>) {
+async function updateProfile(event: FormSubmitEvent<any>) {
   loading.value = true
   await new Promise(resolve => setTimeout(resolve, 1000))
   loading.value = false
   
   toast.add({
-    title: 'Profile Updated',
-    description: 'Your profile has been successfully updated.',
+    title: t('profile.profileUpdated'),
+    description: t('profile.profileUpdatedDesc'),
     icon: 'i-lucide-check-circle',
     color: 'success'
   })
 }
 
-async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSchema>>) {
+async function updatePassword(event: FormSubmitEvent<any>) {
   loading.value = true
   await new Promise(resolve => setTimeout(resolve, 1000))
   loading.value = false
@@ -69,8 +70,8 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
   passwordData.confirmPassword = ''
   
   toast.add({
-    title: 'Password Changed',
-    description: 'Your password has been successfully updated.',
+    title: t('profile.passwordChanged'),
+    description: t('profile.passwordChangedDesc'),
     icon: 'i-lucide-check-circle',
     color: 'success'
   })
@@ -80,7 +81,7 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Profile Settings">
+      <UDashboardNavbar :title="t('profile.title')">
         <template #right>
           <UColorModeButton />
         </template>
@@ -107,24 +108,24 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
         <!-- Membership Info -->
         <UCard>
           <template #header>
-            <h2 class="font-semibold">Membership Information</h2>
+            <h2 class="font-semibold">{{ t('profile.membershipInfo') }}</h2>
           </template>
 
           <div class="grid md:grid-cols-2 gap-4">
             <div class="p-4 rounded-lg bg-muted/50">
-              <p class="text-md text-muted">Member ID</p>
+              <p class="text-md text-muted">{{ t('profile.memberId') }}</p>
               <p class="font-medium font-mono">{{ memberInfo.memberId }}</p>
             </div>
             <div class="p-4 rounded-lg bg-muted/50">
-              <p class="text-md text-muted">Package</p>
+              <p class="text-md text-muted">{{ t('billing.package') }}</p>
               <p class="font-medium">{{ memberInfo.package }}</p>
             </div>
             <div class="p-4 rounded-lg bg-muted/50">
-              <p class="text-md text-muted">Join Date</p>
+              <p class="text-md text-muted">{{ t('profile.joinDate') }}</p>
               <p class="font-medium">{{ memberInfo.joinDate }}</p>
             </div>
             <div class="p-4 rounded-lg bg-muted/50">
-              <p class="text-md text-muted">Package Valid Until</p>
+              <p class="text-md text-muted">{{ t('profile.validUntil') }}</p>
               <p class="font-medium">{{ memberInfo.expiryDate }}</p>
             </div>
           </div>
@@ -133,30 +134,30 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
         <!-- Personal Information -->
         <UCard>
           <template #header>
-            <h2 class="font-semibold">Personal Information</h2>
+            <h2 class="font-semibold">{{ t('profile.personalInfo') }}</h2>
           </template>
 
           <UForm :schema="profileSchema" :state="profileData" class="space-y-4" @submit="updateProfile">
             <div class="grid md:grid-cols-2 gap-4">
-              <UFormField name="fullName" label="Full Name">
+              <UFormField name="fullName" :label="t('profile.fullName')">
                 <UInput v-model="profileData.fullName" icon="i-lucide-user" class="w-full"/>
               </UFormField>
 
-              <UFormField name="email" label="Email Address">
+              <UFormField name="email" :label="t('profile.email')">
                 <UInput v-model="profileData.email" type="email" icon="i-lucide-mail" class="w-full"/>
               </UFormField>
 
-              <UFormField name="phone" label="Phone Number">
+              <UFormField name="phone" :label="t('profile.phone')">
                 <UInput v-model="profileData.phone" icon="i-lucide-phone" class="w-full"/>
               </UFormField>
 
-              <UFormField name="address" label="Address">
+              <UFormField name="address" :label="t('profile.address')">
                 <UInput v-model="profileData.address" icon="i-lucide-map-pin" class="w-full"/>
               </UFormField>
             </div>
 
             <div class="flex justify-end">
-              <UButton type="submit" label="Save Changes" :loading="loading" icon="i-lucide-save" />
+              <UButton type="submit" :label="t('profile.saveChanges')" :loading="loading" icon="i-lucide-save" />
             </div>
           </UForm>
         </UCard>
@@ -164,26 +165,26 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
         <!-- Change Password -->
         <UCard>
           <template #header>
-            <h2 class="font-semibold">Change Password</h2>
+            <h2 class="font-semibold">{{ t('profile.changePassword') }}</h2>
           </template>
 
           <UForm :schema="passwordSchema" :state="passwordData" class="space-y-4" @submit="updatePassword">
-            <UFormField name="currentPassword" label="Current Password">
+            <UFormField name="currentPassword" :label="t('profile.currentPassword')">
               <UInput v-model="passwordData.currentPassword" type="password" icon="i-lucide-lock" class="w-full"/>
             </UFormField>
 
             <div class="grid md:grid-cols-2 gap-4">
-              <UFormField name="newPassword" label="New Password">
+              <UFormField name="newPassword" :label="t('profile.newPassword')">
                 <UInput v-model="passwordData.newPassword" type="password" icon="i-lucide-key" class="w-full"/>
               </UFormField>
 
-              <UFormField name="confirmPassword" label="Confirm New Password">
+              <UFormField name="confirmPassword" :label="t('profile.confirmNewPassword')">
                 <UInput v-model="passwordData.confirmPassword" type="password" icon="i-lucide-key" class="w-full"/>
               </UFormField>
             </div>
 
             <div class="flex justify-end">
-              <UButton type="submit" label="Update Password" :loading="loading" variant="outline" color="neutral" icon="i-lucide-shield" />
+              <UButton type="submit" :label="t('profile.changePassword')" :loading="loading" variant="outline" color="neutral" icon="i-lucide-shield" />
             </div>
           </UForm>
         </UCard>
@@ -191,14 +192,14 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
         <!-- Notification Settings -->
         <UCard>
           <template #header>
-            <h2 class="font-semibold">Notification Preferences</h2>
+            <h2 class="font-semibold">{{ t('profile.notificationPrefs') }}</h2>
           </template>
 
           <div class="space-y-4">
-            <USwitch label="Email notifications for upcoming sessions" :default-checked="true" />
-            <USwitch label="WhatsApp reminders (24 hours before session)" :default-checked="true" />
-            <USwitch label="Promotional updates and offers" :default-checked="false" />
-            <USwitch label="Newsletter subscription" :default-checked="false" />
+            <USwitch :label="t('profile.notifEmail')" :default-checked="true" />
+            <USwitch :label="t('profile.notifWa')" :default-checked="true" />
+            <USwitch :label="t('profile.notifPromo')" :default-checked="false" />
+            <USwitch :label="t('profile.notifNewsletter')" :default-checked="false" />
           </div>
         </UCard>
 
@@ -207,16 +208,16 @@ async function updatePassword(event: FormSubmitEvent<z.output<typeof passwordSch
           <template #header>
             <div class="flex items-center gap-2 text-red-500">
               <UIcon name="i-lucide-alert-triangle" class="size-5" />
-              <h2 class="font-semibold">Danger Zone</h2>
+              <h2 class="font-semibold">{{ t('profile.dangerZone') }}</h2>
             </div>
           </template>
 
           <div class="flex items-center justify-between">
             <div>
-              <p class="font-medium">Delete Account</p>
-              <p class="text-md text-muted">Permanently delete your account and all associated data.</p>
+              <p class="font-medium">{{ t('profile.deleteAccount') }}</p>
+              <p class="text-md text-muted">{{ t('profile.deleteAccountDesc') }}</p>
             </div>
-            <UButton label="Delete Account" color="error" variant="outline" icon="i-lucide-trash-2" />
+            <UButton :label="t('profile.deleteAccount')" color="error" variant="outline" icon="i-lucide-trash-2" />
           </div>
         </UCard>
       </div>

@@ -2,6 +2,7 @@
 import { useRoute } from 'vue-router'
 import { computed, ref } from 'vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const { blogPosts } = useContent()
 
@@ -47,10 +48,10 @@ function getAuthorInitials(author: string): string {
 }
 
 function getReadingTime(content: string): string {
-  if (!content) return '1 min read'
+  if (!content) return t('blog.readingTime', { min: 1 })
   const words = content.split(/\s+/).length
   const minutes = Math.max(1, Math.ceil(words / 200))
-  return `${minutes} min read`
+  return t('blog.readingTime', { min: minutes })
 }
 
 function postSlug(p: any) {
@@ -119,12 +120,12 @@ if (!post.value && import.meta.server) {
     <!-- 404 State -->
     <div v-if="!post" class="py-32 text-center flex flex-col items-center justify-center">
       <UIcon name="i-lucide-file-question" class="size-16 text-muted mb-4" />
-      <h1 class="text-4xl font-bold mb-2">Post Not Found</h1>
+      <h1 class="text-4xl font-bold mb-2">{{ t('blog.postNotFound') }}</h1>
       <p class="text-muted text-lg mb-8">
-        This article doesn't exist or has been unpublished.
+        {{ t('blog.postNotFoundDesc') }}
       </p>
       <NuxtLink to="/blog">
-        <UButton label="Back to Blog" color="warning" size="lg" icon="i-lucide-arrow-left" />
+        <UButton :label="t('blog.backToBlog')" color="warning" size="lg" icon="i-lucide-arrow-left" />
       </NuxtLink>
     </div>
 
@@ -138,9 +139,9 @@ if (!post.value && import.meta.server) {
         <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
           <!-- Breadcrumb -->
           <nav class="flex items-center gap-2 text-sm text-muted mb-8">
-            <NuxtLink to="/" class="hover:text-foreground transition-colors">Home</NuxtLink>
+            <NuxtLink to="/" class="hover:text-foreground transition-colors">{{ t('nav.home') }}</NuxtLink>
             <UIcon name="i-lucide-chevron-right" class="size-4" />
-            <NuxtLink to="/blog" class="hover:text-foreground transition-colors">Blog</NuxtLink>
+            <NuxtLink to="/blog" class="hover:text-foreground transition-colors">{{ t('nav.article') }}</NuxtLink>
             <UIcon name="i-lucide-chevron-right" class="size-4" />
             <span class="text-foreground truncate max-w-[200px]">{{ post.title }}</span>
           </nav>
@@ -156,7 +157,7 @@ if (!post.value && import.meta.server) {
               <UAvatar :text="getAuthorInitials(post.author)" size="md" />
               <div>
                 <p class="font-medium text-foreground">{{ post.author }}</p>
-                <p class="text-xs">Author</p>
+                <p class="text-xs">{{ t('blog.author') }}</p>
               </div>
             </div>
 
@@ -178,7 +179,7 @@ if (!post.value && import.meta.server) {
 
             <div class="flex items-center gap-1.5">
               <UIcon name="i-lucide-eye" class="size-4" />
-              <span>{{ post.views }} views</span>
+              <span>{{ post.views }} {{ t('blog.views') }}</span>
             </div>
           </div>
         </div>
@@ -211,7 +212,7 @@ if (!post.value && import.meta.server) {
         <div v-if="postImages.length > 1 || postVideos.length > 0" class="mt-12">
           <h3 class="text-xl font-bold mb-6 flex items-center gap-2">
             <UIcon name="i-lucide-images" class="size-5 text-warning" />
-            Media Gallery
+            {{ t('blog.mediaGallery') }}
           </h3>
 
           <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -251,13 +252,13 @@ if (!post.value && import.meta.server) {
         <div class="mt-12 pt-8 border-t border-default">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-              <span class="text-sm text-muted font-medium">Share this article:</span>
+              <span class="text-sm text-muted font-medium">{{ t('blog.shareArticle') }}</span>
               <UButton icon="i-lucide-link" color="neutral" variant="ghost" size="sm" />
               <UButton icon="i-simple-icons-whatsapp" color="neutral" variant="ghost" size="sm" />
               <UButton icon="i-simple-icons-x" color="neutral" variant="ghost" size="sm" />
             </div>
             <NuxtLink to="/blog">
-              <UButton label="Back to Blog" color="warning" variant="outline" icon="i-lucide-arrow-left" />
+              <UButton :label="t('blog.backToBlog')" color="warning" variant="outline" icon="i-lucide-arrow-left" />
             </NuxtLink>
           </div>
         </div>
@@ -267,8 +268,8 @@ if (!post.value && import.meta.server) {
       <section v-if="relatedPosts.length > 0" class="bg-muted/20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
           <div class="text-center mb-10">
-            <h2 class="text-2xl font-bold mb-2">More Articles</h2>
-            <p class="text-muted">Continue reading from our blog</p>
+            <h2 class="text-2xl font-bold mb-2">{{ t('blog.moreArticles') }}</h2>
+            <p class="text-muted">{{ t('blog.continueReading') }}</p>
           </div>
 
           <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
