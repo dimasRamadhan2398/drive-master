@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { FormSubmitEvent } from "@nuxt/ui";
 import { computed, reactive, ref, onMounted } from "vue";
 
+const { t } = useI18n()
 definePageMeta({
   layout: "blank",
 });
@@ -14,7 +15,7 @@ const showTermsModal = ref(false);
 
 const selectedPlan = computed(() => (route.query.plan as string) || "eight_package");
 
-const paymentMethods = [
+const paymentMethods = computed(() => [
   {
     id: "va",
     name: "Virtual Account (VA)",
@@ -43,16 +44,16 @@ const paymentMethods = [
     icon: "i-lucide-wallet",
     color: "orange" as const,
   },
-];
+]);
 
-const schema = z.object({
-  paymentMethod: z.string().min(1, "Please select a payment method"),
-  email: z.string().email("Please enter a valid email"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
+const schema = computed(() => z.object({
+  paymentMethod: z.string().min(1, t('auth.choosePaymentMethod')),
+  email: z.string().email(t('validation.email')),
+  phone: z.string().min(10, t('validation.phone')),
   privacy: z
     .boolean()
-    .refine((val) => val === true, "You must agree to the privacy policy"),
-});
+    .refine((val) => val === true, t('register.validation.termsRequired')),
+}));
 
 const formData = reactive({
   paymentMethod: "va",
@@ -131,9 +132,9 @@ const packageNames = {
       <div class="text-center mb-8">
         <div class="flex items-center justify-center gap-2 mb-4">
           <UIcon name="i-lucide-credit-card" class="size-8 text-warning" />
-          <span class="text-xl font-bold">Payment Method</span>
+          <span class="text-xl font-bold">{{ t('auth.paymentMethod') }}</span>
         </div>
-        <h1 class="text-2xl font-bold">Complete Your Purchase</h1>
+        <h1 class="text-2xl font-bold">{{ t('auth.completePurchase') }}</h1>
         <p class="text-muted mt-2">
           {{ packageNames[selectedPlan as keyof typeof packageNames] }} -
           {{ packagePrices[selectedPlan as keyof typeof packagePrices] }}
@@ -144,7 +145,7 @@ const packageNames = {
         <UForm :schema="schema" :state="formData" class="space-y-6" @submit="onSubmit">
           <!-- Payment Method Selection -->
           <div>
-            <label class="block text-sm font-medium mb-4">Choose Payment Method</label>
+            <label class="block text-sm font-medium mb-4">{{ t('auth.choosePaymentMethod') }}</label>
             <div class="grid sm:grid-cols-2 gap-3">
               <div v-for="method in paymentMethods" :key="method.id" class="relative">
                 <input
@@ -191,14 +192,14 @@ const packageNames = {
           <!-- Contact Information -->
           <div class="pt-4 border-t">
             <div class="flex items-start justify-between mb-4">
-              <h3 class="font-medium">Contact Information</h3>
+              <h3 class="font-medium">{{ t('auth.contactInfo') }}</h3>
               <span class="text-xs text-muted flex items-center gap-1">
                 <UIcon name="i-lucide-info" class="size-3" />
-                Diambil dari data registrasi
+                {{ t('auth.fromRegistration') }}
               </span>
             </div>
 
-            <UFormField name="email" label="Email Address" required>
+            <UFormField name="email" :label="t('auth.email')" required>
               <UInput
                 v-model="formData.email"
                 type="email"
@@ -209,7 +210,7 @@ const packageNames = {
               />
             </UFormField>
 
-            <UFormField name="phone" label="WhatsApp Phone Number" required class="mt-4">
+            <UFormField name="phone" :label="t('auth.whatsappPhone')" required class="mt-4">
               <UInput
                 v-model="formData.phone"
                 placeholder="08123456789"
@@ -221,26 +222,25 @@ const packageNames = {
 
             <UAlert icon="i-lucide-info" color="warning" class="mt-4">
               <template #description>
-                We'll send payment instructions to this email and phone number for
-                confirmation. You can edit the fields above if needed.
+                {{ t('auth.paymentInstructionsNote') }}
               </template>
             </UAlert>
           </div>
 
           <!-- Terms -->
           <UFormField name="privacy">
-            <UCheckbox v-model="formData.privacy" color="warning" required>
+            <UCheckbox v-model:model-value="formData.privacy" color="warning" required>
               <template #label>
                 <span class="text-sm">
-                  I agree to the
+                  {{ t('register.terms.agree') }}
                   <UButton
-                    label="Terms of Service"
+                    :label="t('register.terms.termsOfService')"
                     color="warning"
                     variant="ghost"
-                    class="underline"
+                    class="underline mx-0 px-0 h-auto py-0 text-sm"
                     @click="showTermsModal = true"
                   />
-                  <UModal v-model:open="showTermsModal" title="Terms of Service">
+                  <UModal v-model:open="showTermsModal" :title="t('register.terms.termsOfService')">
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
                         <p>
@@ -379,15 +379,15 @@ const packageNames = {
                       </div>
                     </template>
                   </UModal>
-                  and
+                  {{ t('register.terms.and') }}
                   <UButton
-                    label="Privacy Policy"
+                    :label="t('register.terms.privacyPolicy')"
                     color="warning"
                     variant="ghost"
-                    class="underline"
+                    class="underline mx-0 px-0 h-auto py-0 text-sm"
                     @click="showPrivacyModal = true"
                   />
-                  <UModal v-model:open="showPrivacyModal" title="Privacy Policy">
+                  <UModal v-model:open="showPrivacyModal" :title="t('register.terms.privacyPolicy')">
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
                         <p>
@@ -554,11 +554,11 @@ const packageNames = {
           <!-- Actions -->
           <div class="flex gap-3 pt-4 border-t">
             <NuxtLink to="/auth/select-plan" class="flex-1">
-              <UButton label="Back to Packages" color="neutral" variant="outline" block />
+              <UButton :label="t('auth.backToPackages')" color="neutral" variant="outline" block />
             </NuxtLink>
             <UButton
               type="submit"
-              label="Continue to Payment"
+              :label="t('auth.continueToPayment')"
               trailingIcon="i-lucide-arrow-right"
               :loading="loading"
               block

@@ -362,7 +362,7 @@ watch(
           </UFormField>
 
           <UFormField name="terms">
-            <UCheckbox v-model="formData.terms" color="warning">
+            <UCheckbox v-model:model-value="formData.terms" color="warning">
               <template #label>
                 <span class="text-sm flex items-center gap-1">
                   {{ t("register.terms.agree") }}
@@ -380,150 +380,58 @@ watch(
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
                         <p>
-                          Welcome to Drive Master Indonesia. These Terms of
-                          Service ("Terms") govern your access to and use of the
-                          website
-                          <NuxtLink to="/" class="text-warning hover:underline"
-                            >www.drivemaster.id</NuxtLink
-                          >
-                          and our driving school services. By accessing or using
-                          our services, you agree to be bound by these Terms.
+                          {{ t('register.tosContent.welcome', { url: 'www.drivemaster.id' }) }}
                         </p>
 
-                        <h2 class="text-2xl font-bold">1. Services Provided</h2>
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.servicesTitle') }}</h2>
                         <p>
-                          Drive Master Indonesia provides professional driving
-                          instruction services, including theoretical training
-                          and practical on-road sessions. We reserve the right
-                          to modify, suspend, or discontinue any part of the
-                          services at any time without prior notice.
+                          {{ t('register.tosContent.servicesDesc') }}
                         </p>
 
-                        <h2 class="text-2xl font-bold">2. User Accounts</h2>
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.accountsTitle') }}</h2>
                         <p>
-                          To access certain features of our platform, such as
-                          booking sessions, you must register for an account.
-                          You agree to:
+                          {{ t('register.tosContent.accountsDesc') }}
                         </p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>
-                            Provide accurate, current, and complete information
-                            during the registration process.
-                          </li>
-                          <li>
-                            Maintain the security of your password and accept
-                            all risks of unauthorized access to your account.
-                          </li>
-                          <li>
-                            Notify us immediately if you discover or suspect any
-                            security breaches related to our services.
-                          </li>
+                          <li>{{ t('register.tosContent.accountsList1') }}</li>
+                          <li>{{ t('register.tosContent.accountsList2') }}</li>
+                          <li>{{ t('register.tosContent.accountsList3') }}</li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">3. Fees and Payments</h2>
-                        <p>
-                          All prices for our driving packages are listed in
-                          Indonesian Rupiah (IDR). Payment obligations include:
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.feesTitle') }}</h2>
+                        <p>{{ t('register.tosContent.feesDesc') }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>
-                            <strong>Payment Processing:</strong> Payments are
-                            processed securely via third-party gateways (e.g.,
-                            Midtrans). We do not store your full financial
-                            credentials.
-                          </li>
-                          <li>
-                            <strong>Refund Policy:</strong> Requests for refunds
-                            are subject to our internal review and are typically
-                            only granted if requested at least 48 hours before
-                            the start of the first session.
-                          </li>
+                          <li><strong>{{ t('register.tosContent.feesList1').split(':')[0] }}:</strong> {{ t('register.tosContent.feesList1').split(':')[1] }}</li>
+                          <li><strong>{{ t('register.tosContent.feesList2').split(':')[0] }}:</strong> {{ t('register.tosContent.feesList2').split(':')[1] }}</li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">
-                          4. Scheduling and Cancellations
-                        </h2>
-                        <p>
-                          Efficient scheduling is key to our service quality.
-                          Our policy includes:
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.schedulingTitle') }}</h2>
+                        <p>{{ t('register.tosContent.schedulingDesc') }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>
-                            <strong>Booking:</strong> Sessions must be booked at
-                            least 24 hours in advance through the student
-                            dashboard.
-                          </li>
-                          <li>
-                            <strong>Rescheduling:</strong> You may reschedule a
-                            session through our platform at no extra cost if
-                            done at least 24 hours before the scheduled time.
-                          </li>
-                          <li>
-                            <strong>No-Show:</strong> Failure to attend a
-                            scheduled session without prior notice will result
-                            in the session being marked as completed and
-                            non-refundable.
-                          </li>
+                          <li><strong>{{ t('register.tosContent.schedulingList1').split(':')[0] }}:</strong> {{ t('register.tosContent.schedulingList1').split(':')[1] }}</li>
+                          <li><strong>{{ t('register.tosContent.schedulingList2').split(':')[0] }}:</strong> {{ t('register.tosContent.schedulingList2').split(':')[1] }}</li>
+                          <li><strong>{{ t('register.tosContent.schedulingList3').split(':')[0] }}:</strong> {{ t('register.tosContent.schedulingList3').split(':')[1] }}</li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">
-                          5. Student Obligations
-                        </h2>
-                        <p>
-                          As a student of Drive Master Indonesia, you agree to:
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.obligationsTitle') }}</h2>
+                        <p>{{ t('register.tosContent.obligationsDesc') }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>
-                            Possess a valid temporary or permanent driver's
-                            permit as required by local law.
-                          </li>
-                          <li>
-                            Follow the instructions of the assigned instructor
-                            at all times during practical sessions.
-                          </li>
-                          <li>
-                            Maintain a zero-tolerance policy regarding alcohol
-                            or drug use before or during training sessions.
-                          </li>
+                          <li>{{ t('register.tosContent.obligationsList1') }}</li>
+                          <li>{{ t('register.tosContent.obligationsList2') }}</li>
+                          <li>{{ t('register.tosContent.obligationsList3') }}</li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">
-                          6. Limitation of Liability
-                        </h2>
-                        <p>
-                          To the maximum extent permitted by law, Drive Master
-                          Indonesia shall not be liable for any indirect,
-                          incidental, or consequential damages resulting from
-                          your use of our services or any interaction with our
-                          instructors. While we strive for absolute safety,
-                          practical driving involves inherent risks.
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.liabilityTitle') }}</h2>
+                        <p>{{ t('register.tosContent.liabilityDesc') }}</p>
 
-                        <h2 class="text-2xl font-bold">7. Changes to Terms</h2>
-                        <p>
-                          We reserve the right to change or modify these Terms
-                          at any time. If we make changes, we will notify you by
-                          revising the date at the top of the policy or by
-                          posting a notice on our homepage. Your continued use
-                          of the services confirms your acceptance of the
-                          revised Terms.
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.changesTitle') }}</h2>
+                        <p>{{ t('register.tosContent.changesDesc') }}</p>
 
-                        <h2 class="text-2xl font-bold">8. Contact Us</h2>
-                        <p>
-                          If you have any questions or concerns regarding these
-                          Terms, please reach out to us:
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.contactTitle') }}</h2>
+                        <p>{{ t('register.tosContent.contactDesc') }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>
-                            By email:
-                            <a
-                              href="mailto:info@drivemaster.id"
-                              class="text-warning hover:underline"
-                              >info@drivemaster.id</a
-                            >
-                          </li>
-                          <li>By phone: +62 812-3456-7890</li>
+                          <li>{{ t('register.tosContent.contactEmail', { email: 'info@drivemaster.id' }) }}</li>
+                          <li>{{ t('register.tosContent.contactPhone') }}</li>
                         </ul>
                       </div>
                     </template>
@@ -543,178 +451,57 @@ watch(
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
                         <p>
-                          Welcome to Drive Master Indonesia. We are committed to
-                          protecting your privacy and ensuring you have a
-                          positive experience on our website and in using our
-                          services. This Privacy Policy outlines how we collect,
-                          use, disclose, and safeguard your information when you
-                          visit our website
-                          <NuxtLink to="/" class="text-warning hover:underline"
-                            >www.drivemaster.id</NuxtLink
-                          >
-                          and use our driving school services.
+                          {{ t('register.privacyContent.welcome', { url: 'www.drivemaster.id' }) }}
                         </p>
 
-                        <h2 class="text-2xl font-bold">
-                          1. Information We Collect
-                        </h2>
-                        <p>
-                          We may collect personal information that you
-                          voluntarily provide to us when you register for our
-                          services, make a purchase, or interact with our
-                          website. This includes:
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.collectTitle') }}</h2>
+                        <p>{{ t('register.privacyContent.collectDesc') }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>
-                            <strong
-                              >Personal Identification Information:</strong
-                            >
-                            Name, email address, phone number, physical address,
-                            date of birth, and driver's license details.
-                          </li>
-                          <li>
-                            <strong>Payment Information:</strong> Details
-                            required for processing payments, such as
-                            credit/debit card numbers (processed securely by
-                            third-party payment gateways like Midtrans).
-                          </li>
-                          <li>
-                            <strong>Usage Data:</strong> Information about how
-                            you access and use our website, including IP
-                            address, browser type, pages viewed, and time spent
-                            on pages.
-                          </li>
+                          <li><strong>{{ t('register.privacyContent.collectList1').split(':')[0] }}:</strong> {{ t('register.privacyContent.collectList1').split(':')[1] }}</li>
+                          <li><strong>{{ t('register.privacyContent.collectList2').split(':')[0] }}:</strong> {{ t('register.privacyContent.collectList2').split(':')[1] }}</li>
+                          <li><strong>{{ t('register.privacyContent.collectList3').split(':')[0] }}:</strong> {{ t('register.privacyContent.collectList3').split(':')[1] }}</li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">
-                          2. How We Use Your Information
-                        </h2>
-                        <p>
-                          The information we collect is used for various
-                          purposes, including:
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.useTitle') }}</h2>
+                        <p>{{ t('register.privacyContent.useDesc') }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>
-                            To provide and maintain our services, including
-                            scheduling driving lessons and managing your
-                            account.
-                          </li>
-                          <li>
-                            To process transactions and send you related
-                            information, including purchase confirmations and
-                            invoices.
-                          </li>
-                          <li>
-                            To improve our website and services based on your
-                            feedback and usage patterns.
-                          </li>
-                          <li>
-                            To send you marketing and promotional communications
-                            (if you have opted in).
-                          </li>
-                          <li>
-                            To comply with legal obligations and resolve
-                            disputes.
-                          </li>
+                          <li>{{ t('register.privacyContent.useList1') }}</li>
+                          <li>{{ t('register.privacyContent.useList2') }}</li>
+                          <li>{{ t('register.privacyContent.useList3') }}</li>
+                          <li>{{ t('register.privacyContent.useList4') }}</li>
+                          <li>{{ t('register.privacyContent.useList5') }}</li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">
-                          3. Disclosure of Your Information
-                        </h2>
-                        <p>
-                          We may share your information with third parties in
-                          the following situations:
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.disclosureTitle') }}</h2>
+                        <p>{{ t('register.privacyContent.disclosureDesc') }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>
-                            <strong>Service Providers:</strong> With third-party
-                            vendors, consultants, and other service providers
-                            who perform services for us or on our behalf (e.g.,
-                            payment processing, email delivery, hosting
-                            services).
-                          </li>
-                          <li>
-                            <strong>Legal Requirements:</strong> If required to
-                            do so by law or in response to valid requests by
-                            public authorities (e.g., a court order or
-                            government agency).
-                          </li>
-                          <li>
-                            <strong>Business Transfers:</strong> In connection
-                            with, or during negotiations of, any merger, sale of
-                            company assets, financing, or acquisition of all or
-                            a portion of our business to another company.
-                          </li>
+                          <li><strong>{{ t('register.privacyContent.disclosureList1').split(':')[0] }}:</strong> {{ t('register.privacyContent.disclosureList1').split(':')[1] }}</li>
+                          <li><strong>{{ t('register.privacyContent.disclosureList2').split(':')[0] }}:</strong> {{ t('register.privacyContent.disclosureList2').split(':')[1] }}</li>
+                          <li><strong>{{ t('register.privacyContent.disclosureList3').split(':')[0] }}:</strong> {{ t('register.privacyContent.disclosureList3').split(':')[1] }}</li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">4. Data Security</h2>
-                        <p>
-                          We implement reasonable security measures to protect
-                          your personal information from unauthorized access,
-                          use, alteration, and disclosure. However, no method of
-                          transmission over the Internet or electronic storage
-                          is 100% secure, and we cannot guarantee absolute
-                          security.
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.securityTitle') }}</h2>
+                        <p>{{ t('register.privacyContent.securityDesc') }}</p>
 
-                        <h2 class="text-2xl font-bold">
-                          5. Your Data Protection Rights
-                        </h2>
-                        <p>
-                          Depending on your location, you may have the following
-                          rights regarding your personal data:
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.rightsTitle') }}</h2>
+                        <p>{{ t('register.privacyContent.rightsDesc') }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>
-                            The right to access, update, or delete the
-                            information we have on you.
-                          </li>
-                          <li>
-                            The right to object to our processing of your
-                            personal data.
-                          </li>
-                          <li>
-                            The right to request that we restrict the processing
-                            of your personal information.
-                          </li>
-                          <li>The right to data portability.</li>
-                          <li>The right to withdraw consent at any time.</li>
+                          <li>{{ t('register.privacyContent.rightsList1') }}</li>
+                          <li>{{ t('register.privacyContent.rightsList2') }}</li>
+                          <li>{{ t('register.privacyContent.rightsList3') }}</li>
+                          <li>{{ t('register.privacyContent.rightsList4') }}</li>
+                          <li>{{ t('register.privacyContent.rightsList5') }}</li>
                         </ul>
-                        <p>
-                          To exercise any of these rights, please contact us at
-                          <a
-                            href="mailto:info@drivemaster.id"
-                            class="text-warning hover:underline"
-                            >info@drivemaster.id</a
-                          >.
-                        </p>
+                        <p>{{ t('register.privacyContent.rightsContact', { email: 'info@drivemaster.id' }) }}</p>
 
-                        <h2 class="text-2xl font-bold">
-                          6. Changes to This Privacy Policy
-                        </h2>
-                        <p>
-                          We may update our Privacy Policy from time to time. We
-                          will notify you of any changes by posting the new
-                          Privacy Policy on this page and updating the "Last
-                          Updated" date. You are advised to review this Privacy
-                          Policy periodically for any changes.
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.changesTitle') }}</h2>
+                        <p>{{ t('register.privacyContent.changesDesc') }}</p>
 
-                        <h2 class="text-2xl font-bold">7. Contact Us</h2>
-                        <p>
-                          If you have any questions about this Privacy Policy,
-                          please contact us:
-                        </p>
+                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.contactTitle') }}</h2>
+                        <p>{{ t('register.privacyContent.contactDesc') }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>
-                            By email:
-                            <a
-                              href="mailto:info@drivemaster.id"
-                              class="text-warning hover:underline"
-                              >info@drivemaster.id</a
-                            >
-                          </li>
-                          <li>By phone: +62 812-3456-7890</li>
+                          <li>{{ t('register.privacyContent.contactEmail', { email: 'info@drivemaster.id' }) }}</li>
+                          <li>{{ t('register.privacyContent.contactPhone') }}</li>
                         </ul>
                       </div>
                     </template>

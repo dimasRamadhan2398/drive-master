@@ -3,6 +3,7 @@ import { computed, h, ref, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 
+const { t } = useI18n()
 definePageMeta({ layout: 'admin' })
 
 const toast = useToast()
@@ -71,12 +72,12 @@ function revokeCertificate(certId: string) {
 const columns: TableColumn<Certificate>[] = [
   {
     accessorKey: 'id',
-    header: 'Certificate ID',
+    header: t('admin.certId'),
     cell: ({ row }) => h('span', { class: 'font-mono text-md' }, row.getValue('id'))
   },
   {
     accessorKey: 'studentName',
-    header: 'Student',
+    header: t('admin.students'),
     cell: ({ row }) => {
       const Avatar = resolveComponent('UAvatar')
       const name = row.getValue('studentName') as string
@@ -93,25 +94,25 @@ const columns: TableColumn<Certificate>[] = [
   },
   {
     accessorKey: 'package',
-    header: 'Package',
+    header: t('billing.package'),
     cell: ({ row }) => {
       const Badge = resolveComponent('UBadge')
       return h(Badge, { label: row.getValue('package') as string, color: 'neutral', variant: 'subtle' })
     }
   },
-  { accessorKey: 'issueDate', header: 'Issue Date' },
+  { accessorKey: 'issueDate', header: t('admin.issueDate') },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: t('billing.status'),
     cell: ({ row }) => {
       const Badge = resolveComponent('UBadge')
       const status = row.getValue('status') as string
-      return h(Badge, { label: status === 'issued' ? 'Active' : 'Revoked', color: status === 'issued' ? 'success' : 'error', variant: 'subtle' })
+      return h(Badge, { label: status === 'issued' ? t('admin.active') : t('admin.revoked'), color: status === 'issued' ? 'success' : 'error', variant: 'subtle' })
     }
   },
   {
     id: 'actions',
-    header: '',
+    header: "",
     cell: ({ row }) => {
       const DropdownMenu = resolveComponent('UDropdownMenu')
       const Button = resolveComponent('UButton')
@@ -129,28 +130,28 @@ const columns: TableColumn<Certificate>[] = [
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Certificate Management">
+      <UDashboardNavbar :title="t('admin.certificates')">
         <template #right>
-          <UButton icon="i-lucide-file-badge" color="warning" label="Issue Certificate" @click="showIssueModal = true" />
+          <UButton icon="i-lucide-file-badge" color="warning" :label="t('admin.issueCert')" @click="showIssueModal = true" />
           <!-- Issue Certificate Modal -->
-          <UModal v-model:open="showIssueModal" title="Issue New Certificate">
+          <UModal v-model:open="showIssueModal" :title="t('admin.issueNewCert')">
             <template #body>
               <div class="space-y-4">
-                <UFormField label="Select Student" required>
+                <UFormField :label="t('admin.selectStudent')" required>
                   <USelectMenu :items="eligibleStudents.map(s => ({ label: s.name, value: s.id.toString() }))" placeholder="Search and select student..." searchable color="warning" class="w-full"/>
                 </UFormField>
-                <UFormField label="Certificate Type" required>
+                <UFormField :label="t('admin.certType')" required>
                   <USelect :items="[{ label: 'Basic Completion Certificate', value: 'basic' }, { label: 'Premium Certificate', value: 'premium' }]" color="warning" class="w-full" />
                 </UFormField>
                 <UAlert icon="i-lucide-info" color="warning" variant="subtle">
-                  <template #description>The certificate will be generated automatically and sent to the student&apos;s email.</template>
+                  <template #description>{{ t('admin.certAutoNote') }}</template>
                 </UAlert>
               </div>
             </template>
             <template #footer>
               <div class="flex justify-end gap-3">
-                <UButton label="Cancel" variant="ghost" color="neutral" @click="showIssueModal = false" />
-                <UButton label="Issue Certificate" color="warning" icon="i-lucide-award" @click="showIssueModal = false" />
+                <UButton :label="t('common.cancel')" variant="ghost" color="neutral" @click="showIssueModal = false" />
+                <UButton :label="t('admin.issueCert')" color="warning" icon="i-lucide-award" @click="showIssueModal = false" />
               </div>
             </template>
           </UModal>
@@ -160,10 +161,10 @@ const columns: TableColumn<Certificate>[] = [
       
       <UDashboardToolbar>
         <template #left>
-          <UInput v-model="searchQuery" placeholder="Search certificates..." icon="i-lucide-search" class="w-64" color="warning"/>
+          <UInput v-model="searchQuery" :placeholder="t('common.search') + '...'" icon="i-lucide-search" class="w-64" color="warning"/>
         </template>
         <template #right>
-          <UButton icon="i-lucide-download" label="Export All" color="neutral" variant="outline" />
+          <UButton icon="i-lucide-download" :label="t('admin.exportAll')" color="neutral" variant="outline" />
         </template>
       </UDashboardToolbar>
     </template>
@@ -175,19 +176,19 @@ const columns: TableColumn<Certificate>[] = [
           <UCard>
             <div class="flex items-center gap-4">
               <div class="p-3 rounded-xl bg-info/10"><UIcon name="i-lucide-award" class="size-6 text-info" /></div>
-              <div><p class="text-2xl font-bold">{{ issuedCertificates.length }}</p><p class="text-md text-muted">Total Issued</p></div>
+              <div><p class="text-2xl font-bold">{{ issuedCertificates.length }}</p><p class="text-md text-muted">{{ t('admin.totalIssued') }}</p></div>
             </div>
           </UCard>
           <UCard>
             <div class="flex items-center gap-4">
               <div class="p-3 rounded-xl bg-amber-500/10"><UIcon name="i-lucide-clock" class="size-6 text-amber-500" /></div>
-              <div><p class="text-2xl font-bold">{{ eligibleStudents.length }}</p><p class="text-md text-muted">Pending Issuance</p></div>
+              <div><p class="text-2xl font-bold">{{ eligibleStudents.length }}</p><p class="text-md text-muted">{{ t('admin.pendingIssuance') }}</p></div>
             </div>
           </UCard>
           <UCard>
             <div class="flex items-center gap-4">
               <div class="p-3 rounded-xl bg-green-500/10"><UIcon name="i-lucide-check-circle" class="size-6 text-green-500" /></div>
-              <div><p class="text-2xl font-bold">{{ issuedCertificates.filter(c => c.status === 'issued').length }}</p><p class="text-md text-muted">Active Certificates</p></div>
+              <div><p class="text-2xl font-bold">{{ issuedCertificates.filter(c => c.status === 'issued').length }}</p><p class="text-md text-muted">{{ t('admin.activeCerts') }}</p></div>
             </div>
           </UCard>
         </div>
@@ -197,7 +198,7 @@ const columns: TableColumn<Certificate>[] = [
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-bell" class="size-5 text-amber-500" />
-              <h2 class="font-semibold">Pending Certificate Issuance</h2>
+              <h2 class="font-semibold">{{ t('admin.pendingCertIssuance') }}</h2>
               <UBadge :label="eligibleStudents.length.toString()" color="warning" />
             </div>
           </template>
@@ -206,10 +207,10 @@ const columns: TableColumn<Certificate>[] = [
               <div class="flex items-center gap-4">
                 <UAvatar :text="student.name.split(' ').map((n: string) => n[0]).join('')" />
                 <div><p class="font-medium">{{ student.name }}</p><p class="text-md text-muted">{{ student.email }}</p></div>
-                <UBadge :label="student.package + ' Package'" color="warning" variant="subtle" />
-                <span class="text-md text-muted">Completed: {{ student.completedDate }}</span>
+                <UBadge :label="student.package + ' ' + t('billing.package')" color="warning" variant="subtle" />
+                <span class="text-md text-muted">{{ t('common.completed') }}: {{ student.completedDate }}</span>
               </div>
-              <UButton label="Issue Certificate" color="warning" icon="i-lucide-award" @click="issueCertificate(student.id)" />
+              <UButton :label="t('admin.issueCert')" color="warning" icon="i-lucide-award" @click="issueCertificate(student.id)" />
               
             </div>
             <!-- Issue Certificate Modal Component -->
@@ -219,11 +220,11 @@ const columns: TableColumn<Certificate>[] = [
 
         <!-- Issued Certificates -->
         <UCard>
-          <template #header><h2 class="font-semibold">Issued Certificates</h2></template>
+          <template #header><h2 class="font-semibold">{{ t('admin.certificates') }}</h2></template>
           <UTable :data="filteredCertificates" color="warning" :columns="columns" />
           <template #footer>
             <div class="flex items-center justify-between">
-              <p class="text-md text-muted">Showing {{ filteredCertificates.length }} certificates</p>
+              <p class="text-md text-muted">{{ t('admin.showingCerts', { count: filteredCertificates.length }) }}</p>
               <UPagination :total="issuedCertificates.length" active-color="warning" :items-per-page="10" />
             </div>
           </template>

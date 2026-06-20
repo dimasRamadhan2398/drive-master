@@ -1,40 +1,42 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 // Page metadata
 definePageMeta({
   layout: 'default'
 })
 
 useSeoMeta({
-  title: 'Contact Us | Drive Master - Get in Touch',
+  title: t('contact.title') + ' | Drive Master - Get in Touch',
   description: 'Contact Drive Master in Alam Sutera. Reach out via WhatsApp, phone, email, or visit our training center.'
 })
 
-const contactMethods = [
+const contactMethods = computed(() => [
   {
-    title: 'Training Center',
-    description: 'Jl. Alam Sutera Boulevard No. 123, Alam Sutera, Tangerang 15143',
+    title: t('contact.trainingCenter'),
+    description: t('home.address'),
     icon: 'i-lucide-map-pin',
-    action: { label: 'Get Directions', to: 'https://maps.app.goo.gl/RpSdkpjs4RZg2ZY77', target: '_blank' }
+    action: { label: t('contact.getDirections'), to: 'https://maps.app.goo.gl/RpSdkpjs4RZg2ZY77', target: '_blank' }
   },
   {
-    title: 'WhatsApp Support',
+    title: t('contact.whatsappSupport'),
     description: '+62 811-9124-848 (Available 08:00 - 18:00)',
     icon: 'i-simple-icons-whatsapp',
-    action: { label: 'Chat Now', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', target: '_blank' }
+    action: { label: t('contact.chatNow'), to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', target: '_blank' }
   },
   {
-    title: 'Email Address',
+    title: t('contact.emailAddress'),
     description: 'info@evdriveacademy.id',
     icon: 'i-lucide-mail',
-    action: { label: 'Send Email', to: 'mailto:info@evdriveacademy.id' }
+    action: { label: t('contact.sendEmail'), to: 'mailto:info@evdriveacademy.id' }
   },
   {
-    title: 'Operating Hours',
-    description: 'Weekdays: 08:00 - 17:00 | Weekend: 08:00 - 17:00 | Night Shift: 18:00-20:00',
+    title: t('contact.operatingHours'),
+    description: `${t('home.hoursWeekday')} | ${t('home.hoursWeekend')} | ${t('home.hoursNight')}`,
     icon: 'i-lucide-clock',
-    action: { label: 'View FAQ', to: '/#faq' }
+    action: { label: t('contact.viewFaq'), to: '/#faq' }
   }
-]
+])
 
 const form = reactive({
   name: '',
@@ -52,8 +54,8 @@ async function handleSubmit() {
   await new Promise(resolve => setTimeout(resolve, 1500))
   
   toast.add({
-    title: 'Message Sent!',
-    description: "Thank you for reaching out. We'll get back to you within 24 hours.",
+    title: t('contact.form.success'),
+    description: t('contact.form.successDesc'),
     color: 'success',
     icon: 'i-lucide-check-circle'
   })
@@ -64,14 +66,21 @@ async function handleSubmit() {
   form.message = ''
   isSubmitting.value = false
 }
+
+const subjects = computed(() => [
+  { label: t('contact.form.subjects.general'), value: 'General Inquiry' },
+  { label: t('contact.form.subjects.package'), value: 'Package Information' },
+  { label: t('contact.form.subjects.schedule'), value: 'Scheduling Issue' },
+  { label: t('contact.form.subjects.technical'), value: 'Technical Support' }
+])
 </script>
 
 <template>
   <div>
     <!-- Hero Section -->
     <UPageHero
-      title="We&apos;re Here to Help"
-      description="Have questions about our EV driving packages or scheduling? Reach out to our team via any of the methods below or fill out the form."
+      :title="t('contact.heroTitle')"
+      :description="t('contact.heroDesc')"
       align="center"
       class="py-16 md:py-24"
     />
@@ -96,37 +105,37 @@ async function handleSubmit() {
 
     <!-- Form & Map Section -->
     <UPageSection
-      headline="Get in Touch"
-      title="Send us a Message"
-      description="Fill out the form below and our customer success team will contact you shortly."
+      :headline="t('contact.form.headline')"
+      :title="t('contact.form.title')"
+      :description="t('contact.form.description')"
     >
       <div class="grid lg:grid-cols-2 gap-12 items-start">
         <!-- Contact Form -->
         <UCard>
           <form @submit.prevent="handleSubmit" class="space-y-4">
             <div class="grid sm:grid-cols-2 gap-4">
-              <UFormField label="Full Name" required>
+              <UFormField :label="t('contact.form.name')" required>
                 <UInput v-model="form.name" placeholder="John Doe" class="w-full" />
               </UFormField>
-              <UFormField label="Email Address" required>
+              <UFormField :label="t('contact.form.email')" required>
                 <UInput v-model="form.email" type="email" placeholder="john@example.com" class="w-full" />
               </UFormField>
             </div>
-            <UFormField label="Subject" required>
+            <UFormField :label="t('contact.form.subject')" required>
               <USelect
                 v-model="form.subject"
-                :items="['General Inquiry', 'Package Information', 'Scheduling Issue', 'Technical Support']"
-                placeholder="Select a subject"
+                :items="subjects"
+                :placeholder="t('contact.form.subjectPlaceholder')"
                 class="w-full"
               />
             </UFormField>
-            <UFormField label="Message" required>
-              <UTextarea v-model="form.message" placeholder="How can we help you?" :rows="5" class="w-full" />
+            <UFormField :label="t('contact.form.message')" required>
+              <UTextarea v-model="form.message" :placeholder="t('contact.form.messagePlaceholder')" :rows="5" class="w-full" />
             </UFormField>
             <div class="pt-2">
               <UButton 
                 type="submit" 
-                label="Send Message" 
+                :label="t('contact.form.send')"
                 icon="i-lucide-send" 
                 color="warning" 
                 :loading="isSubmitting"
@@ -155,9 +164,9 @@ async function handleSubmit() {
 
     <!-- Social Media Section -->
     <UPageSection
-      headline="Social Media"
-      title="Join Our Community"
-      description="Follow us on social media for driving tips, EV news, and student success stories."
+      :headline="t('contact.social.headline')"
+      :title="t('contact.social.title')"
+      :description="t('contact.social.description')"
       class="bg-muted/30"
     >
       <div class="flex flex-wrap justify-center gap-6">

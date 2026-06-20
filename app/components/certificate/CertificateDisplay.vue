@@ -2,6 +2,8 @@
 import { certificateService } from "~/services/certificateService";
 import { useToast } from "@nuxt/ui/runtime/composables/index.js";
 
+const { t } = useI18n()
+
 const props = defineProps<{
   certificate: {
     id: string;
@@ -22,7 +24,7 @@ async function downloadCertificate(certId: string) {
 
   if (!memberId) {
     toast.add({
-      title: "Error",
+      title: t('common.error'),
       description: "Member ID not found for this certificate.",
       color: "error",
     });
@@ -35,8 +37,8 @@ async function downloadCertificate(certId: string) {
     await certificateService.downloadCertificate(memberId, certId);
 
     toast.add({
-      title: "Download Started",
-      description: "Your certificate is being downloaded.",
+      title: t('certificate.downloadStarted'),
+      description: t('certificate.downloadStartedDesc'),
       icon: "i-lucide-download",
       color: "success",
     });
@@ -57,8 +59,8 @@ function copyVerificationLink(certId: string) {
     const verificationUrl = `${window.location.origin}/verify-certificate?id=${certId}`;
     navigator.clipboard.writeText(verificationUrl);
     toast.add({
-      title: "Link Copied",
-      description: "Certificate verification link copied to clipboard.",
+      title: t('certificate.linkCopied'),
+      description: t('certificate.linkCopiedDesc'),
       icon: "i-lucide-copy",
       color: "success",
     });
@@ -69,8 +71,8 @@ async function shareCertificate(certId: string) {
   if (import.meta.client) {
     const verificationUrl = `${window.location.origin}/verify-certificate?id=${certId}`;
     const shareData = {
-      title: "My Driving Certificate",
-      text: "I completed my driving course at Drive Master! Check out my certificate.",
+      title: t('certificate.myDrivingCert'),
+      text: t('certificate.shareText'),
       url: verificationUrl,
     };
 
@@ -81,16 +83,16 @@ async function shareCertificate(certId: string) {
         if (err.name !== "AbortError") {
           console.error("Share failed:", err);
           toast.add({
-            title: "Share Failed",
-            description: "An error occurred while trying to share.",
+            title: t('certificate.shareFailed'),
+            description: t('certificate.shareFailedDesc'),
             color: "error",
           });
         }
       }
     } else {
       toast.add({
-        title: "Share Not Supported",
-        description: "Verification link copied to clipboard.",
+        title: t('certificate.shareNotSupported'),
+        description: t('certificate.shareNotSupportedDesc'),
         color: "info",
         icon: "i-lucide-info",
       });
@@ -109,7 +111,7 @@ defineExpose({
     <!-- Certificate Preview Card -->
     <UCard>
       <template #header>
-        <h2 class="font-semibold">Certificate Preview</h2>
+        <h2 class="font-semibold">{{ t('certificate.preview') }}</h2>
       </template>
 
       <div
@@ -123,24 +125,24 @@ defineExpose({
           />
         </div>
 
-        <p class="text-md text-muted mb-2">This is to certify that</p>
+        <p class="text-md text-muted mb-2">{{ t('certificate.certifyThat') }}</p>
         <p class="text-2xl font-bold mb-2">{{ certificate.recipientName }}</p>
-        <p class="text-md text-muted mb-4">has successfully completed the</p>
+        <p class="text-md text-muted mb-4">{{ t('certificate.successfullyCompleted') }}</p>
         <p class="text-lg font-semibold text-warning mb-4">
           {{ certificate.title }}
         </p>
 
         <div class="mt-4 pt-4 border-t border-dashed border-muted w-full">
           <div class="flex justify-between text-md text-muted">
-            <span>Certificate ID: {{ certificate.id }}</span>
-            <span>Issued: {{ certificate.issuedDate }}</span>
+            <span>{{ t('admin.certId') }}: {{ certificate.id }}</span>
+            <span>{{ t('admin.issueDate') }}: {{ certificate.issuedDate }}</span>
           </div>
         </div>
       </div>
 
       <template #footer>
         <UButton
-          label="Download Certificate (PDF)"
+          :label="t('certificate.downloadPdf')"
           icon="i-lucide-download"
           block
           :loading="isDownloading"
@@ -152,29 +154,29 @@ defineExpose({
     <!-- Certificate Details Card -->
     <UCard>
       <template #header>
-        <h2 class="font-semibold">Certificate Details</h2>
+        <h2 class="font-semibold">{{ t('certificate.details') }}</h2>
       </template>
 
       <div class="space-y-4">
         <div class="flex justify-between py-2 border-b border-default">
-          <span class="text-muted">Certificate ID</span>
+          <span class="text-muted">{{ t('admin.certId') }}</span>
           <span class="font-medium font-mono">{{ certificate.id }}</span>
         </div>
         <div class="flex justify-between py-2 border-b border-default">
-          <span class="text-muted">Title</span>
+          <span class="text-muted">{{ t('admin.content.title') }}</span>
           <span class="font-medium">{{ certificate.title }}</span>
         </div>
         <div class="flex justify-between py-2 border-b border-default">
-          <span class="text-muted">Recipient</span>
+          <span class="text-muted">{{ t('certificate.recipient') }}</span>
           <span class="font-medium">{{ certificate.recipientName }}</span>
         </div>
         <div class="flex justify-between py-2 border-b border-default">
-          <span class="text-muted">Issue Date</span>
+          <span class="text-muted">{{ t('admin.issueDate') }}</span>
           <span class="font-medium">{{ certificate.issuedDate }}</span>
         </div>
         <div class="flex justify-between py-2">
-          <span class="text-muted">Status</span>
-          <UBadge label="Valid" color="success" />
+          <span class="text-muted">{{ t('billing.status') }}</span>
+          <UBadge :label="t('certificate.valid')" color="success" />
         </div>
       </div>
     </UCard>
@@ -184,18 +186,17 @@ defineExpose({
       <template #header>
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-shield-check" class="size-5 text-warning" />
-          <h2 class="font-semibold">Verification</h2>
+          <h2 class="font-semibold">{{ t('certificate.verification') }}</h2>
         </div>
       </template>
 
       <p class="text-md text-muted mb-4">
-        This certificate can be verified using the certificate ID. Share your
-        achievement on social media or with potential employers.
+        {{ t('certificate.verificationDesc') }}
       </p>
 
       <div class="flex gap-2">
         <UButton
-          label="Copy Link"
+          :label="t('certificate.copyLink')"
           icon="i-lucide-copy"
           variant="outline"
           color="neutral"
@@ -203,7 +204,7 @@ defineExpose({
           @click="copyVerificationLink(certificate.id)"
         />
         <UButton
-          label="Share"
+          :label="t('certificate.share')"
           icon="i-lucide-share-2"
           variant="outline"
           color="neutral"

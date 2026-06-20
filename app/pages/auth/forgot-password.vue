@@ -4,15 +4,17 @@ import type { FormSubmitEvent } from "@nuxt/ui";
 import { reactive, ref } from "vue";
 import { authService } from "~/services/authService";
 
+const { t } = useI18n()
+
 definePageMeta({
   layout: "blank",
 });
 
-const schema = z.object({
-  email: z.string().email("Please enter a valid email"),
-});
+const schema = computed(() => z.object({
+  email: z.string().email(t('validation.email')),
+}));
 
-type Schema = z.output<typeof schema>;
+type Schema = z.output<ReturnType<typeof schema>>;
 
 const state = reactive({
   email: "",
@@ -45,9 +47,9 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
           <div class="flex items-center justify-center gap-2 mb-4">
             <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
           </div>
-          <h1 class="text-2xl font-bold">Forgot Password</h1>
+          <h1 class="text-2xl font-bold">{{ t('auth.forgotPasswordTitle') }}</h1>
           <p class="text-muted mt-2">
-            Enter your email address and we'll send you a link to reset your password
+            {{ t('auth.forgotPasswordDesc') }}
           </p>
         </div>
       </template>
@@ -59,10 +61,10 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
         color="success"
         variant="soft"
         class="mb-4"
-        title="Check your email"
+        :title="t('auth.checkEmail')"
       >
         <template #description>
-          If an account exists with that email, we've sent password reset instructions.
+          {{ t('auth.checkEmailDesc') }}
         </template>
       </UAlert>
 
@@ -73,7 +75,7 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
         class="space-y-4"
         @submit="onSubmit"
       >
-        <UFormField name="email" label="Email Address">
+        <UFormField name="email" :label="t('auth.email')">
           <UInput
             v-model="state.email"
             type="email"
@@ -86,7 +88,7 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
 
         <UButton
           type="submit"
-          label="Send Reset Link"
+          :label="t('auth.sendResetLink')"
           color="warning"
           :loading="loading"
           block
@@ -97,9 +99,9 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
       <template #footer>
         <div class="text-center">
           <p class="text-sm text-muted">
-            Remember your password?
+            {{ t('auth.rememberPassword') }}
             <NuxtLink to="/auth/login" class="text-warning font-medium hover:underline">
-              Sign in
+              {{ t('auth.signIn') }}
             </NuxtLink>
           </p>
         </div>

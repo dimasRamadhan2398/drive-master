@@ -6,6 +6,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import { onBeforeUnmount, watch } from "vue";
 
+const { t } = useI18n()
 const props = defineProps<{
   modelValue: string;
   placeholder?: string;
@@ -69,7 +70,7 @@ onBeforeUnmount(() => {
       v-if="!isClient"
       class="min-h-[150px] flex items-center justify-center bg-gray-50 dark:bg-gray-950"
     >
-      <span class="text-sm text-gray-400">Loading editor...</span>
+      <span class="text-sm text-gray-400">{{ t('common.loadingEditor') }}</span>
     </div>
 
     <template v-else>

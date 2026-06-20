@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Article } from "~/services/articleService";
 
+const { t } = useI18n()
 const articlesStore = useArticlesStore();
 const searchQuery = ref("");
 
@@ -68,8 +69,8 @@ const remainingPosts = computed(() => blogPosts.value.slice(1));
 // Total count for display
 const totalArticles = computed(() =>
   searchQuery.value
-    ? `${blogPosts.value.length} found`
-    : `${publishedArticles.value.length} articles`,
+    ? `${blogPosts.value.length} ${t('blog.found')}`
+    : `${publishedArticles.value.length} ${t('blog.articles')}`,
 );
 
 // Helper: generate a slug from post title
@@ -100,10 +101,10 @@ function getExcerpt(content: string, maxLength = 150): string {
 
 // Helper: reading time estimate
 function getReadingTime(content: string): string {
-  if (!content) return "1 min read";
+  if (!content) return t('blog.readingTime', { min: 1 });
   const words = content.split(/\s+/).length;
   const minutes = Math.max(1, Math.ceil(words / 200));
-  return `${minutes} min read`;
+  return t('blog.readingTime', { min: minutes });
 }
 
 // Helper: get author initials for avatar
@@ -131,9 +132,8 @@ function getGradient(index: number) {
 }
 
 useSeoMeta({
-  title: "Articles | Drive Master Academy",
-  description:
-    "Read the latest articles, tips, and updates about EV driving, electric vehicles, and driving education from Drive Master Academy.",
+  title: t('blog.title') + " | Drive Master Academy",
+  description: t('blog.heroDesc'),
 });
 
 onMounted(() => {
@@ -164,7 +164,7 @@ onMounted(() => {
       >
         <div class="text-center max-w-3xl mx-auto">
           <UBadge
-            label="Blog & Articles"
+            :label="t('blog.title')"
             color="warning"
             variant="subtle"
             class="mb-4"
@@ -172,22 +172,21 @@ onMounted(() => {
           <h1
             class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
           >
-            Insights &
+            {{ t('blog.heroTitle') }}
             <span
               class="text-transparent bg-clip-text bg-gradient-to-r from-warning to-amber-500"
-              >Stories</span
+              >{{ t('blog.heroTitleStories') }}</span
             >
           </h1>
           <p class="text-lg text-muted max-w-2xl mx-auto mb-10">
-            Stay updated with the latest tips on driving education, electric
-            vehicle trends, and stories from our community of learners.
+            {{ t('blog.heroDesc') }}
           </p>
 
           <!-- Search Bar -->
           <div class="max-w-lg mx-auto">
             <UInput
               v-model="searchQuery"
-              placeholder="Search articles..."
+              :placeholder="t('blog.searchPlaceholder')"
               icon="i-lucide-search"
               size="xl"
               class="w-full"
@@ -208,18 +207,18 @@ onMounted(() => {
           <UIcon name="i-lucide-newspaper" class="size-10 text-muted" />
         </div>
         <h2 class="text-2xl font-bold mb-3">
-          {{ searchQuery ? "No articles found" : "No articles yet" }}
+          {{ searchQuery ? t('blog.noArticles') : t('blog.noArticlesYet') }}
         </h2>
         <p class="text-muted max-w-md mx-auto mb-6">
           {{
             searchQuery
-              ? `We couldn't find any articles matching "${searchQuery}". Try a different search term.`
-              : "Stay tuned! Our team is working on exciting content for you."
+              ? t('blog.noArticlesDesc', { query: searchQuery })
+              : t('blog.noArticlesYetDesc')
           }}
         </p>
         <UButton
           v-if="searchQuery"
-          label="Clear Search"
+          :label="t('blog.clearSearch')"
           color="warning"
           variant="outline"
           icon="i-lucide-x"
@@ -258,7 +257,7 @@ onMounted(() => {
                 />
               </div>
               <div class="absolute top-4 left-4">
-                <UBadge label="Featured" color="warning" class="shadow-lg" />
+                <UBadge :label="t('blog.featured')" color="warning" class="shadow-lg" />
               </div>
             </div>
 
@@ -295,12 +294,12 @@ onMounted(() => {
                 <span
                   class="inline-flex items-center gap-2 text-warning font-medium group-hover:gap-3 transition-all"
                 >
-                  Read Article
+                  {{ t('blog.readArticle') }}
                   <UIcon name="i-lucide-arrow-right" class="size-4" />
                 </span>
                 <span class="flex items-center gap-1.5 text-sm text-muted">
                   <UIcon name="i-lucide-eye" class="size-4" />
-                  {{ featuredPost.views }} views
+                  {{ featuredPost.views }} {{ t('blog.views') }}
                 </span>
               </div>
             </div>
@@ -312,7 +311,7 @@ onMounted(() => {
           v-if="remainingPosts.length > 0"
           class="flex items-center gap-4 mb-10"
         >
-          <h2 class="text-xl font-bold whitespace-nowrap">Latest Articles</h2>
+          <h2 class="text-xl font-bold whitespace-nowrap">{{ t('blog.latestArticles') }}</h2>
           <div class="h-px flex-1 bg-default" />
           <span class="text-sm text-muted whitespace-nowrap">
             {{ totalArticles }}
@@ -396,7 +395,7 @@ onMounted(() => {
                   <span
                     class="inline-flex items-center gap-1 text-xs font-medium text-warning opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    Read
+                    {{ t('blog.readMore').split(' ').shift() }}
                     <UIcon name="i-lucide-arrow-right" class="size-3.5" />
                   </span>
                 </div>
@@ -419,28 +418,27 @@ onMounted(() => {
         >
           <UIcon name="i-lucide-bell-ring" class="size-8 text-warning" />
         </div>
-        <h2 class="text-3xl font-bold mb-4">Stay in the Loop</h2>
+        <h2 class="text-3xl font-bold mb-4">{{ t('blog.newsletterTitle') }}</h2>
         <p class="text-muted max-w-xl mx-auto mb-8">
-          Get the latest driving tips, EV insights, and academy updates
-          delivered straight to your inbox.
+          {{ t('blog.newsletterDesc') }}
         </p>
         <div
           class="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto"
         >
           <UInput
-            placeholder="Enter your email"
+            :placeholder="t('blog.emailPlaceholder')"
             size="lg"
             class="flex-1"
             icon="i-lucide-mail"
           />
           <UButton
-            label="Subscribe"
+            :label="t('blog.subscribe')"
             color="warning"
             size="lg"
             icon="i-lucide-send"
           />
         </div>
-        <p class="text-xs text-muted mt-4">No spam, unsubscribe anytime.</p>
+        <p class="text-xs text-muted mt-4">{{ t('blog.noSpam') }}</p>
       </div>
     </section>
   </div>

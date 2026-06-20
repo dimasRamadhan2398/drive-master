@@ -2,6 +2,7 @@
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const { pages } = useContent()
 
@@ -26,15 +27,15 @@ if (!page.value && process.server) {
     />
     <div v-if="page.sections.length === 0" class="py-20 text-center text-muted">
       <h1 class="text-3xl font-bold mb-4">{{ page.title }}</h1>
-      <p>This page has no content yet.</p>
+      <p>{{ t('blog.noContent') }}</p>
     </div>
   </div>
   <div v-else class="py-32 text-center flex flex-col items-center justify-center">
     <UIcon name="i-lucide-file-question" class="size-16 text-muted mb-4" />
-    <h1 class="text-4xl font-bold mb-2">404 - Page Not Found</h1>
-    <p class="text-muted text-lg mb-8">The page you are looking for does not exist or has been unpublished.</p>
+    <h1 class="text-4xl font-bold mb-2">404 - {{ t('blog.postNotFound') }}</h1>
+    <p class="text-muted text-lg mb-8">{{ t('blog.postNotFoundDesc') }}</p>
     <NuxtLink to="/">
-      <UButton label="Return Home" color="primary" size="lg" icon="i-lucide-home" />
+      <UButton :label="t('auth.backToHome')" color="primary" size="lg" icon="i-lucide-home" />
     </NuxtLink>
   </div>
 </template>

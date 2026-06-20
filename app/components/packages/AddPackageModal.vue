@@ -108,12 +108,12 @@ async function saveNewPackage(e: Event) {
 <template>
   <UModal
     :open="open"
-    title="Add New Package"
+    :title="t('admin.package.add')"
     @update:open="(val) => emit('update:open', val)"
   >
     <template #body>
       <div class="space-y-4">
-        <UFormField label="Package Name" required>
+        <UFormField :label="t('admin.package.name')" required>
           <UInput
             v-model="newPackage.name"
             placeholder="e.g. 15x Sessions"
@@ -121,7 +121,7 @@ async function saveNewPackage(e: Event) {
             color="warning"
           />
         </UFormField>
-        <UFormField label="Package Type" required>
+        <UFormField :label="t('admin.package.type')" required>
           <USelect
             v-model="newPackage.packageType"
             :items="packageTypes"
@@ -130,7 +130,7 @@ async function saveNewPackage(e: Event) {
           />
         </UFormField>
         <div class="grid grid-cols-2 gap-4">
-          <UFormField label="Price (IDR)" required>
+          <UFormField :label="t('admin.package.price')" required>
             <UInput
               v-model="newPackage.price"
               type="number"
@@ -139,7 +139,7 @@ async function saveNewPackage(e: Event) {
               color="warning"
             />
           </UFormField>
-          <UFormField label="Discount Price (IDR)">
+          <UFormField :label="t('admin.package.discountPrice')">
             <UInput
               v-model="newPackage.discountPrice"
               type="number"
@@ -152,12 +152,12 @@ async function saveNewPackage(e: Event) {
         </div>
         <USwitch
           v-model="newPackage.isDiscountActive"
-          label="Enable Discount"
+          :label="t('admin.package.enableDiscount')"
           class="w-full"
           color="warning"
         />
         <div class="grid grid-cols-2 gap-4">
-          <UFormField label="Sessions" required>
+          <UFormField :label="t('admin.package.sessions')" required>
             <UInput
               v-model="newPackage.sessions"
               type="number"
@@ -165,7 +165,7 @@ async function saveNewPackage(e: Event) {
               color="warning"
             />
           </UFormField>
-          <UFormField label="Duration (min)" required>
+          <UFormField :label="t('admin.package.duration')" required>
             <UInput
               v-model="newPackage.duration"
               type="number"
@@ -175,16 +175,16 @@ async function saveNewPackage(e: Event) {
             />
           </UFormField>
         </div>
-        <UFormField label="Description">
+        <UFormField :label="t('admin.package.description')">
           <UTextarea
             v-model="newPackage.description"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Features">
+        <UFormField :label="t('admin.package.features')">
           <template #hint>
-            <span>Masukkan satu fitur per baris.</span>
+            <span>{{ t('admin.package.featuresHint') }}</span>
           </template>
           <UTextarea
             v-model="newPackage.features"
@@ -195,7 +195,7 @@ async function saveNewPackage(e: Event) {
         </UFormField>
         <USwitch
           v-model="newPackage.highlight"
-          label="Mark as Popular"
+          :label="t('admin.package.markPopular')"
           class="w-full"
           color="warning"
         />
@@ -204,13 +204,13 @@ async function saveNewPackage(e: Event) {
     <template #footer>
       <div class="flex justify-end gap-3">
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           variant="ghost"
           color="neutral"
           @click="handleClose"
         />
         <UButton
-          label="Create Package"
+          :label="t('admin.package.add')"
           icon="i-lucide-plus"
           color="warning"
           :loading="isAddLoading"

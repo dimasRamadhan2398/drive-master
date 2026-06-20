@@ -22,6 +22,7 @@ const emit = defineEmits<{
   (e: "saved", data: { id: string; time: string; duration: string; car: string; instructor: string }): void;
 }>();
 
+const { t } = useI18n()
 const toast = useToast();
 
 const form = ref({ id: "", time: "08:00", duration: "60", car: "", instructor: "" });
@@ -106,22 +107,22 @@ function handleSave() {
             </template>
             <UInput type="time" v-model="form.time" :disabled="operatingHours.isClosed" class="w-full" />
           </UFormField>
-          <UFormField label="Duration">
+          <UFormField :label="t('admin.package.duration')">
             <USelect :items="[{ label: '60 minutes', value: '60' }]" v-model="form.duration" disabled class="w-full" />
           </UFormField>
         </div>
         <UFormField label="Vehicle" required>
           <USelect :items="vehicles" v-model="form.car" placeholder="Select vehicle" class="w-full" />
         </UFormField>
-        <UFormField label="Instructor" required>
+        <UFormField :label="t('dashboard.instructor')" required>
           <USelect :items="instructors" v-model="form.instructor" placeholder="Select instructor" class="w-full" />
         </UFormField>
       </div>
     </template>
     <template #footer>
       <div class="flex justify-end gap-3">
-        <UButton label="Cancel" variant="ghost" color="neutral" @click="handleClose" />
-        <UButton label="Save Changes" icon="i-lucide-save" @click="handleSave" color="warning" />
+        <UButton :label="t('common.cancel')" variant="ghost" color="neutral" @click="handleClose" />
+        <UButton :label="t('admin.saveChanges')" icon="i-lucide-save" @click="handleSave" color="warning" />
       </div>
     </template>
   </UModal>

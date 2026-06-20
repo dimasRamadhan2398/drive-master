@@ -1,8 +1,9 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 useSeoMeta({
-  title: "Packages | Drive Master Academy",
-  description:
-    "Transparent pricing with no hidden fees. Choose the package that best fits your learning goals and schedule.",
+  title: t('packages.heroTitle') + " | Drive Master Academy",
+  description: t('packages.subtitle'),
 });
 
 const selectedPlan = ref<
@@ -69,26 +70,26 @@ const timeLeft = computed(() => {
   return { hours, minutes, seconds };
 });
 
-const comparisonFeatures = [
-  { name: "Free Trial", pkg6x: true, pkg8x: true, pkg10x: true, pkg12x: true },
-  { name: "Sessions", pkg6x: "6", pkg8x: "8", pkg10x: "10", pkg12x: "12" },
+const comparisonFeatures = computed(() => [
+  { name: t('packages.comparison.freeTrial'), pkg6x: true, pkg8x: true, pkg10x: true, pkg12x: true },
+  { name: t('packages.comparison.sessions'), pkg6x: "6", pkg8x: "8", pkg10x: "10", pkg12x: "12" },
   {
-    name: "Total Hours",
-    pkg6x: "6 hrs",
-    pkg8x: "8 hrs",
-    pkg10x: "10 hrs",
-    pkg12x: "12 hrs",
+    name: t('packages.comparison.totalHours'),
+    pkg6x: `6 ${t('packages.comparison.hrs')}`,
+    pkg8x: `8 ${t('packages.comparison.hrs')}`,
+    pkg10x: `10 ${t('packages.comparison.hrs')}`,
+    pkg12x: `12 ${t('packages.comparison.hrs')}`,
   },
-];
+]);
 
-const addOns = [
+const addOns = computed(() => [
   {
-    title: "Extra Session",
+    title: t('packages.extras.extraSession'),
     price: "Rp 350.000",
-    description: "Add more practice time to any package",
+    description: t('packages.extras.extraSessionDesc'),
     icon: "i-lucide-plus-circle",
   },
-];
+]);
 
 onMounted(async () => {
   packagesStore.fetchPackages();
@@ -99,17 +100,17 @@ onMounted(async () => {
   <div>
     <!-- Hero -->
     <UPageHero
-      title="Course Packages"
-      description="Transparent pricing with no hidden fees. Choose the package that best fits your learning goals and schedule."
+      :title="t('packages.heroTitle')"
+      :description="t('packages.subtitle')"
       :links="[
         {
-          label: 'Register Now',
+          label: t('packages.registerNow'),
           to: '/auth/register',
           color: 'warning',
           icon: 'i-lucide-user-plus',
         },
         {
-          label: 'Compare Packages',
+          label: t('packages.comparePackages'),
           to: '#comparison',
           color: 'neutral',
           variant: 'outline',
@@ -146,7 +147,7 @@ onMounted(async () => {
                   <div
                     class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter"
                   >
-                    Hot
+                    {{ t('home.hot') }}
                   </div>
                 </div>
 
@@ -154,19 +155,18 @@ onMounted(async () => {
                   <div
                     class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-warning-500/10 text-warning-600 text-xs font-bold uppercase tracking-widest mb-3"
                   >
-                    Flash Sale Active
+                    {{ t('home.flashSale') }}
                   </div>
                   <h2
                     class="text-2xl md:text-3xl font-black tracking-tight mb-2"
                   >
-                    Special Price:
+                    {{ t('home.specialPrice') }}
                     <span class="text-warning-500"
-                      >Save up to {{ discount }}%</span
+                      >{{ t('home.saveUpTo', { discount: Math.round(((currentPlan?.price || 1) - (currentPlan?.discountPrice || 0)) / (currentPlan?.price || 1) * 100) }) }}</span
                     >
                   </h2>
                   <p class="text-muted text-sm md:text-base max-w-lg">
-                    Exclusive discount for new members. Start your journey today
-                    with our professional instructors.
+                    {{ t('home.exclusiveDiscount') }}
                   </p>
                 </div>
               </div>
@@ -178,15 +178,15 @@ onMounted(async () => {
                 <p
                   class="text-xs font-bold text-warning-600 uppercase tracking-[0.2em] mb-4"
                 >
-                  Promo Ends In:
+                  {{ t('home.promoEndsIn') }}
                 </p>
 
                 <div class="flex gap-3">
                   <div
                     v-for="(val, unit) in {
                       hours: timeLeft.hours,
-                      mins: timeLeft.minutes,
-                      secs: timeLeft.seconds,
+                      minutes: timeLeft.minutes,
+                      seconds: timeLeft.seconds,
                     }"
                     :key="unit"
                     class="text-center"
@@ -199,7 +199,7 @@ onMounted(async () => {
                       }}</span>
                     </div>
                     <span class="text-[10px] font-bold text-muted uppercase">{{
-                      unit
+                      t(`common.${unit}`).substring(0, 3)
                     }}</span>
                   </div>
                 </div>
@@ -232,14 +232,14 @@ onMounted(async () => {
                 v-if="plan.isPopular"
                 class="absolute -top-3 left-1/2 -translate-x-1/2 z-10"
               >
-                <UBadge label="Most Popular" color="warning" />
+                <UBadge :label="t('packages.popular')" color="warning" />
               </div>
 
               <template #header>
                 <div class="text-center">
                   <h3 class="text-2xl font-bold">{{ plan.name }}</h3>
                   <p class="text-muted text-sm mt-2">
-                    Package Duration : {{ plan.duration }}
+                    {{ t('packages.duration') }} : {{ plan.duration }}
                   </p>
                 </div>
               </template>
@@ -258,12 +258,7 @@ onMounted(async () => {
                       Rp {{ plan.discountPrice.toLocaleString("id-ID") }}
                     </p>
                     <p class="text-xs text-green-600 font-medium">
-                      Save Rp
-                      {{
-                        (plan.price - plan.discountPrice).toLocaleString(
-                          "id-ID",
-                        )
-                      }}
+                      {{ t('home.saveAmount', { amount: (plan.price - plan.discountPrice).toLocaleString("id-ID") }) }}
                     </p>
                   </div>
                   <div v-else>
@@ -276,7 +271,7 @@ onMounted(async () => {
                 <!-- Sessions Badge -->
                 <div class="text-center">
                   <UBadge
-                    :label="`${plan.sessions} Sessions`"
+                    :label="`${plan.sessions} ${t('packages.sessions')}`"
                     color="warning"
                     variant="subtle"
                   />
@@ -304,7 +299,7 @@ onMounted(async () => {
                   <NuxtLink
                     :to="{ path: '/auth/register', query: { plan: plan.id } }"
                   >
-                    <UButton label="Choose this Plan" color="warning" block />
+                    <UButton :label="t('packages.choosePlan')" color="warning" block />
                   </NuxtLink>
                 </div>
               </div>
@@ -317,9 +312,9 @@ onMounted(async () => {
     <!-- Comparison Table -->
     <UPageSection
       id="comparison"
-      headline="Detailed Comparison"
-      title="Compare All Features"
-      description="A side-by-side comparison of all package features to help you decide."
+      :headline="t('packages.comparison.subtitle')"
+      :title="t('packages.comparison.title')"
+      :description="t('packages.comparison.description')"
       :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
@@ -327,12 +322,12 @@ onMounted(async () => {
         <table class="w-full min-w-[600px]">
           <thead>
             <tr class="border-b border-default">
-              <th class="text-left py-4 px-4 font-semibold">Feature</th>
+              <th class="text-left py-4 px-4 font-semibold">{{ t('packages.comparison.feature') }}</th>
               <th class="text-center py-4 px-4 font-semibold">6x</th>
               <th class="text-center py-4 px-4 font-semibold">
                 <div class="flex items-center justify-center gap-2">
                   8x
-                  <UBadge label="Popular" size="xs" color="warning" />
+                  <UBadge :label="t('packages.popular')" size="xs" color="warning" />
                 </div>
               </th>
               <th class="text-center py-4 px-4 font-semibold">10x</th>
@@ -398,15 +393,15 @@ onMounted(async () => {
           </tbody>
           <tfoot>
             <tr class="bg-muted/50">
-              <td class="py-4 px-4 font-semibold">Price</td>
-              <td class="py-4 px-4 text-center font-semibold">Rp 1.750.000</td>
+              <td class="py-4 px-4 font-semibold">{{ t('packages.comparison.price') }}</td>
               <td
-                class="py-4 px-4 text-center font-semibold text-warning bg-warning/10"
+                v-for="plan in packagePlans"
+                :key="plan.id"
+                class="py-4 px-4 text-center font-semibold"
+                :class="{ 'text-warning bg-warning/10': plan.isPopular }"
               >
-                Rp 1.950.000
+                Rp {{ (plan.isDiscounted ? plan.discountPrice : plan.price).toLocaleString('id-ID') }}
               </td>
-              <td class="py-4 px-4 text-center font-semibold">Rp 2.250.000</td>
-              <td class="py-4 px-4 text-center font-semibold">Rp 2.650.000</td>
             </tr>
           </tfoot>
         </table>
@@ -415,9 +410,9 @@ onMounted(async () => {
 
     <!-- Add-ons -->
     <UPageSection
-      headline="Extras"
-      title="Optional Add-ons"
-      description="Enhance your learning experience with these additional services."
+      :headline="t('packages.extras.subtitle')"
+      :title="t('packages.extras.title')"
+      :description="t('packages.extras.description')"
       :ui="{ headline: 'text-warning' }"
     >
       <div class="grid md:grid-cols-1 gap-6 max-w-4xl mx-auto">
@@ -440,17 +435,17 @@ onMounted(async () => {
 
     <!-- CTA -->
     <UPageCTA
-      title="Questions About Packages?"
-      description="Our team is ready to help you choose the right package for your needs."
+      :title="t('packages.cta.title')"
+      :description="t('packages.cta.description')"
       :links="[
         {
-          label: 'Register Now',
+          label: t('packages.registerNow'),
           to: '/auth/register',
           color: 'warning',
           icon: 'i-lucide-user-plus',
         },
         {
-          label: 'Contact Us',
+          label: t('packages.cta.contactUs'),
           to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi',
           color: 'primary',
           variant: 'outline',

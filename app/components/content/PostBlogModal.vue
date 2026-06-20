@@ -28,6 +28,7 @@ export interface PostFormData {
   };
 }
 
+const { t } = useI18n()
 const props = defineProps<{
   open: boolean;
   post?: PostFormData | null;
@@ -265,7 +266,7 @@ async function savePost() {
           </UFormField>
           <UFormField label="Media">
             <template #hint>
-              <span>JPG, PNG, WebP (max 5MB) · MP4, WebM (max 50MB)</span>
+              <span>{{ t('blog.mediaHint') }}</span>
             </template>
             <input
               ref="mediaInputRef"
@@ -328,7 +329,7 @@ async function savePost() {
             >
               <UIcon name="i-lucide-image-plus" class="size-6 text-muted" />
               <span class="text-sm font-medium text-muted"
-                >Click to add images or videos</span
+                >{{ t('blog.clickToAddMedia') }}</span
               >
             </button>
           </UFormField>

@@ -31,6 +31,7 @@ const emit = defineEmits<{
   ): void;
 }>();
 
+const { t } = useI18n()
 const toast = useToast();
 
 const form = ref({
@@ -112,7 +113,7 @@ function handleSave() {
   >
     <template #body>
       <div class="space-y-5">
-        <UFormField label="Date" required>
+        <UFormField :label="t('dashboard.date')" required>
           <UInput type="date" :model-value="date" disabled class="w-full" />
         </UFormField>
         <div class="grid grid-cols-2 gap-4">
@@ -137,7 +138,7 @@ function handleSave() {
               class="w-full"
             />
           </UFormField>
-          <UFormField label="Duration">
+          <UFormField :label="t('admin.package.duration')">
             <USelect
               :items="[{ label: '60 minutes', value: '60' }]"
               v-model="form.duration"
@@ -154,7 +155,7 @@ function handleSave() {
             class="w-full"
           />
         </UFormField>
-        <UFormField label="Instructor" required>
+        <UFormField :label="t('dashboard.instructor')" required>
           <USelect
             :items="instructors"
             v-model="form.instructor"
@@ -166,7 +167,7 @@ function handleSave() {
     </template>
     <template #footer>
       <div class="flex justify-end gap-3">
-        <UButton label="Cancel" variant="ghost" color="neutral" @click="handleClose" />
+        <UButton :label="t('common.cancel')" variant="ghost" color="neutral" @click="handleClose" />
         <UButton
           label="Create Slot"
           icon="i-lucide-plus"

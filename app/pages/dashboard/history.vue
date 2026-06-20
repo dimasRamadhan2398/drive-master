@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
 
@@ -92,7 +93,7 @@ const openDetails = (session: any) => {
 <template>
  <UDashboardPanel>
    <template #header>
-     <UDashboardNavbar title="Training History">
+     <UDashboardNavbar :title="t('history.title')">
        <template #right>
          <UColorModeButton />
        </template>
@@ -103,7 +104,7 @@ const openDetails = (session: any) => {
        <template #left>
          <UInput
            v-model="searchQuery"
-           placeholder="Search sessions..."
+           :placeholder="t('history.searchPlaceholder')"
            icon="i-lucide-search"
            class="w-64"
         />
@@ -112,9 +113,9 @@ const openDetails = (session: any) => {
          <USelect
            v-model="statusFilter"
            :items="[
-             { label: 'All Sessions', value: 'all' },
-             { label: 'Completed', value: 'completed' },
-             { label: 'Cancelled', value: 'cancelled' }
+             { label: t('history.allSessions'), value: 'all' },
+             { label: t('history.completed'), value: 'completed' },
+             { label: t('history.cancelled'), value: 'cancelled' }
            ]"
            class="w-40"
         />
@@ -134,7 +135,7 @@ const openDetails = (session: any) => {
              </div>
              <div>
                <p class="text-2xl font-bold">{{ trainingHistory.filter(s => s.status === 'completed').length }}</p>
-               <p class="text-sm text-muted">Sessions Completed</p>
+               <p class="text-sm text-muted">{{ t('dashboard.sessionsCompleted') }}</p>
              </div>
            </div>
          </UCard>
@@ -146,8 +147,8 @@ const openDetails = (session: any) => {
                <UIcon name="i-lucide-clock" class="size-6 text-blue-500" />
              </div>
              <div>
-               <p class="text-2xl font-bold">{{ totalHours }} hrs</p>
-               <p class="text-sm text-muted">Total Training Time</p>
+               <p class="text-2xl font-bold">{{ totalHours }} {{ t('common.hours') }}</p>
+               <p class="text-sm text-muted">{{ t('history.totalTrainingTime') }}</p>
              </div>
            </div>
          </UCard>
@@ -160,7 +161,7 @@ const openDetails = (session: any) => {
              </div>
              <div>
                <p class="text-2xl font-bold">4.5</p>
-               <p class="text-sm text-muted">Average Rating</p>
+               <p class="text-sm text-muted">{{ t('history.averageRating') }}</p>
              </div>
            </div>
          </UCard>
@@ -170,7 +171,7 @@ const openDetails = (session: any) => {
        <!-- History List -->
        <UCard>
          <template #header>
-           <h2 class="font-semibold">Session History</h2>
+           <h2 class="font-semibold">{{ t('history.sessionHistory') }}</h2>
          </template>
 
 
@@ -187,9 +188,9 @@ const openDetails = (session: any) => {
                  </div>
                  <div>
                    <div class="flex items-center gap-2 flex-wrap">
-                     <h3 class="font-semibold">Session #{{ session.sessionNumber }}: {{ session.topic }}</h3>
+                     <h3 class="font-semibold">{{ t('history.session') }} #{{ session.sessionNumber }}: {{ session.topic }}</h3>
                      <UBadge
-                       :label="session.status === 'completed' ? 'Completed' : 'Cancelled'"
+                       :label="session.status === 'completed' ? t('history.completed') : t('history.cancelled')"
                        :color="session.status === 'completed' ? 'success' : 'error'"
                        variant="subtle"
                        size="xs"
@@ -225,7 +226,7 @@ const openDetails = (session: any) => {
                   />
                  </div>
                  <UButton
-                   label="View Details"
+                   :label="t('history.viewDetails')"
                    variant="ghost"
                    size="xs"
                    icon="i-lucide-eye"
@@ -236,7 +237,7 @@ const openDetails = (session: any) => {
 
 
              <div v-if="session.notes" class="mt-4 p-3 rounded-lg bg-muted/50">
-               <p class="text-xs text-muted mb-1">Instructor Notes:</p>
+               <p class="text-xs text-muted mb-1">{{ t('history.instructorNotes') }}</p>
                <p class="text-sm">{{ session.notes }}</p>
              </div>
            </div>
@@ -245,8 +246,8 @@ const openDetails = (session: any) => {
            <UEmpty
              v-if="filteredHistory.length === 0"
              icon="i-lucide-search-x"
-             title="No Sessions Found"
-             description="Try adjusting your search or filter criteria."
+             :title="t('history.noSessionsFound')"
+             :description="t('history.adjustSearch')"
           />
          </div>
        </UCard>
@@ -262,7 +263,7 @@ const openDetails = (session: any) => {
          <template #header>
            <div class="flex items-center justify-between">
              <h3 class="text-base font-semibold leading-6">
-               Session Details #{{ selectedSession.sessionNumber }}
+               {{ t('history.session') }} Details #{{ selectedSession.sessionNumber }}
              </h3>
              <UButton color="neutral" variant="ghost" icon="i-lucide-x" @click="isModalOpen = false" />
            </div>
@@ -278,7 +279,7 @@ const openDetails = (session: any) => {
                <h4 class="text-xl font-bold">{{ selectedSession.topic }}</h4>
                <div class="flex items-center gap-2 mt-1">
                  <UBadge
-                   :label="selectedSession.status === 'completed' ? 'Completed' : 'Cancelled'"
+                   :label="selectedSession.status === 'completed' ? t('history.completed') : t('history.cancelled')"
                    :color="selectedSession.status === 'completed' ? 'success' : 'error'"
                    variant="subtle"
                 />
@@ -290,28 +291,28 @@ const openDetails = (session: any) => {
 
            <div class="grid grid-cols-2 gap-6">
              <div class="space-y-1">
-               <p class="text-xs text-muted uppercase font-bold tracking-wider">Instructor</p>
+               <p class="text-xs text-muted uppercase font-bold tracking-wider">{{ t('dashboard.instructor') }}</p>
                <p class="font-medium flex items-center gap-2">
                  <UIcon name="i-lucide-user" class="size-4 text-primary" />
                  {{ selectedSession.instructor }}
                </p>
              </div>
              <div class="space-y-1">
-               <p class="text-xs text-muted uppercase font-bold tracking-wider">Vehicle</p>
+               <p class="text-xs text-muted uppercase font-bold tracking-wider">{{ t('dashboard.vehicle') }}</p>
                <p class="font-medium flex items-center gap-2">
                  <UIcon name="i-lucide-car" class="size-4 text-primary" />
                  {{ selectedSession.car }}
                </p>
              </div>
              <div class="space-y-1">
-               <p class="text-xs text-muted uppercase font-bold tracking-wider">Time & Duration</p>
+               <p class="text-xs text-muted uppercase font-bold tracking-wider">{{ t('dashboard.time') }} & {{ t('packages.duration') }}</p>
                <p class="font-medium flex items-center gap-2">
                  <UIcon name="i-lucide-clock" class="size-4 text-primary" />
                  {{ selectedSession.time }} ({{ selectedSession.duration }})
                </p>
              </div>
              <div class="space-y-1">
-               <p class="text-xs text-muted uppercase font-bold tracking-wider">Rating</p>
+               <p class="text-xs text-muted uppercase font-bold tracking-wider">{{ t('instructors.rating') }}</p>
                <div class="flex gap-1 mt-1">
                  <UIcon
                    v-for="i in 5"
@@ -326,7 +327,7 @@ const openDetails = (session: any) => {
 
 
            <div v-if="selectedSession.notes" class="p-4 rounded-xl bg-muted/30 border border-default">
-             <p class="text-xs text-muted uppercase font-bold tracking-wider mb-2">Instructor Notes</p>
+             <p class="text-xs text-muted uppercase font-bold tracking-wider mb-2">{{ t('history.instructorNotes') }}</p>
              <p class="text-sm leading-relaxed">{{ selectedSession.notes }}</p>
            </div>
          </div>
@@ -336,6 +337,3 @@ const openDetails = (session: any) => {
    </UModal>
  </ClientOnly>
 </template>
-
-
-

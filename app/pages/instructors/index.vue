@@ -1,8 +1,9 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 useSeoMeta({
-  title: "Instructors | Drive Master Academy",
-  description:
-    "Meet our professional instructors, certified and experienced in providing the best driving education.",
+  title: t('instructors.title') + " | Drive Master Academy",
+  description: t('instructors.subtitle'),
 });
 
 const instructorsStore = useInstructorsStore();
@@ -17,8 +18,8 @@ onMounted(() => {
 <template>
   <UContainer class="py-12">
     <UPageHeader
-      title="Meet Our Professional Instructors"
-      description="Learn from the best. Our certified instructors are dedicated to providing a premium learning experience."
+      :title="t('instructors.heroTitle')"
+      :description="t('instructors.heroDesc')"
       class="mb-12"
     />
 
@@ -60,24 +61,24 @@ onMounted(() => {
             <h3 class="text-xl font-bold">{{ instructor.name }}</h3>
             <div class="flex items-center gap-2 text-warning">
               <UIcon name="i-lucide-star" class="size-4" />
-              <span class="text-sm font-medium">{{ instructor.rating.toFixed(1) }} Rating</span>
+              <span class="text-sm font-medium">{{ instructor.rating.toFixed(1) }} {{ t('instructors.rating') }}</span>
             </div>
           </div>
 
           <p class="text-muted text-sm leading-relaxed line-clamp-3">
-            {{ instructor.bio || 'No bio available' }}
+            {{ instructor.bio || t('instructors.noBio') }}
           </p>
 
           <div class="flex items-center gap-4 pt-2 border-t border-default">
             <div class="flex items-center gap-1">
               <UIcon name="i-lucide-clock" class="size-4 text-warning" />
               <span class="text-xs font-semibold"
-                >{{ instructor.yearsOfExperience }} Years</span
+                >{{ instructor.yearsOfExperience }} {{ t('home.yearsExperience') }}</span
               >
             </div>
             <div class="flex items-center gap-1">
               <UIcon name="i-lucide-users" class="size-4 text-warning" />
-              <span class="text-xs font-semibold">{{ instructor.totalStudents }} Students</span>
+              <span class="text-xs font-semibold">{{ instructor.totalStudents }} {{ t('instructors.students') }}</span>
             </div>
           </div>
         </div>
@@ -86,7 +87,7 @@ onMounted(() => {
           <div class="space-y-2">
             <div class="flex items-center gap-2 text-sm">
               <UIcon name="i-lucide-phone" class="size-4 text-muted" />
-              <span class="text-muted">{{ instructor.phone || 'No phone' }}</span>
+              <span class="text-muted">{{ instructor.phone || t('instructors.noPhone') }}</span>
             </div>
             <div class="flex items-center gap-2 text-sm">
               <UIcon name="i-lucide-mail" class="size-4 text-muted" />
@@ -102,11 +103,11 @@ onMounted(() => {
     </div>
 
     <UPageCTA
-      title="Ready to start your journey?"
-      description="Choose your favorite instructor and book your first session today."
+      :title="t('instructors.cta.title')"
+      :description="t('instructors.cta.description')"
       :links="[
         {
-          label: 'Register Now',
+          label: t('auth.register'),
           to: '/auth/register',
           color: 'warning',
           size: 'lg',
