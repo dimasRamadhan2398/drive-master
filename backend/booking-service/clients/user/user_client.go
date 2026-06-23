@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -50,13 +49,13 @@ type RecurringScheduleDTO struct {
 }
 
 // NewUserClient creates a new user service client
-func NewUserClient(baseURL string) IUserClient {
+func NewUserClient(baseURL string, jwtSecret string) IUserClient {
 	return &UserClient{
 		baseURL: baseURL,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		jwtSecret: os.Getenv("JWT_SECRET"),
+		jwtSecret: jwtSecret,
 	}
 }
 
