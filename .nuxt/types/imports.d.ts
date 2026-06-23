@@ -236,6 +236,7 @@ declare global {
   const useTour: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useTour').useTour
   const useTrackEvent: typeof import('../../node_modules/nuxt-gtag/dist/runtime/composables/useTrackEvent').useTrackEvent
   const useTransitionState: typeof import('vue').useTransitionState
+  const useVehiclesStore: typeof import('../../app/stores/vehicles').useVehiclesStore
   const watch: typeof import('vue').watch
   const watchEffect: typeof import('vue').watchEffect
   const watchPostEffect: typeof import('vue').watchPostEffect
@@ -528,6 +529,7 @@ declare module 'vue' {
     readonly useTour: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useTour')['useTour']>
     readonly useTrackEvent: UnwrapRef<typeof import('../../node_modules/nuxt-gtag/dist/runtime/composables/useTrackEvent')['useTrackEvent']>
     readonly useTransitionState: UnwrapRef<typeof import('vue')['useTransitionState']>
+    readonly useVehiclesStore: UnwrapRef<typeof import('../../app/stores/vehicles')['useVehiclesStore']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchEffect: UnwrapRef<typeof import('vue')['watchEffect']>
     readonly watchPostEffect: UnwrapRef<typeof import('vue')['watchPostEffect']>

@@ -54,6 +54,7 @@ export { mapScheduleToSlot, mapSlotToCreateData, useSchedulesStore, ScheduleSlot
 export { useSettingsStore } from '../app/stores/settings';
 export { useStudentsStore, Student } from '../app/stores/students';
 export { useTestimonialsStore, TestimonialStatus, Testimonial } from '../app/stores/testimonials';
+export { useVehiclesStore } from '../app/stores/vehicles';
 export { defineLocale, extendLocale } from '../node_modules/@nuxt/ui/dist/runtime/composables/defineLocale';
 export { defineShortcuts, extractShortcuts } from '../node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts';
 export { useContentSearch } from '../node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch';

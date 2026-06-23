@@ -13,7 +13,8 @@ type CreateCarRequest struct {
 	Brand        string                   `json:"brand" binding:"required"`
 	Model        string                   `json:"model" binding:"required"`
 	Year         int                      `json:"year" binding:"required"`
-	LicensePlate string                   `json:"licensePlate" binding:"required"`
+	Status       models.CarStatus        `json:"status"`        
+	LicensePlate string                   `json:"licensePlate"`
 	Color        string                   `json:"color"`
 	Transmission models.TransmissionType  `json:"transmission"`
 	ImageURL     string                   `json:"imageUrl"`
@@ -25,6 +26,7 @@ type UpdateCarRequest struct {
 	Model        string                  `json:"model"`
 	Year         int                     `json:"year"`
 	Color        string                  `json:"color"`
+	LicensePlate string                   `json:"licensePlate"`
 	Transmission models.TransmissionType `json:"transmission"`
 	Status       models.CarStatus        `json:"status"`
 	Mileage      int                     `json:"mileage"`

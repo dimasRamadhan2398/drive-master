@@ -8,6 +8,7 @@ definePageMeta({ layout: "admin" });
 const toast = useToast();
 const settingsStore = useSettingsStore();
 const instructorsStore = useInstructorsStore();
+const vehiclesStore = useVehiclesStore();
 
 // General settings - synced with store
 const generalSettings = reactive({
@@ -35,76 +36,200 @@ const notificationSettings = reactive({
   newPackagePurchase: false,
 });
 
-const vehicles = ref([
-  {
-    id: 1,
-    name: "BYD Atto 1",
-    plate: "B 1234 EV",
-    status: "active",
-    photoUrl: "",
-  },
-]);
+// Computed ref for vehicles from store
+const vehicles = computed(() => vehiclesStore.vehicles);
 
 // Vehicle CRUD State
 const isVehicleModalOpen = ref(false);
 const isEditingVehicle = ref(false);
-const vehicleForm = ref({
-  id: 0,
-  name: "",
-  plate: "",
-  status: "active",
-  photoUrl: "",
+const editingVehicleId = ref<string | null>(null);
+const vehicleImageRef = ref<HTMLInputElement | null>(null);
+const vehicleImageFile = ref<File | null>(null);
+const vehicleForm = reactive({
+  brand: "",
+  model: "",
+  year: new Date().getFullYear(),
+  licensePlate: "",
+  color: "",
+  transmission: "automatic" as "manual" | "automatic",
+  status: "available" as "available" | "in_use" | "maintenance" | "retired",
+  mileage: 0,
+  imageUrl: "",
+  notes: "",
 });
 
 function openNewVehicle() {
   isEditingVehicle.value = false;
-  vehicleForm.value = {
-    id: 0,
-    name: "",
-    plate: "",
-    status: "active",
-    photoUrl: "",
-  };
+  editingVehicleId.value = null;
+  vehicleImageFile.value = null;
+  Object.assign(vehicleForm, {
+    brand: "",
+    model: "",
+    year: new Date().getFullYear(),
+    licensePlate: "",
+    color: "",
+    transmission: "automatic",
+    status: "available",
+    mileage: 0,
+    imageUrl: "",
+    notes: "",
+  });
   isVehicleModalOpen.value = true;
 }
 
 function openEditVehicle(vehicle: any) {
   isEditingVehicle.value = true;
-  vehicleForm.value = { ...vehicle };
+  editingVehicleId.value = vehicle.id;
+  vehicleImageFile.value = null;
+  Object.assign(vehicleForm, {
+    brand: vehicle.brand,
+    model: vehicle.model,
+    year: vehicle.year,
+    licensePlate: vehicle.licensePlate,
+    color: vehicle.color,
+    transmission: vehicle.transmission,
+    status: vehicle.status,
+    mileage: vehicle.mileage,
+    imageUrl: vehicle.imageUrl,
+    notes: vehicle.notes,
+  });
   isVehicleModalOpen.value = true;
 }
 
-function saveVehicle() {
-  if (isEditingVehicle.value) {
-    const idx = vehicles.value.findIndex((v) => v.id === vehicleForm.value.id);
-    if (idx !== -1) vehicles.value[idx] = { ...vehicleForm.value };
+async function saveVehicle() {
+  if (!vehicleForm.brand || !vehicleForm.model || !vehicleForm.year) {
     toast.add({
-      title: "Vehicle Updated",
-      description: "Vehicle details saved.",
-      color: "success",
+      title: t("common.error"),
+      description: "Please fill in brand, model, and year",
+      color: "error",
     });
-  } else {
-    vehicles.value.push({
-      ...vehicleForm.value,
-      id: Math.max(0, ...vehicles.value.map((v) => v.id)) + 1,
-    });
-    toast.add({
-      title: "Vehicle Added",
-      description: "New vehicle created.",
-      color: "success",
-    });
+    return;
   }
-  isVehicleModalOpen.value = false;
+
+  if (isEditingVehicle.value && editingVehicleId.value) {
+    const result = await vehiclesStore.updateVehicle(editingVehicleId.value, {
+      brand: vehicleForm.brand,
+      model: vehicleForm.model,
+      year: vehicleForm.year,
+      licensePlate: vehicleForm.licensePlate,
+      color: vehicleForm.color,
+      transmission: vehicleForm.transmission,
+      status: vehicleForm.status,
+      mileage: vehicleForm.mileage,
+      imageUrl: vehicleForm.imageUrl,
+      notes: vehicleForm.notes,
+    });
+
+    if (result) {
+      toast.add({
+        title: "Vehicle Updated",
+        description: "Vehicle details saved.",
+        color: "success",
+      });
+      isVehicleModalOpen.value = false;
+    } else {
+      toast.add({
+        title: t("common.error"),
+        description: "Failed to update vehicle.",
+        color: "error",
+      });
+    }
+  } else {
+    const result = await vehiclesStore.createVehicle({
+      brand: vehicleForm.brand,
+      model: vehicleForm.model,
+      year: vehicleForm.year,
+      licensePlate: vehicleForm.licensePlate,
+      color: vehicleForm.color,
+      transmission: vehicleForm.transmission,
+      status: vehicleForm.status,
+      imageUrl: vehicleForm.imageUrl,
+      notes: vehicleForm.notes,
+    });
+
+    if (result) {
+      toast.add({
+        title: "Vehicle Added",
+        description: "New vehicle created.",
+        color: "success",
+      });
+      isVehicleModalOpen.value = false;
+    } else {
+      toast.add({
+        title: t("common.error"),
+        description: "Failed to create vehicle.",
+        color: "error",
+      });
+    }
+  }
 }
 
-function deleteVehicle() {
-  vehicles.value = vehicles.value.filter((v) => v.id !== vehicleForm.value.id);
-  toast.add({
-    title: "Vehicle Deleted",
-    description: "Vehicle has been removed.",
-    color: "error",
-  });
-  isVehicleModalOpen.value = false;
+async function deleteVehicle() {
+  if (editingVehicleId.value) {
+    const success = await vehiclesStore.deleteVehicle(editingVehicleId.value);
+    if (success) {
+      toast.add({
+        title: "Vehicle Deleted",
+        description: "Vehicle has been removed.",
+        color: "error",
+      });
+      isVehicleModalOpen.value = false;
+    } else {
+      toast.add({
+        title: t("common.error"),
+        description: "Failed to delete vehicle.",
+        color: "error",
+      });
+    }
+  }
+}
+
+function triggerVehicleImagePicker() {
+  vehicleImageRef.value?.click();
+}
+
+function clearVehicleImage() {
+  vehicleForm.imageUrl = "";
+  vehicleImageFile.value = null;
+  if (vehicleImageRef.value) {
+    vehicleImageRef.value.value = "";
+  }
+}
+
+function handleVehicleImageUpload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+
+  if (!file) return;
+
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    toast.add({
+      title: "Invalid File",
+      description: "Please upload JPG, PNG, or WebP.",
+      color: "error",
+    });
+    input.value = "";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    toast.add({
+      title: "File Too Large",
+      description: "Image exceeds 5MB limit.",
+      color: "error",
+    });
+    input.value = "";
+    return;
+  }
+
+  vehicleImageFile.value = file;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    vehicleForm.imageUrl = e.target?.result as string;
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
 }
 
 // Instructor CRUD State
@@ -290,8 +415,6 @@ function handleInstructorImageUpload(event: Event) {
   input.value = "";
 }
 
-const vehicleImageRef = ref<HTMLInputElement | null>(null);
-
 async function saveSettings() {
   try {
     const result = await settingsStore.updateGeneralSettings({
@@ -354,6 +477,7 @@ async function fetchSettings() {
 onMounted(() => {
   fetchSettings();
   instructorsStore.fetchInstructors();
+  vehiclesStore.fetchVehicles();
 });
 </script>
 
@@ -517,28 +641,23 @@ onMounted(() => {
             >
               <div class="flex items-center gap-4">
                 <UAvatar
-                  :src="vehicle.photoUrl || undefined"
+                  :src="vehicle.imageUrl || undefined"
                   :text="
-                    !vehicle.photoUrl
-                      ? vehicle.name
-                          .split(' ')
-                          .map((n: string) => n[0])
-                          .join('')
+                    !vehicle.imageUrl
+                      ? (vehicle.brand?.[0] ?? '') + (vehicle.model?.[0] ?? '')
                       : undefined
                   "
                   size="md"
                 />
                 <div>
-                  <p class="font-medium">{{ vehicle.name }}</p>
-                  <p class="text-md text-muted">{{ vehicle.plate }}</p>
+                  <p class="font-medium">{{ vehicle.brand }} {{ vehicle.model }}</p>
+                  <p class="text-sm text-muted">{{ vehicle.licensePlate || 'No plate' }} - {{ vehicle.year }}</p>
                 </div>
               </div>
               <div class="flex items-center gap-3">
                 <UBadge
-                  :label="
-                    vehicle.status === 'active' ? t('billing.active') : 'Maintenance'
-                  "
-                  :color="vehicle.status === 'active' ? 'info' : 'error'"
+                  :label="vehicle.status === 'available' ? t('billing.active') : vehicle.status === 'in_use' ? 'In Use' : vehicle.status === 'maintenance' ? 'Maintenance' : 'Retired'"
+                  :color="vehicle.status === 'available' ? 'success' : vehicle.status === 'in_use' ? 'info' : vehicle.status === 'maintenance' ? 'warning' : 'neutral'"
                   variant="subtle"
                 />
                 <UButton
@@ -549,6 +668,10 @@ onMounted(() => {
                   @click="openEditVehicle(vehicle)"
                 />
               </div>
+            </div>
+            <div v-if="vehicles.length === 0" class="text-center py-8 text-muted">
+              <UIcon name="i-lucide-car" class="size-8 mx-auto mb-2 opacity-50" />
+              <p>No vehicles added yet</p>
             </div>
           </div>
         </UCard>
@@ -698,14 +821,15 @@ onMounted(() => {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 class="hidden"
+                @change="handleVehicleImageUpload"
               />
               <div
                 class="border-2 border-dashed border-default rounded-lg p-4 text-center cursor-pointer hover:border-primary transition-colors"
-                @click="vehicleImageRef?.click()"
+                @click="triggerVehicleImagePicker"
               >
-                <div v-if="vehicleForm.photoUrl" class="relative w-full h-32">
+                <div v-if="vehicleForm.imageUrl" class="relative w-full h-32">
                   <img
-                    :src="vehicleForm.photoUrl"
+                    :src="vehicleForm.imageUrl"
                     class="w-full h-full object-cover rounded-md"
                   />
                   <UButton
@@ -713,7 +837,7 @@ onMounted(() => {
                     color="error"
                     size="xs"
                     class="absolute top-2 right-2"
-                    @click.stop="vehicleForm.photoUrl = ''"
+                    @click.stop="clearVehicleImage"
                   />
                 </div>
                 <div v-else class="flex flex-col items-center gap-2 py-4">
@@ -722,25 +846,65 @@ onMounted(() => {
                 </div>
               </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium mb-1.5">{{
-                t("admin.vehicleName")
-              }}</label>
-              <UInput
-                v-model="vehicleForm.name"
-                placeholder="e.g. BYD Atto 1"
-                class="w-full"
-              />
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1.5">Brand</label>
+                <UInput
+                  v-model="vehicleForm.brand"
+                  placeholder="e.g. Toyota"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1.5">Model</label>
+                <UInput
+                  v-model="vehicleForm.model"
+                  placeholder="e.g. Yaris"
+                  class="w-full"
+                />
+              </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium mb-1.5">{{
-                t("admin.licensePlate")
-              }}</label>
-              <UInput
-                v-model="vehicleForm.plate"
-                placeholder="e.g. B 1234 EV"
-                class="w-full"
-              />
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1.5">Year</label>
+                <UInput
+                  v-model="vehicleForm.year"
+                  type="number"
+                  placeholder="e.g. 2024"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("admin.licensePlate")
+                }}</label>
+                <UInput
+                  v-model="vehicleForm.licensePlate"
+                  placeholder="e.g. B 1234 EV"
+                  class="w-full"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1.5">Color</label>
+                <UInput
+                  v-model="vehicleForm.color"
+                  placeholder="e.g. Black"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1.5">Transmission</label>
+                <USelect
+                  v-model="vehicleForm.transmission"
+                  :items="[
+                    { label: 'Automatic', value: 'automatic' },
+                    { label: 'Manual', value: 'manual' },
+                  ]"
+                  class="w-full"
+                />
+              </div>
             </div>
             <div>
               <label class="block text-sm font-medium mb-1.5">{{
@@ -748,7 +912,21 @@ onMounted(() => {
               }}</label>
               <USelect
                 v-model="vehicleForm.status"
-                :items="['active', 'maintenance']"
+                :items="[
+                  { label: 'Available', value: 'available' },
+                  { label: 'In Use', value: 'in_use' },
+                  { label: 'Maintenance', value: 'maintenance' },
+                  { label: 'Retired', value: 'retired' },
+                ]"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1.5">Notes</label>
+              <UTextarea
+                v-model="vehicleForm.notes"
+                placeholder="Additional notes about this vehicle..."
+                :rows="2"
                 class="w-full"
               />
             </div>
