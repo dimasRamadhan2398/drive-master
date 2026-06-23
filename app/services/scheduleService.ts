@@ -150,7 +150,7 @@ export const scheduleService = {
   async fetchAll(
     params: ScheduleFilterParams = {},
   ): Promise<ScheduleListResponse> {
-    const { user, extractPaginatedData } = useApiClients();
+    const { core, extractPaginatedData } = useApiClients();
 
     const queryParams = new URLSearchParams();
     if (params.page) queryParams.set("page", String(params.page));
@@ -169,7 +169,7 @@ export const scheduleService = {
     const queryString = queryParams.toString();
     const url = `/schedules/all${queryString ? `?${queryString}` : ""}`;
 
-    const response = await user<PaginatedResponse<ScheduleApiResponse>>(url, {
+    const response = await core<PaginatedResponse<ScheduleApiResponse>>(url, {
       method: "GET",
     });
 
@@ -200,7 +200,7 @@ export const scheduleService = {
   async fetchFiltered(
     params: ScheduleFilterParams = {},
   ): Promise<ScheduleListResponse> {
-    const { user, extractPaginatedData } = useApiClients();
+    const { core, extractPaginatedData } = useApiClients();
 
     const queryParams = new URLSearchParams();
     if (params.page) queryParams.set("page", String(params.page));
@@ -219,7 +219,7 @@ export const scheduleService = {
     const queryString = queryParams.toString();
     const url = `/schedules/filter${queryString ? `?${queryString}` : ""}`;
 
-    const response = await user<PaginatedResponse<ScheduleApiResponse>>(url, {
+    const response = await core<PaginatedResponse<ScheduleApiResponse>>(url, {
       method: "GET",
     });
 
@@ -234,29 +234,35 @@ export const scheduleService = {
 
   // GET /schedules/filter?date=YYYY-MM-DD - Fetch schedules by date (defaults to today)
   async fetchByDate(date?: string): Promise<ScheduleBrief[]> {
-    const { user, extractData } = useApiClients();
+    const { core, extractData } = useApiClients();
 
     // Default to today if no date provided
     const targetDate = date || formatDateString(new Date());
 
     try {
-      const response = await user<ApiResponse<ScheduleApiResponse[]>>(
+      const response = await core<ApiResponse<ScheduleApiResponse[]>>(
         `/schedules/filter?date=${targetDate}`,
         { method: "GET" },
       );
       const data = extractData(response);
       // Map API response to ScheduleBrief format
       return Array.isArray(data) ? data.map(mapApiToScheduleBrief) : [];
-    } catch {
+    } catch (err) {
+      console.error("Error fetching schedules by date:", err);
       return [];
     }
+  },
+
+  // GET /schedules/filter?date=YYYY-MM-DD - Fetch today's schedules (convenience method)
+  async todaySessions(): Promise<ScheduleBrief[]> {
+    return this.fetchByDate();
   },
 
   // GET /schedules/available - Get available schedules
   async fetchAvailable(
     params: AvailableScheduleParams = {},
   ): Promise<ScheduleBrief[]> {
-    const { user, extractData } = useApiClients();
+    const { core, extractData } = useApiClients();
 
     const queryParams = new URLSearchParams();
     if (params.date) queryParams.set("date", params.date);
@@ -271,13 +277,14 @@ export const scheduleService = {
     const url = `/schedules/available${queryString ? `?${queryString}` : ""}`;
 
     try {
-      const response = await user<ApiResponse<ScheduleApiResponse[]>>(url, {
+      const response = await core<ApiResponse<ScheduleApiResponse[]>>(url, {
         method: "GET",
       });
       const data = extractData(response);
       // Map API response to ScheduleBrief format
       return Array.isArray(data) ? data.map(mapApiToScheduleBrief) : [];
-    } catch {
+    } catch (err) {
+      console.error("Error fetching available schedules:", err);
       return [];
     }
   },

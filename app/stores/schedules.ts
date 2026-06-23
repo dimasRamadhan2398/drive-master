@@ -83,50 +83,6 @@ interface SchedulesState {
   };
 }
 
-// Default sample slots for fallback
-const initialSlots: ScheduleSlot[] = [
-  {
-    id: "1",
-    date: "2026-04-10",
-    time: "08:00",
-    duration: "60 min",
-    car: "BYD Atto 1",
-    instructor: "Mr. Ahmad",
-    student: null,
-    status: "available",
-  },
-  {
-    id: "2",
-    date: "2026-04-10",
-    time: "09:00",
-    duration: "60 min",
-    car: "BYD Atto 1",
-    instructor: "Mr. Ahmad",
-    student: "John Doe",
-    status: "booked",
-  },
-  {
-    id: "3",
-    date: "2026-04-10",
-    time: "10:00",
-    duration: "60 min",
-    car: "BYD Atto 1",
-    instructor: "Ms. Sari",
-    student: "Sarah Putri",
-    status: "in-progress",
-  },
-  {
-    id: "4",
-    date: "2026-04-10",
-    time: "14:00",
-    duration: "60 min",
-    car: "BYD Atto 1",
-    instructor: "Mr. Budi",
-    student: null,
-    status: "blocked",
-  },
-];
-
 // Helper to format date to YYYY-MM-DD
 const formatDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -134,6 +90,59 @@ const formatDateString = (date: Date): string => {
   const day = date.getDate().toString().padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+
+// Default sample slots for fallback (uses today's date)
+const getInitialSlots = (): ScheduleSlot[] => {
+  const today = formatDateString(new Date());
+  return [
+    {
+      id: "1",
+      date: today,
+      time: "08:00",
+      duration: "60 min",
+      car: "BYD Atto 1",
+      instructor: "Mr. Ahmad",
+      student: null,
+      status: "available",
+    },
+    {
+      id: "2",
+      date: today,
+      time: "09:00",
+      duration: "60 min",
+      car: "BYD Atto 1",
+      instructor: "Mr. Ahmad",
+      student: "John Doe",
+      status: "booked",
+    },
+    {
+      id: "3",
+      date: today,
+      time: "10:00",
+      duration: "60 min",
+      car: "BYD Atto 1",
+      instructor: "Ms. Sari",
+      student: "Sarah Putri",
+      status: "in-progress",
+    },
+    {
+      id: "4",
+      date: today,
+      time: "14:00",
+      duration: "60 min",
+      car: "BYD Atto 1",
+      instructor: "Mr. Budi",
+      student: null,
+      status: "blocked",
+    },
+  ];
+};
+
+// Initialize with empty array (will be populated from API)
+const initialSlots: ScheduleSlot[] = [];
+
+// Helper to get initial slots with today's date
+const getInitialSlotsForFallback = (): ScheduleSlot[] => getInitialSlots();
 
 export const useSchedulesStore = defineStore("schedules", {
   state: (): SchedulesState => ({
@@ -179,6 +188,12 @@ export const useSchedulesStore = defineStore("schedules", {
     blockedSlots: (state): ScheduleSlot[] =>
       state.slots.filter((s) => s.status === "blocked"),
 
+    // Today's sessions - slots for today
+    todaySessions: (state): ScheduleSlot[] => {
+      const today = formatDateString(new Date());
+      return state.slots.filter((slot) => slot.date === today);
+    },
+
     // Stats for current view
     currentStats: (state) => {
       const filtered = state.slots.filter(
@@ -190,6 +205,20 @@ export const useSchedulesStore = defineStore("schedules", {
         inProgress: filtered.filter((s) => s.status === "in-progress").length,
         completed: filtered.filter((s) => s.status === "completed").length,
         blocked: filtered.filter((s) => s.status === "blocked").length,
+      };
+    },
+
+    // Today's stats
+    todayStats: (state) => {
+      const today = formatDateString(new Date());
+      const todaySlots = state.slots.filter((slot) => slot.date === today);
+      return {
+        available: todaySlots.filter((s) => s.status === "available").length,
+        booked: todaySlots.filter((s) => s.status === "booked").length,
+        inProgress: todaySlots.filter((s) => s.status === "in-progress").length,
+        completed: todaySlots.filter((s) => s.status === "completed").length,
+        blocked: todaySlots.filter((s) => s.status === "blocked").length,
+        total: todaySlots.length,
       };
     },
 
@@ -229,7 +258,7 @@ export const useSchedulesStore = defineStore("schedules", {
           err instanceof Error ? err.message : "Failed to fetch schedules";
         console.error("Error fetching schedules:", err);
         // Fallback to sample data
-        this.slots = [...initialSlots];
+        this.slots = [...getInitialSlots()];
       } finally {
         this.isLoading = false;
       }
@@ -251,7 +280,7 @@ export const useSchedulesStore = defineStore("schedules", {
           err instanceof Error ? err.message : "Failed to fetch schedules";
         console.error("Error fetching schedules:", err);
         // Fallback to sample data filtered by date
-        this.slots = initialSlots.filter((s) => s.date === date);
+        this.slots = getInitialSlots().filter((s) => s.date === date);
       } finally {
         this.isLoading = false;
       }
@@ -272,10 +301,15 @@ export const useSchedulesStore = defineStore("schedules", {
             : "Failed to fetch schedules by date";
         console.error("Error fetching schedules by date:", err);
         // Fallback to sample data
-        this.slots = [...initialSlots];
+        this.slots = [...getInitialSlots()];
       } finally {
         this.isLoading = false;
       }
+    },
+
+    // Fetch today's sessions from API
+    async fetchTodaySessions() {
+      return this.fetchByDate();
     },
 
     // Initialize store and auto-fetch schedules for today
@@ -294,7 +328,7 @@ export const useSchedulesStore = defineStore("schedules", {
           err instanceof Error ? err.message : "Failed to initialize schedules";
         console.error("Error initializing schedules:", err);
         // Fallback to sample data
-        this.slots = [...initialSlots];
+        this.slots = [...getInitialSlots()];
         this.isInitialized = true;
       } finally {
         this.isLoading = false;
@@ -314,7 +348,7 @@ export const useSchedulesStore = defineStore("schedules", {
             ? err.message
             : "Failed to fetch available schedules";
         console.error("Error fetching available schedules:", err);
-        return initialSlots.filter((s) => s.status === "available");
+        return getInitialSlots().filter((s) => s.status === "available");
       } finally {
         this.isLoading = false;
       }

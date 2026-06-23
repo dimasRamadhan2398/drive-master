@@ -2,48 +2,62 @@
 import { h, ref, onMounted, computed } from "vue";
 import type { TableColumn } from "@nuxt/ui";
 import { useDashboardStore } from "~/stores/dashboard";
+import { useSchedulesStore } from "~/stores/schedules";
+import { useVehiclesStore } from "~/stores/vehicles";
+import { getVehicleStatusColor, getVehicleStatusLabel } from "~/services/vehicleService";
 
-const { t } = useI18n()
+const { t } = useI18n();
 definePageMeta({ layout: "admin" });
 
 const dashboardStore = useDashboardStore();
+const vehiclesStore = useVehiclesStore();
+const sessionsStore = useSchedulesStore();
 const UBadge = resolveComponent("UBadge");
 const UButton = resolveComponent("UButton");
 const UAvatar = resolveComponent("UAvatar");
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 
-// Fetch dashboard data on mount
+const today = new Date().toISOString().split("T")[0] ?? "";
+
+// Fetch dashboard data and vehicles on mount
 onMounted(async () => {
-  await dashboardStore.fetchDashboardData();
+  await Promise.all([
+    dashboardStore.fetchDashboardData(),
+    vehiclesStore.fetchVehicles(),
+    sessionsStore.fetchSchedulesByDate(today),
+  ]);
 });
+
+// Available vehicles from store
+const availableVehicles = computed(() => vehiclesStore.availableVehicles);
 
 // Computed stats from dashboard store
 const stats = computed(() => {
   const dashboardStats = dashboardStore.stats;
   return [
     {
-      label: t('admin.totalStudents'),
+      label: t("admin.totalStudents"),
       value: dashboardStats.totalMembers.toString() || "0",
       change: `${dashboardStats.growthTotalMembers * 100}%`,
       icon: "i-lucide-users",
       color: "primary",
     },
     {
-      label: t('admin.activeSessions'),
+      label: t("admin.activeSessions"),
       value: dashboardStats.activeSessions.toString() || "0",
       change: "+5%",
       icon: "i-lucide-calendar-check",
       color: "blue",
     },
     {
-      label: t('admin.revenueMtd'),
+      label: t("admin.revenueMtd"),
       value: formatCurrency(dashboardStats.revenueMTD),
       change: "+18%",
       icon: "i-lucide-banknote",
       color: "amber",
     },
     {
-      label: t('admin.certsIssued'),
+      label: t("admin.certsIssued"),
       value: dashboardStats.certificatesIssued.toString() || "0",
       change: "+8%",
       icon: "i-lucide-award",
@@ -62,9 +76,33 @@ const formatCurrency = (value: number): string => {
   return `Rp ${value}`;
 };
 
-// Mock today's sessions
+// Helper to convert time string (HH:mm) to minutes
+const timeToMinutes = (time: string): number => {
+  const [hours = 0, minutes = 0] = time.split(":").map((part) => Number(part));
+  return Number.isFinite(hours) && Number.isFinite(minutes) ? hours * 60 + minutes : 0;
+};
+
+const parseDurationMinutes = (duration: string): number => {
+  const hoursMatch = duration.match(/(\d+)\s*h/);
+  const minutesMatch = duration.match(/(\d+)\s*m/);
+  const hours = hoursMatch ? Number(hoursMatch[1]) : 0;
+  const minutes = minutesMatch ? Number(minutesMatch[1]) : 0;
+  if (!hoursMatch && !minutesMatch) {
+    const fallback = Number(duration.replace(/[^0-9]/g, ""));
+    return Number.isFinite(fallback) ? fallback : 0;
+  }
+  return hours * 60 + minutes;
+};
+
+const formatTime = (minutes: number): string => {
+  const hours = Math.floor(minutes / 60) % 24;
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+};
+
+// Today's sessions type
 type Session = {
-  id: number;
+  id: string;
   time: string;
   student: string;
   car: string;
@@ -72,53 +110,59 @@ type Session = {
   status: "completed" | "in-progress" | "upcoming";
 };
 
-const todaySessions = ref<Session[]>([
-  {
-    id: 1,
-    time: "08:00",
-    student: "John Doe",
-    car: "BYD Atto 1",
-    instructor: "Mr. Ahmad",
-    status: "completed",
-  },
-  {
-    id: 2,
-    time: "09:30",
-    student: "Jane Smith",
-    car: "BYD Atto 1",
-    instructor: "Ms. Sari",
-    status: "in-progress",
-  },
-  {
-    id: 3,
-    time: "11:00",
-    student: "Alex Johnson",
-    car: "BYD Atto 1",
-    instructor: "Mr. Budi",
-    status: "upcoming",
-  },
-  {
-    id: 4,
-    time: "13:00",
-    student: "Maria Garcia",
-    car: "BYD Atto 1",
-    instructor: "Mr. Ahmad",
-    status: "upcoming",
-  },
-]);
+const now = new Date();
+const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+const todaySessions = computed<Session[]>(() =>
+  sessionsStore.slots.map((slot) => {
+    const studentName = slot.student ?? "N/A";
+    const carName = slot.car || "N/A";
+    const instructorName = slot.instructor || "N/A";
+
+    const startMinutes = timeToMinutes(slot.time);
+    const endMinutes = startMinutes + parseDurationMinutes(slot.duration);
+    const endTime = formatTime(endMinutes);
+
+    let status: Session["status"] = "completed";
+    if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+      status = "in-progress";
+    } else if (currentMinutes < startMinutes) {
+      status = "upcoming";
+    }
+
+    return {
+      id: slot.id,
+      time: `${slot.time} - ${endTime}`,
+      student: studentName,
+      car: carName,
+      instructor: instructorName,
+      status,
+    };
+  })
+);
 
 const sessionColumns: TableColumn<Session>[] = [
-  { accessorKey: "time", header: t('dashboard.time') },
-  { accessorKey: "student", header: t('admin.students') },
-  { accessorKey: "car", header: t('dashboard.vehicle') },
-  { accessorKey: "instructor", header: t('dashboard.instructor') },
+  { accessorKey: "time", header: t("dashboard.time") },
+  { accessorKey: "student", header: t("admin.students") },
+  { accessorKey: "car", header: t("dashboard.vehicle") },
+  { accessorKey: "instructor", header: t("dashboard.instructor") },
   {
     accessorKey: "status",
-    header: t('billing.status'),
+    header: t("billing.status"),
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
-      const color = status === "completed" ? "success" : status === "in-progress" ? "info" : "neutral";
-      const label = status === "completed" ? t('common.completed') : status === "in-progress" ? "In Progress" : t('common.pending');
+      const color =
+        status === "completed"
+          ? "success"
+          : status === "in-progress"
+          ? "info"
+          : "neutral";
+      const label =
+        status === "completed"
+          ? t("common.completed")
+          : status === "in-progress"
+          ? "In Progress"
+          : t("common.pending");
       return h(UBadge, { label, color, variant: "subtle", size: "md" });
     },
   },
@@ -148,7 +192,7 @@ type Registration = {
 const registrationColumns: TableColumn<Registration>[] = [
   {
     accessorKey: "name",
-    header: t('admin.students'),
+    header: t("admin.students"),
     cell: ({ row }) => {
       const name = row.getValue("name") as string;
       const initials = name
@@ -162,23 +206,28 @@ const registrationColumns: TableColumn<Registration>[] = [
       ]);
     },
   },
-  { accessorKey: "email", header: t('auth.email') },
+  { accessorKey: "email", header: t("auth.email") },
   {
     accessorKey: "package",
-    header: t('billing.package'),
+    header: t("billing.package"),
     cell: ({ row }) => {
       const pkg = row.getValue("package") as string;
       return h(UBadge, { label: pkg, color: "neutral", variant: "subtle", size: "md" });
     },
   },
-  { accessorKey: "date", header: t('register.form.startDate').replace(' (Opsional)', '').replace(' (Optional)', '') },
+  {
+    accessorKey: "date",
+    header: t("register.form.startDate")
+      .replace(" (Opsional)", "")
+      .replace(" (Optional)", ""),
+  },
   {
     accessorKey: "status",
-    header: t('billing.status'),
+    header: t("billing.status"),
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       const color = status === "active" ? "info" : "warning";
-      const label = status === "active" ? t('billing.active') : t('common.pending');
+      const label = status === "active" ? t("billing.active") : t("common.pending");
       return h(UBadge, { label, color, variant: "subtle", size: "md" });
     },
   },
@@ -188,10 +237,10 @@ const registrationColumns: TableColumn<Registration>[] = [
     cell: () => {
       const items = [
         [
-          { label: t('dashboard.viewDetails'), icon: "i-lucide-eye" },
-          { label: t('common.edit'), icon: "i-lucide-pencil" },
+          { label: t("dashboard.viewDetails"), icon: "i-lucide-eye" },
+          { label: t("common.edit"), icon: "i-lucide-pencil" },
         ],
-        [{ label: t('common.delete'), icon: "i-lucide-trash", color: "error" }],
+        [{ label: t("common.delete"), icon: "i-lucide-trash", color: "error" }],
       ];
       return h(UDropdownMenu, { items }, () =>
         h(UButton, {
@@ -199,7 +248,7 @@ const registrationColumns: TableColumn<Registration>[] = [
           color: "neutral",
           variant: "ghost",
           size: "md",
-        }),
+        })
       );
     },
   },
@@ -207,14 +256,14 @@ const registrationColumns: TableColumn<Registration>[] = [
 
 // Mock quick actions
 const quickActions = computed(() => [
-  { label: t('admin.addNew'), icon: "i-lucide-user-plus", to: "/admin/students" },
+  { label: t("admin.addNew"), icon: "i-lucide-user-plus", to: "/admin/students" },
   {
-    label: t('admin.schedules'),
+    label: t("admin.schedules"),
     icon: "i-lucide-calendar-plus",
     to: "/admin/schedules",
   },
   {
-    label: t('admin.certificates'),
+    label: t("admin.certificates"),
     icon: "i-lucide-file-badge",
     to: "/admin/certificates",
   },
@@ -250,7 +299,7 @@ const quickActions = computed(() => [
                 <p class="text-md text-muted">{{ stat.label }}</p>
                 <p class="text-2xl font-bold mt-1">{{ stat.value }}</p>
                 <p class="text-md text-green-500 mt-1">
-                  {{ stat.change }} {{ t('admin.fromLastMonth') }}
+                  {{ stat.change }} {{ t("admin.fromLastMonth") }}
                 </p>
               </div>
               <div
@@ -282,7 +331,7 @@ const quickActions = computed(() => [
           <UCard class="lg:col-span-2">
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">{{ t('admin.todaysSessions') }}</h2>
+                <h2 class="font-semibold">{{ t("admin.todaysSessions") }}</h2>
                 <NuxtLink to="/admin/schedules">
                   <UButton
                     :label="t('common.viewAll')"
@@ -301,7 +350,7 @@ const quickActions = computed(() => [
           <!-- Quick Actions -->
           <UCard>
             <template #header>
-              <h2 class="font-semibold">{{ t('dashboard.quickActions') }}</h2>
+              <h2 class="font-semibold">{{ t("dashboard.quickActions") }}</h2>
             </template>
 
             <div class="grid grid-cols-1 space-y-3">
@@ -322,18 +371,23 @@ const quickActions = computed(() => [
 
             <template #footer>
               <div class="space-y-2">
-                <h3 class="font-medium text-md">{{ t('dashboard.vehicle') }} Status</h3>
+                <h3 class="font-medium text-md">{{ t("dashboard.vehicle") }} Status</h3>
                 <div
+                  v-for="vehicle in availableVehicles"
+                  :key="vehicle.id"
                   class="flex items-center justify-between p-2 rounded-lg bg-muted/50"
                 >
-                  <span class="text-md">BYD Atto 1</span>
+                  <span class="text-md">{{ vehicle.brand }} {{ vehicle.model }}</span>
                   <UBadge
-                    :label="t('common.available')"
-                    color="primary"
+                    :label="getVehicleStatusLabel(vehicle.status)"
+                    :color="getVehicleStatusColor(vehicle.status)"
                     variant="subtle"
                     size="md"
                   />
                 </div>
+                <p v-if="availableVehicles.length === 0" class="text-sm text-muted">
+                  {{ t("common.noData") }}
+                </p>
               </div>
             </template>
           </UCard>
@@ -343,7 +397,7 @@ const quickActions = computed(() => [
         <UCard>
           <template #header>
             <div class="flex items-center justify-between">
-              <h2 class="font-semibold">{{ t('admin.recentReg') }}</h2>
+              <h2 class="font-semibold">{{ t("admin.recentReg") }}</h2>
               <NuxtLink to="/admin/students">
                 <UButton
                   :label="t('admin.manageStudents')"

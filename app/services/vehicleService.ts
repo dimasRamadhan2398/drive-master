@@ -36,6 +36,7 @@ export interface CreateCarData {
   transmission?: TransmissionType;
   status?: VehicleStatus;
   imageUrl?: string;
+  imageBase64?: string;
   notes?: string;
 }
 
@@ -49,7 +50,18 @@ export interface UpdateCarData {
   status?: VehicleStatus;
   mileage?: number;
   imageUrl?: string;
+  imageBase64?: string;
   notes?: string;
+}
+
+// Helper to process image data - if starts with "http", use imageUrl, otherwise use imageBase64
+export function processCarImage(imageData?: string): { imageUrl?: string; imageBase64?: string } | undefined {
+  if (!imageData) return undefined;
+
+  if (imageData.startsWith("http")) {
+    return { imageUrl: imageData };
+  }
+  return { imageBase64: imageData };
 }
 
 export interface VehicleFilterParams {
@@ -137,9 +149,16 @@ export const vehicleService = {
   async createCar(data: CreateCarData): Promise<Car | null> {
     const { core, extractData } = useApiClients();
     try {
+      // Process image data - use imageUrl for http URLs, imageBase64 for base64 strings
+      const imageResult = processCarImage(data.imageUrl || data.imageBase64);
+      const requestBody = {
+        ...data,
+        ...imageResult,
+      };
+
       const response = await core<ApiResponse<Car>>("/cars", {
         method: "POST",
-        body: data,
+        body: requestBody,
       });
       return extractData(response);
     } catch {
@@ -151,9 +170,16 @@ export const vehicleService = {
   async updateCar(id: string, data: UpdateCarData): Promise<Car | null> {
     const { core, extractData } = useApiClients();
     try {
+      // Process image data - use imageUrl for http URLs, imageBase64 for base64 strings
+      const imageResult = processCarImage(data.imageUrl || data.imageBase64);
+      const requestBody = {
+        ...data,
+        ...imageResult,
+      };
+
       const response = await core<ApiResponse<Car>>(`/cars/${id}`, {
         method: "PUT",
-        body: data,
+        body: requestBody,
       });
       return extractData(response);
     } catch {

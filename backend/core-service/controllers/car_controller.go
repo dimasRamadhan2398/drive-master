@@ -5,6 +5,7 @@ import (
 	"core-service/models/dto"
 	"core-service/pkg/response"
 	"core-service/services"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -13,7 +14,8 @@ import (
 
 // CarController handles car-related HTTP requests
 type CarController struct {
-	carService services.ICarService
+	carService   services.ICarService
+	mediaService services.IMediaService
 }
 
 // ICarController defines the interface for car controller
@@ -26,9 +28,10 @@ type ICarController interface {
 }
 
 // NewCarController creates a new car controller
-func NewCarController(carService services.ICarService) ICarController {
+func NewCarController(carService services.ICarService, mediaService services.IMediaService) ICarController {
 	return &CarController{
-		carService: carService,
+		carService:   carService,
+		mediaService: mediaService,
 	}
 }
 
@@ -100,6 +103,19 @@ func (c *CarController) CreateCar(ctx *gin.Context) {
 		return
 	}
 
+	// Handle image upload to ImageKit if base64 data is provided
+	imageURL := req.ImageURL
+	if req.ImageBase64 != "" {
+		// Generate filename from brand and model
+		fileName := fmt.Sprintf("%s_%s_%s.jpg", req.Brand, req.Model, uuid.New().String()[:8])
+		uploadResp, err := c.mediaService.UploadBase64Media(ctx.Request.Context(), req.ImageBase64, fileName, "cars")
+		if err != nil {
+			response.InternalServerError(ctx, "Failed to upload car image: "+err.Error())
+			return
+		}
+		imageURL = uploadResp.URL
+	}
+
 	car := &models.Car{
 		Brand:        req.Brand,
 		Model:        req.Model,
@@ -107,7 +123,7 @@ func (c *CarController) CreateCar(ctx *gin.Context) {
 		LicensePlate: req.LicensePlate,
 		Color:        req.Color,
 		Transmission: req.Transmission,
-		ImageURL:     req.ImageURL,
+		ImageURL:     imageURL,
 		Notes:        req.Notes,
 		Status:       models.CarStatusAvailable,
 	}
@@ -178,7 +194,17 @@ func (c *CarController) UpdateCar(ctx *gin.Context) {
 	if req.Mileage != 0 {
 		car.Mileage = req.Mileage
 	}
-	if req.ImageURL != "" {
+	// Handle image upload to ImageKit if base64 data is provided
+	if req.ImageBase64 != "" {
+		// Generate filename from brand and model
+		fileName := fmt.Sprintf("%s_%s_%s.jpg", car.Brand, car.Model, uuid.New().String()[:8])
+		uploadResp, err := c.mediaService.UploadBase64Media(ctx.Request.Context(), req.ImageBase64, fileName, "cars")
+		if err != nil {
+			response.InternalServerError(ctx, "Failed to upload car image: "+err.Error())
+			return
+		}
+		car.ImageURL = uploadResp.URL
+	} else if req.ImageURL != "" {
 		car.ImageURL = req.ImageURL
 	}
 	if req.Notes != "" {

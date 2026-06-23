@@ -13,11 +13,12 @@ type CreateCarRequest struct {
 	Brand        string                   `json:"brand" binding:"required"`
 	Model        string                   `json:"model" binding:"required"`
 	Year         int                      `json:"year" binding:"required"`
-	Status       models.CarStatus        `json:"status"`        
+	Status       models.CarStatus        `json:"status"`
 	LicensePlate string                   `json:"licensePlate"`
 	Color        string                   `json:"color"`
 	Transmission models.TransmissionType  `json:"transmission"`
 	ImageURL     string                   `json:"imageUrl"`
+	ImageBase64 string                   `json:"imageBase64"` // Base64 encoded image data to upload to ImageKit
 	Notes        string                   `json:"notes"`
 }
 
@@ -26,11 +27,12 @@ type UpdateCarRequest struct {
 	Model        string                  `json:"model"`
 	Year         int                     `json:"year"`
 	Color        string                  `json:"color"`
-	LicensePlate string                   `json:"licensePlate"`
-	Transmission models.TransmissionType `json:"transmission"`
+	LicensePlate string                  `json:"licensePlate"`
+	Transmission models.TransmissionType  `json:"transmission"`
 	Status       models.CarStatus        `json:"status"`
 	Mileage      int                     `json:"mileage"`
 	ImageURL     string                  `json:"imageUrl"`
+	ImageBase64 string                  `json:"imageBase64"` // Base64 encoded image data to upload to ImageKit
 	Notes        string                  `json:"notes"`
 }
 

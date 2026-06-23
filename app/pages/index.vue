@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 useSeoMeta({
   title: t('nav.home') + " | Drive Master Academy",
@@ -12,50 +12,50 @@ const courseMaterial = computed(() => [
   {
     title: t("home.material.materialTheory"),
     description: [
-      t("home.material.materialTheoryDesc"),
-      t("home.material.materialTheoryDesc2"),
-      t("home.material.materialTheoryDesc3"),
-      t("home.material.materialTheoryDesc4"),
+      t("home.material.materialTheoryDesc", ""),
+      t("home.material.materialTheoryDesc2", ""),
+      t("home.material.materialTheoryDesc3", ""),
+      t("home.material.materialTheoryDesc4", ""),
     ],
     icon: "i-lucide-book-open",
   },
   {
     title: t("home.material.initialControl"),
     description: [
-      t("home.material.initialControlDesc"),
-      t("home.material.initialControlDesc2"),
-      t("home.material.initialControlDesc3"),
+      t("home.material.initialControlDesc", ""),
+      t("home.material.initialControlDesc2", ""),
+      t("home.material.initialControlDesc3", ""),
     ],
     icon: "i-lucide-shield-check",
   },
   {
     title: t("home.material.basicManeuvering"),
     description: [
-      t("home.material.basicManeuveringDesc"),
-      t("home.material.basicManeuveringDesc2"),
-      t("home.material.basicManeuveringDesc3"),
+      t("home.material.basicManeuveringDesc", ""),
+      t("home.material.basicManeuveringDesc2", ""),
+      t("home.material.basicManeuveringDesc3", ""),
     ],
     icon: "i-lucide-radar",
   },
   {
     title: t("home.material.uphillDownhill"),
     description: [
-      t("home.material.uphillDownhillDesc"),
-      t("home.material.uphillDownhillDesc2"),
+      t("home.material.uphillDownhillDesc", ""),
+      t("home.material.uphillDownhillDesc2", ""),
     ],
     icon: "i-lucide-car",
   },
   {
     title: t("home.material.parking"),
-    description: [t("home.material.parkingDesc"), t("home.material.parkingDesc2")],
+    description: [t("home.material.parkingDesc", ""), t("home.material.parkingDesc2", "")],
     icon: "i-lucide-car",
   },
   {
     title: t("home.material.highway"),
     description: [
-      t("home.material.highwayDesc"),
-      t("home.material.highwayDesc2"),
-      t("home.material.highwayDesc3"),
+      t("home.material.highwayDesc", ""),
+      t("home.material.highwayDesc2", ""),
+      t("home.material.highwayDesc3", ""),
     ],
     icon: "i-lucide-car",
   },
@@ -332,11 +332,27 @@ const faqItems = computed(() => {
   }));
 });
 
-const { slots: globalSlots } = useSchedules();
+// Schedules - Use store to fetch from API
+const schedulesStore = useSchedulesStore();
 
-const selectedDate = ref(15);
+// Helper to format date to YYYY-MM-DD
+const formatDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Today's date
+const todayDate = formatDateString(new Date());
+
+// Calendar state - use today's date
+const selectedDate = ref(new Date().getDate());
 const selectedSlot = ref<string | null>(null);
-const currentDate = ref(new Date("2026-04-10T00:00:00"));
+const currentDate = ref(new Date());
+
+// Map store slots to TimeSlot format for UI compatibility
+const globalSlots = computed(() => schedulesStore.slots);
 
 const currentMonth = computed(() => {
   return currentDate.value.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', {
@@ -404,6 +420,8 @@ onMounted(() => {
   instructorsStore.fetchInstructors();
   testimonialsStore.fetchTestimonials();
   packagesStore.fetchPackages();
+  // Fetch today's sessions from API
+  schedulesStore.fetchTodaySessions();
 });
 </script>
 

@@ -235,6 +235,7 @@ services:
       - RUN_MIGRATIONS=true
       - RUN_SEEDERS=true
       - USER_SERVICE_URL=http://drive_master_user_service:8001
+      - CORE_SERVICE_URL=http://core-service:8002
     networks:
       drive_master_network:
         aliases:

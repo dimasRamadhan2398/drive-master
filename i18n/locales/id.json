@@ -505,7 +505,8 @@
     "makePayment": "Lakukan Pembayaran",
     "paid": "Lunas",
     "unpaid": "Belum Lunas",
-    "pending": "Menunggu"
+    "pending": "Menunggu",
+    "status": "Status"
   },
   "profile": {
     "title": "Profil",
@@ -587,6 +588,7 @@
     "confirmTrialBooking": "Konfirmasi Pemesanan Percobaan"
   },
   "admin": {
+    "status": "Status",
     "title": "Admin Panel",
     "overview": "Ringkasan",
     "students": "Murid",
@@ -594,7 +596,6 @@
     "packages": "Paket",
     "sales": "Penjualan",
     "certificates": "Sertifikat",
-    "content": "Konten",
     "testimonials": "Testimoni",
     "analytics": "Analitik",
     "settings": "Pengaturan",
@@ -770,12 +771,18 @@
       "namePriceRequired": "Nama paket dan harga yang valid wajib diisi."
     },
     "content": {
+      "label": "Konten",
+      "createBlog": "Buat Artikel Blog",
+      "editBlog": "Edit Artikel Blog",
       "createPage": "Buat Halaman",
       "editPage": "Edit Halaman",
       "addFaq": "Tambah FAQ",
       "editFaq": "Edit FAQ",
       "title": "Judul",
       "slug": "Slug",
+      "author": "Penulis",
+      "leadParagraph": "Paragraf Pembuka",
+      "content": "Konten",
       "status": "Status",
       "lastModified": "Modifikasi Terakhir",
       "question": "Pertanyaan",
@@ -784,7 +791,11 @@
       "savePage": "Simpan Halaman",
       "saveFaq": "Simpan FAQ",
       "deleteConfirmPage": "Apakah Anda yakin ingin menghapus halaman ini?",
-      "deleteConfirmFaq": "Apakah Anda yakin ingin menghapus FAQ ini?"
+      "deleteConfirmFaq": "Apakah Anda yakin ingin menghapus FAQ ini?",
+      "attractiveness": "Daya Tarik",
+      "priority": "Prioritas",
+      "isFeatured": "Unggulan",
+      "highlight": "Sorotan"
     }
   },
   "toast": {

@@ -505,7 +505,8 @@
     "makePayment": "Make Payment",
     "paid": "Paid",
     "unpaid": "Unpaid",
-    "pending": "Pending"
+    "pending": "Pending",
+    "status": "Status"
   },
   "profile": {
     "title": "Profile Settings",
@@ -770,12 +771,18 @@
       "namePriceRequired": "Package name and a valid price are required."
     },
     "content": {
+      "label": "Content",
+      "createBlog": "Create Blog Article",
+      "editBlog": "Edit Blog Article",
       "createPage": "Create Page",
       "editPage": "Edit Page",
       "addFaq": "Add FAQ",
       "editFaq": "Edit FAQ",
       "title": "Title",
       "slug": "Slug",
+      "author": "Author",
+      "leadParagraph": "Lead Paragraph",
+      "content": "Content",
       "status": "Status",
       "lastModified": "Last Modified",
       "question": "Question",
@@ -784,7 +791,11 @@
       "savePage": "Save Page",
       "saveFaq": "Save FAQ",
       "deleteConfirmPage": "Are you sure you want to delete this page?",
-      "deleteConfirmFaq": "Are you sure you want to delete this FAQ?"
+      "deleteConfirmFaq": "Are you sure you want to delete this FAQ?",
+      "attractiveness": "Attractiveness",
+      "priority": "Priority",
+      "isFeatured": "Featured",
+      "highlight": "Highlight"
     }
   },
   "toast": {
