@@ -9,18 +9,6 @@ import (
 // BlogPost DTOs
 // Blog Article DTOs
 
-type CreateBlogArticleRequest struct {
-	Title         string    `json:"title" binding:"required,max=255"`
-	Slug          string    `json:"slug" binding:"required,max=255"`
-	LeadParagraph string    `json:"leadParagraph"`
-	BodyBlocks    []byte    `json:"bodyBlocks"`
-	FeaturedImage string    `json:"featuredImage"`
-	CategoryID    uuid.UUID `json:"categoryId"`
-	AuthorID      uuid.UUID `json:"authorId" binding:"required"`
-	Tags          []string  `json:"tags"`
-	Status        string    `json:"status"`
-}
-
 type BlogArticleResponse struct {
 	ID            uuid.UUID `json:"id"`
 	Title         string    `json:"title"`
@@ -36,13 +24,7 @@ type BlogArticleResponse struct {
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
-type BlogArticleListResponse struct {
-	Articles   []BlogArticleResponse `json:"articles"`
-	Total      int64                `json:"total"`
-	Page       int                  `json:"page"`
-	Limit      int                  `json:"limit"`
-	TotalPages int                  `json:"totalPages"`
-}
+type BlogArticleListResponse = PagedData[BlogArticleResponse]
 
 // Media represents media attached to a blog post
 type BlogPostMedia struct {
@@ -76,8 +58,9 @@ type CreateBlogPostRequest struct {
 	Title   string `json:"title" binding:"required,max=255"`
 	Slug    string `json:"slug" binding:"max=255"`
 	Author  string `json:"author" binding:"max=100"`
+	LeadParagraph string    `json:"leadParagraph"`
 	Content string `json:"content"`
-
+	AuthorID      uuid.UUID `json:"authorId" binding:"required"`
 	// Media
 	Media []BlogPostMedia `json:"media"`
 
@@ -93,7 +76,10 @@ type UpdateBlogPostRequest struct {
 	Title   string `json:"title" binding:"max=255"`
 	Slug    string `json:"slug" binding:"max=255"`
 	Author  string `json:"author" binding:"max=100"`
+	
+	LeadParagraph string    `json:"leadParagraph"`
 	Content string `json:"content"`
+	AuthorID      uuid.UUID `json:"authorId" binding:"required"`
 
 	// Media
 	Media []BlogPostMedia `json:"media"`
