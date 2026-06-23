@@ -177,13 +177,13 @@ func (sg *ScheduleGenerator) generateSlotsForRecurringSchedule(
 		}
 
 		if !exists {
-			// Create the schedule slot (status: available, car_id: 0 - to be assigned later)
+			// Create the schedule slot (status: available, car_id: nil - to be assigned later)
 			schedule := &dto.Schedule{
 				Date:         date,
 				Time:         timeStr,
 				Duration:     slotDuration,
 				InstructorID: instructorID,
-				CarID:        0, // Will be assigned when booked
+				CarID:        uuid.Nil, // Will be assigned when booked
 				Status:       dto.ScheduleStatusAvailable,
 			}
 

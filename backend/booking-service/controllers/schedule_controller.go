@@ -211,10 +211,7 @@ func (c *ScheduleController) ListSchedulesFiltered(ctx *gin.Context) {
 	params.EndDate = ctx.Query("endDate")
 
 	params.InstructorID = ctx.Query("instructorId")
-	if carID, err := strconv.Atoi(ctx.Query("carId")); err == nil {
-		params.CarID = uint(carID)
-	}
-
+	params.CarID = ctx.Query("carId")
 	params.Status = ctx.Query("status")
 
 	resp, err := c.scheduleService.ListSchedulesFiltered(ctx.Request.Context(), params)

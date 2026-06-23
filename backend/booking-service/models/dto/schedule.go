@@ -48,7 +48,7 @@ type UpdateScheduleRequest struct {
 	Time         *string    `json:"time" binding:"omitempty"`     // HH:MM format
 	Duration     *int       `json:"duration" binding:"omitempty"`
 	InstructorID *uuid.UUID `json:"instructorId" binding:"omitempty"`
-	CarID        *uint      `json:"carId" binding:"omitempty"`
+	CarID        *uuid.UUID `json:"carId" binding:"omitempty"`
 	Notes        *string    `json:"notes" binding:"omitempty"`
 	Status       *string    `json:"status" binding:"omitempty"`  // update slot status
 }
@@ -60,7 +60,7 @@ type ScheduleResponse struct {
 	Duration       int       `json:"duration"`     // in minutes
 	InstructorID   uuid.UUID `json:"instructorId"`
 	InstructorName string    `json:"instructorName"`
-	CarID          uint      `json:"carId"`
+	CarID          uuid.UUID `json:"carId"`
 	CarName        string    `json:"carName"`
 	UserID         *uuid.UUID `json:"userId"`
 	UserName       *string   `json:"userName"`        // nullable
@@ -94,7 +94,7 @@ type ScheduleFilterParams struct {
 	StartDate    string `form:"startDate"`      // YYYY-MM-DD format
 	EndDate      string `form:"endDate"`        // YYYY-MM-DD format
 	InstructorID string `form:"instructorId"`
-	CarID        uint   `form:"carId"`
+	CarID        string `form:"carId"`
 	Status       string `form:"status"`
 }
 

@@ -83,8 +83,7 @@ func (s *ScheduleService) CreateSchedule(ctx context.Context, req dto.CreateSche
 		return nil, err
 	}
 
-	resp := s.scheduleRepo.ToResponse(schedule)
-	return &resp, nil
+	return s.enrichSchedule(ctx, schedule)
 }
 
 func (s *ScheduleService) GetSchedule(ctx context.Context, id uint) (*dto.ScheduleResponse, error) {
@@ -93,8 +92,7 @@ func (s *ScheduleService) GetSchedule(ctx context.Context, id uint) (*dto.Schedu
 		return nil, err
 	}
 
-	resp := s.scheduleRepo.ToResponse(schedule)
-	return &resp, nil
+	return s.enrichSchedule(ctx, schedule)
 }
 
 func (s *ScheduleService) UpdateSchedule(ctx context.Context, id uint, req dto.UpdateScheduleRequest) (*dto.ScheduleResponse, error) {
@@ -133,8 +131,7 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, id uint, req dto.U
 		return nil, err
 	}
 
-	resp := s.scheduleRepo.ToResponse(schedule)
-	return &resp, nil
+	return s.enrichSchedule(ctx, schedule)
 }
 
 func (s *ScheduleService) DeleteSchedule(ctx context.Context, id uint) error {
@@ -156,13 +153,24 @@ func (s *ScheduleService) ListSchedules(ctx context.Context, page, limit int) (*
 		return nil, err
 	}
 
-	total, err := s.scheduleRepo.CountAll(ctx)
-	if err != nil {
-		return nil, err
+	total := int64(len(schedules))
+	if limit <= 0 {
+		limit = 10
 	}
 
+	start := (page - 1) * limit
+	if start > int(total) {
+		start = int(total)
+	}
+	end := start + limit
+	if end > int(total) {
+		end = int(total)
+	}
+
+	paginatedSchedules := schedules[start:end]
+
 	// Enrich schedules with instructor, car, and user names
-	enrichedSchedules, err := s.enrichSchedules(ctx, schedules)
+	enrichedSchedules, err := s.enrichSchedules(ctx, paginatedSchedules)
 	if err != nil {
 		return nil, err
 	}
@@ -199,9 +207,20 @@ func (s *ScheduleService) GetAvailableSchedules(ctx context.Context, startDate, 
 		return nil, err
 	}
 
-	// Use page=1 and limit=len(schedules) for the response
-	resp := s.scheduleRepo.ToListResponse(schedules, int64(len(schedules)), 1, len(schedules))
-	return &resp, nil
+	enriched, err := s.enrichSchedules(ctx, schedules)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.ScheduleListResponse{
+		Data: enriched,
+		Pagination: dto.PaginationMeta{
+			Page:       1,
+			Total:      int64(len(schedules)),
+			Limit:      len(schedules),
+			TotalPages: 1,
+		},
+	}, nil
 }
 
 func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.ScheduleFilterParams) (*dto.ScheduleListResponse, error) {
@@ -237,7 +256,7 @@ func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.
 			match = false
 		}
 
-		if params.CarID != 0 && sched.CarID != params.CarID {
+		if params.CarID != "" && sched.CarID.String() != params.CarID {
 			match = false
 		}
 
@@ -251,8 +270,41 @@ func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.
 	}
 
 	total := int64(len(schedules))
-	resp := s.scheduleRepo.ToListResponse(schedules, total, params.Page, params.Limit)
-	return &resp, nil
+	limit := params.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+
+	start := (params.Page - 1) * limit
+	if start > int(total) {
+		start = int(total)
+	}
+	end := start + limit
+	if end > int(total) {
+		end = int(total)
+	}
+
+	paginatedSchedules := schedules[start:end]
+
+	enriched, err := s.enrichSchedules(ctx, paginatedSchedules)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := int(total) / limit
+	if int(total)%limit > 0 {
+		totalPages++
+	}
+
+	return &dto.ScheduleListResponse{
+		Data: enriched,
+		Pagination: dto.PaginationMeta{
+			Page:       params.Page,
+			Total:      total,
+			Limit:      limit,
+			TotalPages: totalPages,
+		},
+	}, nil
 }
 
 func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.BookSlotRequest) (*dto.ScheduleResponse, error) {
@@ -289,8 +341,7 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 		return nil, err
 	}
 
-	resp := s.scheduleRepo.ToResponse(schedule)
-	return &resp, nil
+	return s.enrichSchedule(ctx, schedule)
 }
 
 func (s *ScheduleService) CancelBooking(ctx context.Context, slotID uint) error {
@@ -316,7 +367,7 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 	// --- Collect unique IDs to minimize external calls ---
 	instructorIDSet := make(map[string]struct{})
 	userIDSet       := make(map[string]struct{})
-	carIDSet        := make(map[uint]struct{})
+	carIDSet        := make(map[uuid.UUID]struct{})
 
 	for _, sched := range schedules {
 		instructorIDSet[sched.InstructorID.String()] = struct{}{}
@@ -337,7 +388,7 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 		wg       sync.WaitGroup
 		fetchErr error
 		userMap  = make(map[string]uClient.UserInfo)
-		carMap   = make(map[uint]cClient.CarInfo)
+		carMap   = make(map[uuid.UUID]cClient.CarInfo)
 	)
 
 	for id := range allUserIDs {
@@ -364,13 +415,13 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 
 	for _, id := range carIDs {
 		wg.Add(1)
-		go func(carID uint) {
+		go func(carID uuid.UUID) {
 			defer wg.Done()
 			info, err := s.coreClient.GetCarByID(ctx, carID)
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
-				fetchErr = fmt.Errorf("failed to fetch car %d: %w", carID, err)
+				fetchErr = fmt.Errorf("failed to fetch car %s: %w", carID, err)
 				return
 			}
 			carMap[carID] = *info
@@ -406,4 +457,16 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 	}
 
 	return result, nil
+}
+
+// enrichSchedule enriches a single schedule response.
+func (s *ScheduleService) enrichSchedule(ctx context.Context, schedule *dto.Schedule) (*dto.ScheduleResponse, error) {
+	enriched, err := s.enrichSchedules(ctx, []dto.Schedule{*schedule})
+	if err != nil {
+		return nil, err
+	}
+	if len(enriched) == 0 {
+		return nil, fmt.Errorf("failed to enrich schedule")
+	}
+	return &enriched[0], nil
 }
