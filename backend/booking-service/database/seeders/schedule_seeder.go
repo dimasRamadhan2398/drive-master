@@ -54,15 +54,19 @@ func (s *ScheduleSeeder) Run(db *gorm.DB) error {
 	}
 
 	// Get available cars from core-service
-	var carIDs []uint
+	var carIDs []uuid.UUID
 	if err := db.Raw(`
-		SELECT id::integer as id
+		SELECT id
 		FROM cars
 		WHERE status = 'available'
 		LIMIT 5
 	`).Scan(&carIDs).Error; err != nil {
 		log.Printf("Warning: Could not fetch cars, using defaults: %v", err)
-		carIDs = []uint{1, 2, 3}
+		carIDs = []uuid.UUID{
+			uuid.MustParse("00000000-0000-0000-0000-000000000001"),
+			uuid.MustParse("00000000-0000-0000-0000-000000000002"),
+			uuid.MustParse("00000000-0000-0000-0000-000000000003"),
+		}
 	}
 
 	if len(carIDs) == 0 {

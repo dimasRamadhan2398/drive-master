@@ -19,7 +19,7 @@ type IScheduleRepository interface {
 	Delete(ctx context.Context, schedule *dto.Schedule) error
 	FindAll(ctx context.Context) ([]dto.Schedule, error)
 	FindByDateAndInstructor(ctx context.Context, date time.Time, instructorID uuid.UUID) ([]dto.Schedule, error)
-	FindByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uint) (*dto.Schedule, error)
+	FindByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uuid.UUID) (*dto.Schedule, error)
 	FindAvailableByDateRange(ctx context.Context, startDate, endDate time.Time) ([]dto.Schedule, error)
 	UpdateStatus(ctx context.Context, id uint, status dto.ScheduleStatus) error
 	BookSlot(ctx context.Context, id uint, userID, enrollmentID uuid.UUID) error
@@ -84,7 +84,7 @@ func (r *ScheduleRepository) FindByDateAndInstructor(ctx context.Context, date t
 	return schedules, nil
 }
 
-func (r *ScheduleRepository) FindByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uint) (*dto.Schedule, error) {
+func (r *ScheduleRepository) FindByDateAndTime(ctx context.Context, date time.Time, time string, instructorID uuid.UUID, carID uuid.UUID) (*dto.Schedule, error) {
 	var schedule dto.Schedule
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"date": date, "time": time, "instructor_id": instructorID, "car_id": carID})
@@ -202,6 +202,10 @@ func (r *ScheduleRepository) ToListResponse(schedules []dto.Schedule, total int6
 	items := make([]dto.ScheduleResponse, len(schedules))
 	for i, s := range schedules {
 		items[i] = r.ToResponse(&s)
+	}
+
+	if limit <= 0 {
+		limit = 10
 	}
 
 	totalPages := int(total) / limit
