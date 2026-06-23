@@ -24,7 +24,6 @@ func NewRouteRegistry(controller controllers.IControllerRegistry, group *gin.Rou
 func (r *Registry) Serve() {
 	r.GetSessionRoute().Run()
 	r.GetEntitlementRoute().Run()
-	r.GetCertificationRoute().Run()
 	r.GetEnrollmentRoute().Run()
 	r.GetScheduleRoute().Run()
 	r.GetDashboardRoute().Run()
@@ -37,10 +36,6 @@ func (r *Registry) GetSessionRoute() ISessionRoute {
 
 func (r *Registry) GetEntitlementRoute() IEntitlementRoute {
 	return NewEntitlementRoute(r.controller, r.group, r.authMiddleware)
-}
-
-func (r *Registry) GetCertificationRoute() ICertificationRoute {
-	return NewCertificationRoute(r.controller, r.group, r.authMiddleware)
 }
 
 func (r *Registry) GetEnrollmentRoute() IEnrollmentRoute {

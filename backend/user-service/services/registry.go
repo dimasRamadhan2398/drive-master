@@ -98,7 +98,7 @@ func (r *Registry) GetEmailService() IMailtrapEmailService {
 
 func (r *Registry) GetMediaService() IMediaService {
 	cfg := config.Get()
-	return coreServices.NewMediaService(cfg.ImageKit.PrivateKey)
+	return coreServices.NewMediaService(cfg.ImageKit.PrivateKey, cfg.ImageKit.URLEndpoint)
 }
 
 func (r *Registry) GetWorkExperienceService() IWorkExperienceService {
@@ -114,7 +114,11 @@ func (r *Registry) GetRegionService() IRegionService {
 }
 
 func (r *Registry) GetCertificationService() ICertificationService {
-	return NewCertificationService(r.repoRegistry.GetCertification())
+	return NewCertificationService(
+		r.repoRegistry.GetCertification(),
+		r.repoRegistry.GetUser(),
+		r.GetEmailService(),
+	)
 }
 
 func (r *Registry) GetEntitlementService() IEntitlementService {
