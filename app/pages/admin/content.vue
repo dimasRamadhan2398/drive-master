@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, onMounted, reactive, h, resolveComponent } from "vue";
 import type { TableColumn } from "@nuxt/ui";
 import { contentService } from "~/services/contentService";
-import type { FAQ, Page } from "~/services/contentService";
+import { useContentStore } from "~/stores/content";
+import type { Faq, Page, BlogPost } from "~/stores/content";
 
 const { t } = useI18n()
 definePageMeta({ layout: "admin" });
@@ -13,10 +14,97 @@ const toast = useToast();
 // Tabs
 const tabs = computed(() => [
   { label: t('admin.content').replace('Konten', 'Pages'), icon: "i-lucide-files", slot: "pages" },
+  { label: "Blog", icon: "i-lucide-newspaper", slot: "blog" },
   { label: "FAQs", icon: "i-lucide-help-circle", slot: "faqs" },
 ]);
 
 const activeTab = ref(0);
+
+// --- Blog Data ---
+const blogPosts = computed(() => contentStore.blogPosts);
+const blogColumns: TableColumn<BlogPost>[] = [
+  { accessorKey: "title", header: t('admin.content.title') },
+  { accessorKey: "author", header: "Author" },
+  {
+    accessorKey: "status",
+    header: t('admin.content.status'),
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string;
+      return h(resolveComponent("UBadge"), {
+        label: status.toUpperCase(),
+        color: status === "published" ? "success" : status === "draft" ? "neutral" : "error",
+        variant: "subtle",
+      });
+    },
+  },
+  { accessorKey: "views", header: "Views" },
+  { id: "actions" },
+];
+
+const isBlogModalOpen = ref(false);
+const blogForm = reactive({
+  title: "",
+  content: "",
+  status: "draft" as "draft" | "published" | "archived",
+  authorId: "00000000-0000-0000-0000-000000000000", // Placeholder
+});
+
+function openNewBlog() {
+  isEditing.value = false;
+  blogForm.title = "";
+  blogForm.content = "";
+  blogForm.status = "draft";
+  isBlogModalOpen.value = true;
+}
+
+function openEditBlog(post: BlogPost) {
+  isEditing.value = true;
+  editingId.value = post.id;
+  blogForm.title = post.title;
+  blogForm.content = post.content;
+  blogForm.status = post.status;
+  isBlogModalOpen.value = true;
+}
+
+async function saveBlog() {
+  try {
+    if (isEditing.value && editingId.value) {
+      await contentStore.updatePost(editingId.value, {
+        title: blogForm.title,
+        content: blogForm.content,
+        publishing: { status: blogForm.status }
+      });
+      toast.add({ title: "Blog Post Updated", color: "success" });
+    } else {
+      await contentStore.addPost({
+        title: blogForm.title,
+        bodyBlocks: JSON.stringify([{ type: "paragraph", content: blogForm.content }]),
+        status: blogForm.status,
+        authorId: blogForm.authorId,
+      });
+      toast.add({ title: "Blog Post Created", color: "success" });
+    }
+    isBlogModalOpen.value = false;
+    contentStore.fetchBlogPosts();
+  } catch (err) {
+    toast.add({
+      title: t('common.error'),
+      description: "Failed to save blog post.",
+      color: "error",
+    });
+  }
+}
+
+async function deleteBlog(id: string | number) {
+  if (confirm("Are you sure you want to delete this blog post?")) {
+    try {
+      await contentStore.deletePost(id);
+      toast.add({ title: t('toast.deleteSuccess'), color: "error" });
+    } catch (err) {
+      toast.add({ title: t('common.error'), color: "error" });
+    }
+  }
+}
 
 // --- Pages Data ---
 const pages = ref<Page[]>([]);
@@ -58,10 +146,10 @@ async function fetchPages() {
 }
 
 // --- FAQs Data ---
-const faqs = ref<FAQ[]>([]);
-const isFaqsLoading = ref(false);
+const faqs = computed(() => contentStore.faqs);
+const isFaqsLoading = computed(() => contentStore.isLoading);
 
-const faqColumns: TableColumn<FAQ>[] = [
+const faqColumns: TableColumn<Faq>[] = [
   { accessorKey: "question", header: t('admin.content.question') },
   { accessorKey: "category", header: t('admin.content.category') },
   {
@@ -234,7 +322,8 @@ async function deleteFAQ(id: number) {
 
 onMounted(() => {
   fetchPages();
-  fetchFAQs();
+  contentStore.fetchBlogPosts();
+  contentStore.fetchFaqs();
 });
 </script>
 
@@ -249,6 +338,13 @@ onMounted(() => {
             color="warning"
             :label="t('admin.content.createPage')"
             @click="openNewPage"
+          />
+          <UButton
+            v-else-if="activeTab === 1"
+            icon="i-lucide-plus"
+            color="warning"
+            label="Create Blog Post"
+            @click="openNewBlog"
           />
           <UButton
             v-else
@@ -286,6 +382,34 @@ onMounted(() => {
                       variant="ghost"
                       color="error"
                       @click="deletePage(row.original.id)"
+                    />
+                  </div>
+                </template>
+              </UTable>
+            </UCard>
+          </template>
+
+          <!-- Blog Tab -->
+          <template #blog>
+            <UCard class="mt-6">
+              <UTable
+                :columns="blogColumns"
+                :data="blogPosts"
+                :loading="contentStore.isLoading"
+              >
+                <template #actions-cell="{ row }">
+                  <div class="flex justify-end gap-2">
+                    <UButton
+                      icon="i-lucide-pencil"
+                      variant="ghost"
+                      color="neutral"
+                      @click="openEditBlog(row.original)"
+                    />
+                    <UButton
+                      icon="i-lucide-trash"
+                      variant="ghost"
+                      color="error"
+                      @click="deleteBlog(row.original.id)"
                     />
                   </div>
                 </template>
@@ -352,6 +476,44 @@ onMounted(() => {
               @click="isPageModalOpen = false"
             />
             <UButton :label="t('admin.content.savePage')" color="warning" @click="savePage" />
+          </div>
+        </template>
+      </UModal>
+
+      <!-- Blog Modal -->
+      <UModal v-model:open="isBlogModalOpen" :title="isEditing ? 'Edit Blog Post' : 'Create Blog Post'">
+        <template #body>
+          <div class="space-y-4">
+            <UFormField :label="t('admin.content.title')" required>
+              <UInput v-model="blogForm.title" color="warning" class="w-full" />
+            </UFormField>
+            <UFormField label="Content" required>
+              <UTextarea
+                v-model="blogForm.content"
+                color="warning"
+                class="w-full"
+                :rows="10"
+              />
+            </UFormField>
+            <UFormField :label="t('admin.content.status')">
+              <USelect
+                v-model="blogForm.status"
+                :items="['draft', 'published', 'archived']"
+                color="warning"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+        </template>
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton
+              :label="t('common.cancel')"
+              variant="ghost"
+              color="neutral"
+              @click="isBlogModalOpen = false"
+            />
+            <UButton label="Save Post" color="warning" @click="saveBlog" />
           </div>
         </template>
       </UModal>

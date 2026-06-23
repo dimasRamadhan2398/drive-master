@@ -4,17 +4,23 @@ import { computed, ref } from 'vue'
 
 const { t } = useI18n()
 const route = useRoute()
-const { blogPosts } = useContent()
+const contentStore = useContentStore()
 
 // Extract post ID from route param (format: "1-slug-title")
 const postId = computed(() => {
   const param = route.params.id as string
-  return parseInt(param.split('-')[0])
+  return param.split('-')[0]
 })
 
 const post = computed(() =>
-  blogPosts.value.find(p => p.id === postId.value && p.status === 'published')
+  contentStore.blogPosts.find(p => String(p.id) === postId.value && p.status === 'published')
 )
+
+onMounted(async () => {
+  if (contentStore.blogPosts.length === 0) {
+    await contentStore.fetchBlogPosts({ status: 'published' })
+  }
+})
 
 // Increment views on load
 if (post.value) {
@@ -23,8 +29,8 @@ if (post.value) {
 
 // Related posts (exclude current)
 const relatedPosts = computed(() =>
-  blogPosts.value
-    .filter(p => p.id !== postId.value && p.status === 'published')
+  contentStore.blogPosts
+    .filter(p => String(p.id) !== postId.value && p.status === 'published')
     .slice(0, 3)
 )
 

@@ -109,6 +109,19 @@ export interface BlogPostListResponse {
   totalPages: number;
 }
 
+// Matching backend CreateBlogArticleRequest
+export interface CreateBlogArticleData {
+  title: string;
+  slug?: string;
+  leadParagraph?: string;
+  bodyBlocks?: any; // JSON string or object
+  featuredImage?: string;
+  categoryId?: string;
+  authorId: string;
+  tags?: string[];
+  status: string;
+}
+
 export interface BlogPostFilterParams {
   page?: number;
   limit?: number;
@@ -190,7 +203,7 @@ export const contentService = {
 
   // POST /articles/blog - Create blog post
   async createBlogPost(
-    data: CreateBlogPostData,
+    data: CreateBlogArticleData,
   ): Promise<BlogPostResponse | null> {
     const { core, extractData } = useApiClients();
     try {

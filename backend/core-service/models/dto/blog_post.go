@@ -24,7 +24,13 @@ type BlogArticleResponse struct {
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
-type BlogArticleListResponse = PagedData[BlogArticleResponse]
+type BlogArticleListResponse struct {
+	Articles   []BlogArticleResponse `json:"articles"`
+	Total      int64                 `json:"total"`
+	Page       int                   `json:"page"`
+	Limit      int                   `json:"limit"`
+	TotalPages int                   `json:"totalPages"`
+}
 
 // Media represents media attached to a blog post
 type BlogPostMedia struct {
@@ -53,41 +59,42 @@ type Attractiveness struct {
 	Highlight   bool `json:"highlight"`   // Mark as highlighted/popular
 }
 
+// CreateBlogArticleRequest is the DTO for creating a new blog article
+type CreateBlogArticleRequest struct {
+	Title         string    `json:"title" binding:"required,max=255"`
+	Slug          string    `json:"slug" binding:"max=255"`
+	LeadParagraph string    `json:"leadParagraph"`
+	BodyBlocks    []byte    `json:"bodyBlocks"`
+	FeaturedImage string    `json:"featuredImage"`
+	CategoryID    uuid.UUID `json:"categoryId"`
+	AuthorID      uuid.UUID `json:"authorId" binding:"required"`
+	Tags          []string  `json:"tags"`
+	Status        string    `json:"status"`
+}
+
 // CreateBlogPostRequest is the DTO for creating a new blog post
 type CreateBlogPostRequest struct {
-	Title   string `json:"title" binding:"required,max=255"`
-	Slug    string `json:"slug" binding:"max=255"`
-	Author  string `json:"author" binding:"max=100"`
-	LeadParagraph string    `json:"leadParagraph"`
-	Content string `json:"content"`
-	AuthorID      uuid.UUID `json:"authorId" binding:"required"`
-	// Media
-	Media []BlogPostMedia `json:"media"`
-
-	// Publishing
-	Publishing *Publishing `json:"publishing"`
-
-	// Attractiveness
+	Title         string         `json:"title" binding:"required,max=255"`
+	Slug          string         `json:"slug" binding:"max=255"`
+	Author        string         `json:"author" binding:"max=100"`
+	LeadParagraph string         `json:"leadParagraph"`
+	Content       string         `json:"content"`
+	AuthorID      uuid.UUID      `json:"authorId" binding:"required"`
+	Media         []BlogPostMedia `json:"media"`
+	Publishing    *Publishing    `json:"publishing"`
 	Attractiveness *Attractiveness `json:"attractiveness"`
 }
 
 // UpdateBlogPostRequest is the DTO for updating an existing blog post
 type UpdateBlogPostRequest struct {
-	Title   string `json:"title" binding:"max=255"`
-	Slug    string `json:"slug" binding:"max=255"`
-	Author  string `json:"author" binding:"max=100"`
-	
-	LeadParagraph string    `json:"leadParagraph"`
-	Content string `json:"content"`
-	AuthorID      uuid.UUID `json:"authorId" binding:"required"`
-
-	// Media
-	Media []BlogPostMedia `json:"media"`
-
-	// Publishing
-	Publishing *Publishing `json:"publishing"`
-
-	// Attractiveness
+	Title         string         `json:"title" binding:"max=255"`
+	Slug          string         `json:"slug" binding:"max=255"`
+	Author        string         `json:"author" binding:"max=100"`
+	LeadParagraph string         `json:"leadParagraph"`
+	Content       string         `json:"content"`
+	AuthorID      uuid.UUID      `json:"authorId" binding:"required"`
+	Media         []BlogPostMedia `json:"media"`
+	Publishing    *Publishing    `json:"publishing"`
 	Attractiveness *Attractiveness `json:"attractiveness"`
 }
 

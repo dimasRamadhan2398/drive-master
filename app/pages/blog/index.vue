@@ -2,19 +2,15 @@
 import type { Article } from "~/services/articleService";
 
 const { t } = useI18n()
-const articlesStore = useArticlesStore();
+const contentStore = useContentStore();
 const searchQuery = ref("");
 
 // Single source of truth - all display logic in computed properties
-const allArticles = computed(() => articlesStore.articles);
+const allArticles = computed(() => contentStore.blogPosts);
 
 // Base articles based on status filter (from store or default to published for public view)
-const statusFilter = computed(() => articlesStore.statusFilter);
 const articlesByStatus = computed(() => {
-  if (statusFilter.value === "all") {
-    return allArticles.value;
-  }
-  return allArticles.value.filter((a) => a.status === statusFilter.value);
+  return allArticles.value.filter((a) => a.status === "published");
 });
 
 // Only show published articles for public blog
@@ -140,7 +136,7 @@ onMounted(() => {
   // Scroll to top when visiting the blog page
   window.scrollTo(0, 0);
   // Fetch articles on mount
-  articlesStore.fetchArticles();
+  contentStore.fetchBlogPosts({ status: "published" });
 });
 </script>
 
