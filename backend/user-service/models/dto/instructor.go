@@ -105,7 +105,8 @@ type IssueCertificationInput struct {
 // CertificationResponse represents a certification in API responses
 type CertificationResponse struct {
 	ID           uuid.UUID `json:"id"`
-	InstructorID uuid.UUID `json:"instructorId"`
+	MemberID     uuid.UUID `json:"memberId"`
+	InstructorID string    `json:"instructorId,omitempty"`
 	CertType     string    `json:"certType"`
 	CertNumber   string    `json:"certNumber"`
 	IssuedBy     string    `json:"issuedBy"`

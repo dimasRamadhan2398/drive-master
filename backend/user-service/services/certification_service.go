@@ -14,37 +14,46 @@ import (
 )
 
 type ICertificationService interface {
-	CreateCertification(ctx context.Context, instructorID uuid.UUID, input dto.CreateCertificationInput) (*dto.CertificationResponse, error)
-	UpdateCertification(ctx context.Context, instructorID, certID uuid.UUID, input dto.UpdateCertificationInput) (*dto.CertificationResponse, error)
-	DeleteCertification(ctx context.Context, instructorID, certID uuid.UUID) error
-	GetCertification(ctx context.Context, instructorID, certID uuid.UUID) (*dto.CertificationResponse, error)
-	ListCertifications(ctx context.Context, instructorID uuid.UUID, page, limit int) (*dto.CertificationListResponse, error)
-	VerifyCertification(ctx context.Context, instructorID, certID, verifiedBy uuid.UUID, input dto.VerifyCertificationInput) (*dto.CertificationResponse, error)
+	CreateCertification(ctx context.Context, memberID uuid.UUID, input dto.CreateCertificationInput) (*dto.CertificationResponse, error)
+	UpdateCertification(ctx context.Context, memberID, certID uuid.UUID, input dto.UpdateCertificationInput) (*dto.CertificationResponse, error)
+	DeleteCertification(ctx context.Context, memberID, certID uuid.UUID) error
+	GetCertification(ctx context.Context, memberID, certID uuid.UUID) (*dto.CertificationResponse, error)
+	ListCertifications(ctx context.Context, memberID uuid.UUID, page, limit int) (*dto.CertificationListResponse, error)
+	VerifyCertification(ctx context.Context, memberID, certID, verifiedBy uuid.UUID, input dto.VerifyCertificationInput) (*dto.CertificationResponse, error)
 	IssueCertification(ctx context.Context, input dto.IssueCertificationInput) (*dto.CertificationResponse, error)
+	RevokeCertification(ctx context.Context, certID uuid.UUID) error
 	GetStats(ctx context.Context) (*dto.CertificateStatsResponse, error)
 }
 
 type CertificationService struct {
-	repo     repositories.ICertificationRepository
-	listener listeners.IEntitlementCompletedListener
+	repo         repositories.ICertificationRepository
+	userRepo     repositories.IUserRepository
+	emailService IMailtrapEmailService
+	listener     listeners.IEntitlementCompletedListener
 }
 
-func NewCertificationService(repo repositories.ICertificationRepository) ICertificationService {
+func NewCertificationService(
+	repo repositories.ICertificationRepository,
+	userRepo repositories.IUserRepository,
+	emailService IMailtrapEmailService,
+) ICertificationService {
 	return &CertificationService{
-		repo: repo,
+		repo:         repo,
+		userRepo:     userRepo,
+		emailService: emailService,
 	}
 }
 
-func (s *CertificationService) CreateCertification(ctx context.Context, instructorID uuid.UUID, input dto.CreateCertificationInput) (*dto.CertificationResponse, error) {
+func (s *CertificationService) CreateCertification(ctx context.Context, memberID uuid.UUID, input dto.CreateCertificationInput) (*dto.CertificationResponse, error) {
 	issuedDate, err := time.Parse("2006-01-02", input.IssuedDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid issued date format: %w", err)
 	}
 
 	cert := &models.Certification{
-		ID:           uuid.New(),
-		InstructorID: instructorID,
-		CertType:     input.CertType,
+		ID:         uuid.New(),
+		MemberID:   memberID,
+		CertType:   input.CertType,
 		CertNumber:   input.CertNumber,
 		IssuedBy:     input.IssuedBy,
 		IssuedDate:   issuedDate,
@@ -69,8 +78,8 @@ func (s *CertificationService) CreateCertification(ctx context.Context, instruct
 	return toCertificationResponse(cert), nil
 }
 
-func (s *CertificationService) UpdateCertification(ctx context.Context, instructorID, certID uuid.UUID, input dto.UpdateCertificationInput) (*dto.CertificationResponse, error) {
-	cert, err := s.repo.FindByInstructorAndID(ctx, instructorID, certID)
+func (s *CertificationService) UpdateCertification(ctx context.Context, memberID, certID uuid.UUID, input dto.UpdateCertificationInput) (*dto.CertificationResponse, error) {
+	cert, err := s.repo.FindByMemberIDAndCertID(ctx, memberID, certID)
 	if err != nil {
 		return nil, err
 	}
@@ -106,23 +115,23 @@ func (s *CertificationService) UpdateCertification(ctx context.Context, instruct
 	return toCertificationResponse(cert), nil
 }
 
-func (s *CertificationService) DeleteCertification(ctx context.Context, instructorID, certID uuid.UUID) error {
-	_, err := s.repo.FindByInstructorAndID(ctx, instructorID, certID)
+func (s *CertificationService) DeleteCertification(ctx context.Context, memberID, certID uuid.UUID) error {
+	_, err := s.repo.FindByMemberIDAndCertID(ctx, memberID, certID)
 	if err != nil {
 		return err
 	}
 	return s.repo.Delete(ctx, certID)
 }
 
-func (s *CertificationService) GetCertification(ctx context.Context, instructorID, certID uuid.UUID) (*dto.CertificationResponse, error) {
-	cert, err := s.repo.FindByInstructorAndID(ctx, instructorID, certID)
+func (s *CertificationService) GetCertification(ctx context.Context, memberID, certID uuid.UUID) (*dto.CertificationResponse, error) {
+	cert, err := s.repo.FindByMemberIDAndCertID(ctx, memberID, certID)
 	if err != nil {
 		return nil, err
 	}
 	return toCertificationResponse(cert), nil
 }
 
-func (s *CertificationService) ListCertifications(ctx context.Context, instructorID uuid.UUID, page, limit int) (*dto.CertificationListResponse, error) {
+func (s *CertificationService) ListCertifications(ctx context.Context, memberID uuid.UUID, page, limit int) (*dto.CertificationListResponse, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -130,7 +139,7 @@ func (s *CertificationService) ListCertifications(ctx context.Context, instructo
 		limit = 10
 	}
 
-	certs, total, err := s.repo.FindByInstructorID(ctx, instructorID, page, limit)
+	certs, total, err := s.repo.FindByMemberID(ctx, memberID, page, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +155,8 @@ func (s *CertificationService) ListCertifications(ctx context.Context, instructo
 	}, nil
 }
 
-func (s *CertificationService) VerifyCertification(ctx context.Context, instructorID, certID, verifiedBy uuid.UUID, input dto.VerifyCertificationInput) (*dto.CertificationResponse, error) {
-	cert, err := s.repo.FindByInstructorAndID(ctx, instructorID, certID)
+func (s *CertificationService) VerifyCertification(ctx context.Context, memberID, certID, verifiedBy uuid.UUID, input dto.VerifyCertificationInput) (*dto.CertificationResponse, error) {
+	cert, err := s.repo.FindByMemberIDAndCertID(ctx, memberID, certID)
 	if err != nil {
 		return nil, err
 	}
@@ -176,30 +185,60 @@ func (s *CertificationService) IssueCertification(ctx context.Context, input dto
 	certNumber := fmt.Sprintf("CERT-%s-%s", input.PackageID.String()[:8], input.MemberID.String()[:8])
 
 	cert := &models.Certification{
-		ID:           uuid.New(),
-		InstructorID: input.MemberID, // Use member ID as instructor for member-issued certs
-		CertType:     "package_completion",
-		CertNumber:   certNumber,
-		IssuedBy:     "System - " + input.PackageName,
-		IssuedDate:   input.IssuedAt,
-		Status:       models.CertificationStatusVerified, // Auto-verify for completed packages
-		Notes:        fmt.Sprintf("Issued upon completion of package: %s (Entitlement: %s)", input.PackageName, input.EntitlementID.String()),
-		VerifiedAt:   &input.IssuedAt, // Auto-verified by system
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ID:         uuid.New(),
+		MemberID:   input.MemberID,
+		CertType:   "package_completion",
+		CertNumber: certNumber,
+		IssuedBy:   "System - " + input.PackageName,
+		IssuedDate: input.IssuedAt,
+		Status:     models.CertificationStatusVerified, // Auto-verify for completed packages
+		Notes:      fmt.Sprintf("Issued upon completion of package: %s (Entitlement: %s)", input.PackageName, input.EntitlementID.String()),
+		VerifiedAt: &input.IssuedAt, // Auto-verified by system
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 
 	if err := s.repo.Create(ctx, cert); err != nil {
 		return nil, err
 	}
 
+	// Send email notification
+	go func() {
+		user, err := s.userRepo.FindByID(context.Background(), input.MemberID)
+		if err == nil && s.emailService != nil {
+			name := user.FirstName
+			if name == "" {
+				name = user.Username
+			}
+			_ = s.emailService.SendCertificationEmail(context.Background(), user.EmailAddress, name, certNumber, input.PackageName)
+		}
+	}()
+
 	return toCertificationResponse(cert), nil
 }
 
+func (s *CertificationService) RevokeCertification(ctx context.Context, certID uuid.UUID) error {
+	cert, err := s.repo.FindByID(ctx, certID)
+	if err != nil {
+		return err
+	}
+
+	cert.Status = models.CertificationStatusRevoked
+	cert.UpdatedAt = time.Now()
+
+	return s.repo.Update(ctx, cert)
+}
+
 func toCertificationResponse(cert *models.Certification) *dto.CertificationResponse {
+	instructorID := ""
+	if cert.InstructorID != nil {
+		instructorID = cert.InstructorID.String()
+	}
+
 	resp := &dto.CertificationResponse{
 		ID:           cert.ID,
-		InstructorID: cert.InstructorID,
+		MemberID:     cert.MemberID,
+		InstructorID: instructorID,
 		CertType:     cert.CertType,
 		CertNumber:   cert.CertNumber,
 		IssuedBy:     cert.IssuedBy,

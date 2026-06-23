@@ -24,6 +24,9 @@ type ICertificationController interface {
 	DeleteCertification(ctx *gin.Context)
 	ListCertifications(ctx *gin.Context)
 	VerifyCertification(ctx *gin.Context)
+	IssueCertification(ctx *gin.Context)
+	RevokeCertification(ctx *gin.Context)
+	GetUserCertifications(ctx *gin.Context)
 	GetCertificateStats(ctx *gin.Context)
 }
 
@@ -34,17 +37,17 @@ func NewCertificationController(certificationService services.ICertificationServ
 }
 
 // @Summary Create Certification
-// @Description Add a new certification for an instructor
-// @Tags Instructors
+// @Description Add a new certification for a member
+// @Tags Certificates
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID (UUID)"
 // @Param request body dto.CreateCertificationInput true "Certification data"
 // @Success 201 {object} response.Response
 // @Failure 400 {object} response.Response
-// @Router /instructors/{id}/certifications [post]
+// @Router /members/{id}/certifications [post]
 func (c *CertificationController) CreateCertification(ctx *gin.Context) {
-	instructorID, err := parseUUID(ctx, "id")
+	memberID, err := parseUUID(ctx, "id")
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -56,7 +59,7 @@ func (c *CertificationController) CreateCertification(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := c.certificationService.CreateCertification(ctx.Request.Context(), instructorID, input)
+	resp, err := c.certificationService.CreateCertification(ctx.Request.Context(), memberID, input)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -66,16 +69,16 @@ func (c *CertificationController) CreateCertification(ctx *gin.Context) {
 }
 
 // @Summary Get Certification
-// @Description Get a specific certification for an instructor
-// @Tags Instructors
+// @Description Get a specific certification for a member
+// @Tags Certificates
 // @Produce json
 // @Param id path string true "User ID (UUID)"
 // @Param certId path string true "Certification ID (UUID)"
 // @Success 200 {object} response.Response
 // @Failure 404 {object} response.Response
-// @Router /instructors/{id}/certifications/{certId} [get]
+// @Router /members/{id}/certifications/{certId} [get]
 func (c *CertificationController) GetCertification(ctx *gin.Context) {
-	instructorID, err := parseUUID(ctx, "id")
+	memberID, err := parseUUID(ctx, "id")
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -87,7 +90,7 @@ func (c *CertificationController) GetCertification(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := c.certificationService.GetCertification(ctx.Request.Context(), instructorID, certID)
+	resp, err := c.certificationService.GetCertification(ctx.Request.Context(), memberID, certID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -97,8 +100,8 @@ func (c *CertificationController) GetCertification(ctx *gin.Context) {
 }
 
 // @Summary Update Certification
-// @Description Update a certification for an instructor
-// @Tags Instructors
+// @Description Update a certification for a member
+// @Tags Certificates
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID (UUID)"
@@ -106,9 +109,9 @@ func (c *CertificationController) GetCertification(ctx *gin.Context) {
 // @Param request body dto.UpdateCertificationInput true "Certification data"
 // @Success 200 {object} response.Response
 // @Failure 404 {object} response.Response
-// @Router /instructors/{id}/certifications/{certId} [put]
+// @Router /members/{id}/certifications/{certId} [put]
 func (c *CertificationController) UpdateCertification(ctx *gin.Context) {
-	instructorID, err := parseUUID(ctx, "id")
+	memberID, err := parseUUID(ctx, "id")
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -126,7 +129,7 @@ func (c *CertificationController) UpdateCertification(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := c.certificationService.UpdateCertification(ctx.Request.Context(), instructorID, certID, input)
+	resp, err := c.certificationService.UpdateCertification(ctx.Request.Context(), memberID, certID, input)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -136,16 +139,16 @@ func (c *CertificationController) UpdateCertification(ctx *gin.Context) {
 }
 
 // @Summary Delete Certification
-// @Description Delete a certification for an instructor
-// @Tags Instructors
+// @Description Delete a certification for a member
+// @Tags Certificates
 // @Produce json
 // @Param id path string true "User ID (UUID)"
 // @Param certId path string true "Certification ID (UUID)"
 // @Success 200 {object} response.Response
 // @Failure 404 {object} response.Response
-// @Router /instructors/{id}/certifications/{certId} [delete]
+// @Router /members/{id}/certifications/{certId} [delete]
 func (c *CertificationController) DeleteCertification(ctx *gin.Context) {
-	instructorID, err := parseUUID(ctx, "id")
+	memberID, err := parseUUID(ctx, "id")
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -157,7 +160,7 @@ func (c *CertificationController) DeleteCertification(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.certificationService.DeleteCertification(ctx.Request.Context(), instructorID, certID); err != nil {
+	if err := c.certificationService.DeleteCertification(ctx.Request.Context(), memberID, certID); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
@@ -166,16 +169,16 @@ func (c *CertificationController) DeleteCertification(ctx *gin.Context) {
 }
 
 // @Summary List Certifications
-// @Description Get all certifications for an instructor
-// @Tags Instructors
+// @Description Get all certifications for a member
+// @Tags Certificates
 // @Produce json
 // @Param id path string true "User ID (UUID)"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
 // @Success 200 {object} response.Response
-// @Router /instructors/{id}/certifications [get]
+// @Router /members/{id}/certifications [get]
 func (c *CertificationController) ListCertifications(ctx *gin.Context) {
-	instructorID, err := parseUUID(ctx, "id")
+	memberID, err := parseUUID(ctx, "id")
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -184,7 +187,7 @@ func (c *CertificationController) ListCertifications(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
 
-	resp, err := c.certificationService.ListCertifications(ctx.Request.Context(), instructorID, page, limit)
+	resp, err := c.certificationService.ListCertifications(ctx.Request.Context(), memberID, page, limit)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -194,8 +197,8 @@ func (c *CertificationController) ListCertifications(ctx *gin.Context) {
 }
 
 // @Summary Verify Certification
-// @Description Verify a certification for an instructor (admin action)
-// @Tags Instructors
+// @Description Verify a certification for a member (admin action)
+// @Tags Certificates
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID (UUID)"
@@ -203,9 +206,9 @@ func (c *CertificationController) ListCertifications(ctx *gin.Context) {
 // @Param request body dto.VerifyCertificationInput true "Verification data"
 // @Success 200 {object} response.Response
 // @Failure 404 {object} response.Response
-// @Router /instructors/{id}/certifications/{certId}/verify [post]
+// @Router /members/{id}/certifications/{certId}/verify [post]
 func (c *CertificationController) VerifyCertification(ctx *gin.Context) {
-	instructorID, err := parseUUID(ctx, "id")
+	memberID, err := parseUUID(ctx, "id")
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -224,10 +227,9 @@ func (c *CertificationController) VerifyCertification(ctx *gin.Context) {
 	}
 
 	// In a real app, verifiedBy would come from the authenticated user
-	// For now, we'll use a placeholder or extract from context
 	verifiedBy := uuid.New()
 
-	resp, err := c.certificationService.VerifyCertification(ctx.Request.Context(), instructorID, certID, verifiedBy, input)
+	resp, err := c.certificationService.VerifyCertification(ctx.Request.Context(), memberID, certID, verifiedBy, input)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -240,6 +242,85 @@ func (c *CertificationController) VerifyCertification(ctx *gin.Context) {
 func parseUUID(ctx *gin.Context, param string) (uuid.UUID, error) {
 	idStr := ctx.Param(param)
 	return uuid.Parse(idStr)
+}
+
+// @Summary Issue Certification
+// @Description Issue a certification to a member
+// @Tags Certificates
+// @Accept json
+// @Produce json
+// @Param request body dto.IssueCertificationInput true "Issue certification data"
+// @Success 201 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Router /certificates/issue [post]
+func (c *CertificationController) IssueCertification(ctx *gin.Context) {
+	var input dto.IssueCertificationInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	resp, err := c.certificationService.IssueCertification(ctx.Request.Context(), input)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusCreated, "Certification issued successfully", resp)
+}
+
+// @Summary Revoke Certification
+// @Description Revoke a certification
+// @Tags Certificates
+// @Accept json
+// @Produce json
+// @Param id body string true "Certification ID (UUID)"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Router /certificates/revoke [post]
+func (c *CertificationController) RevokeCertification(ctx *gin.Context) {
+	var input struct {
+		ID uuid.UUID `json:"id" binding:"required"`
+	}
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	if err := c.certificationService.RevokeCertification(ctx.Request.Context(), input.ID); err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Certification revoked successfully", nil)
+}
+
+// @Summary Get User Certifications
+// @Description Get all certifications for a specific user
+// @Tags Certificates
+// @Produce json
+// @Param userId path string true "User ID (UUID)"
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} response.Response
+// @Router /certificates/user/{userId} [get]
+func (c *CertificationController) GetUserCertifications(ctx *gin.Context) {
+	userID, err := parseUUID(ctx, "userId")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+
+	resp, err := c.certificationService.ListCertifications(ctx.Request.Context(), userID, page, limit)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "User certifications retrieved successfully", resp)
 }
 
 // @Summary Get Certificate Stats

@@ -26,16 +26,19 @@ func (r *CertificationRoute) Run() {
 	{
 		// Certificate stats
 		group.GET("/stats", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertificateStats)
+		group.POST("/issue", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().IssueCertification)
+		group.POST("/revoke", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().RevokeCertification)
+		group.GET("/user/:userId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetUserCertifications)
 	}
 
-	instructorGroup := r.group.Group("/instructors")
+	memberGroup := r.group.Group("/members")
 	{
-		// Instructor Certification routes
-		instructorGroup.POST("/:id/certifications", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().CreateCertification)
-		instructorGroup.GET("/:id/certifications", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().ListCertifications)
-		instructorGroup.GET("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertification)
-		instructorGroup.PUT("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().UpdateCertification)
-		instructorGroup.DELETE("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().DeleteCertification)
-		instructorGroup.POST("/:id/certifications/:certId/verify", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().VerifyCertification)
+		// Member Certification routes
+		memberGroup.POST("/:id/certifications", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().CreateCertification)
+		memberGroup.GET("/:id/certifications", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().ListCertifications)
+		memberGroup.GET("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertification)
+		memberGroup.PUT("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().UpdateCertification)
+		memberGroup.DELETE("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().DeleteCertification)
+		memberGroup.POST("/:id/certifications/:certId/verify", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().VerifyCertification)
 	}
 }
