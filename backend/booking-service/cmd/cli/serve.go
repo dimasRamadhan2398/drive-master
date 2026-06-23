@@ -11,6 +11,7 @@ import (
 	"booking-service/clients/core"
 	"booking-service/clients/user"
 	"booking-service/controllers"
+	"booking-service/pkg/config"
 	"booking-service/docs"
 	"booking-service/models"
 	"booking-service/pkg/kafka"
@@ -54,6 +55,14 @@ func init() {
 }
 
 func runServe(cmd *cobra.Command, args []string) {
+	// Load config using environment variable or default path
+	configPath := getEnv("CONFIG_PATH", "pkg/config/config.yaml")
+	loadedConfig, err := config.Load(configPath)
+	if err != nil {
+		log.Fatalf("Failed to load config from %s: %v", configPath, err)
+	}
+	config.Set(loadedConfig)
+
 	loc, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
 		panic(err)
@@ -88,7 +97,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	paymentRepo := repositories.NewPaymentRepository(db)
 
 	// Initialize user-service client and availability service
-	userClient := user.NewUserClient(getEnv("USER_SERVICE_URL", "http://localhost:8001"))
+	userClient := user.NewUserClient(getEnv("USER_SERVICE_URL", "http://localhost:8001"), loadedConfig.JWT.Secret)
 	coreClient := core.NewCoreClient(getEnv("CORE_SERVICE_URL", "http://localhost:8002"))
 	availabilityService := services.NewAvailabilityService(userClient)
 
@@ -126,7 +135,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
 
 	// Initialize auth middleware
-	authMiddleware := middlewares.NewAuthMiddleware(getEnv("JWT_SECRET", "your_jwt_secret_here"))
+	authMiddleware := middlewares.NewAuthMiddleware(loadedConfig.JWT.Secret)
 
 	// Setup Gin router
 	router := gin.New()
