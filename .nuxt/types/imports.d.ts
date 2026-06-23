@@ -222,6 +222,7 @@ declare global {
   const useServerSeoMeta: typeof import('../../node_modules/nuxt/dist/app/composables/head').useServerSeoMeta
   const useSetI18nParams: typeof import('../../node_modules/@nuxtjs/i18n/dist/runtime/composables/index').useSetI18nParams
   const useSettings: typeof import('../../app/composables/useSettings').useSettings
+  const useSettingsStore: typeof import('../../app/stores/settings').useSettingsStore
   const useShadowRoot: typeof import('vue').useShadowRoot
   const useSlots: typeof import('vue').useSlots
   const useSmartAlerts: typeof import('../../app/composables/useSchedules').useSmartAlerts
@@ -513,6 +514,7 @@ declare module 'vue' {
     readonly useServerSeoMeta: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/head')['useServerSeoMeta']>
     readonly useSetI18nParams: UnwrapRef<typeof import('../../node_modules/@nuxtjs/i18n/dist/runtime/composables/index')['useSetI18nParams']>
     readonly useSettings: UnwrapRef<typeof import('../../app/composables/useSettings')['useSettings']>
+    readonly useSettingsStore: UnwrapRef<typeof import('../../app/stores/settings')['useSettingsStore']>
     readonly useShadowRoot: UnwrapRef<typeof import('vue')['useShadowRoot']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useSmartAlerts: UnwrapRef<typeof import('../../app/composables/useSchedules')['useSmartAlerts']>

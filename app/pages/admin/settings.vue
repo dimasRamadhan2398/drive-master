@@ -2,39 +2,37 @@
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
 import { reactive, ref } from "vue";
 
-const { t } = useI18n()
+const { t } = useI18n();
 definePageMeta({ layout: "admin" });
 
 const toast = useToast();
-const { promoEndDate } = useSettings();
+const settingsStore = useSettingsStore();
 const instructorsStore = useInstructorsStore();
 
-// Mock settings
+// General settings - synced with store
 const generalSettings = reactive({
-  businessName: "Drive Master Academy",
-  email: "info@drivemasteracademy.id",
-  phone: "+62 812-3456-7890",
-  address: "Jl. Alam Sutera Boulevard No. 123, Tangerang 15143",
-  whatsappNumber: "6281234567890",
-});
-
-const operatingHours = reactive({
-  mondayStart: "08:00",
-  mondayEnd: "18:00",
-  weekendStart: "08:00",
-  weekendEnd: "16:00",
-  nightStart: "18:00",
-  nightEnd: "20:00",
-  sundayClosed: true,
+  businessName: "",
+  email: "",
+  phone: "",
+  fax: "",
+  whatsApp: "",
+  address: "",
+  hoursMonFri: "",
+  hoursSatSun: "",
+  hoursNightShift: "",
+  promoEndDate: null as string | null,
+  notifyEmail: false,
+  notifySms: false,
+  notifyWhatsApp: false,
 });
 
 const notificationSettings = reactive({
-  emailNotifications: true,
-  whatsappNotifications: true,
+  emailNotifications: false,
+  whatsappNotifications: false,
   reminderHours: 24,
-  adminAlerts: true,
-  newUserRegistration: true,
-  newPackagePurchase: true,
+  adminAlerts: false,
+  newUserRegistration: false,
+  newPackagePurchase: false,
 });
 
 const vehicles = ref([
@@ -159,8 +157,7 @@ function openEditInstructor(instructor: any) {
     lastName: nameParts.slice(1).join(" ") || "",
     phoneNumber: instructor.phone || "",
     email: instructor.email || "",
-    bnspCertificateNumber:
-      instructor.certifications?.[0]?.replace("BNSP: ", "") || "",
+    bnspCertificateNumber: instructor.certifications?.[0]?.replace("BNSP: ", "") || "",
     licenseNumber: "",
     yearsOfExperience: instructor.yearsOfExperience || 0,
     description: instructor.description || "",
@@ -186,10 +183,7 @@ async function saveInstructor() {
   }
 
   if (isEditingInstructor.value) {
-    const result = await instructorsStore.updateInstructor(
-      instructorUserId.value,
-      data,
-    );
+    const result = await instructorsStore.updateInstructor(instructorUserId.value, data);
     if (result) {
       toast.add({
         title: "Instructor Updated",
@@ -207,14 +201,13 @@ async function saveInstructor() {
     const createData = {
       ...data,
       username:
-        instructorForm.value.firstName.toLowerCase().replace(/\s/g, "") +
-        Date.now(),
+        instructorForm.value.firstName.toLowerCase().replace(/\s/g, "") + Date.now(),
       password: "TempPass123!",
       email: `${instructorForm.value.firstName.toLowerCase()}@example.com`,
     };
     const result = await instructorsStore.createInstructor(
       createData,
-      instructorFile.value || undefined,
+      instructorFile.value || undefined
     );
     if (result) {
       toast.add({
@@ -234,9 +227,7 @@ async function saveInstructor() {
 }
 
 async function deleteInstructor() {
-  const success = await instructorsStore.deleteInstructor(
-    instructorUserId.value,
-  );
+  const success = await instructorsStore.deleteInstructor(instructorUserId.value);
   if (success) {
     toast.add({
       title: "Instructor Deleted",
@@ -301,18 +292,67 @@ function handleInstructorImageUpload(event: Event) {
 
 const vehicleImageRef = ref<HTMLInputElement | null>(null);
 
-function saveSettings() {
-  toast.add({
-    title: "Settings Saved",
-    description: "Your settings have been updated successfully.",
-    icon: "i-lucide-check-circle",
-    color: "success",
-  });
+async function saveSettings() {
+  try {
+    const result = await settingsStore.updateGeneralSettings({
+      businessName: generalSettings.businessName,
+      email: generalSettings.email,
+      phone: generalSettings.phone,
+      fax: generalSettings.fax,
+      whatsApp: generalSettings.whatsApp,
+      address: generalSettings.address,
+      hoursMonFri: generalSettings.hoursMonFri,
+      hoursSatSun: generalSettings.hoursSatSun,
+      hoursNightShift: generalSettings.hoursNightShift,
+      promoEndDate: generalSettings.promoEndDate,
+      notifyEmail: notificationSettings.emailNotifications,
+      notifySms: notificationSettings.whatsappNotifications,
+      notifyWhatsApp: notificationSettings.whatsappNotifications,
+    });
+
+    if (result) {
+      toast.add({
+        title: t('common.success'),
+        description: "Settings saved successfully.",
+        icon: "i-lucide-check-circle",
+        color: "success",
+      });
+    } else {
+      toast.add({
+        title: t('common.error'),
+        description: "Failed to save settings.",
+        color: "error",
+      });
+    }
+  } catch {
+    toast.add({
+      title: t('common.error'),
+      description: "Failed to save settings.",
+      color: "error",
+    });
+  }
+}
+
+async function fetchSettings() {
+  const settings = await settingsStore.fetchGeneralSettings();
+  if (settings) {
+    generalSettings.businessName = settings.businessName;
+    generalSettings.email = settings.email;
+    generalSettings.phone = settings.phone;
+    generalSettings.fax = settings.fax;
+    generalSettings.whatsApp = settings.whatsApp;
+    generalSettings.address = settings.address;
+    generalSettings.hoursMonFri = settings.hoursMonFri;
+    generalSettings.hoursSatSun = settings.hoursSatSun;
+    generalSettings.hoursNightShift = settings.hoursNightShift;
+    generalSettings.promoEndDate = settings.promoEndDate;
+    notificationSettings.emailNotifications = settings.notifyEmail;
+    notificationSettings.whatsappNotifications = settings.notifyWhatsApp;
+  }
 }
 
 onMounted(() => {
-  // Load initial settings from API or local storage here
-  // For now, we use the mock data defined above
+  fetchSettings();
   instructorsStore.fetchInstructors();
 });
 </script>
@@ -340,7 +380,7 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-settings" class="size-5 text-warning" />
-              <h2 class="font-semibold">{{ t('admin.generalSettings') }}</h2>
+              <h2 class="font-semibold">{{ t("admin.generalSettings") }}</h2>
             </div>
           </template>
 
@@ -370,9 +410,17 @@ onMounted(() => {
                 color="warning"
               />
             </UFormField>
+            <UFormField label="Fax">
+              <UInput
+                v-model="generalSettings.fax"
+                icon="i-lucide-printer"
+                class="w-full"
+                color="warning"
+              />
+            </UFormField>
             <UFormField :label="t('admin.whatsappNumber')">
               <UInput
-                v-model="generalSettings.whatsappNumber"
+                v-model="generalSettings.whatsApp"
                 icon="i-simple-icons-whatsapp"
                 class="w-full"
                 color="warning"
@@ -380,10 +428,11 @@ onMounted(() => {
             </UFormField>
             <UFormField :label="t('admin.promoEndDate')">
               <UInput
-                v-model="promoEndDate"
+                :model-value="generalSettings.promoEndDate || ''"
                 type="datetime-local"
                 class="w-full"
                 color="warning"
+                @update:model-value="generalSettings.promoEndDate = $event || null"
               />
             </UFormField>
             <UFormField :label="t('profile.address')" class="md:col-span-2">
@@ -401,55 +450,39 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-clock" class="size-5 text-warning" />
-              <h2 class="font-semibold">{{ t('home.operatingHours') }}</h2>
+              <h2 class="font-semibold">{{ t("home.operatingHours") }}</h2>
             </div>
           </template>
 
           <div class="space-y-4">
             <div class="flex items-center gap-4">
-              <span class="w-32 text-md font-medium">{{ t('admin.mondayFriday') }}</span>
+              <span class="w-32 text-md font-medium">{{ t("admin.mondayFriday") }}</span>
               <UInput
-                v-model="operatingHours.mondayStart"
-                type="time"
-                class="w-full"
-                color="warning"
-              />
-              <span class="text-muted">{{ t('admin.to') }}</span>
-              <UInput
-                v-model="operatingHours.mondayEnd"
-                type="time"
+                v-model="generalSettings.hoursMonFri"
+                type="text"
+                placeholder="08:00 - 17:00"
                 class="w-full"
                 color="warning"
               />
             </div>
             <div class="flex items-center gap-4">
-              <span class="w-32 text-sm font-medium">{{ t('admin.saturdaySunday') }}</span>
+              <span class="w-32 text-sm font-medium">{{
+                t("admin.saturdaySunday")
+              }}</span>
               <UInput
-                v-model="operatingHours.weekendStart"
-                type="time"
-                class="w-full"
-                color="warning"
-              />
-              <span class="text-muted">{{ t('admin.to') }}</span>
-              <UInput
-                v-model="operatingHours.weekendEnd"
-                type="time"
+                v-model="generalSettings.hoursSatSun"
+                type="text"
+                placeholder="09:00 - 15:00"
                 class="w-full"
                 color="warning"
               />
             </div>
             <div class="flex items-center gap-4">
-              <span class="w-32 text-md font-medium">{{ t('admin.nightShift') }}</span>
+              <span class="w-32 text-md font-medium">{{ t("admin.nightShift") }}</span>
               <UInput
-                v-model="operatingHours.nightStart"
-                type="time"
-                class="w-full"
-                color="warning"
-              />
-              <span class="text-muted">to</span>
-              <UInput
-                v-model="operatingHours.nightEnd"
-                type="time"
+                v-model="generalSettings.hoursNightShift"
+                type="text"
+                placeholder="19:00 - 22:00"
                 class="w-full"
                 color="warning"
               />
@@ -463,7 +496,7 @@ onMounted(() => {
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-car" class="size-5 text-warning" />
-                <h2 class="font-semibold">{{ t('dashboard.vehicle') }}s</h2>
+                <h2 class="font-semibold">{{ t("dashboard.vehicle") }}s</h2>
               </div>
               <UButton
                 :label="t('admin.addVehicle')"
@@ -526,7 +559,9 @@ onMounted(() => {
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-users" class="size-5 text-warning" />
-                <h2 class="font-semibold">{{ t('admin.students').replace('Murid', 'Instruktur') }}</h2>
+                <h2 class="font-semibold">
+                  {{ t("admin.students").replace("Murid", "Instruktur") }}
+                </h2>
               </div>
               <UButton
                 :label="t('admin.addInstructor')"
@@ -588,7 +623,7 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-bell" class="size-5 text-warning" />
-              <h2 class="font-semibold">{{ t('profile.notificationPrefs') }}</h2>
+              <h2 class="font-semibold">{{ t("profile.notificationPrefs") }}</h2>
             </div>
           </template>
 
@@ -599,7 +634,9 @@ onMounted(() => {
             />
             <USwitch
               v-model="notificationSettings.whatsappNotifications"
-              :label="t('profile.notifWa').replace('(24 jam sebelum sesi)', 'kepada murid')"
+              :label="
+                t('profile.notifWa').replace('(24 jam sebelum sesi)', 'kepada murid')
+              "
             />
             <USwitch
               v-model="notificationSettings.adminAlerts"
@@ -625,35 +662,6 @@ onMounted(() => {
             </UFormField>
           </div>
         </UCard>
-
-        <!-- Danger Zone -->
-        <UCard>
-          <template #header>
-            <div class="flex items-center gap-2 text-red-500">
-              <UIcon name="i-lucide-alert-triangle" class="size-5" />
-              <h2 class="font-semibold">{{ t('profile.dangerZone') }}</h2>
-            </div>
-          </template>
-
-          <div class="space-y-4">
-            <div
-              class="flex items-center justify-between p-4 rounded-lg border border-red-200 dark:border-red-900"
-            >
-              <div>
-                <p class="font-medium">{{ t('admin.exportData') }}</p>
-                <p class="text-md text-muted">
-                  {{ t('admin.exportDataDesc') }}
-                </p>
-              </div>
-              <UButton
-                :label="t('admin.export')"
-                icon="i-lucide-download"
-                color="neutral"
-                variant="outline"
-              />
-            </div>
-          </div>
-        </UCard>
       </div>
     </template>
   </UDashboardPanel>
@@ -667,7 +675,11 @@ onMounted(() => {
             class="px-6 py-4 border-b border-default flex items-center justify-between"
           >
             <h3 class="text-base font-semibold">
-              {{ isEditingVehicle ? t('common.edit') + ' ' + t('dashboard.vehicle') : t('admin.addNew') + ' ' + t('dashboard.vehicle') }}
+              {{
+                isEditingVehicle
+                  ? t("common.edit") + " " + t("dashboard.vehicle")
+                  : t("admin.addNew") + " " + t("dashboard.vehicle")
+              }}
             </h3>
             <UButton
               icon="i-lucide-x"
@@ -678,9 +690,9 @@ onMounted(() => {
           </div>
           <div class="p-6 space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-1.5"
-                >{{ t('admin.vehiclePhoto') }}</label
-              >
+              <label class="block text-sm font-medium mb-1.5">{{
+                t("admin.vehiclePhoto")
+              }}</label>
               <input
                 ref="vehicleImageRef"
                 type="file"
@@ -706,14 +718,14 @@ onMounted(() => {
                 </div>
                 <div v-else class="flex flex-col items-center gap-2 py-4">
                   <UIcon name="i-lucide-image-plus" class="size-6 text-muted" />
-                  <span class="text-sm text-muted">{{ t('admin.clickToUpload') }}</span>
+                  <span class="text-sm text-muted">{{ t("admin.clickToUpload") }}</span>
                 </div>
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1.5"
-                >{{ t('admin.vehicleName') }}</label
-              >
+              <label class="block text-sm font-medium mb-1.5">{{
+                t("admin.vehicleName")
+              }}</label>
               <UInput
                 v-model="vehicleForm.name"
                 placeholder="e.g. BYD Atto 1"
@@ -721,9 +733,9 @@ onMounted(() => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1.5"
-                >{{ t('admin.licensePlate') }}</label
-              >
+              <label class="block text-sm font-medium mb-1.5">{{
+                t("admin.licensePlate")
+              }}</label>
               <UInput
                 v-model="vehicleForm.plate"
                 placeholder="e.g. B 1234 EV"
@@ -731,7 +743,9 @@ onMounted(() => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1.5">{{ t('billing.status') }}</label>
+              <label class="block text-sm font-medium mb-1.5">{{
+                t("billing.status")
+              }}</label>
               <USelect
                 v-model="vehicleForm.status"
                 :items="['active', 'maintenance']"
@@ -760,7 +774,11 @@ onMounted(() => {
                 @click="isVehicleModalOpen = false"
               />
               <UButton
-                :label="isEditingVehicle ? t('admin.saveChanges') : t('admin.addNew').replace('Tambah Baru', 'Tambah Kendaraan')"
+                :label="
+                  isEditingVehicle
+                    ? t('admin.saveChanges')
+                    : t('admin.addNew').replace('Tambah Baru', 'Tambah Kendaraan')
+                "
                 icon="i-lucide-check"
                 @click="saveVehicle"
               />
@@ -781,7 +799,9 @@ onMounted(() => {
           >
             <h3 class="text-base font-semibold">
               {{
-                isEditingInstructor ? t('common.edit') + ' Instruktur' : t('admin.addNew').replace('Tambah Baru', 'Tambah Instruktur')
+                isEditingInstructor
+                  ? t("common.edit") + " Instruktur"
+                  : t("admin.addNew").replace("Tambah Baru", "Tambah Instruktur")
               }}
             </h3>
             <UButton
@@ -794,9 +814,9 @@ onMounted(() => {
           <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div class="grid grid-cols-2 gap-4">
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >{{ t('register.form.firstName') }}</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("register.form.firstName")
+                }}</label>
                 <UInput
                   v-model="instructorForm.firstName"
                   placeholder="e.g. Budi"
@@ -804,9 +824,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >{{ t('register.form.lastName') }}</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("register.form.lastName")
+                }}</label>
                 <UInput
                   v-model="instructorForm.lastName"
                   placeholder="e.g. Santoso"
@@ -814,9 +834,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >{{ t('profile.phone') }}</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("profile.phone")
+                }}</label>
                 <UInput
                   v-model="instructorForm.phoneNumber"
                   placeholder="e.g. 08123456789"
@@ -824,9 +844,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >{{ t('instructors.yearsExperience') }}</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("instructors.yearsExperience")
+                }}</label>
                 <UInput
                   v-model="instructorForm.yearsOfExperience"
                   type="number"
@@ -835,9 +855,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >{{ t('admin.bnspNo') }}</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("admin.bnspNo")
+                }}</label>
                 <UInput
                   v-model="instructorForm.bnspCertificateNumber"
                   placeholder="e.g. BNSP-101-2023"
@@ -845,9 +865,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >{{ t('admin.licenseNo') }}</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("admin.licenseNo")
+                }}</label>
                 <UInput
                   v-model="instructorForm.licenseNumber"
                   placeholder="e.g. SIM A / 12345678"
@@ -855,9 +875,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2">
-                <label class="block text-sm font-medium mb-1.5"
-                  >{{ t('admin.instructorPhoto') }}</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("admin.instructorPhoto")
+                }}</label>
                 <input
                   ref="instructorImageRef"
                   type="file"
@@ -886,20 +906,15 @@ onMounted(() => {
                     />
                   </div>
                   <div v-else class="flex flex-col items-center gap-2 py-4">
-                    <UIcon
-                      name="i-lucide-image-plus"
-                      class="size-6 text-muted"
-                    />
-                    <span class="text-sm text-muted"
-                      >{{ t('admin.clickToUpload') }}</span
-                    >
+                    <UIcon name="i-lucide-image-plus" class="size-6 text-muted" />
+                    <span class="text-sm text-muted">{{ t("admin.clickToUpload") }}</span>
                   </div>
                 </div>
               </div>
               <div class="col-span-2">
-                <label class="block text-sm font-medium mb-1.5"
-                  >{{ t('admin.bioDescription') }}</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("admin.bioDescription")
+                }}</label>
                 <UTextarea
                   v-model="instructorForm.description"
                   placeholder="Short description of the instructor..."
@@ -930,7 +945,11 @@ onMounted(() => {
                 @click="isInstructorModalOpen = false"
               />
               <UButton
-                :label="isEditingInstructor ? t('admin.saveChanges') : t('admin.addNew').replace('Tambah Baru', 'Tambah Instruktur')"
+                :label="
+                  isEditingInstructor
+                    ? t('admin.saveChanges')
+                    : t('admin.addNew').replace('Tambah Baru', 'Tambah Instruktur')
+                "
                 icon="i-lucide-check"
                 @click="saveInstructor"
               />

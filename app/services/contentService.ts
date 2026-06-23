@@ -28,19 +28,38 @@ export interface Attractiveness {
   highlight: boolean;
 }
 
-// Request DTOs (matching backend CreateBlogPostRequest, UpdateBlogPostRequest)
+// Article response from GET /articles/blog
+export interface ArticleResponse {
+  id: string;
+  title: string;
+  slug: string;
+  leadParagraph: string;
+  featuredImage: string;
+  readingTime: number;
+  viewCount: number;
+  likeCount: number;
+  status: string;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Request DTOs (matching backend CreateBlogPostRequest)
 export interface CreateBlogPostData {
   title: string;
   slug?: string;
-  author: string;
-  content: string;
+  author?: string;
+  content?: string;
+  featuredImage?: string;
+  leadParagraph?: string;
+  categoryId?: string;
   media?: BlogPostMedia[];
-  publishing: {
+  publishing?: {
     status: "draft" | "published" | "archived";
     publishedAt?: string;
     scheduledAt?: string;
   };
-  attractiveness: {
+  attractiveness?: {
     isFeatured: boolean;
     isSpotlight: boolean;
     priority: number;
@@ -53,6 +72,9 @@ export interface UpdateBlogPostData {
   slug?: string;
   author?: string;
   content?: string;
+  featuredImage?: string;
+  leadParagraph?: string;
+  categoryId?: string;
   media?: BlogPostMedia[];
   publishing?: {
     status?: "draft" | "published" | "archived";

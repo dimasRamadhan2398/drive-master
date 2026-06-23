@@ -51,6 +51,7 @@ export { usePackagesStore, Package, Addon } from '../app/stores/packages';
 export { usePaymentsStore, PaymentMethodOption } from '../app/stores/payments';
 export { useSalesStore, Transaction, PackageSummary } from '../app/stores/sales';
 export { mapScheduleToSlot, mapSlotToCreateData, useSchedulesStore, ScheduleSlot, ScheduleFormFullData } from '../app/stores/schedules';
+export { useSettingsStore } from '../app/stores/settings';
 export { useStudentsStore, Student } from '../app/stores/students';
 export { useTestimonialsStore, TestimonialStatus, Testimonial } from '../app/stores/testimonials';
 export { defineLocale, extendLocale } from '../node_modules/@nuxt/ui/dist/runtime/composables/defineLocale';
