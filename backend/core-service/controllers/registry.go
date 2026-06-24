@@ -52,7 +52,7 @@ func (r *Registry) GetRegionController() IRegionController {
 
 // GetCarController returns the car controller
 func (r *Registry) GetCarController() ICarController {
-	return NewCarController(r.svcRegistry.GetCarService())
+	return NewCarController(r.svcRegistry.GetCarService(), r.svcRegistry.GetMediaService())
 }
 
 // GetPackageController returns the package controller

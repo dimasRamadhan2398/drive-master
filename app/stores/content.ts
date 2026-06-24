@@ -1,9 +1,19 @@
 import { defineStore } from "pinia";
 import { contentService } from "~/services/contentService";
-import type { BlogPostMedia, CreateBlogPostData, UpdateBlogPostData } from "~/services/contentService";
+import type {
+  BlogPostMedia,
+  CreateBlogPostData,
+  UpdateBlogPostData,
+  CreateBlogArticleData,
+} from "~/services/contentService";
 
 // Re-export types from contentService for convenience
-export type { BlogPostMedia, CreateBlogPostData, UpdateBlogPostData };
+export type {
+  BlogPostMedia,
+  CreateBlogPostData,
+  UpdateBlogPostData,
+  CreateBlogArticleData,
+};
 
 export interface PageSection {
   id: string;
@@ -211,36 +221,14 @@ export const useContentStore = defineStore("content", {
     },
 
     // Blog Post actions
-    async addPost(data: {
-      title: string;
-      author: string;
-      content: string;
-      media?: BlogPostMedia[];
-      publishing: {
-        status: "draft" | "published" | "archived";
-        publishedAt?: string;
-        scheduledAt?: string;
-      };
-      attractiveness: {
-        isFeatured: boolean;
-        isSpotlight: boolean;
-        priority: number;
-        highlight: boolean;
-      };
-    }) {
+    async addPost(data: CreateBlogArticleData) {
+      this.isLoading = true;
       try {
-        const created = await contentService.createBlogPost({
-          title: data.title,
-          author: data.author,
-          content: data.content,
-          media: data.media,
-          publishing: data.publishing,
-          attractiveness: data.attractiveness,
-        });
+        const created = await contentService.createBlogPost(data);
 
         if (created) {
           const newPost: BlogPost = {
-            id: parseInt(created.id) || this.blogPosts.length + 1,
+            id: created.id as any,
             title: created.title,
             slug: created.slug,
             author: created.author,
@@ -253,53 +241,22 @@ export const useContentStore = defineStore("content", {
             publishing: created.publishing,
             attractiveness: created.attractiveness,
           };
-          this.blogPosts.push(newPost);
+          this.blogPosts.unshift(newPost);
           return newPost;
         }
       } catch (e) {
         console.error("Failed to create blog post:", e);
+        this.error = "Failed to create blog post";
+      } finally {
+        this.isLoading = false;
       }
-
-      // Fallback to local creation if API fails
-      const newId = Math.max(...this.blogPosts.map((p) => p.id), 0) + 1;
-      const newPost: BlogPost = {
-        ...data,
-        id: newId,
-        date: this.formatDate(new Date()),
-        views: 0,
-        status: data.publishing.status,
-        media: data.media || [],
-      };
-      this.blogPosts.push(newPost);
-      return newPost;
+      return null;
     },
 
-    async updatePost(id: number, data: {
-      title?: string;
-      author?: string;
-      content?: string;
-      media?: BlogPostMedia[];
-      publishing?: {
-        status?: "draft" | "published" | "archived";
-        publishedAt?: string;
-        scheduledAt?: string;
-      };
-      attractiveness?: {
-        isFeatured?: boolean;
-        isSpotlight?: boolean;
-        priority?: number;
-        highlight?: boolean;
-      };
-    }) {
+    async updatePost(id: string | number, data: UpdateBlogPostData) {
+      this.isLoading = true;
       try {
-        const updated = await contentService.updateBlogPost(String(id), {
-          title: data.title,
-          author: data.author,
-          content: data.content,
-          media: data.media,
-          publishing: data.publishing,
-          attractiveness: data.attractiveness,
-        });
+        const updated = await contentService.updateBlogPost(String(id), data);
 
         if (updated) {
           const index = this.blogPosts.findIndex((p) => p.id === id);
@@ -314,10 +271,10 @@ export const useContentStore = defineStore("content", {
               content: updated.content,
               excerpt: updated.excerpt,
               date: this.formatDate(new Date(updated.updatedAt)),
-              status: updated.publishing?.status || existing.status,
+              status: (updated.publishing?.status as any) || existing.status,
               views: updated.viewCount || existing.views,
               media: updated.media || existing.media,
-              publishing: updated.publishing || existing.publishing,
+              publishing: (updated.publishing as any) || existing.publishing,
               attractiveness: updated.attractiveness || existing.attractiveness,
             };
             return this.blogPosts[index];
@@ -325,45 +282,28 @@ export const useContentStore = defineStore("content", {
         }
       } catch (e) {
         console.error("Failed to update blog post:", e);
-      }
-
-      // Fallback to local update if API fails
-      const index = this.blogPosts.findIndex((p) => p.id === id);
-      if (index !== -1) {
-        const existing = this.blogPosts[index];
-        if (!existing) return null;
-        const updatedPublishing = data.publishing
-          ? { ...existing.publishing, ...data.publishing }
-          : existing.publishing;
-        const updatedAttractiveness = data.attractiveness
-          ? { ...existing.attractiveness, ...data.attractiveness }
-          : existing.attractiveness;
-        this.blogPosts[index] = {
-          ...existing,
-          title: data.title ?? existing.title,
-          author: data.author ?? existing.author,
-          date: this.formatDate(new Date()),
-          status: updatedPublishing.status,
-          views: existing.views,
-          content: data.content ?? existing.content,
-          media: data.media ?? existing.media,
-          publishing: updatedPublishing,
-          attractiveness: updatedAttractiveness,
-        };
-        return this.blogPosts[index];
+        this.error = "Failed to update blog post";
+      } finally {
+        this.isLoading = false;
       }
       return null;
     },
 
-    async deletePost(id: number) {
+    async deletePost(id: string | number) {
+      this.isLoading = true;
       try {
-        await contentService.deleteBlogPost(String(id));
+        const success = await contentService.deleteBlogPost(String(id));
+        if (success) {
+          this.blogPosts = this.blogPosts.filter((p) => p.id !== id);
+          return true;
+        }
       } catch (e) {
         console.error("Failed to delete blog post from server:", e);
+        this.error = "Failed to delete blog post";
+      } finally {
+        this.isLoading = false;
       }
-
-      // Always remove locally
-      this.blogPosts = this.blogPosts.filter((p) => p.id !== id);
+      return false;
     },
 
     togglePostStatus(id: number) {
@@ -383,23 +323,27 @@ export const useContentStore = defineStore("content", {
       }
     },
 
-    async fetchBlogPosts(params: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      status?: string;
-    } = {}) {
+    async fetchBlogPosts(
+      params: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+      } = {},
+    ) {
       this.isLoading = true;
       this.error = null;
       try {
         const result = await contentService.fetchBlogPosts(params);
-        this.blogPosts = result.posts.map((p) => ({
-          id: parseInt(p.id) || 0,
+        // Use the posts array from the result
+        const posts = result?.posts || [];
+        this.blogPosts = posts.map((p: any) => ({
+          id: p.id,
           title: p.title,
-          slug: p.slug,
-          author: p.author,
+          slug: p.slug || "",
+          author: p.author || "Admin",
           content: "",
-          excerpt: p.excerpt,
+          excerpt: p.excerpt || p.leadParagraph || "",
           date: this.formatDate(new Date(p.createdAt)),
           status: (p.status as "published" | "draft" | "archived") || "draft",
           views: p.viewCount || 0,
@@ -416,7 +360,8 @@ export const useContentStore = defineStore("content", {
         }));
         return result;
       } catch (err) {
-        this.error = err instanceof Error ? err.message : "Failed to fetch blog posts";
+        this.error =
+          err instanceof Error ? err.message : "Failed to fetch blog posts";
         console.error("Error fetching blog posts:", err);
         return null;
       } finally {

@@ -266,7 +266,7 @@ declare global {
   export type { GAOverviewItem, GAFunnelStep, FunnelLabels } from '../../app/stores/analytics'
   import('../../app/stores/analytics')
   // @ts-ignore
-  export type { PageSection, Page, BlogPost, Faq, CreateFaqData, UpdateFaqData, BlogPostMedia, CreateBlogPostData, UpdateBlogPostData } from '../../app/stores/content'
+  export type { PageSection, Page, BlogPost, Faq, CreateFaqData, UpdateFaqData, BlogPostMedia, CreateBlogPostData, UpdateBlogPostData, CreateBlogArticleData } from '../../app/stores/content'
   import('../../app/stores/content')
   // @ts-ignore
   export type { DashboardState } from '../../app/stores/dashboard'

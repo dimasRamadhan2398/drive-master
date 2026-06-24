@@ -507,11 +507,13 @@ func (s *ArticleService) GetBlogArticles(ctx context.Context, page, limit int) (
 	}
 
 	return &dto.BlogArticleListResponse{
-		Articles:   blogArticles,
-		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: totalPages,
+		Data:   blogArticles,
+		Pagination: dto.PaginationMeta{
+			Total:      total,
+			Page:       page,
+			Limit:      limit,
+			TotalPages: totalPages,	
+		},
 	}, nil
 }
 

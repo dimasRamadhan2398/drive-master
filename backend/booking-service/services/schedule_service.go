@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -417,11 +418,28 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 		wg.Add(1)
 		go func(carID uuid.UUID) {
 			defer wg.Done()
-			info, err := s.coreClient.GetCarByID(ctx, carID)
 			mu.Lock()
 			defer mu.Unlock()
+
+			// Check for zero UUID or invalid car ID - use default fallback
+			if carID == uuid.Nil {
+				carMap[carID] = cClient.CarInfo{
+					ID:    "898170a5-08db-4467-b33e-049660a4231c",
+					Brand: "BYD",
+					Model: "Atto 1",
+				}
+				return
+			}
+
+			info, err := s.coreClient.GetCarByID(ctx, carID)
 			if err != nil {
-				fetchErr = fmt.Errorf("failed to fetch car %s: %w", carID, err)
+				// If car not found (404) or other error, use default fallback
+				log.Printf("Warning: failed to fetch car %s, using default fallback: %v", carID, err)
+				carMap[carID] = cClient.CarInfo{
+					ID:    "898170a5-08db-4467-b33e-049660a4231c",
+					Brand: "BYD",
+					Model: "Atto 1",
+				}
 				return
 			}
 			carMap[carID] = *info

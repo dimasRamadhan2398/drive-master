@@ -1,6 +1,5 @@
 import type {
   ApiResponse,
-  PaginatedResponse,
 } from "~/composables/useApiClients";
 import type { Faq, CreateFaqData, UpdateFaqData } from "~/stores/content";
 
@@ -28,38 +27,19 @@ export interface Attractiveness {
   highlight: boolean;
 }
 
-// Article response from GET /articles/blog
-export interface ArticleResponse {
-  id: string;
-  title: string;
-  slug: string;
-  leadParagraph: string;
-  featuredImage: string;
-  readingTime: number;
-  viewCount: number;
-  likeCount: number;
-  status: string;
-  publishedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Request DTOs (matching backend CreateBlogPostRequest)
+// Request DTOs (matching backend CreateBlogPostRequest, UpdateBlogPostRequest)
 export interface CreateBlogPostData {
   title: string;
   slug?: string;
-  author?: string;
-  content?: string;
-  featuredImage?: string;
-  leadParagraph?: string;
-  categoryId?: string;
+  author: string;
+  content: string;
   media?: BlogPostMedia[];
-  publishing?: {
+  publishing: {
     status: "draft" | "published" | "archived";
     publishedAt?: string;
     scheduledAt?: string;
   };
-  attractiveness?: {
+  attractiveness: {
     isFeatured: boolean;
     isSpotlight: boolean;
     priority: number;
@@ -72,9 +52,6 @@ export interface UpdateBlogPostData {
   slug?: string;
   author?: string;
   content?: string;
-  featuredImage?: string;
-  leadParagraph?: string;
-  categoryId?: string;
   media?: BlogPostMedia[];
   publishing?: {
     status?: "draft" | "published" | "archived";
@@ -125,10 +102,35 @@ export interface BlogPostBrief {
 
 export interface BlogPostListResponse {
   posts: BlogPostBrief[];
+  articles?: BlogPostBrief[]; // Backend may return data in 'articles' field
   total: number;
   page: number;
   limit: number;
   totalPages: number;
+}
+
+// Matching backend CreateBlogPostRequest
+export interface CreateBlogArticleData {
+  title: string;
+  slug?: string;
+  author?: string;
+  leadParagraph?: string;
+  content?: string;
+  authorId: string;
+  media?: BlogPostMedia[];
+  publishing?: {
+    status: "draft" | "published" | "archived";
+  };
+  attractiveness?: {
+    isFeatured: boolean;
+    isSpotlight: boolean;
+    priority: number;
+    highlight: boolean;
+  };
+  tags?: string[];
+  featuredImage?: string;
+  categoryId?: string;
+  status: string;
 }
 
 export interface BlogPostFilterParams {
@@ -151,7 +153,7 @@ export const contentService = {
   async fetchBlogPosts(
     params: BlogPostFilterParams = {},
   ): Promise<BlogPostListResponse> {
-    const { core, extractPaginatedData } = useApiClients();
+    const { core } = useApiClients();
 
     const queryParams = new URLSearchParams();
     if (params.page) queryParams.set("page", String(params.page));
@@ -169,42 +171,145 @@ export const contentService = {
     const queryString = queryParams.toString();
     const url = `/articles/blog${queryString ? `?${queryString}` : ""}`;
 
-    const response = await core<PaginatedResponse<BlogPostResponse>>(url, {
-      method: "GET",
-    });
+    try {
+      const response: any = await core(url, {
+        method: "GET",
+      });
 
-    const { data, pagination } = extractPaginatedData(response);
-    return {
-      posts: Array.isArray(data)
-        ? data.map<BlogPostBrief>((p: BlogPostResponse) => ({
-            id: p.id,
-            title: p.title,
-            slug: p.slug,
-            author: p.author,
-            excerpt: p.excerpt,
-            featuredImage: p.media.find((m) => m.fileType === "image")?.url,
-            readingTime: p.readingTime,
-            status: p.publishing.status,
-            publishedAt: p.publishing.publishedAt,
-            viewCount: p.viewCount,
-            createdAt: p.createdAt,
-          }))
-        : [],
-      ...pagination,
-    };
+      // Handle different response structures
+      let posts: BlogPostBrief[] = [];
+
+      // Case 1: Backend response { success, message, data: { data: [...], pagination: {...} } }
+      // The array is at response.data.data
+      if (response?.data?.data && Array.isArray(response.data.data)) {
+        posts = response.data.data.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          slug: p.slug || "",
+          author: p.author || "Admin",
+          excerpt: p.leadParagraph || "",
+          featuredImage: p.featuredImage || "",
+          readingTime: p.readingTime || 5,
+          status: p.status || "draft",
+          publishedAt: p.publishedAt,
+          viewCount: p.viewCount || 0,
+          createdAt: p.createdAt || new Date().toISOString(),
+        }));
+        return {
+          posts,
+          total: response.data.pagination?.total || posts.length,
+          page: response.data.pagination?.page || 1,
+          limit: response.data.pagination?.limit || 10,
+          totalPages: response.data.pagination?.totalPages || 1,
+        };
+      }
+
+      // Case 2: Paginated response with data array at response.data
+      if (response?.data && Array.isArray(response.data) && !Array.isArray(response.data.data)) {
+        posts = response.data.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          slug: p.slug || "",
+          author: p.author || "Admin",
+          excerpt: p.leadParagraph || p.excerpt || "",
+          featuredImage: p.featuredImage || "",
+          readingTime: p.readingTime || 5,
+          status: p.status || p.publishing?.status || "draft",
+          publishedAt: p.publishedAt || p.publishing?.publishedAt,
+          viewCount: p.viewCount || 0,
+          createdAt: p.createdAt || new Date().toISOString(),
+        }));
+        return {
+          posts,
+          total: response.pagination?.total || posts.length,
+          page: response.pagination?.page || 1,
+          limit: response.pagination?.limit || 10,
+          totalPages: response.pagination?.totalPages || 1,
+        };
+      }
+
+      // Case 3: Direct array response
+      if (Array.isArray(response)) {
+        posts = response.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          slug: p.slug || "",
+          author: p.author || "Admin",
+          excerpt: p.leadParagraph || p.excerpt || "",
+          featuredImage: p.featuredImage || "",
+          readingTime: p.readingTime || 5,
+          status: p.status || "draft",
+          publishedAt: p.publishedAt,
+          viewCount: p.viewCount || 0,
+          createdAt: p.createdAt || new Date().toISOString(),
+        }));
+        return {
+          posts,
+          total: posts.length,
+          page: 1,
+          limit: posts.length,
+          totalPages: 1,
+        };
+      }
+
+      // Case 4: Response with articles array (alternative backend format)
+      if (response?.articles && Array.isArray(response.articles)) {
+        posts = response.articles.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          slug: p.slug || "",
+          author: p.author || "Admin",
+          excerpt: p.leadParagraph || p.excerpt || "",
+          featuredImage: p.featuredImage || "",
+          readingTime: p.readingTime || 5,
+          status: p.status || "draft",
+          publishedAt: p.publishedAt,
+          viewCount: p.viewCount || 0,
+          createdAt: p.createdAt || new Date().toISOString(),
+        }));
+        return {
+          posts,
+          total: response.total || posts.length,
+          page: response.page || 1,
+          limit: response.limit || 10,
+          totalPages: response.totalPages || 1,
+        };
+      }
+
+      console.warn("Unexpected response structure:", response);
+      return {
+        posts: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+      };
+    } catch (error) {
+      console.error("Error fetching blog posts:", error);
+      return {
+        posts: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+      };
+    }
   },
 
   // GET /articles/blog/:id - Get blog post by ID
   async fetchBlogPostById(id: string): Promise<BlogPostResponse | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<BlogPostResponse>>(
+      const response = await core<ApiResponse<BlogPostResponse> | BlogPostResponse | any>(
         `/articles/blog/${id}`,
         {
           method: "GET",
         },
       );
-      return extractData(response);
+      if (response && typeof response === "object") {
+        return (response as any).data || response;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -212,18 +317,21 @@ export const contentService = {
 
   // POST /articles/blog - Create blog post
   async createBlogPost(
-    data: CreateBlogPostData,
+    data: CreateBlogArticleData,
   ): Promise<BlogPostResponse | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<BlogPostResponse>>(
+      const response = await core<ApiResponse<BlogPostResponse> | BlogPostResponse | any>(
         "/articles/blog",
         {
           method: "POST",
           body: data,
         },
       );
-      return extractData(response);
+      if (response && typeof response === "object") {
+        return (response as any).data || response;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -234,16 +342,19 @@ export const contentService = {
     id: string,
     data: UpdateBlogPostData,
   ): Promise<BlogPostResponse | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<BlogPostResponse>>(
+      const response = await core<ApiResponse<BlogPostResponse> | BlogPostResponse | any>(
         `/articles/blog/${id}`,
         {
           method: "PUT",
           body: data,
         },
       );
-      return extractData(response);
+      if (response && typeof response === "object") {
+        return (response as any).data || response;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -265,12 +376,19 @@ export const contentService = {
 
   // GET /articles/faq - Get all FAQs
   async fetchFaqs(): Promise<Faq[]> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq[]>>("/articles/faq", {
+      const response = await core<ApiResponse<Faq[]> | Faq[]>("/articles/faq", {
         method: "GET",
       });
-      return extractData(response);
+      // Handle both wrapped and unwrapped responses
+      if (Array.isArray(response)) {
+        return response;
+      }
+      if (response && Array.isArray((response as any).data)) {
+        return (response as ApiResponse<Faq[]>).data;
+      }
+      return [];
     } catch {
       return [];
     }
@@ -278,12 +396,15 @@ export const contentService = {
 
   // GET /articles/faq/:id - Get FAQ by ID
   async fetchFaqById(id: string): Promise<Faq | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq>>(`/articles/faq/${id}`, {
+      const response = await core<ApiResponse<Faq> | Faq | any>(`/articles/faq/${id}`, {
         method: "GET",
       });
-      return extractData(response);
+      if (response && typeof response === "object") {
+        return (response as any).data || response;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -291,13 +412,16 @@ export const contentService = {
 
   // POST /articles/faq - Create FAQ
   async createFaq(data: CreateFaqData): Promise<Faq | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq>>("/articles/faq", {
+      const response = await core<ApiResponse<Faq> | Faq | any>("/articles/faq", {
         method: "POST",
         body: data,
       });
-      return extractData(response);
+      if (response && typeof response === "object") {
+        return (response as any).data || response;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -305,13 +429,16 @@ export const contentService = {
 
   // PUT /articles/faq/:id - Update FAQ
   async updateFaq(id: string, data: UpdateFaqData): Promise<Faq | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq>>(`/articles/faq/${id}`, {
+      const response = await core<ApiResponse<Faq> | Faq | any>(`/articles/faq/${id}`, {
         method: "PUT",
         body: data,
       });
-      return extractData(response);
+      if (response && typeof response === "object") {
+        return (response as any).data || response;
+      }
+      return null;
     } catch {
       return null;
     }

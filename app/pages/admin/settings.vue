@@ -435,21 +435,21 @@ async function saveSettings() {
 
     if (result) {
       toast.add({
-        title: t('common.success'),
+        title: t("common.success"),
         description: "Settings saved successfully.",
         icon: "i-lucide-check-circle",
         color: "success",
       });
     } else {
       toast.add({
-        title: t('common.error'),
+        title: t("common.error"),
         description: "Failed to save settings.",
         color: "error",
       });
     }
   } catch {
     toast.add({
-      title: t('common.error'),
+      title: t("common.error"),
       description: "Failed to save settings.",
       color: "error",
     });
@@ -651,13 +651,31 @@ onMounted(() => {
                 />
                 <div>
                   <p class="font-medium">{{ vehicle.brand }} {{ vehicle.model }}</p>
-                  <p class="text-sm text-muted">{{ vehicle.licensePlate || 'No plate' }} - {{ vehicle.year }}</p>
+                  <p class="text-sm text-muted">
+                    {{ vehicle.licensePlate || "No plate" }} - {{ vehicle.year }}
+                  </p>
                 </div>
               </div>
               <div class="flex items-center gap-3">
                 <UBadge
-                  :label="vehicle.status === 'available' ? t('billing.active') : vehicle.status === 'in_use' ? 'In Use' : vehicle.status === 'maintenance' ? 'Maintenance' : 'Retired'"
-                  :color="vehicle.status === 'available' ? 'success' : vehicle.status === 'in_use' ? 'info' : vehicle.status === 'maintenance' ? 'warning' : 'neutral'"
+                  :label="
+                    vehicle.status === 'available'
+                      ? t('billing.active')
+                      : vehicle.status === 'in_use'
+                      ? 'In Use'
+                      : vehicle.status === 'maintenance'
+                      ? 'Maintenance'
+                      : 'Retired'
+                  "
+                  :color="
+                    vehicle.status === 'available'
+                      ? 'success'
+                      : vehicle.status === 'in_use'
+                      ? 'info'
+                      : vehicle.status === 'maintenance'
+                      ? 'warning'
+                      : 'neutral'
+                  "
                   variant="subtle"
                 />
                 <UButton
@@ -908,7 +926,7 @@ onMounted(() => {
             </div>
             <div>
               <label class="block text-sm font-medium mb-1.5">{{
-                t("billing.status")
+                t("admin.status")
               }}</label>
               <USelect
                 v-model="vehicleForm.status"
@@ -916,7 +934,7 @@ onMounted(() => {
                   { label: 'Available', value: 'available' },
                   { label: 'In Use', value: 'in_use' },
                   { label: 'Maintenance', value: 'maintenance' },
-                  { label: 'Retired', value: 'retired' },
+                  { label: 'Unavailable', value: 'unavailable' },
                 ]"
                 class="w-full"
               />

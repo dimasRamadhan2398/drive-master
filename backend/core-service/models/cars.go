@@ -21,6 +21,7 @@ const (
 	CarStatusAvailable   CarStatus = "available"
 	CarStatusInUse       CarStatus = "in_use"
 	CarStatusMaintenance CarStatus = "maintenance"
+	CarStatusUnavailable CarStatus = "unavailable"
 )
 
 // Car represents the cars table

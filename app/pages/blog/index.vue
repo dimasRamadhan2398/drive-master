@@ -1,25 +1,16 @@
 <script setup lang="ts">
-import type { Article } from "~/services/articleService";
+import type { BlogPost } from "~/stores/content";
 
-const { t } = useI18n()
-const articlesStore = useArticlesStore();
+const { t } = useI18n();
+const contentStore = useContentStore();
 const searchQuery = ref("");
 
 // Single source of truth - all display logic in computed properties
-const allArticles = computed(() => articlesStore.articles);
-
-// Base articles based on status filter (from store or default to published for public view)
-const statusFilter = computed(() => articlesStore.statusFilter);
-const articlesByStatus = computed(() => {
-  if (statusFilter.value === "all") {
-    return allArticles.value;
-  }
-  return allArticles.value.filter((a) => a.status === statusFilter.value);
-});
+const allArticles = computed(() => contentStore.blogPosts);
 
 // Only show published articles for public blog
 const publishedArticles = computed(() =>
-  allArticles.value.filter((a) => a.status === "published"),
+  allArticles.value.filter((a) => a.status === "published")
 );
 
 // Search filter applied to published articles
@@ -33,8 +24,7 @@ const filteredArticles = computed(() => {
     (a) =>
       a.title.toLowerCase().includes(q) ||
       (a.excerpt && a.excerpt.toLowerCase().includes(q)) ||
-      (a.content && a.content.toLowerCase().includes(q)) ||
-      (a.tags && a.tags.some((tag) => tag.toLowerCase().includes(q))),
+      (a.content && a.content.toLowerCase().includes(q))
   );
 });
 
@@ -45,19 +35,27 @@ const blogPosts = computed(() =>
     title: a.title,
     slug: a.slug,
     content: a.content || a.excerpt || "",
-    author: getAuthorName(a.author),
-    date: a.publishedAt || a.createdAt,
-    views: a.viewCount || 0,
+    author: a.author || "Admin Drive Master",
+    date: (a.publishing as any)?.publishedAt || a.date || new Date().toLocaleDateString(),
+    views: a.viewCount || a.views || 0,
     status: a.status,
-    tags: a.tags || [],
-    featuredImage: a.featuredImage || null,
-  })),
+    tags: [],
+    featuredImage: getFeaturedImage(a),
+  }))
 );
 
-// Helper: get author name from either object or string
-function getAuthorName(author: Article["author"]): string {
-  if (typeof author === "string") return author;
-  return author.name;
+// Helper: get featured image from media array
+function getFeaturedImage(post: BlogPost): string | null {
+  if (post.media && post.media.length > 0) {
+    const image = post.media.find((m) => m.fileType === "image");
+    return image?.url || null;
+  }
+  return null;
+}
+
+// Helper: get author name
+function getAuthorName(author: string): string {
+  return author || "Admin Drive Master";
 }
 
 // Featured post = latest article
@@ -69,8 +67,8 @@ const remainingPosts = computed(() => blogPosts.value.slice(1));
 // Total count for display
 const totalArticles = computed(() =>
   searchQuery.value
-    ? `${blogPosts.value.length} ${t('blog.found')}`
-    : `${publishedArticles.value.length} ${t('blog.articles')}`,
+    ? `${blogPosts.value.length} ${t("blog.found")}`
+    : `${publishedArticles.value.length} ${t("blog.articles")}`
 );
 
 // Helper: generate a slug from post title
@@ -101,10 +99,10 @@ function getExcerpt(content: string, maxLength = 150): string {
 
 // Helper: reading time estimate
 function getReadingTime(content: string): string {
-  if (!content) return t('blog.readingTime', { min: 1 });
+  if (!content) return t("blog.readingTime", { min: 1 });
   const words = content.split(/\s+/).length;
   const minutes = Math.max(1, Math.ceil(words / 200));
-  return t('blog.readingTime', { min: minutes });
+  return t("blog.readingTime", { min: minutes });
 }
 
 // Helper: get author initials for avatar
@@ -132,15 +130,15 @@ function getGradient(index: number) {
 }
 
 useSeoMeta({
-  title: t('blog.title') + " | Drive Master Academy",
-  description: t('blog.heroDesc'),
+  title: t("blog.title") + " | Drive Master Academy",
+  description: t("blog.heroDesc"),
 });
 
 onMounted(() => {
   // Scroll to top when visiting the blog page
   window.scrollTo(0, 0);
   // Fetch articles on mount
-  articlesStore.fetchArticles();
+  contentStore.fetchBlogPosts({ status: "published" });
 });
 </script>
 
@@ -159,9 +157,7 @@ onMounted(() => {
         />
       </div>
 
-      <div
-        class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24"
-      >
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
         <div class="text-center max-w-3xl mx-auto">
           <UBadge
             :label="t('blog.title')"
@@ -169,17 +165,15 @@ onMounted(() => {
             variant="subtle"
             class="mb-4"
           />
-          <h1
-            class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
-          >
-            {{ t('blog.heroTitle') }}
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+            {{ t("blog.heroTitle") }}
             <span
               class="text-transparent bg-clip-text bg-gradient-to-r from-warning to-amber-500"
-              >{{ t('blog.heroTitleStories') }}</span
+              >{{ t("blog.heroTitleStories") }}</span
             >
           </h1>
           <p class="text-lg text-muted max-w-2xl mx-auto mb-10">
-            {{ t('blog.heroDesc') }}
+            {{ t("blog.heroDesc") }}
           </p>
 
           <!-- Search Bar -->
@@ -207,13 +201,13 @@ onMounted(() => {
           <UIcon name="i-lucide-newspaper" class="size-10 text-muted" />
         </div>
         <h2 class="text-2xl font-bold mb-3">
-          {{ searchQuery ? t('blog.noArticles') : t('blog.noArticlesYet') }}
+          {{ searchQuery ? t("blog.noArticles") : t("blog.noArticlesYet") }}
         </h2>
         <p class="text-muted max-w-md mx-auto mb-6">
           {{
             searchQuery
-              ? t('blog.noArticlesDesc', { query: searchQuery })
-              : t('blog.noArticlesYetDesc')
+              ? t("blog.noArticlesDesc", { query: searchQuery })
+              : t("blog.noArticlesYetDesc")
           }}
         </p>
         <UButton
@@ -251,10 +245,7 @@ onMounted(() => {
                   'from-warning/10 to-amber-600/20',
                 ]"
               >
-                <UIcon
-                  name="i-lucide-newspaper"
-                  class="size-20 text-warning/30"
-                />
+                <UIcon name="i-lucide-newspaper" class="size-20 text-warning/30" />
               </div>
               <div class="absolute top-4 left-4">
                 <UBadge :label="t('blog.featured')" color="warning" class="shadow-lg" />
@@ -265,10 +256,7 @@ onMounted(() => {
             <div class="p-4 lg:p-6 lg:pr-10">
               <div class="flex items-center gap-3 mb-4 text-sm text-muted">
                 <div class="flex items-center gap-2">
-                  <UAvatar
-                    :text="getAuthorInitials(featuredPost.author)"
-                    size="xs"
-                  />
+                  <UAvatar :text="getAuthorInitials(featuredPost.author)" size="xs" />
                   <span>{{ featuredPost.author }}</span>
                 </div>
                 <span class="size-1 rounded-full bg-muted" />
@@ -294,12 +282,12 @@ onMounted(() => {
                 <span
                   class="inline-flex items-center gap-2 text-warning font-medium group-hover:gap-3 transition-all"
                 >
-                  {{ t('blog.readArticle') }}
+                  {{ t("blog.readArticle") }}
                   <UIcon name="i-lucide-arrow-right" class="size-4" />
                 </span>
                 <span class="flex items-center gap-1.5 text-sm text-muted">
                   <UIcon name="i-lucide-eye" class="size-4" />
-                  {{ featuredPost.views }} {{ t('blog.views') }}
+                  {{ featuredPost.views }} {{ t("blog.views") }}
                 </span>
               </div>
             </div>
@@ -307,11 +295,10 @@ onMounted(() => {
         </NuxtLink>
 
         <!-- Section Divider -->
-        <div
-          v-if="remainingPosts.length > 0"
-          class="flex items-center gap-4 mb-10"
-        >
-          <h2 class="text-xl font-bold whitespace-nowrap">{{ t('blog.latestArticles') }}</h2>
+        <div v-if="remainingPosts.length > 0" class="flex items-center gap-4 mb-10">
+          <h2 class="text-xl font-bold whitespace-nowrap">
+            {{ t("blog.latestArticles") }}
+          </h2>
           <div class="h-px flex-1 bg-default" />
           <span class="text-sm text-muted whitespace-nowrap">
             {{ totalArticles }}
@@ -344,10 +331,7 @@ onMounted(() => {
                     getGradient(index + 1),
                   ]"
                 >
-                  <UIcon
-                    name="i-lucide-file-text"
-                    class="size-12 text-muted/30"
-                  />
+                  <UIcon name="i-lucide-file-text" class="size-12 text-muted/30" />
                 </div>
               </div>
 
@@ -356,10 +340,7 @@ onMounted(() => {
                 <!-- Meta -->
                 <div class="flex items-center gap-2 mb-3 text-xs text-muted">
                   <span class="flex items-center gap-1.5">
-                    <UAvatar
-                      :text="getAuthorInitials(post.author)"
-                      size="3xs"
-                    />
+                    <UAvatar :text="getAuthorInitials(post.author)" size="3xs" />
                     {{ post.author }}
                   </span>
                   <span class="size-1 rounded-full bg-muted" />
@@ -374,9 +355,7 @@ onMounted(() => {
                 </h3>
 
                 <!-- Excerpt -->
-                <p
-                  class="text-sm text-muted leading-relaxed flex-1 line-clamp-3 mb-4"
-                >
+                <p class="text-sm text-muted leading-relaxed flex-1 line-clamp-3 mb-4">
                   {{ getExcerpt(post.content) }}
                 </p>
 
@@ -395,7 +374,7 @@ onMounted(() => {
                   <span
                     class="inline-flex items-center gap-1 text-xs font-medium text-warning opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    {{ t('blog.readMore').split(' ').shift() }}
+                    {{ t("blog.readMore").split(" ").shift() }}
                     <UIcon name="i-lucide-arrow-right" class="size-3.5" />
                   </span>
                 </div>
@@ -407,24 +386,18 @@ onMounted(() => {
     </section>
 
     <!-- Newsletter CTA -->
-    <section
-      class="bg-gradient-to-br from-warning/5 via-background to-warning/10"
-    >
-      <div
-        class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20 text-center"
-      >
+    <section class="bg-gradient-to-br from-warning/5 via-background to-warning/10">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20 text-center">
         <div
           class="inline-flex items-center justify-center size-16 rounded-2xl bg-warning/10 mb-6"
         >
           <UIcon name="i-lucide-bell-ring" class="size-8 text-warning" />
         </div>
-        <h2 class="text-3xl font-bold mb-4">{{ t('blog.newsletterTitle') }}</h2>
+        <h2 class="text-3xl font-bold mb-4">{{ t("blog.newsletterTitle") }}</h2>
         <p class="text-muted max-w-xl mx-auto mb-8">
-          {{ t('blog.newsletterDesc') }}
+          {{ t("blog.newsletterDesc") }}
         </p>
-        <div
-          class="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto"
-        >
+        <div class="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
           <UInput
             :placeholder="t('blog.emailPlaceholder')"
             size="lg"
@@ -438,7 +411,7 @@ onMounted(() => {
             icon="i-lucide-send"
           />
         </div>
-        <p class="text-xs text-muted mt-4">{{ t('blog.noSpam') }}</p>
+        <p class="text-xs text-muted mt-4">{{ t("blog.noSpam") }}</p>
       </div>
     </section>
   </div>
