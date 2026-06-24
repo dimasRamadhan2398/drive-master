@@ -21,9 +21,9 @@ type IEntitlementRepository interface {
 	Delete(ctx context.Context, entitlement *models.UserEntitlement) error
 	FindAll(ctx context.Context) ([]models.UserEntitlement, error)
 	FindByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) ([]models.UserEntitlement, error)
-	FindByUserID(ctx context.Context, userID uint) ([]models.UserEntitlement, error)
+	FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.UserEntitlement, error)
 	FindBySourceType(ctx context.Context, sourceType string) ([]models.UserEntitlement, error)
-	FindActiveByUserID(ctx context.Context, userID uint) ([]models.UserEntitlement, error)
+	FindActiveByUserID(ctx context.Context, userID uuid.UUID) ([]models.UserEntitlement, error)
 	UpdateUsedSessions(ctx context.Context, id uuid.UUID, usedSessions int) error
 	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
 	CountAll(ctx context.Context) (int64, error)
@@ -86,7 +86,7 @@ func (r *EntitlementRepository) FindByEnrollmentID(ctx context.Context, enrollme
 	return entitlements, nil
 }
 
-func (r *EntitlementRepository) FindByUserID(ctx context.Context, userID uint) ([]models.UserEntitlement, error) {
+func (r *EntitlementRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.UserEntitlement, error) {
 	var entitlements []models.UserEntitlement
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"user_id": userID}).
@@ -108,11 +108,11 @@ func (r *EntitlementRepository) FindBySourceType(ctx context.Context, sourceType
 	return entitlements, nil
 }
 
-func (r *EntitlementRepository) FindActiveByUserID(ctx context.Context, userID uint) ([]models.UserEntitlement, error) {
+func (r *EntitlementRepository) FindActiveByUserID(ctx context.Context, userID uuid.UUID) ([]models.UserEntitlement, error) {
 	var entitlements []models.UserEntitlement
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{
-			"user_id":        userID,
+			"user_id":                        userID,
 			"used_sessions < total_sessions": nil,
 		}).
 		WithOrder("created_at DESC")

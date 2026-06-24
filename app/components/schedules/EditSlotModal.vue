@@ -6,7 +6,7 @@ const props = defineProps<{
   open: boolean;
   initialSlot: any | null;
   instructors: Array<{ label: string; value: string }>;
-  vehicles: string[];
+  vehicles: Array<{ label: string; value: string }>;
   operatingHours: {
     start: string;
     end: string;
@@ -112,7 +112,7 @@ function handleSave() {
           </UFormField>
         </div>
         <UFormField label="Vehicle" required>
-          <USelect :items="vehicles" v-model="form.car" placeholder="Select vehicle" class="w-full" />
+          <USelect v-model="form.car" :items="vehicles" placeholder="Select vehicle" class="w-full" />
         </UFormField>
         <UFormField :label="t('dashboard.instructor')" required>
           <USelect :items="instructors" v-model="form.instructor" placeholder="Select instructor" class="w-full" />

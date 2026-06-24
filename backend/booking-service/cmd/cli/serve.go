@@ -106,11 +106,11 @@ func runServe(cmd *cobra.Command, args []string) {
 	_ = initKafkaConsumer(userAnonymizationService)
 
 	// Initialize services (after Kafka is initialized so we can pass the eventPublisher)
-	sessionService := services.NewSessionService(sessionRepo)
+	sessionService := services.NewSessionService(sessionRepo, scheduleRepo, entitlementRepo)
 	entitlementService := services.NewEntitlementService(entitlementRepo)
 	enrollmentService := services.NewEnrollmentService(enrollmentRepo, entitlementRepo)
 
-	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, availabilityService, userClient, coreClient)
+	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, sessionRepo, entitlementRepo, sessionService, availabilityService, userClient, coreClient)
 	paymentService := services.NewPaymentService(paymentRepo, enrollmentRepo)
 	revenueService := services.NewRevenueService(coreClient)
 

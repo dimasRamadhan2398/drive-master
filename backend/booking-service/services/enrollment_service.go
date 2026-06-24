@@ -21,7 +21,7 @@ type IEnrollmentService interface {
 	CancelEnrollment(ctx context.Context, id uuid.UUID) error
 	MarkAsPaid(ctx context.Context, id uuid.UUID, totalPrice float64) (*dto.EnrollmentResponse, error)
 	ListEnrollments(ctx context.Context, page, limit int) (*dto.EnrollmentListResponse, error)
-	ListUserEnrollments(ctx context.Context, userID uint, page, limit int) (*dto.EnrollmentListResponse, error)
+	ListUserEnrollments(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.EnrollmentListResponse, error)
 	ListEnrollmentsByStatus(ctx context.Context, status string, page, limit int) (*dto.EnrollmentListResponse, error)
 	CreateEntitlementFromEnrollment(ctx context.Context, enrollmentID uuid.UUID, sourceType, sourceID string, totalSessions int, expiresAt time.Time) (*dto.EntitlementResponse, error)
 }
@@ -158,7 +158,7 @@ func (s *EnrollmentService) ListEnrollments(ctx context.Context, page, limit int
 	return &resp, nil
 }
 
-func (s *EnrollmentService) ListUserEnrollments(ctx context.Context, userID uint, page, limit int) (*dto.EnrollmentListResponse, error) {
+func (s *EnrollmentService) ListUserEnrollments(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.EnrollmentListResponse, error) {
 	enrollments, err := s.enrollmentRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err

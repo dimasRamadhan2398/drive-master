@@ -30,6 +30,8 @@ type IScheduleController interface {
 	GetAvailableSchedules(c *gin.Context)
 	BookSlot(c *gin.Context)
 	CancelBooking(c *gin.Context)
+	StartSession(c *gin.Context)
+	CompleteSession(c *gin.Context)
 	GetScheduleStats(c *gin.Context)
 }
 
@@ -311,6 +313,56 @@ func (c *ScheduleController) CancelBooking(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "booking cancelled"})
+}
+
+// StartSession godoc
+// @Summary Start a session for a schedule
+// @Description Starts the driving session associated with a booked schedule slot
+// @Tags schedules
+// @Accept json
+// @Produce json
+// @Param id path int true "Schedule ID"
+// @Success 200 {object} dto.ScheduleResponse
+// @Router /schedules/{id}/start [post]
+func (c *ScheduleController) StartSession(ctx *gin.Context) {
+	id, err := base.GetUintIDFromPath(ctx, "id")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
+		return
+	}
+
+	resp, err := c.scheduleService.StartSession(ctx.Request.Context(), id)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+// CompleteSession godoc
+// @Summary Complete a session for a schedule
+// @Description Completes the driving session associated with an in-progress schedule slot
+// @Tags schedules
+// @Accept json
+// @Produce json
+// @Param id path int true "Schedule ID"
+// @Success 200 {object} dto.ScheduleResponse
+// @Router /schedules/{id}/complete [post]
+func (c *ScheduleController) CompleteSession(ctx *gin.Context) {
+	id, err := base.GetUintIDFromPath(ctx, "id")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
+		return
+	}
+
+	resp, err := c.scheduleService.CompleteSession(ctx.Request.Context(), id)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
 }
 
 // GetScheduleStats godoc

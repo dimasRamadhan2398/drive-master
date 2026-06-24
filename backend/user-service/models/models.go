@@ -152,7 +152,7 @@ const (
 	CertificationStatusRevoked  CertificationStatus = "revoked"
 )
 
-// Certification represents an instructor's certification (e.g., BNSP certificate)
+// Certification represents a member's certification (e.g., package completion certificate)
 type Certification struct {
 	ID           uuid.UUID           `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	InstructorID uuid.UUID           `json:"instructorId" gorm:"type:uuid;not null;index"`

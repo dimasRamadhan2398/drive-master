@@ -30,5 +30,6 @@ func (r *EntitlementRoute) Run() {
 		entitlements.PUT("/:id", r.controller.GetEntitlementController().UpdateEntitlement)
 		entitlements.DELETE("/:id", r.controller.GetEntitlementController().DeleteEntitlement)
 		entitlements.GET("/user/:userId", r.controller.GetEntitlementController().GetUserEntitlements)
+		entitlements.GET("/user/:userId/active", r.controller.GetEntitlementController().GetActiveEntitlements)
 	}
 }

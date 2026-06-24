@@ -15,7 +15,8 @@ type IEntitlementService interface {
 	UpdateEntitlement(ctx context.Context, id uuid.UUID, req dto.UpdateEntitlementRequest) (*dto.EntitlementResponse, error)
 	DeleteEntitlement(ctx context.Context, id uuid.UUID) error
 	ListEntitlements(ctx context.Context, page, limit int) (*dto.EntitlementListResponse, error)
-	GetUserEntitlements(ctx context.Context, userID uint) ([]dto.EntitlementResponse, error)
+	GetUserEntitlements(ctx context.Context, userID uuid.UUID) ([]dto.EntitlementResponse, error)
+	GetActiveEntitlements(ctx context.Context, userID uuid.UUID) ([]dto.EntitlementResponse, error)
 }
 
 // IServiceRegistry defines methods for getting services

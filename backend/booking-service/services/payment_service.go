@@ -21,7 +21,7 @@ type IPaymentService interface {
 	GetPaymentByOrderID(ctx context.Context, orderID string) (*dto.PaymentResponse, error)
 	GetPaymentDetail(ctx context.Context, orderID string) (*dto.PaymentDetailResponse, error)
 	ListPayments(ctx context.Context, page, limit int) (*dto.PaymentListResponse, error)
-	ListUserPayments(ctx context.Context, userID uint, page, limit int) (*dto.PaymentListResponse, error)
+	ListUserPayments(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.PaymentListResponse, error)
 	HandleCallback(ctx context.Context, callback dto.PaymentCallbackRequest) error
 	CancelPayment(ctx context.Context, orderID string) error
 	ExpirePendingPayments(ctx context.Context) error
@@ -149,7 +149,7 @@ func (s *PaymentService) ListPayments(ctx context.Context, page, limit int) (*dt
 }
 
 // ListUserPayments retrieves payments for a specific user
-func (s *PaymentService) ListUserPayments(ctx context.Context, userID uint, page, limit int) (*dto.PaymentListResponse, error) {
+func (s *PaymentService) ListUserPayments(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.PaymentListResponse, error) {
 	payments, err := s.paymentRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
