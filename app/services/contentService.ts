@@ -470,4 +470,17 @@ export const contentService = {
       return false;
     }
   },
+
+  // ==================== BLOG POST VIEW COUNT ====================
+
+  // POST /articles/:id/view - Increment view count for blog post
+  async incrementBlogPostViewCount(id: string): Promise<boolean> {
+    const { core } = useApiClients();
+    try {
+      await core(`/articles/${id}/view`, { method: "POST" });
+      return true;
+    } catch {
+      return false;
+    }
+  },
 };

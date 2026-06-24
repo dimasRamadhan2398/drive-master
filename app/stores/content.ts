@@ -323,6 +323,16 @@ export const useContentStore = defineStore("content", {
       }
     },
 
+    async incrementBlogPostViewCount(id: number) {
+      try {
+        await contentService.incrementBlogPostViewCount(String(id));
+        // Also increment locally
+        this.incrementPostViews(id);
+      } catch {
+        // Silent fail for view count - don't disrupt user experience
+      }
+    },
+
     async fetchBlogPosts(
       params: {
         page?: number;

@@ -4,6 +4,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
+import TextAlign from "@tiptap/extension-text-align";
 import { onBeforeUnmount, watch } from "vue";
 
 const { t } = useI18n()
@@ -33,6 +34,9 @@ onMounted(() => {
       Underline,
       TextStyle,
       Color,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
     ],
     editorProps: {
       attributes: {
@@ -79,6 +83,7 @@ onBeforeUnmount(() => {
         v-if="editor"
         class="flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-800 p-2 bg-gray-50 dark:bg-gray-950"
       >
+        <!-- Text Formatting -->
         <UButton
           size="xs"
           :variant="editor.isActive('bold') ? 'solid' : 'ghost'"
@@ -99,6 +104,10 @@ onBeforeUnmount(() => {
           icon="i-lucide-underline"
           @click="editor.chain().focus().toggleUnderline().run()"
         />
+
+        <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1 self-center" />
+
+        <!-- Lists -->
         <UButton
           size="xs"
           :variant="editor.isActive('bulletList') ? 'solid' : 'ghost'"
@@ -112,6 +121,69 @@ onBeforeUnmount(() => {
           class="text-black"
           icon="i-lucide-list-ordered"
           @click="editor.chain().focus().toggleOrderedList().run()"
+        />
+
+        <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1 self-center" />
+
+        <!-- Quote -->
+        <UButton
+          size="xs"
+          :variant="editor.isActive('blockquote') ? 'solid' : 'ghost'"
+          icon="i-lucide-quote"
+          @click="editor.chain().focus().toggleBlockquote().run()"
+        />
+
+        <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1 self-center" />
+
+        <!-- Alignment -->
+        <UButton
+          size="xs"
+          :variant="editor.isActive({ textAlign: 'left' }) ? 'solid' : 'ghost'"
+          icon="i-lucide-align-left"
+          @click="editor.chain().focus().setTextAlign('left').run()"
+        />
+        <UButton
+          size="xs"
+          :variant="editor.isActive({ textAlign: 'center' }) ? 'solid' : 'ghost'"
+          icon="i-lucide-align-center"
+          @click="editor.chain().focus().setTextAlign('center').run()"
+        />
+        <UButton
+          size="xs"
+          :variant="editor.isActive({ textAlign: 'right' }) ? 'solid' : 'ghost'"
+          icon="i-lucide-align-right"
+          @click="editor.chain().focus().setTextAlign('right').run()"
+        />
+        <UButton
+          size="xs"
+          :variant="editor.isActive({ textAlign: 'justify' }) ? 'solid' : 'ghost'"
+          icon="i-lucide-align-justify"
+          @click="editor.chain().focus().setTextAlign('justify').run()"
+        />
+
+        <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1 self-center" />
+
+        <!-- Headings -->
+        <UButton
+          size="xs"
+          :variant="editor.isActive('heading', { level: 1 }) ? 'solid' : 'ghost'"
+          class="text-black font-bold"
+          label="H1"
+          @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
+        />
+        <UButton
+          size="xs"
+          :variant="editor.isActive('heading', { level: 2 }) ? 'solid' : 'ghost'"
+          class="text-black font-bold"
+          label="H2"
+          @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
+        />
+        <UButton
+          size="xs"
+          :variant="editor.isActive('heading', { level: 3 }) ? 'solid' : 'ghost'"
+          class="text-black font-bold"
+          label="H3"
+          @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
         />
       </div>
 
@@ -132,5 +204,23 @@ onBeforeUnmount(() => {
   color: #9ca3af;
   pointer-events: none;
   height: 0;
+}
+
+/* Quote styling */
+.tiptap blockquote {
+  border-left: 3px solid #6366f1;
+  padding-left: 1rem;
+  margin-left: 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Quote styling */
+.tiptap blockquote {
+  border-left: 3px solid #6366f1;
+  padding-left: 1rem;
+  margin-left: 0;
+  color: #6b7280;
+  font-style: italic;
 }
 </style>

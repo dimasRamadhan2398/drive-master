@@ -295,7 +295,7 @@ onMounted(() => {
       <UDashboardNavbar :title="t('admin.content.label')">
         <template #right>
           <UButton
-            v-if="activeTab === 0"
+            v-if="activeTab === 'blog'"
             icon="i-lucide-plus"
             color="warning"
             :label="t('admin.content.createBlog')"

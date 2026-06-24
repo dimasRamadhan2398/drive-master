@@ -66,7 +66,7 @@ func (r *ArticleRepository) Create(ctx context.Context, article *models.Article)
 // FindByID finds an article by ID
 func (r *ArticleRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Article, error) {
 	var article models.Article
-	if err := r.BaseRepository.FindByIDWithPreload(ctx, &article, id, "Category", "Author"); err != nil {
+	if err := r.BaseRepository.FindByIDWithPreload(ctx, &article, id, "Category"); err != nil {
 		return nil, err
 	}
 	return &article, nil
@@ -75,7 +75,7 @@ func (r *ArticleRepository) FindByID(ctx context.Context, id uuid.UUID) (*models
 // FindBySlug finds an article by slug
 func (r *ArticleRepository) FindBySlug(ctx context.Context, slug string) (*models.Article, error) {
 	var article models.Article
-	if err := r.DB.WithContext(ctx).Preload("Category").Preload("Author").Where("slug = ?", slug).First(&article).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Preload("Category").Where("slug = ?", slug).First(&article).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
