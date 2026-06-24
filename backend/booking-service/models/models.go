@@ -45,7 +45,7 @@ const (
 // This is created when a user pays for a package (Bronze/Silver/Gold/Platinum).
 type Enrollment struct {
 	ID         uuid.UUID       `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID     uint           `json:"userId" gorm:"not null;index"`     // ref: user-service
+	UserID     uuid.UUID      `json:"userId" gorm:"type:uuid;not null;index"` // ref: user-service
 	PackageID  uint           `json:"packageId" gorm:"not null;index"`  // ref: core-service (package)
 	Status     EnrollmentStatus `json:"status" gorm:"type:varchar(30);default:'pending_payment'"`
 	TotalPrice float64        `json:"totalPrice"`                       // base price + add-ons
@@ -64,7 +64,7 @@ type Enrollment struct {
 type UserEntitlement struct {
 	ID            uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	EnrollmentID  uuid.UUID  `json:"enrollmentId" gorm:"type:uuid;not null;index"` // ref: Enrollment
-	UserID        uint       `json:"userId" gorm:"not null;index"`       // ref: user-service
+	UserID        uuid.UUID  `json:"userId" gorm:"type:uuid;not null;index"`       // ref: user-service
 	SourceType    string     `json:"sourceType" gorm:"size:50;not null"` // "package" | "addon" | "voucher"
 	SourceID      string     `json:"sourceId" gorm:"size:100;not null"` // ID in core-service
 	TotalSessions int        `json:"totalSessions"`
@@ -79,11 +79,11 @@ type UserEntitlement struct {
 // Created when a session is scheduled and attended.
 type DrivingSession struct {
 	ID            uint      `json:"id" gorm:"primaryKey"`
-	EnrollmentID  uint      `json:"enrollmentId" gorm:"not null;index"`  // ref: Enrollment
-	EntitlementID uint      `json:"entitlementId" gorm:"not null;index"`  // ref: UserEntitlement
-	UserID        uint      `json:"userId" gorm:"not null;index"`        // ref: user-service
-	InstructorID  uint      `json:"instructorId" gorm:"not null;index"`  // ref: user-service
-	CarID         uint      `json:"carId" gorm:"not null;index"`         // ref: core-service (car)
+	EnrollmentID  uuid.UUID `json:"enrollmentId" gorm:"type:uuid;not null;index"` // ref: Enrollment
+	EntitlementID uuid.UUID `json:"entitlementId" gorm:"type:uuid;not null;index"` // ref: UserEntitlement
+	UserID        uuid.UUID `json:"userId" gorm:"type:uuid;not null;index"`        // ref: user-service
+	InstructorID  uuid.UUID `json:"instructorId" gorm:"type:uuid;not null;index"`  // ref: user-service
+	CarID         uuid.UUID `json:"carId" gorm:"type:uuid;not null;index"`         // ref: core-service (car)
 	ScheduleID    *uint     `json:"scheduleId" gorm:"index"`             // ref: Schedule (optional)
 	Date          time.Time `json:"date" gorm:"type:date;not null"`
 	Time          string    `json:"time" gorm:"size:10;not null"`   // HH:MM format
@@ -132,7 +132,7 @@ type Schedule = dto.Schedule
 type Payment struct {
 	ID            uint            `json:"id" gorm:"primaryKey"`
 	EnrollmentID  uuid.UUID       `json:"enrollmentId" gorm:"type:uuid;not null;index"` // ref: Enrollment
-	UserID        uint            `json:"userId" gorm:"not null;index"`      // ref: user-service
+	UserID        uuid.UUID      `json:"userId" gorm:"type:uuid;not null;index"`      // ref: user-service
 	OrderID       string          `json:"orderId" gorm:"size:100;uniqueIndex"` // Midtrans order ID
 	Amount        float64         `json:"amount" gorm:"not null"`
 	PaymentMethod dto.PaymentMethod `json:"paymentMethod" gorm:"type:varchar(30)"`

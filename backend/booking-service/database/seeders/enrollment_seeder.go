@@ -6,6 +6,7 @@ import (
 
 	"booking-service/models"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +33,7 @@ func (s *EnrollmentSeeder) Run(db *gorm.DB) error {
 	// Sample enrollments
 	enrollments := []models.Enrollment{
 		{
-			UserID:     1,
+			UserID:     uuid.MustParse("0ccae045-9154-41c6-957c-c42f812b809f"),
 			PackageID:  1,
 			Status:     models.EnrollmentStatusPaid,
 			TotalPrice: 2500000,
@@ -40,7 +41,7 @@ func (s *EnrollmentSeeder) Run(db *gorm.DB) error {
 			ExpiresAt:  time.Now().AddDate(1, 0, 0),
 		},
 		{
-			UserID:     2,
+			UserID:     uuid.MustParse("898170a5-08db-4467-b33e-049660a4231c"),
 			PackageID:  2,
 			Status:     models.EnrollmentStatusPaid,
 			TotalPrice: 4500000,
@@ -48,7 +49,7 @@ func (s *EnrollmentSeeder) Run(db *gorm.DB) error {
 			ExpiresAt:  time.Now().AddDate(1, 0, 0),
 		},
 		{
-			UserID:     3,
+			UserID:     uuid.MustParse("9eac3536-bdc4-41b1-aaea-f9acbd231e20"),
 			PackageID:  1,
 			Status:     models.EnrollmentStatusPendingPayment,
 			TotalPrice: 2500000,
@@ -56,7 +57,7 @@ func (s *EnrollmentSeeder) Run(db *gorm.DB) error {
 			ExpiresAt:  time.Now().AddDate(1, 0, 0),
 		},
 		{
-			UserID:     1,
+			UserID:     uuid.MustParse("0ccae045-9154-41c6-957c-c42f812b809f"),
 			PackageID:  3,
 			Status:     models.EnrollmentStatusInProgress,
 			TotalPrice: 6500000,

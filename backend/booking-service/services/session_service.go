@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
+
 	"booking-service/models"
 	"booking-service/models/dto"
 	"booking-service/repositories"
@@ -20,15 +22,25 @@ type ISessionService interface {
 	StartSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	CompleteSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	CancelSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
+	ListUserSessions(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.SessionListResponse, error)
+	ListInstructorSessions(ctx context.Context, instructorID uuid.UUID, page, limit int) (*dto.SessionListResponse, error)
 }
 
 type SessionService struct {
-	sessionRepo repositories.ISessionRepository
+	sessionRepo     repositories.ISessionRepository
+	scheduleRepo    repositories.IScheduleRepository
+	entitlementRepo repositories.IEntitlementRepository
 }
 
-func NewSessionService(sessionRepo repositories.ISessionRepository) ISessionService {
+func NewSessionService(
+	sessionRepo repositories.ISessionRepository,
+	scheduleRepo repositories.IScheduleRepository,
+	entitlementRepo repositories.IEntitlementRepository,
+) ISessionService {
 	return &SessionService{
-		sessionRepo: sessionRepo,
+		sessionRepo:     sessionRepo,
+		scheduleRepo:    scheduleRepo,
+		entitlementRepo: entitlementRepo,
 	}
 }
 
@@ -83,7 +95,7 @@ func (s *SessionService) ListSessions(ctx context.Context, page, limit int) (*dt
 	return &resp, nil
 }
 
-func (s *SessionService) ListUserSessions(ctx context.Context, userID uint, page, limit int) (*dto.SessionListResponse, error) {
+func (s *SessionService) ListUserSessions(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.SessionListResponse, error) {
 	sessions, err := s.sessionRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -95,7 +107,7 @@ func (s *SessionService) ListUserSessions(ctx context.Context, userID uint, page
 	return &resp, nil
 }
 
-func (s *SessionService) ListInstructorSessions(ctx context.Context, instructorID uint, page, limit int) (*dto.SessionListResponse, error) {
+func (s *SessionService) ListInstructorSessions(ctx context.Context, instructorID uuid.UUID, page, limit int) (*dto.SessionListResponse, error) {
 	sessions, err := s.sessionRepo.FindByInstructorID(ctx, instructorID)
 	if err != nil {
 		return nil, err
@@ -136,9 +148,17 @@ func (s *SessionService) StartSession(ctx context.Context, id uint) (*dto.Sessio
 		return nil, errors.New("session cannot be started: invalid status")
 	}
 
+	// Start the session
 	startedAt := time.Now()
 	if err := s.sessionRepo.StartSession(ctx, id, startedAt); err != nil {
 		return nil, err
+	}
+
+	// Update associated schedule if any
+	if session.ScheduleID != nil {
+		if err := s.scheduleRepo.UpdateStatus(ctx, *session.ScheduleID, dto.ScheduleStatusInProgress); err != nil {
+			// Log error but continue
+		}
 	}
 
 	// Reload session
@@ -166,9 +186,17 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 		return nil, errors.New("session cannot be completed: must be in progress")
 	}
 
+	// Complete the session
 	completedAt := time.Now()
 	if err := s.sessionRepo.CompleteSession(ctx, id, completedAt); err != nil {
 		return nil, err
+	}
+
+	// Update associated schedule if any
+	if session.ScheduleID != nil {
+		if err := s.scheduleRepo.UpdateStatus(ctx, *session.ScheduleID, dto.ScheduleStatusCompleted); err != nil {
+			// Log error
+		}
 	}
 
 	// Reload session
@@ -199,8 +227,24 @@ func (s *SessionService) CancelSession(ctx context.Context, id uint) (*dto.Sessi
 		return nil, errors.New("session cannot be cancelled: already cancelled")
 	}
 
+	// Cancel the session
 	if err := s.sessionRepo.CancelSession(ctx, id); err != nil {
 		return nil, err
+	}
+
+	// Update associated schedule if any
+	if session.ScheduleID != nil {
+		if err := s.scheduleRepo.ReleaseSlot(ctx, *session.ScheduleID); err != nil {
+			// Log error
+		}
+	}
+
+	// Decrement used sessions in entitlement
+	entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
+	if err == nil && entitlement != nil {
+		if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, entitlement.UsedSessions-1); err != nil {
+			// Log error
+		}
 	}
 
 	// Reload session

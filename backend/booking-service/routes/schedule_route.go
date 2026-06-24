@@ -34,5 +34,7 @@ func (r *ScheduleRoute) Run() {
 		schedules.DELETE("/:id", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().DeleteSchedule)
 		schedules.POST("/:id/book", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().BookSlot)
 		schedules.POST("/:id/cancel", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().CancelBooking)
+		schedules.POST("/:id/start", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().StartSession)
+		schedules.POST("/:id/complete", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().CompleteSession)
 	}
 }

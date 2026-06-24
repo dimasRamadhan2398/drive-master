@@ -100,7 +100,7 @@ func (s *EntitlementService) ListEntitlements(ctx context.Context, page, limit i
 	return &resp, nil
 }
 
-func (s *EntitlementService) GetUserEntitlements(ctx context.Context, userID uint) ([]dto.EntitlementResponse, error) {
+func (s *EntitlementService) GetUserEntitlements(ctx context.Context, userID uuid.UUID) ([]dto.EntitlementResponse, error) {
 	entitlements, err := s.entitlementRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (s *EntitlementService) GetUserEntitlements(ctx context.Context, userID uin
 	return responses, nil
 }
 
-func (s *EntitlementService) GetActiveEntitlements(ctx context.Context, userID uint) ([]dto.EntitlementResponse, error) {
+func (s *EntitlementService) GetActiveEntitlements(ctx context.Context, userID uuid.UUID) ([]dto.EntitlementResponse, error) {
 	entitlements, err := s.entitlementRepo.FindActiveByUserID(ctx, userID)
 	if err != nil {
 		return nil, err

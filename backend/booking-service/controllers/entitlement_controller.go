@@ -26,6 +26,7 @@ type IEntitlementController interface {
 	DeleteEntitlement(c *gin.Context)
 	ListEntitlements(c *gin.Context)
 	GetUserEntitlements(c *gin.Context)
+	GetActiveEntitlements(c *gin.Context)
 }
 
 // CreateEntitlement godoc
@@ -172,19 +173,46 @@ func (c *EntitlementController) ListEntitlements(ctx *gin.Context) {
 // @Tags entitlements
 // @Accept json
 // @Produce json
-// @Param userId path int true "User ID"
+// @Param userId path string true "User ID"
 // @Success 200 {object} dto.EntitlementListResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /entitlements/user/{userId} [get]
 func (c *EntitlementController) GetUserEntitlements(ctx *gin.Context) {
-	userID, err := base.GetUintIDFromPath(ctx, "userId")
+	userID, err := base.GetUUIDIDFromPath(ctx, "userId")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return
 	}
 
 	resp, err := c.entitlementService.GetUserEntitlements(ctx.Request.Context(), userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+// GetActiveEntitlements godoc
+// @Summary Get active entitlements for a user
+// @Description Retrieves all active entitlements for a specific user
+// @Tags entitlements
+// @Accept json
+// @Produce json
+// @Param userId path string true "User ID"
+// @Success 200 {array} dto.EntitlementResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /entitlements/user/{userId}/active [get]
+func (c *EntitlementController) GetActiveEntitlements(ctx *gin.Context) {
+	userID, err := base.GetUUIDIDFromPath(ctx, "userId")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	resp, err := c.entitlementService.GetActiveEntitlements(ctx.Request.Context(), userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

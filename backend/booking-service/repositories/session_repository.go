@@ -20,11 +20,12 @@ type ISessionRepository interface {
 	Update(ctx context.Context, session *models.DrivingSession) error
 	Delete(ctx context.Context, session *models.DrivingSession) error
 	FindAll(ctx context.Context) ([]models.DrivingSession, error)
-	FindByUserID(ctx context.Context, userID uint) ([]models.DrivingSession, error)
-	FindByInstructorID(ctx context.Context, instructorID uint) ([]models.DrivingSession, error)
-	FindByEnrollmentID(ctx context.Context, enrollmentID uint) ([]models.DrivingSession, error)
-	FindByEntitlementID(ctx context.Context, entitlementID uint) ([]models.DrivingSession, error)
+	FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.DrivingSession, error)
+	FindByInstructorID(ctx context.Context, instructorID uuid.UUID) ([]models.DrivingSession, error)
+	FindByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) ([]models.DrivingSession, error)
+	FindByEntitlementID(ctx context.Context, entitlementID uuid.UUID) ([]models.DrivingSession, error)
 	FindByStatus(ctx context.Context, status string) ([]models.DrivingSession, error)
+	FindByScheduleID(ctx context.Context, scheduleID uint) (*models.DrivingSession, error)
 	FindByDateRange(ctx context.Context, startDate, endDate time.Time) ([]models.DrivingSession, error)
 	UpdateStatus(ctx context.Context, id uint, status string) error
 	StartSession(ctx context.Context, id uint, startedAt time.Time) error
@@ -80,7 +81,16 @@ func (r *SessionRepository) FindAll(ctx context.Context) ([]models.DrivingSessio
 	return sessions, nil
 }
 
-func (r *SessionRepository) FindByUserID(ctx context.Context, userID uint) ([]models.DrivingSession, error) {
+func (r *SessionRepository) FindByScheduleID(ctx context.Context, scheduleID uint) (*models.DrivingSession, error) {
+	var session models.DrivingSession
+	opts := base.NewQueryOptions().WithWhere(map[string]any{"schedule_id": scheduleID})
+	if err := r.BaseRepository.FindMany(&models.DrivingSession{}, &session, opts); err != nil {
+		return nil, err
+	}
+	return &session, nil
+}
+
+func (r *SessionRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.DrivingSession, error) {
 	var sessions []models.DrivingSession
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"user_id": userID}).
@@ -91,7 +101,7 @@ func (r *SessionRepository) FindByUserID(ctx context.Context, userID uint) ([]mo
 	return sessions, nil
 }
 
-func (r *SessionRepository) FindByInstructorID(ctx context.Context, instructorID uint) ([]models.DrivingSession, error) {
+func (r *SessionRepository) FindByInstructorID(ctx context.Context, instructorID uuid.UUID) ([]models.DrivingSession, error) {
 	var sessions []models.DrivingSession
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"instructor_id": instructorID}).
@@ -102,7 +112,7 @@ func (r *SessionRepository) FindByInstructorID(ctx context.Context, instructorID
 	return sessions, nil
 }
 
-func (r *SessionRepository) FindByEnrollmentID(ctx context.Context, enrollmentID uint) ([]models.DrivingSession, error) {
+func (r *SessionRepository) FindByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) ([]models.DrivingSession, error) {
 	var sessions []models.DrivingSession
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"enrollment_id": enrollmentID}).
@@ -113,7 +123,7 @@ func (r *SessionRepository) FindByEnrollmentID(ctx context.Context, enrollmentID
 	return sessions, nil
 }
 
-func (r *SessionRepository) FindByEntitlementID(ctx context.Context, entitlementID uint) ([]models.DrivingSession, error) {
+func (r *SessionRepository) FindByEntitlementID(ctx context.Context, entitlementID uuid.UUID) ([]models.DrivingSession, error) {
 	var sessions []models.DrivingSession
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"entitlement_id": entitlementID}).

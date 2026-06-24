@@ -167,7 +167,7 @@ func (c *PaymentController) ListPayments(ctx *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /payments/user/{userId} [get]
 func (c *PaymentController) ListUserPayments(ctx *gin.Context) {
-	userID, err := base.GetUintIDFromPath(ctx, "userId")
+	userID, err := base.GetUUIDIDFromPath(ctx, "userId")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

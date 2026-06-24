@@ -8,6 +8,7 @@ import (
 	"booking-service/models/dto"
 	"booking-service/pkg/base"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -19,8 +20,8 @@ type IPaymentRepository interface {
 	Update(ctx context.Context, payment *models.Payment) error
 	Delete(ctx context.Context, payment *models.Payment) error
 	FindAll(ctx context.Context) ([]models.Payment, error)
-	FindByEnrollmentID(ctx context.Context, enrollmentID uint) ([]models.Payment, error)
-	FindByUserID(ctx context.Context, userID uint) ([]models.Payment, error)
+	FindByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) ([]models.Payment, error)
+	FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.Payment, error)
 	FindByStatus(ctx context.Context, status dto.PaymentStatus) ([]models.Payment, error)
 	UpdateStatus(ctx context.Context, id uint, status dto.PaymentStatus) error
 	UpdateStatusByOrderID(ctx context.Context, orderID string, status dto.PaymentStatus, transactionID string) error
@@ -82,7 +83,7 @@ func (r *PaymentRepository) FindAll(ctx context.Context) ([]models.Payment, erro
 	return payments, nil
 }
 
-func (r *PaymentRepository) FindByEnrollmentID(ctx context.Context, enrollmentID uint) ([]models.Payment, error) {
+func (r *PaymentRepository) FindByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) ([]models.Payment, error) {
 	var payments []models.Payment
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"enrollment_id": enrollmentID}).
@@ -93,7 +94,7 @@ func (r *PaymentRepository) FindByEnrollmentID(ctx context.Context, enrollmentID
 	return payments, nil
 }
 
-func (r *PaymentRepository) FindByUserID(ctx context.Context, userID uint) ([]models.Payment, error) {
+func (r *PaymentRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.Payment, error) {
 	var payments []models.Payment
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"user_id": userID}).

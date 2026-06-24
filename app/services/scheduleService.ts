@@ -38,7 +38,9 @@ export interface ScheduleBrief {
   startTime: string;
   endTime: string;
   duration: number;
+  vehicleId: string;
   vehicleName: string;
+  instructorId: string;
   instructorName: string;
   studentName?: string;
   status: ScheduleStatus;
@@ -71,8 +73,10 @@ export const mapApiToScheduleBrief = (item: ScheduleApiResponse): ScheduleBrief 
     startTime: item.time, // Map "time" to "startTime"
     endTime: "", // Not provided in API response
     duration: item.duration,
+    vehicleId: item.carId?.toString() || "",
     vehicleName: item.carName || "", // Map "carName" to "vehicleName"
-    instructorName: item.instructorName || "", // API instructorName is empty, use as-is
+    instructorId: item.instructorId || "",
+    instructorName: item.instructorName || "",
     studentName: item.userName || undefined, // Map "userName" to "studentName"
     status: item.status,
   };
@@ -107,8 +111,27 @@ export interface UpdateScheduleData {
 }
 
 export interface BookSlotData {
-  studentId: string;
+  userId: string;
+  entitlementId: string;
   notes?: string;
+}
+
+export interface Entitlement {
+  id: string;
+  memberId: string;
+  bookingId: string;
+  packageId: string;
+  packageName: string;
+  isNightSession: boolean;
+  isWeekendSession: boolean;
+  totalSessions: number;
+  remaining: number;
+  usedSessions: number;
+  startDate: string;
+  endDate: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Filter params
@@ -193,6 +216,49 @@ export const scheduleService = {
       return extractData(response);
     } catch {
       return null;
+    }
+  },
+
+  // POST /schedules/:id/start - Start session
+  async startSession(id: string): Promise<Schedule | null> {
+    const { user, extractData } = useApiClients();
+    try {
+      const response = await user<ApiResponse<Schedule>>(`/schedules/${id}/start`, {
+        method: "POST",
+      });
+      return extractData(response);
+    } catch {
+      return null;
+    }
+  },
+
+  // POST /schedules/:id/complete - Complete session
+  async completeSession(id: string): Promise<Schedule | null> {
+    const { user, extractData } = useApiClients();
+    try {
+      const response = await user<ApiResponse<Schedule>>(
+        `/schedules/${id}/complete`,
+        {
+          method: "POST",
+        },
+      );
+      return extractData(response);
+    } catch {
+      return null;
+    }
+  },
+
+  // GET /entitlements/user/:userId/active - Get active entitlements
+  async fetchActiveEntitlements(userId: string): Promise<Entitlement[]> {
+    const { user, extractData } = useApiClients();
+    try {
+      const response = await user<ApiResponse<Entitlement[]>>(
+        `/entitlements/user/${userId}/active`,
+        { method: "GET" },
+      );
+      return extractData(response) || [];
+    } catch {
+      return [];
     }
   },
 

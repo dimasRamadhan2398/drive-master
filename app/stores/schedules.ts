@@ -17,7 +17,9 @@ export interface ScheduleSlot {
   time: string;
   duration: string;
   car: string;
+  vehicleId: string;
   instructor: string;
+  instructorId: string;
   student: string | null;
   status: ScheduleStatus;
 }
@@ -47,7 +49,9 @@ export const mapScheduleToSlot = (
         ? `${Math.floor(schedule.duration / 60)}h ${schedule.duration % 60 > 0 ? `${schedule.duration % 60}m` : ""}`.trim()
         : `${schedule.duration} min`,
     car: "vehicleName" in schedule ? schedule.vehicleName : "",
+    vehicleId: "vehicleId" in schedule ? schedule.vehicleId : "",
     instructor: "instructorName" in schedule ? schedule.instructorName : "",
+    instructorId: "instructorId" in schedule ? schedule.instructorId : "",
     student: "studentName" in schedule ? schedule.studentName || null : null,
     status: schedule.status,
   };
@@ -534,11 +538,13 @@ export const useSchedulesStore = defineStore("schedules", {
 
     async bookSlot(
       id: string,
-      studentName: string,
+      data: { userId: string; entitlementId: string; notes?: string },
     ): Promise<ScheduleSlot | null> {
       try {
         const schedule = await scheduleService.bookSlot(id, {
-          studentId: "", // Will be resolved by backend
+          userId: data.userId,
+          entitlementId: data.entitlementId,
+          notes: data.notes,
         });
         if (schedule) {
           const slot = mapScheduleToSlot(schedule);
@@ -549,9 +555,9 @@ export const useSchedulesStore = defineStore("schedules", {
           return slot;
         }
         return null;
-      } catch {
-        // Fallback to local booking
-        return this.bookSlotLocal(id, studentName);
+      } catch (err) {
+        console.error("Error booking slot:", err);
+        return null;
       }
     },
 
@@ -605,34 +611,44 @@ export const useSchedulesStore = defineStore("schedules", {
 
     // ==================== SESSION OPERATIONS ====================
 
-    startSession(id: string): ScheduleSlot | null {
-      const index = this.slots.findIndex((s) => s.id === id);
-      if (index !== -1) {
-        const slot = this.slots[index];
-        if (!slot) return null;
-        if (slot.status !== "booked") {
-          console.warn("Can only start a session for a booked slot");
-          return null;
+    async startSession(id: string): Promise<ScheduleSlot | null> {
+      try {
+        const schedule = await scheduleService.startSession(id);
+        if (schedule) {
+          const slot = mapScheduleToSlot(schedule);
+          const index = this.slots.findIndex((s) => s.id === id);
+          if (index !== -1) {
+            this.slots[index] = slot;
+          }
+          return slot;
         }
-        slot.status = "in-progress";
-        return slot;
+        return null;
+      } catch (err) {
+        console.error("Error starting session:", err);
+        return null;
       }
-      return null;
     },
 
-    completeSession(id: string): ScheduleSlot | null {
-      const index = this.slots.findIndex((s) => s.id === id);
-      if (index !== -1) {
-        const slot = this.slots[index];
-        if (!slot) return null;
-        if (slot.status !== "in-progress") {
-          console.warn("Can only complete a session that is in progress");
-          return null;
+    async completeSession(id: string): Promise<ScheduleSlot | null> {
+      try {
+        const schedule = await scheduleService.completeSession(id);
+        if (schedule) {
+          const slot = mapScheduleToSlot(schedule);
+          const index = this.slots.findIndex((s) => s.id === id);
+          if (index !== -1) {
+            this.slots[index] = slot;
+          }
+          return slot;
         }
-        slot.status = "completed";
-        return slot;
+        return null;
+      } catch (err) {
+        console.error("Error completing session:", err);
+        return null;
       }
-      return null;
+    },
+
+    async fetchUserEntitlements(userId: string) {
+      return await scheduleService.fetchActiveEntitlements(userId);
     },
 
     // ==================== FILTER OPERATIONS ====================

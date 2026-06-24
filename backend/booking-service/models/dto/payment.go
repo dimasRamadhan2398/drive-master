@@ -32,7 +32,7 @@ const (
 
 type CreatePaymentRequest struct {
 	EnrollmentID uuid.UUID `json:"enrollmentId" binding:"required"`
-	UserID       uint      `json:"userId" binding:"required"`
+	UserID       uuid.UUID `json:"userId" binding:"required"`
 	Amount       float64   `json:"amount" binding:"required"`
 	PaymentMethod PaymentMethod `json:"paymentMethod" binding:"required"`
 }
@@ -40,7 +40,7 @@ type CreatePaymentRequest struct {
 type PaymentResponse struct {
 	ID            uint           `json:"id"`
 	EnrollmentID  uuid.UUID     `json:"enrollmentId"`
-	UserID        uint           `json:"userId"`
+	UserID        uuid.UUID      `json:"userId"`
 	OrderID       string         `json:"orderId"`
 	Amount        float64        `json:"amount"`
 	PaymentMethod PaymentMethod  `json:"paymentMethod"`
