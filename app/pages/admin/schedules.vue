@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
-import { ref, computed } from "vue";
-import { useRoute, navigateTo } from "nuxt/app";
+import { useToast, useInstructorsStore, useVehiclesStore, useSchedulesStore, useI18n, useLocale, useSettings } from "#imports";
+import { ref, computed, onMounted } from "vue";
+import type { ScheduleSlot } from "~/stores/schedules";
+import { useRoute, navigateTo } from "#imports";
 import AddSlotModal from "~/components/schedules/AddSlotModal.vue";
 import EditSlotModal from "~/components/schedules/EditSlotModal.vue";
+import ManualBookingModal from "~/components/schedules/ManualBookingModal.vue";
 
 const { t } = useI18n();
 const { locale } = useLocale();
@@ -12,9 +14,12 @@ definePageMeta({ layout: "admin" });
 const route = useRoute();
 const toast = useToast();
 const instructorsStore = useInstructorsStore();
+const vehiclesStore = useVehiclesStore();
 const schedulesStore = useSchedulesStore();
 const studentNameToBook = computed(() => route.query.studentName as string | undefined);
 const showAddSlotModal = ref(false);
+const showManualBookingModal = ref(false);
+const selectedBookingSlotId = ref("");
 const selectedDate = ref(new Date());
 
 // FIX: Define localDateStr to format the selected date
@@ -29,8 +34,6 @@ const localDateStr = computed(() => {
 const filterInstructor = ref("All Instructors");
 const filterVehicle = ref("All Vehicles");
 
-const { toggleSlotStatus: _toggleSlotStatus, deleteSlot: _deleteSlot } = useSchedules();
-
 // Use store's slots for display
 const timeSlots = computed(() => {
   if (schedulesStore.isInitialized) {
@@ -43,7 +46,7 @@ const instructors = computed(() => {
   return instructorsStore.instructors.map((value) => {
     return {
       label: value.name,
-      value: value.name, // Use name for comparison in filteredSlots
+      value: value.userId,
     };
   });
 });
@@ -52,7 +55,13 @@ const instructorOptions = computed(() => [
   { label: "All Instructors", value: "All Instructors" },
   ...instructors.value,
 ]);
-const vehicles = ["BYD Atto 1"];
+
+const vehicleOptionsList = computed(() => {
+  return vehiclesStore.vehicles.map((v) => ({
+    label: `${v.brand} ${v.model}`,
+    value: v.id,
+  }));
+});
 
 // FITUR BARU: Sinkronisasi jam operasional dari settings
 const { operatingHours } = useSettings();
@@ -87,9 +96,12 @@ const filteredSlots = computed(() => {
     const matchDate = slot.date === dateStr;
     const matchInst =
       filterInstructor.value === "All Instructors" ||
+      slot.instructorId === filterInstructor.value ||
       slot.instructor === filterInstructor.value;
     const matchVeh =
-      filterVehicle.value === "All Vehicles" || slot.car === filterVehicle.value;
+      filterVehicle.value === "All Vehicles" ||
+      slot.vehicleId === filterVehicle.value ||
+      slot.car === filterVehicle.value;
     return matchDate && matchInst && matchVeh;
   });
 });
@@ -100,28 +112,33 @@ function changeDay(offset: number) {
   selectedDate.value = nextDate;
 }
 
-function toggleSlotStatus(slotId: string) {
-  schedulesStore.updateSlotStatus(
-    slotId,
-    timeSlots.value.find((s) => s.id === slotId)?.status === "blocked"
-      ? "available"
-      : "blocked"
-  );
-  const slot = timeSlots.value.find((s) => s.id === slotId);
-  if (slot?.status === "blocked") {
-    toast.add({ title: "Slot Blocked", color: "warning", icon: "i-lucide-lock" });
-  } else {
-    toast.add({
-      title: `Slot is now ${slot?.status}`,
-      color: "success",
-      icon: "i-lucide-check",
-    });
+async function toggleSlotStatus(slotId: string) {
+  const currentSlot = timeSlots.value.find((s) => s.id === slotId);
+  if (!currentSlot) return;
+
+  const newStatus = currentSlot.status === "blocked" ? "available" : "blocked";
+  const success = await schedulesStore.updateSlot(slotId, { status: newStatus });
+
+  if (success) {
+    if (newStatus === "blocked") {
+      toast.add({ title: "Slot Blocked", color: "warning", icon: "i-lucide-lock" });
+    } else {
+      toast.add({
+        title: `Slot is now ${newStatus}`,
+        color: "success",
+        icon: "i-lucide-check",
+      });
+    }
   }
 }
 
-function deleteSlot(slotId: string) {
-  schedulesStore.deleteSlot(slotId);
-  toast.add({ title: "Slot Deleted", color: "error", icon: "i-lucide-trash" });
+async function deleteSlot(slotId: string) {
+  if (confirm("Are you sure you want to delete this slot?")) {
+    const success = await schedulesStore.deleteSlot(slotId);
+    if (success) {
+      toast.add({ title: "Slot Deleted", color: "error", icon: "i-lucide-trash" });
+    }
+  }
 }
 
 // FITUR BARU: Logika In-Progress Session
@@ -134,56 +151,39 @@ const isToday = computed(() => {
   return localDateStr.value === todayStr;
 });
 
-function startSession(slotId: string) {
+async function startSession(slotId: string) {
   if (
     confirm('Apakah kursus sudah mau jalan? Sesi akan berubah menjadi "In Progress".')
   ) {
-    schedulesStore.updateSlotStatus(slotId, "in-progress");
-    toast.add({
-      title: "Session Started",
-      description: "Driving session is now in progress.",
-      color: "warning",
-      icon: "i-lucide-play",
-    });
+    const success = await schedulesStore.startSession(slotId);
+    if (success) {
+      toast.add({
+        title: "Session Started",
+        description: "Driving session is now in progress.",
+        color: "warning",
+        icon: "i-lucide-play",
+      });
+    }
   }
 }
 
-function completeSession(slotId: string) {
+async function completeSession(slotId: string) {
   if (confirm('Apakah kursus sudah selesai? Sesi akan ditandai sebagai "Completed".')) {
-    schedulesStore.updateSlotStatus(slotId, "completed");
-    toast.add({
-      title: "Session Completed",
-      description: "Driving session has been finished.",
-      color: "neutral",
-      icon: "i-lucide-check-circle",
-    });
+    const success = await schedulesStore.completeSession(slotId);
+    if (success) {
+      toast.add({
+        title: "Session Completed",
+        description: "Driving session has been finished.",
+        color: "neutral",
+        icon: "i-lucide-check-circle",
+      });
+    }
   }
 }
 
 function handleManualBooking(slotId: string) {
-  const studentName = studentNameToBook.value
-    ? decodeURIComponent(studentNameToBook.value)
-    : null;
-  if (studentName) {
-    schedulesStore.bookSlotLocal(slotId, studentName);
-    toast.add({
-      title: "Slot Booked",
-      description: `Berhasil booking untuk ${studentName}`,
-      color: "success",
-    });
-    // Kembali ke halaman schedule tanpa query untuk membersihkan state
-    navigateTo("/admin/schedules");
-  } else {
-    const name = prompt("Masukkan nama siswa untuk booking manual:", "Siswa Manual");
-    if (name) {
-      schedulesStore.bookSlotLocal(slotId, name);
-      toast.add({
-        title: "Slot Booked",
-        description: `Berhasil booking untuk ${name}`,
-        color: "success",
-      });
-    }
-  }
+  selectedBookingSlotId.value = slotId;
+  showManualBookingModal.value = true;
 }
 
 function handleSlotClick(slot: any) {
@@ -201,19 +201,21 @@ function handleSlotClick(slot: any) {
   }
 }
 
-function cancelBooking(slotId: string) {
+async function cancelBooking(slotId: string) {
   if (confirm("Batalkan booking dan kembalikan slot menjadi Available?")) {
-    schedulesStore.cancelBookingLocal(slotId);
-    toast.add({
-      title: "Booking Cancelled",
-      description: "Slot is now available again.",
-      color: "neutral",
-    });
+    const success = await schedulesStore.cancelBooking(slotId);
+    if (success) {
+      toast.add({
+        title: "Booking Cancelled",
+        description: "Slot is now available again.",
+        color: "neutral",
+      });
+    }
   }
 }
 
 // FITUR BARU: Add Slot State & Logic
-function handleAddSlot(form: {
+async function handleAddSlot(form: {
   date?: string;
   time: string;
   duration: string;
@@ -257,15 +259,12 @@ function handleAddSlot(form: {
   }
 
   const id = Date.now().toString();
-  schedulesStore.addSlot({
-    id,
+  await schedulesStore.createSlot({
     date: form.date ?? localDateStr.value,
-    time: form.time,
-    duration: form.duration + " min",
-    car: form.car,
-    instructor: form.instructor,
-    student: null,
-    status: "available",
+    startTime: form.time,
+    duration: parseInt(form.duration),
+    vehicleId: form.car, // Should be ID
+    instructorId: form.instructor, // Should be ID
   });
 
   toast.add({ title: "New Slot Added", color: "success", icon: "i-lucide-check" });
@@ -276,7 +275,7 @@ function handleAddSlot(form: {
 const showEditSlotModal = ref(false);
 const selectedEditSlot = ref<any>(null);
 
-function openEditModal(slot: any) {
+function openEditModal(slot: ScheduleSlot) {
   if (slot.status !== "available") {
     toast.add({
       title: t("common.error"),
@@ -285,11 +284,15 @@ function openEditModal(slot: any) {
     });
     return;
   }
-  selectedEditSlot.value = slot;
+  selectedEditSlot.value = {
+    ...slot,
+    car: slot.vehicleId,
+    instructor: slot.instructorId
+  };
   showEditSlotModal.value = true;
 }
 
-function handleEditSlot(updated: {
+async function handleEditSlot(updated: {
   id: string;
   time: string;
   duration: string;
@@ -333,11 +336,11 @@ function handleEditSlot(updated: {
     return;
   }
 
-  schedulesStore.editSlot(updated.id, {
-    time: updated.time,
-    duration: updated.duration + " min",
-    car: updated.car,
-    instructor: updated.instructor,
+  await schedulesStore.updateSlot(updated.id, {
+    startTime: updated.time,
+    duration: parseInt(updated.duration),
+    vehicleId: updated.car,
+    instructorId: updated.instructor,
   });
 
   toast.add({ title: "Slot Updated", color: "success", icon: "i-lucide-check" });
@@ -346,6 +349,7 @@ function handleEditSlot(updated: {
 
 onMounted(() => {
   instructorsStore.fetchInstructors();
+  vehiclesStore.fetchVehicles();
   schedulesStore.initialize();
 });
 </script>
@@ -388,7 +392,7 @@ onMounted(() => {
             v-model:open="showAddSlotModal"
             :date="localDateStr"
             :instructors="instructors"
-            :vehicles="vehicles"
+            :vehicles="vehicleOptionsList"
             :operatingHours="currentDayOperatingHours"
             @saved="handleAddSlot"
           />
@@ -832,9 +836,15 @@ onMounted(() => {
         v-model:open="showEditSlotModal"
         :initialSlot="selectedEditSlot"
         :instructors="instructors"
-        :vehicles="vehicles"
+        :vehicles="vehicleOptionsList"
         :operatingHours="currentDayOperatingHours"
         @saved="handleEditSlot"
+      />
+
+      <ManualBookingModal
+        v-model:open="showManualBookingModal"
+        :slotId="selectedBookingSlotId"
+        @booked="schedulesStore.fetchByDate(localDateStr)"
       />
     </template>
   </UDashboardPanel>

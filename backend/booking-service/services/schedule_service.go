@@ -20,9 +20,12 @@ import (
 type ScheduleService struct {
 	scheduleRepo        repositories.IScheduleRepository
 	enrollmentRepo      repositories.IEnrollmentRepository
+	sessionRepo         repositories.ISessionRepository
+	entitlementRepo     repositories.IEntitlementRepository
+	sessionService      ISessionService
 	availabilityService IAvailabilityService
 	userClient          uClient.IUserClient
-	coreClient         	cClient.ICoreClient
+	coreClient          cClient.ICoreClient
 }
 
 type IScheduleService interface {
@@ -35,12 +38,17 @@ type IScheduleService interface {
 	GetAvailableSchedules(ctx context.Context, startDate, endDate string) (*dto.ScheduleListResponse, error)
 	BookSlot(ctx context.Context, slotID uint, req dto.BookSlotRequest) (*dto.ScheduleResponse, error)
 	CancelBooking(ctx context.Context, slotID uint) error
+	StartSession(ctx context.Context, slotID uint) (*dto.ScheduleResponse, error)
+	CompleteSession(ctx context.Context, slotID uint) (*dto.ScheduleResponse, error)
 	GetStats(ctx context.Context) (*dto.ScheduleStatsResponse, error)
 }
 
 func NewScheduleService(
 	scheduleRepo repositories.IScheduleRepository,
 	enrollmentRepo repositories.IEnrollmentRepository,
+	sessionRepo repositories.ISessionRepository,
+	entitlementRepo repositories.IEntitlementRepository,
+	sessionService ISessionService,
 	availabilityService IAvailabilityService,
 	userClient uClient.IUserClient,
 	coreClient cClient.ICoreClient,
@@ -48,6 +56,9 @@ func NewScheduleService(
 	return &ScheduleService{
 		scheduleRepo:        scheduleRepo,
 		enrollmentRepo:      enrollmentRepo,
+		sessionRepo:         sessionRepo,
+		entitlementRepo:     entitlementRepo,
+		sessionService:      sessionService,
 		availabilityService: availabilityService,
 		userClient:          userClient,
 		coreClient:          coreClient,
@@ -325,15 +336,45 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 		return nil, err
 	}
 
-	// Check if enrollment exists
-	_, err = s.enrollmentRepo.FindByID(ctx, req.EntitlementID)
+	// Check if entitlement exists and is active
+	entitlement, err := s.entitlementRepo.FindByID(ctx, req.EntitlementID)
 	if err != nil {
-		return nil, errors.New("enrollment not found")
+		return nil, errors.New("entitlement not found")
+	}
+
+	if entitlement.UsedSessions >= entitlement.TotalSessions {
+		return nil, errors.New("entitlement has no sessions remaining")
+	}
+
+	if entitlement.ExpiresAt.Before(time.Now()) {
+		return nil, errors.New("entitlement has expired")
 	}
 
 	// Book the slot
-	if err := s.scheduleRepo.BookSlot(ctx, slotID, req.UserID, req.EntitlementID); err != nil {
+	if err := s.scheduleRepo.BookSlot(ctx, slotID, req.UserID, entitlement.EnrollmentID); err != nil {
 		return nil, err
+	}
+
+	// Create a driving session record using SessionService
+	_, err = s.sessionService.CreateSession(ctx, dto.CreateSessionRequest{
+		EnrollmentID:  entitlement.EnrollmentID,
+		EntitlementID: entitlement.ID,
+		UserID:        entitlement.UserID,
+		InstructorID:  schedule.InstructorID,
+		CarID:         schedule.CarID,
+		ScheduleID:    &slotID,
+		Date:          schedule.Date,
+		Time:          schedule.Time,
+		Duration:      schedule.Duration,
+		Notes:         req.Notes,
+	})
+	if err != nil {
+		log.Printf("Failed to create driving session: %v", err)
+	}
+
+	// Increment used sessions
+	if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, entitlement.UsedSessions+1); err != nil {
+		log.Printf("Failed to increment used sessions: %v", err)
 	}
 
 	// Reload schedule
@@ -355,7 +396,56 @@ func (s *ScheduleService) CancelBooking(ctx context.Context, slotID uint) error 
 		return errors.New("schedule slot is not booked")
 	}
 
-	return s.scheduleRepo.ReleaseSlot(ctx, slotID)
+	// Find the session and cancel it via SessionService
+	session, err := s.sessionRepo.FindByScheduleID(ctx, slotID)
+	if err == nil && session != nil {
+		if _, err := s.sessionService.CancelSession(ctx, session.ID); err != nil {
+			log.Printf("Warning: failed to cancel session: %v", err)
+		}
+	} else {
+		// Fallback for direct schedule release if session not found
+		return s.scheduleRepo.ReleaseSlot(ctx, slotID)
+	}
+
+	return nil
+}
+
+func (s *ScheduleService) StartSession(ctx context.Context, slotID uint) (*dto.ScheduleResponse, error) {
+	session, err := s.sessionRepo.FindByScheduleID(ctx, slotID)
+	if err != nil || session == nil {
+		return nil, errors.New("booked session not found for this schedule")
+	}
+
+	if _, err := s.sessionService.StartSession(ctx, session.ID); err != nil {
+		return nil, err
+	}
+
+	// Reload schedule
+	schedule, err := s.scheduleRepo.FindByID(ctx, slotID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.enrichSchedule(ctx, schedule)
+}
+
+func (s *ScheduleService) CompleteSession(ctx context.Context, slotID uint) (*dto.ScheduleResponse, error) {
+	session, err := s.sessionRepo.FindByScheduleID(ctx, slotID)
+	if err != nil || session == nil {
+		return nil, errors.New("booked session not found for this schedule")
+	}
+
+	if _, err := s.sessionService.CompleteSession(ctx, session.ID); err != nil {
+		return nil, err
+	}
+
+	// Reload schedule
+	schedule, err := s.scheduleRepo.FindByID(ctx, slotID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.enrichSchedule(ctx, schedule)
 }
 
 func (s *ScheduleService) GetStats(ctx context.Context) (*dto.ScheduleStatsResponse, error) {

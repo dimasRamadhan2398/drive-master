@@ -21,7 +21,7 @@ type IEnrollmentRepository interface {
 	Update(ctx context.Context, enrollment *models.Enrollment) error
 	Delete(ctx context.Context, enrollment *models.Enrollment) error
 	FindAll(ctx context.Context) ([]models.Enrollment, error)
-	FindByUserID(ctx context.Context, userID uint) ([]models.Enrollment, error)
+	FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.Enrollment, error)
 	FindByStatus(ctx context.Context, status models.EnrollmentStatus) ([]models.Enrollment, int64, error)
 	FindByPackageID(ctx context.Context, packageID uint) ([]models.Enrollment, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status models.EnrollmentStatus) error
@@ -87,7 +87,7 @@ func (r *EnrollmentRepository) FindAll(ctx context.Context) ([]models.Enrollment
 	return enrollments, nil
 }
 
-func (r *EnrollmentRepository) FindByUserID(ctx context.Context, userID uint) ([]models.Enrollment, error) {
+func (r *EnrollmentRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.Enrollment, error) {
 	var enrollments []models.Enrollment
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"user_id": userID}).

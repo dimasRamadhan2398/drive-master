@@ -9,8 +9,8 @@ import (
 // Enrollment DTOs (represents package purchase/enrollment)
 
 type CreateEnrollmentRequest struct {
-	UserID    uint   `json:"userId" binding:"required"`
-	PackageID uint   `json:"packageId" binding:"required"` // ref: core-service (package)
+	UserID    uuid.UUID `json:"userId" binding:"required"`
+	PackageID uint      `json:"packageId" binding:"required"` // ref: core-service (package)
 	AddOns    []uint `json:"addOns"`                      // optional add-ons (night driving, weekend, etc.)
 }
 
@@ -21,7 +21,7 @@ type UpdateEnrollmentRequest struct {
 
 type EnrollmentResponse struct {
 	ID         uuid.UUID `json:"id"`
-	UserID     uint      `json:"userId"`
+	UserID     uuid.UUID `json:"userId"`
 	PackageID  uint      `json:"packageId"`
 	Status     string    `json:"status"`
 	TotalPrice float64   `json:"totalPrice"`
@@ -84,11 +84,11 @@ type EnrollmentListResponse = PagedData[EnrollmentResponse]
 // DrivingSession DTOs
 
 type CreateDrivingSessionRequest struct {
-	EnrollmentID  uint      `json:"enrollmentId" binding:"required"`
-	EntitlementID uint      `json:"entitlementId" binding:"required"`
-	UserID        uint      `json:"userId" binding:"required"`
-	InstructorID  uint      `json:"instructorId" binding:"required"`
-	CarID         uint      `json:"carId" binding:"required"`
+	EnrollmentID  uuid.UUID `json:"enrollmentId" binding:"required"`
+	EntitlementID uuid.UUID `json:"entitlementId" binding:"required"`
+	UserID        uuid.UUID `json:"userId" binding:"required"`
+	InstructorID  uuid.UUID `json:"instructorId" binding:"required"`
+	CarID         uuid.UUID `json:"carId" binding:"required"`
 	ScheduleID    *uint     `json:"scheduleId"`
 	Date          time.Time `json:"date" binding:"required"`
 	Time          string    `json:"time" binding:"required"` // HH:MM format
@@ -99,11 +99,11 @@ type CreateDrivingSessionRequest struct {
 
 type DrivingSessionResponse struct {
 	ID            uint       `json:"id"`
-	EnrollmentID  uint       `json:"enrollmentId"`
-	EntitlementID uint       `json:"entitlementId"`
-	UserID        uint       `json:"userId"`
-	InstructorID  uint       `json:"instructorId"`
-	CarID         uint       `json:"carId"`
+	EnrollmentID  uuid.UUID  `json:"enrollmentId"`
+	EntitlementID uuid.UUID  `json:"entitlementId"`
+	UserID        uuid.UUID  `json:"userId"`
+	InstructorID  uuid.UUID  `json:"instructorId"`
+	CarID         uuid.UUID  `json:"carId"`
 	ScheduleID    *uint      `json:"scheduleId"`
 	Date          string     `json:"date"`  // YYYY-MM-DD format
 	Time          string     `json:"time"` // HH:MM format
@@ -134,7 +134,7 @@ type SessionListResponse = DrivingSessionListResponse
 // UserEntitlement DTOs
 
 type CreateEntitlementRequest struct {
-	UserID            uint      `json:"userId" binding:"required"`
+	UserID            uuid.UUID `json:"userId" binding:"required"`
 	SourceType        string    `json:"sourceType" binding:"required"`
 	SourceID          string    `json:"sourceId" binding:"required"`
 	TotalSessions     int       `json:"totalSessions" binding:"required"`
@@ -149,7 +149,7 @@ type UpdateEntitlementRequest struct {
 
 type EntitlementResponse struct {
 	ID                uuid.UUID `json:"id"`
-	UserID            uint      `json:"userId"`
+	UserID            uuid.UUID `json:"userId"`
 	SourceType        string    `json:"sourceType"`
 	SourceID          string    `json:"sourceId"`
 	TotalSessions     int       `json:"totalSessions"`
