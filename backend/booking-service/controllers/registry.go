@@ -20,12 +20,6 @@ func (r *Registry) GetEntitlementController() IEntitlementController {
 	)
 }
 
-func (r *Registry) GetCertificationController() ICertificationController {
-	return NewCertificationController(
-		r.service.GetCertificationService(),
-	)
-}
-
 func (r *Registry) GetEnrollmentController() IEnrollmentController {
 	return NewEnrollmentController(
 		r.service.GetEnrollmentService(),
@@ -55,7 +49,6 @@ func (r *Registry) GetPaymentController() IPaymentController {
 type IControllerRegistry interface {
 	GetSessionController() ISessionController
 	GetEntitlementController() IEntitlementController
-	GetCertificationController() ICertificationController
 	GetEnrollmentController() IEnrollmentController
 	GetScheduleController() IScheduleController
 	GetDashboardController() IDashboardController

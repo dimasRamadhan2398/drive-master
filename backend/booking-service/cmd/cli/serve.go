@@ -11,9 +11,9 @@ import (
 	"booking-service/clients/core"
 	"booking-service/clients/user"
 	"booking-service/controllers"
-	"booking-service/pkg/config"
 	"booking-service/docs"
 	"booking-service/models"
+	"booking-service/pkg/config"
 	"booking-service/pkg/kafka"
 	"booking-service/pkg/middlewares"
 	"booking-service/pkg/scheduler"
@@ -90,8 +90,6 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Initialize repositories
 	sessionRepo := repositories.NewSessionRepository(db)
 	entitlementRepo := repositories.NewEntitlementRepository(db)
-	certificationRepo := repositories.NewCertificationRepository(db)
-	userCertRepo := repositories.NewUserCertificationRepository(db)
 	enrollmentRepo := repositories.NewEnrollmentRepository(db)
 	scheduleRepo := repositories.NewScheduleRepository(db)
 	paymentRepo := repositories.NewPaymentRepository(db)
@@ -105,12 +103,11 @@ func runServe(cmd *cobra.Command, args []string) {
 	userAnonymizationService := services.NewUserAnonymizationService(enrollmentRepo, sessionRepo, entitlementRepo)
 
 	// Initialize Kafka consumer for handling user.deleted events
-	eventPublisher := initKafkaConsumer(userAnonymizationService)
+	_ = initKafkaConsumer(userAnonymizationService)
 
 	// Initialize services (after Kafka is initialized so we can pass the eventPublisher)
 	sessionService := services.NewSessionService(sessionRepo)
 	entitlementService := services.NewEntitlementService(entitlementRepo)
-	certificationService := services.NewCertificationService(certificationRepo, userCertRepo, userClient, eventPublisher)
 	enrollmentService := services.NewEnrollmentService(enrollmentRepo, entitlementRepo)
 
 	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, availabilityService, userClient, coreClient)
@@ -119,13 +116,12 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	// Create service registry
 	serviceRegistry := &serviceRegistryImpl{
-		sessionService:        sessionService,
-		entitlementService:    entitlementService,
-		certificationService:  certificationService,
-		enrollmentService:     enrollmentService,
-		scheduleService:       scheduleService,
-		paymentService:        paymentService,
-		revenueService:        revenueService,
+		sessionService:     sessionService,
+		entitlementService: entitlementService,
+		enrollmentService:  enrollmentService,
+		scheduleService:    scheduleService,
+		paymentService:     paymentService,
+		revenueService:     revenueService,
 	}
 
 	// Initialize schedule generator for automatic schedule slot generation
@@ -199,8 +195,6 @@ func runMigrations(db *gorm.DB) {
 		&models.Enrollment{},
 		&models.UserEntitlement{},
 		&models.DrivingSession{},
-		&models.Certification{},
-		&models.UserCertification{},
 		&models.Schedule{},
 		&models.Payment{},
 	); err != nil {
@@ -246,15 +240,13 @@ func fixEnrollmentIDColumnType(db *gorm.DB) {
 
 // serviceRegistryImpl implements services.IServiceRegistry
 type serviceRegistryImpl struct {
-	sessionService        services.ISessionService
-	entitlementService    services.IEntitlementService
-	certificationService services.ICertificationService
-	enrollmentService     services.IEnrollmentService
-	scheduleService       services.IScheduleService
-	paymentService        services.IPaymentService
-	revenueService        services.IRevenueService
+	sessionService     services.ISessionService
+	entitlementService services.IEntitlementService
+	enrollmentService  services.IEnrollmentService
+	scheduleService    services.IScheduleService
+	paymentService     services.IPaymentService
+	revenueService     services.IRevenueService
 }
-
 
 func (s *serviceRegistryImpl) GetSessionService() services.ISessionService {
 	return s.sessionService
@@ -262,10 +254,6 @@ func (s *serviceRegistryImpl) GetSessionService() services.ISessionService {
 
 func (s *serviceRegistryImpl) GetEntitlementService() services.IEntitlementService {
 	return s.entitlementService
-}
-
-func (s *serviceRegistryImpl) GetCertificationService() services.ICertificationService {
-	return s.certificationService
 }
 
 func (s *serviceRegistryImpl) GetEnrollmentService() services.IEnrollmentService {

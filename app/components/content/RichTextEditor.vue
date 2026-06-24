@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Editor } from "@tiptap/core";
+import { Editor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -7,7 +7,7 @@ import Color from "@tiptap/extension-color";
 import TextAlign from "@tiptap/extension-text-align";
 import { onBeforeUnmount, watch } from "vue";
 
-const { t } = useI18n()
+const { t } = useI18n();
 const props = defineProps<{
   modelValue: string;
   placeholder?: string;
@@ -18,7 +18,7 @@ const emit = defineEmits<{
 }>();
 
 const isClient = ref(false);
-const editor = ref<Editor | null>(null);
+const editor = ref<Editor>();
 
 // Initialize editor only on client side
 onMounted(() => {
@@ -31,7 +31,6 @@ onMounted(() => {
           levels: [1, 2, 3],
         },
       }),
-      Underline,
       TextStyle,
       Color,
       TextAlign.configure({
@@ -74,7 +73,7 @@ onBeforeUnmount(() => {
       v-if="!isClient"
       class="min-h-[150px] flex items-center justify-center bg-gray-50 dark:bg-gray-950"
     >
-      <span class="text-sm text-gray-400">{{ t('common.loadingEditor') }}</span>
+      <span class="text-sm text-gray-400">{{ t("common.loadingEditor") }}</span>
     </div>
 
     <template v-else>

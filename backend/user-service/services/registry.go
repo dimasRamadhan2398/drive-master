@@ -114,7 +114,7 @@ func (r *Registry) GetRegionService() IRegionService {
 }
 
 func (r *Registry) GetCertificationService() ICertificationService {
-	return NewCertificationService(r.repoRegistry.GetCertification())
+	return NewCertificationService(r.repoRegistry.GetCertification(), r.repoRegistry.GetUser(), r.GetEmailService())
 }
 
 func (r *Registry) GetEntitlementService() IEntitlementService {

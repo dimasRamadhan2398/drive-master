@@ -31,7 +31,7 @@ type Schedule struct {
 	Status       ScheduleStatus `json:"status" gorm:"type:varchar(20);default:'available'"`
 	Notes        string         `json:"notes" gorm:"type:text"`
 	CreatedAt    time.Time      `json:"createdAt"`
-	UpdatedAt    time.Time     `json:"updatedAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
 }
 
 type CreateScheduleRequest struct {

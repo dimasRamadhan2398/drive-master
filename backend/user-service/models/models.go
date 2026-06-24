@@ -61,6 +61,7 @@ type MemberProfile struct {
 	AverageRating     float64   `json:"averageRating" gorm:"default:0"`
 	CreatedAt         time.Time `json:"createdAt"`
 	UpdatedAt         time.Time `json:"updatedAt"`
+	IdentityFullname  string   `json:"identityFullname" gorm:"size:255;default:''"`
 }
 
 // InstructorProfile represents the instructor_profiles table
@@ -155,6 +156,7 @@ const (
 type Certification struct {
 	ID           uuid.UUID           `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	InstructorID uuid.UUID           `json:"instructorId" gorm:"type:uuid;not null;index"`
+	MemberID     uuid.UUID           `json:"memberId" gorm:"type:uuid;not null;index"`
 	CertType     string              `json:"certType" gorm:"size:50;not null"`    // e.g., "BNSP", "SIM", "AWS"
 	CertNumber   string              `json:"certNumber" gorm:"size:100;not null"` // Certificate number
 	IssuedBy     string              `json:"issuedBy" gorm:"size:255"`            // Issuing authority

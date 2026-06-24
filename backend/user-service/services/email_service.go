@@ -23,6 +23,7 @@ type IMailtrapEmailService interface {
 	SendBookingConfirmationEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, lessonType string) error
 	SendLessonReminderEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, lessonType string) error
 	SendLessonCancellationEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, reason string) error
+	SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string) error
 }
 
 // MailtrapEmailService sends emails via Mailtrap Sending API
@@ -135,6 +136,54 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		logger.LogField("from", s.fromEmail),
 		logger.LogField("subject", input.Subject),
 	)
+
+	return nil
+}
+
+// SendCertificationEmail sends a certification issued email
+func (s *MailtrapEmailService) SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string) error {
+	subject := "Congratulations! Your Certification is Ready"
+
+	text := fmt.Sprintf(`Hello %s,
+
+Congratulations! You have successfully completed the %s package.
+
+Your certification has been issued.
+Certificate Number: %s
+
+You can view and download your certificate from your dashboard.
+
+Best regards,
+The Team`, name, packageName, certNumber)
+
+	html := fmt.Sprintf(`<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+	<h1 style="color: #28a745;">Congratulations!</h1>
+	<p>Hello <strong>%s</strong>,</p>
+	<p>You have successfully completed the <strong>%s</strong> package.</p>
+
+	<div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #28a745;">
+		<p><strong>Certification Issued</strong></p>
+		<p><strong>Certificate Number:</strong> %s</p>
+	</div>
+
+	<p>You can view and download your certificate from your dashboard.</p>
+
+	<p style="color: #666; margin-top: 30px;">Best regards,<br>The Team</p>
+</body>
+</html>`, name, packageName, certNumber)
+
+	err := s.SendEmail(ctx, dto.SendEmailRequest{
+		To:      []dto.EmailAddress{{Email: toEmail}},
+		Subject: subject,
+		Text:    text,
+		HTML:    html,
+	})
+
+	if err != nil {
+		s.LogError("Failed to send certification email", logger.LogField("error", err))
+		return err
+	}
 
 	return nil
 }

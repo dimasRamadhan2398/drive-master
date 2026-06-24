@@ -32,6 +32,7 @@ export interface CreateBlogPostData {
   title: string;
   slug?: string;
   author: string;
+  leadParagraph?: string;
   content: string;
   media?: BlogPostMedia[];
   publishing: {
