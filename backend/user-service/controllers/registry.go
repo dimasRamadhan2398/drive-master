@@ -36,7 +36,7 @@ func (r *ControllerRegistry) GetMemberController() IMemberController {
 		r.service.GetUserService(),
 		r.service.GetAuthService(),
 		r.service.GetMemberService(),
-		r.service.GetMemberCertificateService(),
+		r.service.GetCertificationService(),
 		r.service.GetRoleService(),
 		r.service.GetEmailService(),
 		r.service.GetMediaService(),

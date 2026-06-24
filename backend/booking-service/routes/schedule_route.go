@@ -26,7 +26,7 @@ func (r *ScheduleRoute) Run() {
 	{
 		schedules.GET("/all", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().ListSchedules)
 		schedules.POST("/create", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().CreateSchedule)
-		schedules.GET("/filter", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().ListSchedulesFiltered)
+		schedules.GET("/filter", r.controller.GetScheduleController().ListSchedulesFiltered)
 		schedules.GET("/available", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().GetAvailableSchedules)
 		schedules.GET("/stats", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().GetScheduleStats)
 		schedules.GET("/:id", r.authMiddleware.Authenticate(), r.controller.GetScheduleController().GetSchedule)

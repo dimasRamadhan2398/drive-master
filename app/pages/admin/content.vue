@@ -4,6 +4,8 @@ import { computed, ref, onMounted, reactive, h, resolveComponent } from "vue";
 import type { TableColumn } from "@nuxt/ui";
 import { useContentStore } from "~/stores/content";
 import type { Faq, BlogPost } from "~/stores/content";
+import type { CreateBlogPostData } from "~/services/contentService";
+import PostBlogModal, { type PostFormData } from "~/components/content/PostBlogModal.vue";
 
 const { t } = useI18n();
 definePageMeta({ layout: "admin" });
@@ -20,20 +22,6 @@ const tabs = [
 const activeTab = ref("blog");
 
 // ==================== BLOG SECTION ====================
-
-interface BlogFormData {
-  title: string;
-  slug: string;
-  author: string;
-  authorId: string;
-  leadParagraph: string;
-  content: string;
-  isFeatured: boolean;
-  isSpotlight: boolean;
-  priority: number;
-  highlight: boolean;
-  status: "draft" | "published" | "archived";
-}
 
 const blogPosts = computed(() => contentStore.blogPosts);
 
@@ -57,105 +45,68 @@ const blogColumns: TableColumn<BlogPost>[] = [
   { id: "actions" },
 ];
 
+// Blog Modal State
 const isBlogModalOpen = ref(false);
-const isEditing = ref(false);
-const editingId = ref<string | number | null>(null);
+const editingPost = ref<PostFormData | null>(null);
 
-const blogForm = reactive<BlogFormData>({
-  title: "",
-  slug: "",
-  author: "",
-  authorId: "00000000-0000-0000-0000-000000000000",
-  leadParagraph: "",
-  content: "",
-  isFeatured: false,
-  isSpotlight: false,
-  priority: 0,
-  highlight: false,
-  status: "draft",
-});
-
-// Generate slug from title
-const generateSlug = (title: string): string => {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-};
+const isEditing = computed(() => !!editingPost.value);
 
 function openNewBlog() {
-  isEditing.value = false;
-  editingId.value = null;
-  blogForm.title = "";
-  blogForm.slug = "";
-  blogForm.author = "";
-  blogForm.authorId = "00000000-0000-0000-0000-000000000000";
-  blogForm.leadParagraph = "";
-  blogForm.content = "";
-  blogForm.isFeatured = false;
-  blogForm.isSpotlight = false;
-  blogForm.priority = 0;
-  blogForm.highlight = false;
-  blogForm.status = "draft";
+  editingPost.value = null;
   isBlogModalOpen.value = true;
 }
 
 function openEditBlog(post: BlogPost) {
-  isEditing.value = true;
-  editingId.value = post.id;
-  blogForm.title = post.title;
-  blogForm.slug = post.slug || "";
-  blogForm.author = post.author;
-  blogForm.authorId = "00000000-0000-0000-0000-000000000000";
-  blogForm.leadParagraph = "";
-  blogForm.content = post.content;
-  blogForm.isFeatured = post.attractiveness?.isFeatured || false;
-  blogForm.isSpotlight = post.attractiveness?.isSpotlight || false;
-  blogForm.priority = post.attractiveness?.priority || 0;
-  blogForm.highlight = post.attractiveness?.highlight || false;
-  blogForm.status = post.status;
+  editingPost.value = {
+    id: post.id,
+    title: post.title,
+    slug: post.slug || "",
+    author: post.author,
+    leadParagraph: "",
+    content: post.content,
+    status: post.status,
+    media: post.media || [],
+    publishing: {
+      status: post.publishing?.status || post.status,
+      publishedAt: post.publishing?.publishedAt,
+      scheduledAt: post.publishing?.scheduledAt,
+    },
+    attractiveness: {
+      isFeatured: post.attractiveness?.isFeatured || false,
+      isSpotlight: post.attractiveness?.isSpotlight || false,
+      priority: post.attractiveness?.priority || 0,
+      highlight: post.attractiveness?.highlight || false,
+    },
+  };
   isBlogModalOpen.value = true;
 }
 
-function updateSlugFromTitle() {
-  if (!isEditing.value && blogForm.title) {
-    blogForm.slug = generateSlug(blogForm.title);
-  }
-}
-
-async function saveBlog() {
+async function handleBlogSaved(data: CreateBlogPostData) {
   try {
-    const blogData = {
-      title: blogForm.title,
-      slug: blogForm.slug || undefined,
-      author: blogForm.author,
-      content: blogForm.content,
-      publishing: {
-        status: blogForm.status,
-      },
-      attractiveness: {
-        isFeatured: blogForm.isFeatured,
-        isSpotlight: blogForm.isSpotlight,
-        priority: blogForm.priority,
-        highlight: blogForm.highlight,
-      },
-    };
-
-    if (isEditing.value && editingId.value) {
-      await contentStore.updatePost(editingId.value, blogData);
+    if (editingPost.value) {
+      // Update existing post
+      await contentStore.updatePost(editingPost.value.id, {
+        title: data.title,
+        slug: data.slug,
+        author: data.author,
+        content: data.content,
+        publishing: data.publishing,
+        attractiveness: data.attractiveness,
+      });
       toast.add({ title: "Blog Post Updated", color: "success" });
     } else {
+      // Create new post
       await contentStore.addPost({
-        title: blogForm.title,
-        slug: blogForm.slug || undefined,
-        author: blogForm.author,
-        content: blogForm.content,
-        status: blogForm.status,
-        authorId: blogForm.authorId,
+        title: data.title,
+        slug: data.slug,
+        author: data.author,
+        content: data.content,
+        status: data.publishing?.status || "draft",
+        authorId: "00000000-0000-0000-0000-000000000000",
       });
       toast.add({ title: "Blog Post Created", color: "success" });
     }
-    isBlogModalOpen.value = false;
+    // Refresh the list
     contentStore.fetchBlogPosts();
   } catch (err) {
     toast.add({
@@ -181,6 +132,10 @@ async function deleteBlog(id: string | number) {
 
 const faqs = computed(() => contentStore.faqs);
 const isFaqsLoading = ref(false);
+
+// FAQ Modal State
+const isFaqEditing = ref(false);
+const editingFaqId = ref<string | null>(null);
 
 const faqColumns: TableColumn<Faq>[] = [
   { accessorKey: "question", header: t("admin.content.question") },
@@ -225,8 +180,8 @@ const faqForm = reactive({
 });
 
 function openNewFAQ() {
-  isEditing.value = false;
-  editingId.value = null;
+  isFaqEditing.value = false;
+  editingFaqId.value = null;
   faqForm.question = "";
   faqForm.answer = "";
   faqForm.category = "General";
@@ -235,8 +190,8 @@ function openNewFAQ() {
 }
 
 function openEditFAQ(faq: Faq) {
-  isEditing.value = true;
-  editingId.value = faq.id;
+  isFaqEditing.value = true;
+  editingFaqId.value = faq.id;
   faqForm.question = faq.question;
   faqForm.answer = faq.answer;
   faqForm.category = "";
@@ -246,8 +201,8 @@ function openEditFAQ(faq: Faq) {
 
 async function saveFAQ() {
   try {
-    if (isEditing.value && editingId.value) {
-      await contentStore.updateFaq(editingId.value as string, {
+    if (isFaqEditing.value && editingFaqId.value) {
+      await contentStore.updateFaq(editingFaqId.value, {
         question: faqForm.question,
         answer: faqForm.answer,
         isActive: faqForm.status === "published",
@@ -295,7 +250,7 @@ onMounted(() => {
       <UDashboardNavbar :title="t('admin.content.label')">
         <template #right>
           <UButton
-            v-if="activeTab === 0"
+            v-if="activeTab === 'blog'"
             icon="i-lucide-plus"
             color="warning"
             :label="t('admin.content.createBlog')"
@@ -369,115 +324,7 @@ onMounted(() => {
           </template>
         </UTabs>
       </div>
-
-      <!-- Blog Modal -->
-      <UModal
-        v-model:open="isBlogModalOpen"
-        :title="isEditing ? t('admin.content.editBlog') : t('admin.content.createBlog')"
-      >
-        <template #body>
-          <div class="space-y-4">
-            <!-- Title -->
-            <UFormField :label="t('admin.content.title')" required>
-              <UInput
-                v-model="blogForm.title"
-                color="warning"
-                class="w-full"
-                @input="updateSlugFromTitle"
-              />
-            </UFormField>
-
-            <!-- Slug -->
-            <UFormField :label="t('admin.content.slug')">
-              <UInput v-model="blogForm.slug" color="warning" class="w-full" />
-            </UFormField>
-
-            <!-- Author -->
-            <UFormField :label="t('admin.content.author')">
-              <UInput v-model="blogForm.author" color="warning" class="w-full" />
-            </UFormField>
-
-            <!-- Lead Paragraph -->
-            <UFormField :label="t('admin.content.leadParagraph')">
-              <UTextarea
-                v-model="blogForm.leadParagraph"
-                color="warning"
-                class="w-full"
-                :rows="2"
-              />
-            </UFormField>
-
-            <!-- Content -->
-            <UFormField :label="t('admin.content.content')">
-              <UTextarea
-                v-model="blogForm.content"
-                color="warning"
-                class="w-full"
-                :rows="8"
-              />
-            </UFormField>
-
-            <!-- Status -->
-            <UFormField :label="t('admin.content.status')">
-              <USelect
-                v-model="blogForm.status"
-                :items="[
-                  { label: 'Draft', value: 'draft' },
-                  { label: 'Published', value: 'published' },
-                  { label: 'Archived', value: 'archived' },
-                ]"
-                color="warning"
-                class="w-full"
-              />
-            </UFormField>
-
-            <!-- Attractiveness Section -->
-            <div class="border-t pt-4 mt-4">
-              <p class="text-sm font-medium mb-3">
-                {{ t("admin.content.attractiveness") }}
-              </p>
-
-              <div class="grid grid-cols-2 gap-4">
-                <!-- Priority -->
-                <UFormField :label="t('admin.content.priority')">
-                  <UInput
-                    v-model.number="blogForm.priority"
-                    type="number"
-                    color="warning"
-                    class="w-full"
-                    min="0"
-                  />
-                </UFormField>
-
-                <!-- Toggles -->
-                <div class="flex flex-col gap-3">
-                  <div class="flex items-center gap-2">
-                    <USwitch v-model="blogForm.isFeatured" color="warning" />
-                    <span class="text-sm">{{ t("admin.content.isFeatured") }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <USwitch v-model="blogForm.highlight" color="warning" />
-                    <span class="text-sm">{{ t("admin.content.highlight") }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </template>
-        <template #footer>
-          <div class="flex justify-end gap-3">
-            <UButton
-              :label="t('common.cancel')"
-              variant="ghost"
-              color="neutral"
-              @click="isBlogModalOpen = false"
-            />
-            <UButton :label="t('common.save')" color="warning" @click="saveBlog" />
-          </div>
-        </template>
-      </UModal>
-
-      <!-- FAQ Modal -->
+  <!-- FAQ Modal -->
       <UModal
         v-model:open="isFAQModalOpen"
         :title="isEditing ? t('admin.content.editFaq') : t('admin.content.addFaq')"
@@ -529,4 +376,12 @@ onMounted(() => {
       </UModal>
     </template>
   </UDashboardPanel>
+
+  <!-- Post Blog Modal -->
+  <PostBlogModal
+    :open="isBlogModalOpen"
+    :post="editingPost"
+    @update:open="(val) => (isBlogModalOpen = val)"
+    @saved="handleBlogSaved"
+  />
 </template>

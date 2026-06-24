@@ -10,6 +10,7 @@ import (
 	"user-service/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type EntitlementController struct {
@@ -228,4 +229,10 @@ func (c *EntitlementController) UseSession(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Session used successfully", resp)
+}
+
+// parseUUID parses a UUID from a path parameter
+func parseUUID(ctx *gin.Context, param string) (uuid.UUID, error) {
+	idStr := ctx.Param(param)
+	return uuid.Parse(idStr)
 }

@@ -22,23 +22,16 @@ func NewCertificationRoute(controller controllers.IControllerRegistry, group *gi
 }
 
 func (r *CertificationRoute) Run() {
-	group := r.group.Group("/certificates")
+	certGroup := r.group.Group("/certificates")
 	{
-		// Certificate stats
-		group.GET("/stats", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertificateStats)
-		group.POST("/issue", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().IssueCertification)
-		group.POST("/revoke", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().RevokeCertification)
-		group.GET("/user/:userId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetUserCertifications)
-	}
+		// Admin routes - Issue and manage certificates
+		certGroup.GET("/stats", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertificateStats)
+		certGroup.POST("", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().IssueCertificate)
+		certGroup.GET("/member/:memberId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetMemberCertificates)
+		certGroup.DELETE("/:id", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().RevokeCertificate)
 
-	memberGroup := r.group.Group("/members")
-	{
-		// Member Certification routes
-		memberGroup.POST("/:id/certifications", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().CreateCertification)
-		memberGroup.GET("/:id/certifications", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().ListCertifications)
-		memberGroup.GET("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertification)
-		memberGroup.PUT("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().UpdateCertification)
-		memberGroup.DELETE("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().DeleteCertification)
-		memberGroup.POST("/:id/certifications/:certId/verify", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().VerifyCertification)
+		// Member routes - View and download their certificates
+		certGroup.GET("/:id", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertificate)
+		certGroup.GET("/:id/pdf", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().DownloadCertificatePDF)
 	}
 }

@@ -22,12 +22,10 @@ onMounted(async () => {
   if (contentStore.blogPosts.length === 0) {
     await contentStore.fetchBlogPosts({ status: "published" });
   }
-});
 
-// Increment views on load
-if (post.value) {
-  post.value.views = (post.value.views || 0) + 1;
-}
+  // Increment view count to backend (fire-and-forget, non-blocking)
+  contentStore.incrementBlogPostViewCount(Number(postId.value));
+});
 
 // Related posts (exclude current)
 const relatedPosts = computed(() =>

@@ -11,7 +11,9 @@ import RichTextEditor from "./RichTextEditor.vue";
 export interface PostFormData {
   id: number;
   title: string;
+  slug: string;
   author: string;
+  leadParagraph: string;
   content: string;
   status: "draft" | "published" | "archived";
   media: BlogPostMedia[];
@@ -53,7 +55,9 @@ const mediaInputRef = ref<HTMLInputElement | null>(null);
 const postForm = ref<PostFormData>({
   id: 0,
   title: "",
+  slug: "",
   author: "Admin",
+  leadParagraph: "",
   content: "",
   status: "draft",
   media: [],
@@ -74,7 +78,9 @@ function resetForm() {
   postForm.value = {
     id: 0,
     title: "",
+    slug: "",
     author: "Admin",
+    leadParagraph: "",
     content: "",
     status: "draft",
     media: [],
@@ -97,7 +103,9 @@ function initForm() {
     postForm.value = {
       id: props.post.id,
       title: props.post.title,
+      slug: props.post.slug || "",
       author: props.post.author,
+      leadParagraph: props.post.leadParagraph || "",
       content: props.post.content || "",
       status: props.post.status,
       media: props.post.media ? [...props.post.media] : [],
@@ -192,6 +200,24 @@ function removeMedia(index: number) {
   postForm.value.media.splice(index, 1);
 }
 
+// Generate slug from title (auto-generate if empty and not editing)
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+// Auto-generate slug when title changes (only for new posts)
+watch(
+  () => postForm.value.title,
+  (newTitle) => {
+    if (!isEditing.value && newTitle) {
+      postForm.value.slug = generateSlug(newTitle);
+    }
+  }
+);
+
 async function savePost() {
   if (!postForm.value.title.trim()) {
     toast.add({
@@ -207,7 +233,9 @@ async function savePost() {
   try {
     const data: CreateBlogPostData = {
       title: postForm.value.title,
+      slug: postForm.value.slug || undefined,
       author: postForm.value.author,
+      leadParagraph: postForm.value.leadParagraph || undefined,
       content: postForm.value.content,
       media: [...postForm.value.media],
       publishing: {
@@ -255,8 +283,29 @@ async function savePost() {
               class="w-full"
             />
           </UFormField>
+          <UFormField label="Slug">
+            <template #hint>
+              <span>URL-friendly version (auto-generated from title)</span>
+            </template>
+            <UInput
+              v-model="postForm.slug"
+              placeholder="e.g. how-to-charge-your-ev-at-home"
+              class="w-full"
+            />
+          </UFormField>
           <UFormField label="Author">
             <UInput v-model="postForm.author" placeholder="Admin" class="w-full" />
+          </UFormField>
+          <UFormField label="Lead Paragraph">
+            <template #hint>
+              <span>Brief summary shown in blog listings</span>
+            </template>
+            <UTextarea
+              v-model="postForm.leadParagraph"
+              placeholder="Write a brief summary of your post..."
+              class="w-full"
+              :rows="3"
+            />
           </UFormField>
           <UFormField label="Content">
             <RichTextEditor

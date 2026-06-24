@@ -335,6 +335,9 @@ const faqItems = computed(() => {
 // Schedules - Use store to fetch from API
 const schedulesStore = useSchedulesStore();
 
+// Loading state for schedules
+const schedulesLoading = ref(false);
+
 // Helper to format date to YYYY-MM-DD
 const formatDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -350,6 +353,40 @@ const todayDate = formatDateString(new Date());
 const selectedDate = ref(new Date().getDate());
 const selectedSlot = ref<string | null>(null);
 const currentDate = ref(new Date());
+
+// Fetch schedules when date changes
+const fetchSchedulesForDate = async (dateStr: string) => {
+  schedulesLoading.value = true;
+  try {
+    await schedulesStore.fetchByDate(dateStr);
+  } finally {
+    schedulesLoading.value = false;
+  }
+};
+
+// Watch for calendar date changes and fetch schedules
+watch(
+  () => [currentDate.value.getMonth(), currentDate.value.getFullYear()],
+  async () => {
+    // Fetch today's schedules when month/year changes
+    await fetchSchedulesForDate(todayDate);
+  },
+);
+
+// Also watch for selectedDate day changes
+watch(selectedDate, async (newDay) => {
+  const dateStr = `${currentDate.value.getFullYear()}-${String(currentDate.value.getMonth() + 1).padStart(2, "0")}-${String(newDay).padStart(2, "0")}`;
+  await fetchSchedulesForDate(dateStr);
+});
+
+// Calendar navigation
+function changeMonth(offset: number) {
+  const newDate = new Date(currentDate.value);
+  newDate.setMonth(newDate.getMonth() + offset);
+  currentDate.value = newDate;
+  // Reset selected date to 1 when changing month to avoid invalid dates
+  selectedDate.value = 1;
+}
 
 // Map store slots to TimeSlot format for UI compatibility
 const globalSlots = computed(() => schedulesStore.slots);
@@ -416,12 +453,12 @@ const testimonialsList = computed(() => testimonialsStore.testimonials);
 const packagesStore = usePackagesStore();
 const packagesList = computed(() => packagesStore.packages);
 
-onMounted(() => {
+onMounted(async () => {
   instructorsStore.fetchInstructors();
   testimonialsStore.fetchTestimonials();
   packagesStore.fetchPackages();
-  // Fetch today's sessions from API
-  schedulesStore.fetchTodaySessions();
+  // Fetch today's schedules from API
+  await fetchSchedulesForDate(todayDate);
 });
 </script>
 
@@ -748,61 +785,76 @@ onMounted(() => {
                   variant="ghost"
                   color="neutral"
                   size="md"
+                  @click="changeMonth(-1)"
                 />
-                <span class="text-md font-medium">{{ currentMonth }}</span>
+                <span class="text-md font-medium min-w-[100px] text-center">{{ currentMonth }}</span>
                 <UButton
                   icon="i-lucide-chevron-right"
                   variant="ghost"
                   color="neutral"
                   size="md"
+                  @click="changeMonth(1)"
                 />
               </div>
             </div>
           </template>
 
-          <!-- Custom Calendar Grid -->
-          <div class="grid grid-cols-7 gap-1 mb-2">
-            <div
-              v-for="day in weekDays"
-              :key="day"
-              class="text-center text-md font-medium text-muted py-2"
-            >
-              {{ day }}
-            </div>
-          </div>
-          <div class="grid grid-cols-7 gap-1">
-            <!-- PERUBAHAN: Kalender dinamis untuk Home Page -->
-            <div v-for="(item, index) in calendarDays" :key="index">
-              <button
-                v-if="item.day !== null"
-                :disabled="!item.available"
-                :class="[
-                  'w-full aspect-square rounded-lg text-md font-medium transition-all',
-                  selectedDate === item.day
-                    ? 'bg-primary text-white'
-                    : item.available && item.day >= 7
-                      ? 'hover:bg-primary/10 cursor-pointer'
-                      : 'text-muted/50 cursor-not-allowed',
-                ]"
-                @click="item.available && (selectedDate = item.day)"
-              >
-                {{ item.day }}
-              </button>
+          <div v-if="schedulesLoading" class="py-8">
+            <div class="animate-pulse space-y-4">
+              <div class="grid grid-cols-7 gap-1">
+                <div v-for="i in 7" :key="i" class="h-8 bg-muted rounded"></div>
+              </div>
+              <div class="grid grid-cols-7 gap-1">
+                <div v-for="i in 35" :key="i" class="aspect-square bg-muted rounded-lg"></div>
+              </div>
             </div>
           </div>
 
-          <div class="mt-4 flex items-center gap-4 text-md">
-            <div class="flex items-center gap-2">
+          <!-- Custom Calendar Grid -->
+          <template v-else>
+            <div class="grid grid-cols-7 gap-1 mb-2">
               <div
-                class="size-3 rounded bg-primary/10 border border-primary/30"
-              ></div>
-              <span class="text-muted">{{ t('home.available') }}</span>
+                v-for="day in weekDays"
+                :key="day"
+                class="text-center text-md font-medium text-muted py-2"
+              >
+                {{ day }}
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <div class="size-3 rounded bg-primary"></div>
-              <span class="text-muted">{{ t('home.selected') }}</span>
+            <div class="grid grid-cols-7 gap-1">
+              <!-- PERUBAHAN: Kalender dinamis untuk Home Page -->
+              <div v-for="(item, index) in calendarDays" :key="index">
+                <button
+                  v-if="item.day !== null"
+                  :disabled="!item.available"
+                  :class="[
+                    'w-full aspect-square rounded-lg text-md font-medium transition-all',
+                    selectedDate === item.day
+                      ? 'bg-primary text-white'
+                      : item.available && item.day >= 7
+                        ? 'hover:bg-primary/10 cursor-pointer'
+                        : 'text-muted/50 cursor-not-allowed',
+                  ]"
+                  @click="item.available && (selectedDate = item.day)"
+                >
+                  {{ item.day }}
+                </button>
+              </div>
             </div>
-          </div>
+
+            <div class="mt-4 flex items-center gap-4 text-md">
+              <div class="flex items-center gap-2">
+                <div
+                  class="size-3 rounded bg-primary/10 border border-primary/30"
+                ></div>
+                <span class="text-muted">{{ t('home.available') }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="size-3 rounded bg-primary"></div>
+                <span class="text-muted">{{ t('home.selected') }}</span>
+              </div>
+            </div>
+          </template>
         </UCard>
 
         <!-- Time Slots -->
@@ -813,15 +865,37 @@ onMounted(() => {
                 <UIcon name="i-lucide-clock" class="size-5 text-warning" />
                 <h3 class="font-semibold">{{ t('home.availableSlots') }}</h3>
               </div>
-              <!-- PERUBAHAN: Memperbaiki teks bulan statis -->
-              <UBadge
-                :label="`${currentMonthShortStr} ${selectedDate}`"
-                variant="subtle"
-              />
+              <div class="flex items-center gap-2">
+                <span v-if="schedulesLoading" class="text-xs text-muted">
+                  <UIcon name="i-lucide-loader-2" class="size-3 animate-spin inline" />
+                  Loading...
+                </span>
+                <UBadge
+                  v-else
+                  :label="`${currentMonthShortStr} ${selectedDate}`"
+                  variant="subtle"
+                />
+              </div>
             </div>
           </template>
 
-          <div class="space-y-3">
+          <div v-if="schedulesLoading" class="space-y-3">
+            <div
+              v-for="i in 4"
+              :key="i"
+              class="w-full p-4 rounded-lg border border-default animate-pulse"
+            >
+              <div class="flex items-center justify-between">
+                <div class="space-y-2">
+                  <div class="h-4 w-16 bg-muted rounded"></div>
+                  <div class="h-3 w-32 bg-muted rounded"></div>
+                </div>
+                <div class="h-6 w-16 bg-muted rounded"></div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="space-y-3">
             <button
               v-for="slot in timeSlots"
               :key="slot.time"
@@ -850,6 +924,14 @@ onMounted(() => {
                 />
               </div>
             </button>
+
+            <div
+              v-if="timeSlots.length === 0"
+              class="text-center py-8"
+            >
+              <UIcon name="i-lucide-calendar-x" class="size-8 text-muted mx-auto mb-2" />
+              <p class="text-muted text-sm">{{ t('home.noSlotsAvailable') || 'No slots available for this date' }}</p>
+            </div>
           </div>
 
           <template #footer>

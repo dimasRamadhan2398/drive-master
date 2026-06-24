@@ -9,35 +9,36 @@ import (
 	"user-service/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type MemberController struct {
-	userService              services.IUserService
-	authService              services.IAuthService
-	memberService            services.IMemberService
-	memberCertificateService services.IMemberCertificateService
-	roleService              services.IRoleService
-	emailService             services.IMailtrapEmailService
-	mediaService             services.IMediaService
+	userService        services.IUserService
+	authService        services.IAuthService
+	memberService      services.IMemberService
+	certService       services.ICertificationService
+	roleService        services.IRoleService
+	emailService       services.IMailtrapEmailService
+	mediaService       services.IMediaService
 }
 
 func NewMemberController(
 	userService services.IUserService,
 	authService services.IAuthService,
 	memberService services.IMemberService,
-	memberCertificateService services.IMemberCertificateService,
+	certService services.ICertificationService,
 	roleService services.IRoleService,
 	emailService services.IMailtrapEmailService,
 	mediaService services.IMediaService,
 ) IMemberController {
 	return &MemberController{
-		userService:              userService,
-		authService:              authService,
-		memberService:            memberService,
-		memberCertificateService: memberCertificateService,
-		roleService:              roleService,
-		emailService:             emailService,
-		mediaService:             mediaService,
+		userService:        userService,
+		authService:        authService,
+		memberService:      memberService,
+		certService:       certService,
+		roleService:        roleService,
+		emailService:       emailService,
+		mediaService:       mediaService,
 	}
 }
 
@@ -262,7 +263,7 @@ func (m *MemberController) GetMemberCertificates(ctx *gin.Context) {
 		return
 	}
 
-	certificates, err := m.memberCertificateService.GetCertificatesByMember(ctx.Request.Context(), userID)
+	certificates, err := m.certService.GetMemberCertificates(ctx.Request.Context(), userID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
@@ -282,19 +283,13 @@ func (m *MemberController) GetMemberCertificates(ctx *gin.Context) {
 // @Failure 404 {object} response.Response
 // @Router /members/{userId}/certificates/{certId}/download [get]
 func (m *MemberController) DownloadMemberCertificate(ctx *gin.Context) {
-	userID, err := getUserIDFromPath(ctx, "userId")
+	certID, err := uuid.Parse(ctx.Param("certId"))
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
 
-	certID, err := getUserIDFromPath(ctx, "certId")
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	pdfData, filename, err := m.memberCertificateService.GenerateCertificatePDF(ctx.Request.Context(), userID, certID)
+	pdfData, filename, err := m.certService.DownloadCertificatePDF(ctx.Request.Context(), certID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return

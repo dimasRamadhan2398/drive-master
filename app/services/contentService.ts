@@ -32,6 +32,7 @@ export interface CreateBlogPostData {
   title: string;
   slug?: string;
   author: string;
+  leadParagraph?: string;
   content: string;
   media?: BlogPostMedia[];
   publishing: {
@@ -465,6 +466,19 @@ export const contentService = {
           newOrder: orderNum,
         },
       });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  // ==================== BLOG POST VIEW COUNT ====================
+
+  // POST /articles/:id/view - Increment view count for blog post
+  async incrementBlogPostViewCount(id: string): Promise<boolean> {
+    const { core } = useApiClients();
+    try {
+      await core(`/articles/${id}/view`, { method: "POST" });
       return true;
     } catch {
       return false;
