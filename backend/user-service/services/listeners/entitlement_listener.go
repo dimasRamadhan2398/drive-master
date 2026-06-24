@@ -13,7 +13,7 @@ import (
 
 // CertificationServiceInterface defines the certification service methods needed by the listener
 type CertificationServiceInterface interface {
-	IssueCertification(ctx context.Context, input dto.IssueCertificationInput) (*dto.CertificationResponse, error)
+	IssueCertificate(ctx context.Context, input dto.IssueMemberCertificateInput) (*dto.IssueMemberCertificateResponse, error)
 }
 
 // EventPublisherInterface defines the event publisher methods needed by the listener
@@ -29,8 +29,8 @@ type IEntitlementCompletedListener interface {
 // EntitlementCompletedListener handles actions when an entitlement is completed
 // (all sessions used). It issues a certification and publishes an event.
 type EntitlementCompletedListener struct {
-	certService    CertificationServiceInterface
-	eventPublisher EventPublisherInterface
+	certService     CertificationServiceInterface
+	eventPublisher  EventPublisherInterface
 }
 
 // NewEntitlementCompletedListener creates a new listener instance
@@ -55,12 +55,11 @@ func (l *EntitlementCompletedListener) OnEntitlementCompleted(
 	}
 
 	// 2. Issue certification for the completed package
-	cert, err := l.certService.IssueCertification(ctx, dto.IssueCertificationInput{
+	cert, err := l.certService.IssueCertificate(ctx, dto.IssueMemberCertificateInput{
 		MemberID:      entitlement.MemberID,
 		EntitlementID: entitlement.ID,
 		PackageID:     entitlement.PackageID,
 		PackageName:   entitlement.PackageName,
-		IssuedAt:      time.Now(),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to issue certification: %w", err)

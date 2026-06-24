@@ -32,7 +32,6 @@ type IServiceRegistry interface {
 	GetRegionService() IRegionService
 	GetCertificationService() ICertificationService
 	GetEntitlementService() IEntitlementService
-	GetMemberCertificateService() IMemberCertificateService
 	GetTestimonialService() ITestimonialService
 	GetRecurringScheduleService() IRecurringScheduleService
 	GetDashboardService() IDashboardService
@@ -127,14 +126,6 @@ func (r *Registry) GetEntitlementService() IEntitlementService {
 		certService,
 		r.eventPublisher,
 		listener,
-	)
-}
-
-func (r *Registry) GetMemberCertificateService() IMemberCertificateService {
-	return NewMemberCertificateService(
-		r.repoRegistry.GetUser(),
-		r.repoRegistry.GetEntitlement(),
-		r.repoRegistry.GetCertification(),
 	)
 }
 
