@@ -311,6 +311,14 @@ services:
           - /api/v1/sessions
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: booking-enrollments-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/enrollments
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
       
       - name: booking-dashboard-route
         strip_path: false

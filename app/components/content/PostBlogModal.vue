@@ -7,6 +7,7 @@ import type {
   CreateBlogPostData,
 } from "~/services/contentService";
 import RichTextEditor from "./RichTextEditor.vue";
+import { watch } from "vue";
 
 export interface PostFormData {
   id: number;
@@ -30,7 +31,7 @@ export interface PostFormData {
   };
 }
 
-const { t } = useI18n()
+const { t } = useI18n();
 const props = defineProps<{
   open: boolean;
   post?: PostFormData | null;
@@ -208,7 +209,6 @@ function generateSlug(title: string): string {
     .replace(/^-|-$/g, "");
 }
 
-// Auto-generate slug when title changes (only for new posts)
 watch(
   () => postForm.value.title,
   (newTitle) => {
@@ -315,7 +315,7 @@ async function savePost() {
           </UFormField>
           <UFormField label="Media">
             <template #hint>
-              <span>{{ t('blog.mediaHint') }}</span>
+              <span>{{ t("blog.mediaHint") }}</span>
             </template>
             <input
               ref="mediaInputRef"
@@ -377,9 +377,9 @@ async function savePost() {
               class="w-full border-2 border-dashed border-default rounded-lg p-4 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer flex flex-col items-center gap-2"
             >
               <UIcon name="i-lucide-image-plus" class="size-6 text-muted" />
-              <span class="text-sm font-medium text-muted"
-                >{{ t('blog.clickToAddMedia') }}</span
-              >
+              <span class="text-sm font-medium text-muted">{{
+                t("blog.clickToAddMedia")
+              }}</span>
             </button>
           </UFormField>
 

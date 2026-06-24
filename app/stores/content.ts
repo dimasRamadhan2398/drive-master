@@ -1,19 +1,10 @@
 import { defineStore } from "pinia";
-import { contentService } from "~/services/contentService";
-import type {
+import {
   BlogPostMedia,
-  CreateBlogPostData,
-  UpdateBlogPostData,
+  contentService,
   CreateBlogArticleData,
-} from "~/services/contentService";
-
-// Re-export types from contentService for convenience
-export type {
-  BlogPostMedia,
-  CreateBlogPostData,
   UpdateBlogPostData,
-  CreateBlogArticleData,
-};
+} from "../services/contentService";
 
 export interface PageSection {
   id: string;

@@ -31,7 +31,7 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const { t } = useI18n()
+const { t } = useI18n();
 const toast = useToast();
 
 const form = ref({
@@ -139,6 +139,16 @@ function handleSave() {
             />
           </UFormField>
           <UFormField :label="t('admin.package.duration')">
+            <template #hint>
+              <div class="text-[10px] flex flex-col items-end text-transparent">
+                <span>Day: {{ operatingHours.start }}-{{ operatingHours.end }}</span>
+                <span v-if="operatingHours.nightEnabled"
+                  >Night: {{ operatingHours.nightStart }}-{{
+                    operatingHours.nightEnd
+                  }}</span
+                >
+              </div>
+            </template>
             <USelect
               :items="[{ label: '60 minutes', value: '60' }]"
               v-model="form.duration"
@@ -167,7 +177,12 @@ function handleSave() {
     </template>
     <template #footer>
       <div class="flex justify-end gap-3">
-        <UButton :label="t('common.cancel')" variant="ghost" color="neutral" @click="handleClose" />
+        <UButton
+          :label="t('common.cancel')"
+          variant="ghost"
+          color="neutral"
+          @click="handleClose"
+        />
         <UButton
           label="Create Slot"
           icon="i-lucide-plus"

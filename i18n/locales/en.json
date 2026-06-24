@@ -331,7 +331,9 @@
     "mediaGallery": "Media Gallery",
     "shareArticle": "Share this article:",
     "moreArticles": "More Articles",
-    "continueReading": "Continue reading from our blog"
+    "continueReading": "Continue reading from our blog",
+    "clickToAddMedia": "Click to add media",
+    "mediaHint": "Supports image and video formats"
   },
   "footer": {
     "tagline": "The first premium driving academy in Alam Sutera using 100% Electric Vehicles.",

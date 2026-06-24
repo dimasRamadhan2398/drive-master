@@ -331,7 +331,9 @@
     "mediaGallery": "Galeri Media",
     "shareArticle": "Bagikan artikel ini:",
     "moreArticles": "Artikel Lainnya",
-    "continueReading": "Lanjutkan membaca dari blog kami"
+    "continueReading": "Lanjutkan membaca dari blog kami",
+    "clickToAddMedia": "Klik untuk menambahkan media",
+    "mediaHint": "Mendukung format gambar dan video"
   },
   "footer": {
     "tagline": "Akademi Mengemudi Premium pertama di Alam Sutera menggunakan 100% Kendaraan Listrik.",

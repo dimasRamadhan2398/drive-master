@@ -144,7 +144,7 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 }
 
 func (s *EnrollmentService) ListEnrollments(ctx context.Context, page, limit int) (*dto.EnrollmentListResponse, error) {
-	enrollments, err := s.enrollmentRepo.FindAll(ctx)
+	enrollments, err := s.enrollmentRepo.FindAllPaginated(ctx, page, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -159,12 +159,15 @@ func (s *EnrollmentService) ListEnrollments(ctx context.Context, page, limit int
 }
 
 func (s *EnrollmentService) ListUserEnrollments(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.EnrollmentListResponse, error) {
-	enrollments, err := s.enrollmentRepo.FindByUserID(ctx, userID)
+	enrollments, err := s.enrollmentRepo.FindByUserIDPaginated(ctx, userID, page, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	total := int64(len(enrollments))
+	total, err := s.enrollmentRepo.CountByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
 
 	resp := s.enrollmentRepo.ToListResponse(enrollments, total, page, limit)
 	return &resp, nil

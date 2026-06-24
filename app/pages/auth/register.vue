@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { z } from "zod";
 import type { FormSubmitEvent } from "@nuxt/ui";
-import { reactive, ref, computed, onMounted } from "vue";
+import { reactive, ref, computed, onMounted, watch } from "vue";
 import { navigateTo, useRoute } from "nuxt/app";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "~/stores/auth";
@@ -47,33 +47,39 @@ const selectedPackage = computed(() => {
 });
 
 // Step 0: Personal Info
-const step0Schema = computed(() => z.object({
-  firstName: z.string().min(1, t("register.validation.firstNameRequired")),
-  lastName: z.string().min(1, t("register.validation.lastNameRequired")),
-  email: z.string().email(t("register.validation.emailRequired")),
-  phone: z.string().min(10, t("register.validation.phoneRequired")),
-  birthDate: z.string().min(1, t("register.validation.birthDateRequired")),
-}));
+const step0Schema = computed(() =>
+  z.object({
+    firstName: z.string().min(1, t("register.validation.firstNameRequired")),
+    lastName: z.string().min(1, t("register.validation.lastNameRequired")),
+    email: z.string().email(t("register.validation.emailRequired")),
+    phone: z.string().min(10, t("register.validation.phoneRequired")),
+    birthDate: z.string().min(1, t("register.validation.birthDateRequired")),
+  })
+);
 
 // Step 1: Package Selection
-const step1Schema = computed(() => z.object({
-  package: z.string().min(1, t("register.validation.packageRequired")),
-  startDate: z.string().optional(),
-}));
+const step1Schema = computed(() =>
+  z.object({
+    package: z.string().min(1, t("register.validation.packageRequired")),
+    startDate: z.string().optional(),
+  })
+);
 
 // Step 2: Account
-const step2Schema = computed(() => z
-  .object({
-    password: z.string().min(8, t("register.validation.passwordMinLength")),
-    confirmPassword: z.string(),
-    terms: z
-      .boolean()
-      .refine((val) => val === true, t("register.validation.termsRequired")),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: t("register.validation.passwordsNotMatch"),
-    path: ["confirmPassword"],
-  }));
+const step2Schema = computed(() =>
+  z
+    .object({
+      password: z.string().min(8, t("register.validation.passwordMinLength")),
+      confirmPassword: z.string(),
+      terms: z
+        .boolean()
+        .refine((val) => val === true, t("register.validation.termsRequired")),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t("register.validation.passwordsNotMatch"),
+      path: ["confirmPassword"],
+    })
+);
 
 const formData = reactive({
   // Step 0
@@ -102,10 +108,7 @@ async function prevStep() {
 }
 
 async function onSubmit(_event: FormSubmitEvent<any>) {
-  console.log(
-    "[REGISTER PAGE] onSubmit() called, currentStep:",
-    currentStep.value,
-  );
+  console.log("[REGISTER PAGE] onSubmit() called, currentStep:", currentStep.value);
 
   if (currentStep.value === 0) {
     nextStep();
@@ -178,7 +181,7 @@ async function onSubmit(_event: FormSubmitEvent<any>) {
           });
           console.log(
             "[REGISTER PAGE] Enrollment created:",
-            enrollmentsStore.currentEnrollment,
+            enrollmentsStore.currentEnrollment
           );
         }
       }
@@ -217,7 +220,7 @@ watch(
       formData.package = newPlan;
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 </script>
 
@@ -227,11 +230,7 @@ watch(
       <!-- Header -->
       <div class="text-center mb-8">
         <div class="flex items-center justify-center gap-2 mb-4">
-          <img
-            src="/drive-master-logo2.png"
-            alt="Drive Master Logo"
-            class="h-16"
-          />
+          <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
         </div>
         <h1 class="text-2xl font-bold">{{ t("register.title") }}</h1>
         <p class="text-muted mt-2">{{ t("register.subtitle") }}</p>
@@ -331,7 +330,9 @@ watch(
           @submit="onSubmit"
         >
           <UAlert icon="i-lucide-user-check" color="warning">
-            <template #title>{{ t("register.almostThere", { name: formData.firstName }) }}</template>
+            <template #title>{{
+              t("register.almostThere", { name: formData.firstName })
+            }}</template>
             <template #description>
               {{ t("register.createPassword") }}
             </template>
@@ -349,7 +350,11 @@ watch(
             />
           </UFormField>
 
-          <UFormField name="confirmPassword" :label="t('register.form.confirmPassword')" required>
+          <UFormField
+            name="confirmPassword"
+            :label="t('register.form.confirmPassword')"
+            required
+          >
             <UInput
               v-model="formData.confirmPassword"
               type="password"
@@ -380,58 +385,119 @@ watch(
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
                         <p>
-                          {{ t('register.tosContent.welcome', { url: 'www.drivemaster.id' }) }}
+                          {{
+                            t("register.tosContent.welcome", {
+                              url: "www.drivemaster.id",
+                            })
+                          }}
                         </p>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.servicesTitle') }}</h2>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.tosContent.servicesTitle") }}
+                        </h2>
                         <p>
-                          {{ t('register.tosContent.servicesDesc') }}
+                          {{ t("register.tosContent.servicesDesc") }}
                         </p>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.accountsTitle') }}</h2>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.tosContent.accountsTitle") }}
+                        </h2>
                         <p>
-                          {{ t('register.tosContent.accountsDesc') }}
+                          {{ t("register.tosContent.accountsDesc") }}
                         </p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>{{ t('register.tosContent.accountsList1') }}</li>
-                          <li>{{ t('register.tosContent.accountsList2') }}</li>
-                          <li>{{ t('register.tosContent.accountsList3') }}</li>
+                          <li>{{ t("register.tosContent.accountsList1") }}</li>
+                          <li>{{ t("register.tosContent.accountsList2") }}</li>
+                          <li>{{ t("register.tosContent.accountsList3") }}</li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.feesTitle') }}</h2>
-                        <p>{{ t('register.tosContent.feesDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.tosContent.feesTitle") }}
+                        </h2>
+                        <p>{{ t("register.tosContent.feesDesc") }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li><strong>{{ t('register.tosContent.feesList1').split(':')[0] }}:</strong> {{ t('register.tosContent.feesList1').split(':')[1] }}</li>
-                          <li><strong>{{ t('register.tosContent.feesList2').split(':')[0] }}:</strong> {{ t('register.tosContent.feesList2').split(':')[1] }}</li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.tosContent.feesList1").split(":")[0]
+                              }}:</strong
+                            >
+                            {{ t("register.tosContent.feesList1").split(":")[1] }}
+                          </li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.tosContent.feesList2").split(":")[0]
+                              }}:</strong
+                            >
+                            {{ t("register.tosContent.feesList2").split(":")[1] }}
+                          </li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.schedulingTitle') }}</h2>
-                        <p>{{ t('register.tosContent.schedulingDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.tosContent.schedulingTitle") }}
+                        </h2>
+                        <p>{{ t("register.tosContent.schedulingDesc") }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li><strong>{{ t('register.tosContent.schedulingList1').split(':')[0] }}:</strong> {{ t('register.tosContent.schedulingList1').split(':')[1] }}</li>
-                          <li><strong>{{ t('register.tosContent.schedulingList2').split(':')[0] }}:</strong> {{ t('register.tosContent.schedulingList2').split(':')[1] }}</li>
-                          <li><strong>{{ t('register.tosContent.schedulingList3').split(':')[0] }}:</strong> {{ t('register.tosContent.schedulingList3').split(':')[1] }}</li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.tosContent.schedulingList1").split(":")[0]
+                              }}:</strong
+                            >
+                            {{ t("register.tosContent.schedulingList1").split(":")[1] }}
+                          </li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.tosContent.schedulingList2").split(":")[0]
+                              }}:</strong
+                            >
+                            {{ t("register.tosContent.schedulingList2").split(":")[1] }}
+                          </li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.tosContent.schedulingList3").split(":")[0]
+                              }}:</strong
+                            >
+                            {{ t("register.tosContent.schedulingList3").split(":")[1] }}
+                          </li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.obligationsTitle') }}</h2>
-                        <p>{{ t('register.tosContent.obligationsDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.tosContent.obligationsTitle") }}
+                        </h2>
+                        <p>{{ t("register.tosContent.obligationsDesc") }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>{{ t('register.tosContent.obligationsList1') }}</li>
-                          <li>{{ t('register.tosContent.obligationsList2') }}</li>
-                          <li>{{ t('register.tosContent.obligationsList3') }}</li>
+                          <li>{{ t("register.tosContent.obligationsList1") }}</li>
+                          <li>{{ t("register.tosContent.obligationsList2") }}</li>
+                          <li>{{ t("register.tosContent.obligationsList3") }}</li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.liabilityTitle') }}</h2>
-                        <p>{{ t('register.tosContent.liabilityDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.tosContent.liabilityTitle") }}
+                        </h2>
+                        <p>{{ t("register.tosContent.liabilityDesc") }}</p>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.changesTitle') }}</h2>
-                        <p>{{ t('register.tosContent.changesDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.tosContent.changesTitle") }}
+                        </h2>
+                        <p>{{ t("register.tosContent.changesDesc") }}</p>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.contactTitle') }}</h2>
-                        <p>{{ t('register.tosContent.contactDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.tosContent.contactTitle") }}
+                        </h2>
+                        <p>{{ t("register.tosContent.contactDesc") }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>{{ t('register.tosContent.contactEmail', { email: 'info@drivemaster.id' }) }}</li>
-                          <li>{{ t('register.tosContent.contactPhone') }}</li>
+                          <li>
+                            {{
+                              t("register.tosContent.contactEmail", {
+                                email: "info@drivemaster.id",
+                              })
+                            }}
+                          </li>
+                          <li>{{ t("register.tosContent.contactPhone") }}</li>
                         </ul>
                       </div>
                     </template>
@@ -451,57 +517,141 @@ watch(
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
                         <p>
-                          {{ t('register.privacyContent.welcome', { url: 'www.drivemaster.id' }) }}
+                          {{
+                            t("register.privacyContent.welcome", {
+                              url: "www.drivemaster.id",
+                            })
+                          }}
                         </p>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.collectTitle') }}</h2>
-                        <p>{{ t('register.privacyContent.collectDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.privacyContent.collectTitle") }}
+                        </h2>
+                        <p>{{ t("register.privacyContent.collectDesc") }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li><strong>{{ t('register.privacyContent.collectList1').split(':')[0] }}:</strong> {{ t('register.privacyContent.collectList1').split(':')[1] }}</li>
-                          <li><strong>{{ t('register.privacyContent.collectList2').split(':')[0] }}:</strong> {{ t('register.privacyContent.collectList2').split(':')[1] }}</li>
-                          <li><strong>{{ t('register.privacyContent.collectList3').split(':')[0] }}:</strong> {{ t('register.privacyContent.collectList3').split(':')[1] }}</li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.privacyContent.collectList1").split(":")[0]
+                              }}:</strong
+                            >
+                            {{ t("register.privacyContent.collectList1").split(":")[1] }}
+                          </li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.privacyContent.collectList2").split(":")[0]
+                              }}:</strong
+                            >
+                            {{ t("register.privacyContent.collectList2").split(":")[1] }}
+                          </li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.privacyContent.collectList3").split(":")[0]
+                              }}:</strong
+                            >
+                            {{ t("register.privacyContent.collectList3").split(":")[1] }}
+                          </li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.useTitle') }}</h2>
-                        <p>{{ t('register.privacyContent.useDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.privacyContent.useTitle") }}
+                        </h2>
+                        <p>{{ t("register.privacyContent.useDesc") }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>{{ t('register.privacyContent.useList1') }}</li>
-                          <li>{{ t('register.privacyContent.useList2') }}</li>
-                          <li>{{ t('register.privacyContent.useList3') }}</li>
-                          <li>{{ t('register.privacyContent.useList4') }}</li>
-                          <li>{{ t('register.privacyContent.useList5') }}</li>
+                          <li>{{ t("register.privacyContent.useList1") }}</li>
+                          <li>{{ t("register.privacyContent.useList2") }}</li>
+                          <li>{{ t("register.privacyContent.useList3") }}</li>
+                          <li>{{ t("register.privacyContent.useList4") }}</li>
+                          <li>{{ t("register.privacyContent.useList5") }}</li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.disclosureTitle') }}</h2>
-                        <p>{{ t('register.privacyContent.disclosureDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.privacyContent.disclosureTitle") }}
+                        </h2>
+                        <p>{{ t("register.privacyContent.disclosureDesc") }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li><strong>{{ t('register.privacyContent.disclosureList1').split(':')[0] }}:</strong> {{ t('register.privacyContent.disclosureList1').split(':')[1] }}</li>
-                          <li><strong>{{ t('register.privacyContent.disclosureList2').split(':')[0] }}:</strong> {{ t('register.privacyContent.disclosureList2').split(':')[1] }}</li>
-                          <li><strong>{{ t('register.privacyContent.disclosureList3').split(':')[0] }}:</strong> {{ t('register.privacyContent.disclosureList3').split(':')[1] }}</li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.privacyContent.disclosureList1").split(
+                                  ":"
+                                )[0]
+                              }}:</strong
+                            >
+                            {{
+                              t("register.privacyContent.disclosureList1").split(":")[1]
+                            }}
+                          </li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.privacyContent.disclosureList2").split(
+                                  ":"
+                                )[0]
+                              }}:</strong
+                            >
+                            {{
+                              t("register.privacyContent.disclosureList2").split(":")[1]
+                            }}
+                          </li>
+                          <li>
+                            <strong
+                              >{{
+                                t("register.privacyContent.disclosureList3").split(
+                                  ":"
+                                )[0]
+                              }}:</strong
+                            >
+                            {{
+                              t("register.privacyContent.disclosureList3").split(":")[1]
+                            }}
+                          </li>
                         </ul>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.securityTitle') }}</h2>
-                        <p>{{ t('register.privacyContent.securityDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.privacyContent.securityTitle") }}
+                        </h2>
+                        <p>{{ t("register.privacyContent.securityDesc") }}</p>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.rightsTitle') }}</h2>
-                        <p>{{ t('register.privacyContent.rightsDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.privacyContent.rightsTitle") }}
+                        </h2>
+                        <p>{{ t("register.privacyContent.rightsDesc") }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>{{ t('register.privacyContent.rightsList1') }}</li>
-                          <li>{{ t('register.privacyContent.rightsList2') }}</li>
-                          <li>{{ t('register.privacyContent.rightsList3') }}</li>
-                          <li>{{ t('register.privacyContent.rightsList4') }}</li>
-                          <li>{{ t('register.privacyContent.rightsList5') }}</li>
+                          <li>{{ t("register.privacyContent.rightsList1") }}</li>
+                          <li>{{ t("register.privacyContent.rightsList2") }}</li>
+                          <li>{{ t("register.privacyContent.rightsList3") }}</li>
+                          <li>{{ t("register.privacyContent.rightsList4") }}</li>
+                          <li>{{ t("register.privacyContent.rightsList5") }}</li>
                         </ul>
-                        <p>{{ t('register.privacyContent.rightsContact', { email: 'info@drivemaster.id' }) }}</p>
+                        <p>
+                          {{
+                            t("register.privacyContent.rightsContact", {
+                              email: "info@drivemaster.id",
+                            })
+                          }}
+                        </p>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.changesTitle') }}</h2>
-                        <p>{{ t('register.privacyContent.changesDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.privacyContent.changesTitle") }}
+                        </h2>
+                        <p>{{ t("register.privacyContent.changesDesc") }}</p>
 
-                        <h2 class="text-2xl font-bold">{{ t('register.privacyContent.contactTitle') }}</h2>
-                        <p>{{ t('register.privacyContent.contactDesc') }}</p>
+                        <h2 class="text-2xl font-bold">
+                          {{ t("register.privacyContent.contactTitle") }}
+                        </h2>
+                        <p>{{ t("register.privacyContent.contactDesc") }}</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>{{ t('register.privacyContent.contactEmail', { email: 'info@drivemaster.id' }) }}</li>
-                          <li>{{ t('register.privacyContent.contactPhone') }}</li>
+                          <li>
+                            {{
+                              t("register.privacyContent.contactEmail", {
+                                email: "info@drivemaster.id",
+                              })
+                            }}
+                          </li>
+                          <li>{{ t("register.privacyContent.contactPhone") }}</li>
                         </ul>
                       </div>
                     </template>
@@ -605,10 +755,7 @@ watch(
           <div class="text-center">
             <p class="text-sm text-muted">
               {{ t("register.alreadyHaveAccount") }}
-              <NuxtLink
-                to="/auth/login"
-                class="text-warning font-medium hover:underline"
-              >
+              <NuxtLink to="/auth/login" class="text-warning font-medium hover:underline">
                 {{ t("register.signIn") }}
               </NuxtLink>
             </p>

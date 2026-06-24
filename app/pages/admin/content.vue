@@ -101,8 +101,9 @@ async function handleBlogSaved(data: CreateBlogPostData) {
         slug: data.slug,
         author: data.author,
         content: data.content,
+
         status: data.publishing?.status || "draft",
-        authorId: "00000000-0000-0000-0000-000000000000",
+        authorId: ,
       });
       toast.add({ title: "Blog Post Created", color: "success" });
     }
@@ -324,7 +325,7 @@ onMounted(() => {
           </template>
         </UTabs>
       </div>
-  <!-- FAQ Modal -->
+      <!-- FAQ Modal -->
       <UModal
         v-model:open="isFAQModalOpen"
         :title="isEditing ? t('admin.content.editFaq') : t('admin.content.addFaq')"

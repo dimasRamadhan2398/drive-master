@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
+import { ref } from "vue";
 import type { CreatePackageData } from "~/services/packageService";
 import { packageService } from "~/services/packageService";
+import { useI18n } from "#imports";
 
 const props = defineProps<{
   open: boolean;
@@ -14,6 +16,7 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const isAddLoading = ref(false);
+const { t } = useI18n();
 
 const packageTypes = [
   { label: "Bronze", value: "bronze" },
@@ -53,7 +56,7 @@ function handleClose() {
 
 async function saveNewPackage(e: Event) {
   e.preventDefault();
-  
+
   if (!newPackage.value.name || newPackage.value.price <= 0) {
     toast.add({
       title: "Error",
@@ -71,9 +74,15 @@ async function saveNewPackage(e: Event) {
   const pkg: CreatePackageData = {
     name: newPackage.value.name,
     description: newPackage.value.description,
-    packageType: newPackage.value.packageType as "bronze" | "silver" | "gold" | "platinum",
+    packageType: newPackage.value.packageType as
+      | "bronze"
+      | "silver"
+      | "gold"
+      | "platinum",
     price: newPackage.value.price,
-    discountPrice: newPackage.value.isDiscountActive ? newPackage.value.discountPrice : undefined,
+    discountPrice: newPackage.value.isDiscountActive
+      ? newPackage.value.discountPrice
+      : undefined,
     durationMinutes: newPackage.value.duration,
     totalSessions: newPackage.value.sessions,
     benefits: featuresArray,
@@ -109,7 +118,7 @@ async function saveNewPackage(e: Event) {
   <UModal
     :open="open"
     :title="t('admin.package.add')"
-    @update:open="(val) => emit('update:open', val)"
+    @update:open="(val: any) => emit('update:open', val)"
   >
     <template #body>
       <div class="space-y-4">
@@ -176,15 +185,11 @@ async function saveNewPackage(e: Event) {
           </UFormField>
         </div>
         <UFormField :label="t('admin.package.description')">
-          <UTextarea
-            v-model="newPackage.description"
-            class="w-full"
-            color="warning"
-          />
+          <UTextarea v-model="newPackage.description" class="w-full" color="warning" />
         </UFormField>
         <UFormField :label="t('admin.package.features')">
           <template #hint>
-            <span>{{ t('admin.package.featuresHint') }}</span>
+            <span>{{ t("admin.package.featuresHint") }}</span>
           </template>
           <UTextarea
             v-model="newPackage.features"

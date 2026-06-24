@@ -280,10 +280,10 @@ func (c *PackageController) UpdatePackage(ctx *gin.Context) {
 		pkg.ImageURL = req.ImageURL
 	}
 
-	// Handle Features (converted from Benefits input)
-	if len(req.Benefits) > 0 {
+	// Handle Features
+	if len(req.Features) > 0 {
 		var features models.StringArray
-		for _, b := range req.Benefits {
+		for _, b := range req.Features {
 			switch v := b.(type) {
 			case string:
 				features = append(features, v)

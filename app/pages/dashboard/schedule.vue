@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
 import { computed, ref } from "vue";
 import { useSchedules } from "../../composables/useSchedules";
+import { useToast } from "@nuxt/ui";
 
 const { t } = useI18n();
 definePageMeta({ layout: "dashboard" });
@@ -219,9 +219,6 @@ function selectSlot(slotId: string) {
   }
 }
 
-// PERUBAHAN: Memperbaiki teks bulan statis
-
-// PERUBAHAN: Memperbaiki teks bulan statis
 function confirmBooking() {
   if (selectedSlot.value && selectedSlotDetails.value) {
     const bookedSlotId = selectedSlot.value;

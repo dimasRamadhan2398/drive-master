@@ -187,9 +187,9 @@ func runMigrations(db *gorm.DB) {
 	log.Println("Running database migrations...")
 
 	// Fix column type mismatch before AutoMigrate
-	// The user_entitlements.enrollment_id column might be bigint from old schema
+	// The enrollments table might have bigint IDs or user_ids from old schema
 	// but the model expects uuid
-	fixEnrollmentIDColumnType(db)
+	fixEnrollmentColumnTypes(db)
 
 	if err := db.AutoMigrate(
 		&models.Enrollment{},
@@ -204,27 +204,43 @@ func runMigrations(db *gorm.DB) {
 	log.Println("Database migrations completed successfully")
 }
 
-// fixEnrollmentIDColumnType checks and alters the enrollment_id column type in user_entitlements table
-// This handles schema drift where the enrollment tables might have bigint IDs but should be uuid
-func fixEnrollmentIDColumnType(db *gorm.DB) {
-	// Check if enrollments.id is bigint (old schema) and needs to be converted
-	var enrollmentIDType string
+// fixEnrollmentColumnTypes checks and fixes column types in enrollment-related tables
+// This handles schema drift where columns might be bigint but should be uuid
+func fixEnrollmentColumnTypes(db *gorm.DB) {
+	// Check if enrollments.id or enrollments.user_id is bigint (old schema) and needs to be converted
+	var columnTypes []struct {
+		ColumnName string
+		DataType   string
+	}
 	err := db.Raw(`
-		SELECT data_type
+		SELECT column_name, data_type
 		FROM information_schema.columns
 		WHERE table_name = 'enrollments'
-		AND column_name = 'id'
-	`).Scan(&enrollmentIDType).Error
+		AND column_name IN ('id', 'user_id')
+	`).Scan(&columnTypes).Error
 
 	if err != nil {
-		log.Printf("Could not check enrollments.id column type: %v", err)
+		log.Printf("Could not check enrollments column types: %v", err)
 		return
 	}
 
-	// If enrollments.id is still bigint, we have a schema mismatch - drop and recreate both tables
-	if enrollmentIDType == "bigint" {
-		log.Println("Found schema mismatch: enrollments.id is bigint but should be uuid. Dropping tables for recreation...")
-		
+	// Build a map of column names to their types
+	typeMap := make(map[string]string)
+	for _, ct := range columnTypes {
+		typeMap[ct.ColumnName] = ct.DataType
+	}
+
+	// If any key column is bigint, we have a schema mismatch - drop and recreate tables
+	if typeMap["id"] == "bigint" || typeMap["user_id"] == "bigint" {
+		var columns []string
+		if typeMap["id"] == "bigint" {
+			columns = append(columns, "enrollments.id")
+		}
+		if typeMap["user_id"] == "bigint" {
+			columns = append(columns, "enrollments.user_id")
+		}
+		log.Printf("Found schema mismatch: %v are bigint but should be uuid. Dropping tables for recreation...", columns)
+
 		// Drop dependent tables first (due to foreign keys)
 		tables := []string{"user_entitlements", "driving_sessions", "payments", "enrollments"}
 		for _, table := range tables {
