@@ -109,7 +109,7 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 	}
 
 	// Set headers with Bearer token
-	req.Header.Add("Authorization", "Bearer "+s.apiKey)
+	req.Header.Add("Api-Token", s.apiKey)
 	req.Header.Add("Content-Type", "application/json")
 
 	// Send request

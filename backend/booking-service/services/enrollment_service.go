@@ -7,6 +7,7 @@ import (
 
 	"booking-service/models"
 	"booking-service/models/dto"
+	"booking-service/pkg/kafka"
 	"booking-service/repositories"
 
 	"github.com/google/uuid"
@@ -29,6 +30,7 @@ type IEnrollmentService interface {
 type EnrollmentService struct {
 	enrollmentRepo  repositories.IEnrollmentRepository
 	entitlementRepo repositories.IEntitlementRepository
+	eventPublisher kafka.IEventPublisher
 }
 
 func NewEnrollmentService(
@@ -38,6 +40,19 @@ func NewEnrollmentService(
 	return &EnrollmentService{
 		enrollmentRepo:  enrollmentRepo,
 		entitlementRepo: entitlementRepo,
+	}
+}
+
+// NewEnrollmentServiceWithPublisher creates a new enrollment service with event publisher
+func NewEnrollmentServiceWithPublisher(
+	enrollmentRepo repositories.IEnrollmentRepository,
+	entitlementRepo repositories.IEntitlementRepository,
+	eventPublisher kafka.IEventPublisher,
+) IEnrollmentService {
+	return &EnrollmentService{
+		enrollmentRepo:  enrollmentRepo,
+		entitlementRepo: entitlementRepo,
+		eventPublisher:  eventPublisher,
 	}
 }
 
@@ -137,6 +152,11 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 	enrollment, err = s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
+	}
+
+	// Publish enrollment.paid event if event publisher is available
+	if s.eventPublisher != nil {
+		_ = s.eventPublisher.PublishEnrollmentPaid(ctx, enrollment.ID.String(), enrollment.UserID.String(), enrollment.PackageID, totalPrice)
 	}
 
 	resp := s.enrollmentRepo.ToResponse(enrollment)

@@ -18,6 +18,7 @@ type ICoreClient interface {
 	GetCars(ctx context.Context, page, limit int) (*dto.PagedData[CarResponse], error)
 	GetCarByID(ctx context.Context, carID uuid.UUID) (*CarInfo, error)
 	GetSalesOverview(ctx context.Context, startDate, endDate string) (*SalesOverviewResponse, error)
+	IncrementPackageCount(ctx context.Context, packageID uint) error
 }
 
 // CoreClient implements ICoreClient
@@ -175,4 +176,30 @@ func (c *CoreClient) GetSalesOverview(ctx context.Context, startDate, endDate st
 	}
 
 	return &overview, nil
+}
+
+// IncrementPackageCount increments the enrollment count for a package in core-service
+func (c *CoreClient) IncrementPackageCount(ctx context.Context, packageID uint) error {
+	url := fmt.Sprintf("%s/api/v1/packages/%d/increment-count", c.baseURL, packageID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to call core-service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("core-service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }

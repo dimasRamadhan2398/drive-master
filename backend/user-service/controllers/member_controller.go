@@ -102,12 +102,15 @@ func (m *MemberController) UpdateMemberProfile(ctx *gin.Context) {
 	}
 
 	// Bind request body
-	var input struct {
-		// Add member profile update fields here
-	}
+	var input dto.UpdateMemberProfileRequest
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
 		return
+	}
+
+	// Only update fields that are provided (non-empty)
+	if input.IdentityFullname != "" {
+		profile.IdentityFullname = input.IdentityFullname
 	}
 
 	if err := m.memberService.UpdateMemberProfile(ctx, profile); err != nil {

@@ -43,8 +43,8 @@ type IArticleRepository interface {
 	Archive(ctx context.Context, id uuid.UUID) error
 
 	// Blog-specific queries
-	GetBlogArticles(ctx context.Context, opts *base.QueryOptions) ([]models.Article, error)
-	CountBlogArticles(ctx context.Context) (int64, error)
+	GetBlogArticles(ctx context.Context, opts *base.QueryOptions, status string) ([]models.Article, error)
+	CountBlogArticles(ctx context.Context, status string) (int64, error)
 }
 
 // ArticleRepository implements IArticleRepository
@@ -293,11 +293,15 @@ func (r *ArticleRepository) ApplyQueryOptions(query *gorm.DB, opts *base.QueryOp
 	return query
 }
 
-// GetBlogArticles retrieves published blog articles
-func (r *ArticleRepository) GetBlogArticles(ctx context.Context, opts *base.QueryOptions) ([]models.Article, error) {
+// GetBlogArticles retrieves blog articles with optional status filter
+func (r *ArticleRepository) GetBlogArticles(ctx context.Context, opts *base.QueryOptions, status string) ([]models.Article, error) {
 	var articles []models.Article
-	query := r.DB.WithContext(ctx).Model(&models.Article{}).
-		Where("status = ?", models.ArticleStatusPublished)
+	query := r.DB.WithContext(ctx).Model(&models.Article{})
+
+	// Apply status filter if provided, otherwise return all statuses
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
 
 	query = r.ApplyQueryOptions(query, opts)
 	if opts.Order == "" {
@@ -310,11 +314,16 @@ func (r *ArticleRepository) GetBlogArticles(ctx context.Context, opts *base.Quer
 	return articles, nil
 }
 
-// CountBlogArticles counts published blog articles
-func (r *ArticleRepository) CountBlogArticles(ctx context.Context) (int64, error) {
+// CountBlogArticles counts blog articles with optional status filter
+func (r *ArticleRepository) CountBlogArticles(ctx context.Context, status string) (int64, error) {
 	var count int64
-	err := r.DB.WithContext(ctx).Model(&models.Article{}).
-		Where("status = ?", models.ArticleStatusPublished).
-		Count(&count).Error
+	query := r.DB.WithContext(ctx).Model(&models.Article{})
+
+	// Apply status filter if provided, otherwise return all statuses
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	err := query.Count(&count).Error
 	return count, err
 }

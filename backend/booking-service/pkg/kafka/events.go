@@ -53,6 +53,10 @@ const (
 
 	// Certification Events
 	EventCertificationIssued EventType = "certification.issued"
+
+	// Enrollment Events
+	EventEnrollmentPaid    EventType = "enrollment.paid"
+	EventEnrollmentCreated EventType = "enrollment.created"
 )
 
 // Event represents a generic auth event
@@ -91,6 +95,7 @@ type IEventPublisher interface {
 	PublishSecurityEvent(ctx context.Context, userID, username string, eventType EventType, ip string, data map[string]interface{}) error
 	PublishRoleEvent(ctx context.Context, userID, username, role string, eventType EventType) error
 	PublishCertificationIssued(ctx context.Context, userID string, userEmail, userName, certType string, issueDate time.Time) error
+	PublishEnrollmentPaid(ctx context.Context, enrollmentID string, userID string, packageID uint, totalPrice float64) error
 
 	// Consumer management
 	StartConsumer(ctx context.Context) error
@@ -303,6 +308,22 @@ func (r *EventPublisher) PublishCertificationIssued(ctx context.Context, userID 
 			"user_email":  userEmail,
 			"cert_type":   certType,
 			"issue_date":  issueDate.Format(time.RFC3339),
+		},
+		Timestamp: time.Now().UTC(),
+	}
+	return r.Publish(ctx, event)
+}
+
+// PublishEnrollmentPaid publishes an enrollment paid event
+func (r *EventPublisher) PublishEnrollmentPaid(ctx context.Context, enrollmentID string, userID string, packageID uint, totalPrice float64) error {
+	event := &Event{
+		Type:     EventEnrollmentPaid,
+		UserID:   userID,
+		Success:  true,
+		Data: map[string]interface{}{
+			"enrollment_id": enrollmentID,
+			"package_id":    packageID,
+			"total_price":   totalPrice,
 		},
 		Timestamp: time.Now().UTC(),
 	}
@@ -550,4 +571,55 @@ func (h *UserDeletedHandler) HandleEvent(ctx context.Context, event *Event) erro
 // GetEventTypes returns the event types this handler handles
 func (h *UserDeletedHandler) GetEventTypes() []EventType {
 	return []EventType{EventUserDeleted}
+}
+
+// ============================================
+// Enrollment Event Handlers
+// ============================================
+
+// EnrollmentPaidHandler handles enrollment.paid events to increment package count in core-service
+type EnrollmentPaidHandler struct {
+	incrementPackageCount func(ctx context.Context, packageID uint) error
+}
+
+// NewEnrollmentPaidHandler creates a new enrollment paid handler
+func NewEnrollmentPaidHandler(incrementPackageCount func(ctx context.Context, packageID uint) error) *EnrollmentPaidHandler {
+	return &EnrollmentPaidHandler{incrementPackageCount: incrementPackageCount}
+}
+
+// HandleEvent handles the enrollment.paid event
+func (h *EnrollmentPaidHandler) HandleEvent(ctx context.Context, event *Event) error {
+	if event.Type != EventEnrollmentPaid {
+		return nil
+	}
+
+	if h.incrementPackageCount == nil {
+		return nil
+	}
+
+	// Extract package_id from event data
+	packageIDData, ok := event.Data["package_id"]
+	if !ok {
+		return fmt.Errorf("missing package_id in enrollment.paid event")
+	}
+
+	// Handle both float64 (from JSON) and uint types
+	var packageID uint
+	switch v := packageIDData.(type) {
+	case float64:
+		packageID = uint(v)
+	case int:
+		packageID = uint(v)
+	case uint:
+		packageID = v
+	default:
+		return fmt.Errorf("invalid package_id type: %T", packageIDData)
+	}
+
+	return h.incrementPackageCount(ctx, packageID)
+}
+
+// GetEventTypes returns the event types this handler handles
+func (h *EnrollmentPaidHandler) GetEventTypes() []EventType {
+	return []EventType{EventEnrollmentPaid}
 }

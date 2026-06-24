@@ -334,15 +334,15 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	}
 	s.LogInfo("Register: Profile creation completed")
 
-	s.LogInfo("Register: Starting async OTP generation and sending...")
-	go func() {
-		s.LogInfo("Register: Inside goroutine - generating OTP for: " + user.EmailAddress)
-		if err := s.GenerateAndSendOTP(context.Background(), user.EmailAddress); err != nil {
-			s.LogError("Failed to send OTP after registration", logger.LogField("error", err))
-		} else {
-			s.LogInfo("Register: OTP sent successfully")
-		}
-	}()
+	// Generate and send OTP synchronously (not in goroutine) to ensure errors are handled properly
+	s.LogInfo("Register: Generating and sending OTP...")
+	otpSent := true
+	if err := s.GenerateAndSendOTP(ctx, user.EmailAddress); err != nil {
+		s.LogError("Register: Failed to send OTP after registration", logger.LogField("error", err))
+		otpSent = false
+	} else {
+		s.LogInfo("Register: OTP sent successfully")
+	}
 
 	s.LogInfo("Register: Generating JWT token...")
 	cfg := config.Get()
@@ -386,6 +386,7 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		AccessToken:  tokenString,
 		RefreshToken: refreshToken,
 		ExpiresIn:    accessExpirationTime,
+		OTPSent:      otpSent,
 	}, nil
 }
 

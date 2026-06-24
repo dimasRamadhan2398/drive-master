@@ -124,6 +124,7 @@ func (s *MemberService) GetMembersWithPagination(ctx context.Context, page, limi
 				TrainingTime:           user.MemberProfile.TrainingTime,
 				AverageRating:          user.MemberProfile.AverageRating,
 				TotalAvailableSessions: totalRemaining,
+				IdentityFullname: 		user.MemberProfile.IdentityFullname,
 				Entitlements:           entitlements[user.ID],
 			}
 		}

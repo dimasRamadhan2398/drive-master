@@ -54,8 +54,8 @@ core_service:
   base_url: "http://core-service:8002"
 
 email:
-  api_key: 2c02e08f80d29c71a5a1797f9596b43f
-  from_email: "noreply@ai-forlearning.com"
+  api_key: 0f1f082f99f7b0a0229b317a08e031ce
+  from_email: "admin@drivemaster.id"
   app_name: user_service
   enabled: true
   smtp_host: send.api.mailtrap.io

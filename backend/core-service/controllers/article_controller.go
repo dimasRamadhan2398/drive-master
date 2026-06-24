@@ -87,6 +87,7 @@ func (c *ArticleController) CreateFAQArticle(ctx *gin.Context) {
 func (c *ArticleController) GetBlogArticles(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	status := ctx.Query("status")
 
 	if page < 1 {
 		page = 1
@@ -98,7 +99,7 @@ func (c *ArticleController) GetBlogArticles(ctx *gin.Context) {
 		limit = 100
 	}
 
-	result, err := c.articleService.GetBlogArticles(ctx.Request.Context(), page, limit)
+	result, err := c.articleService.GetBlogArticles(ctx.Request.Context(), page, limit, status)
 	if err != nil {
 		response.InternalServerError(ctx, "Failed to fetch blog articles")
 		return

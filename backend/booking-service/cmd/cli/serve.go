@@ -15,6 +15,7 @@ import (
 	"booking-service/models"
 	"booking-service/pkg/config"
 	"booking-service/pkg/kafka"
+	"booking-service/pkg/logger"
 	"booking-service/pkg/middlewares"
 	"booking-service/pkg/scheduler"
 	"booking-service/repositories"
@@ -63,6 +64,11 @@ func runServe(cmd *cobra.Command, args []string) {
 	}
 	config.Set(loadedConfig)
 
+	// Initialize logger after config is loaded
+	if err := logger.Init(&loadedConfig.Log); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+
 	loc, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
 		panic(err)
@@ -102,13 +108,13 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Initialize user anonymization service for handling user.deleted events
 	userAnonymizationService := services.NewUserAnonymizationService(enrollmentRepo, sessionRepo, entitlementRepo)
 
-	// Initialize Kafka consumer for handling user.deleted events
-	_ = initKafkaConsumer(userAnonymizationService)
+	// Initialize Kafka consumer for handling user.deleted events and enrollment.paid events
+	eventPublisher := initKafkaConsumer(userAnonymizationService, coreClient)
 
 	// Initialize services (after Kafka is initialized so we can pass the eventPublisher)
 	sessionService := services.NewSessionService(sessionRepo, scheduleRepo, entitlementRepo)
 	entitlementService := services.NewEntitlementService(entitlementRepo)
-	enrollmentService := services.NewEnrollmentService(enrollmentRepo, entitlementRepo)
+	enrollmentService := services.NewEnrollmentServiceWithPublisher(enrollmentRepo, entitlementRepo, eventPublisher)
 
 	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, sessionRepo, entitlementRepo, sessionService, availabilityService, userClient, coreClient)
 	paymentService := services.NewPaymentService(paymentRepo, enrollmentRepo)
@@ -290,7 +296,7 @@ func (s *serviceRegistryImpl) GetRevenueService() services.IRevenueService {
 
 // initKafkaConsumer initializes the Kafka consumer for handling user.deleted events
 // Returns the event publisher for use in other services
-func initKafkaConsumer(anonymizationService services.IUserAnonymizationService) kafka.IEventPublisher {
+func initKafkaConsumer(anonymizationService services.IUserAnonymizationService, coreClient core.ICoreClient) kafka.IEventPublisher {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
@@ -331,6 +337,14 @@ func initKafkaConsumer(anonymizationService services.IUserAnonymizationService) 
 		return anonymizationService.AnonymizeUserData(ctx, userID)
 	})
 	eventPublisher.RegisterHandler(userDeletedHandler)
+
+	// Create and register the enrollment paid handler
+	if coreClient != nil {
+		enrollmentPaidHandler := kafka.NewEnrollmentPaidHandler(func(ctx context.Context, packageID uint) error {
+			return coreClient.IncrementPackageCount(ctx, packageID)
+		})
+		eventPublisher.RegisterHandler(enrollmentPaidHandler)
+	}
 
 	// Start the consumer in a goroutine
 	ctx := context.Background()

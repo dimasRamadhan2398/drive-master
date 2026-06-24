@@ -36,7 +36,7 @@ type IArticleService interface {
 	ArchiveArticle(ctx context.Context, id uuid.UUID) error
 
 	// Blog endpoints
-	GetBlogArticles(ctx context.Context, page, limit int) (*dto.BlogArticleListResponse, error)
+	GetBlogArticles(ctx context.Context, page, limit int, status string) (*dto.BlogArticleListResponse, error)
 	CreateBlogArticle(ctx context.Context, req *dto.CreateBlogArticleRequest) (*models.Article, error)
 	DeleteBlogArticle(ctx context.Context, id uuid.UUID) error
 
@@ -454,8 +454,8 @@ func (s *ArticleService) ArchiveArticle(ctx context.Context, id uuid.UUID) error
 	return nil
 }
 
-// GetBlogArticles retrieves published blog articles with pagination
-func (s *ArticleService) GetBlogArticles(ctx context.Context, page, limit int) (*dto.BlogArticleListResponse, error) {
+// GetBlogArticles retrieves blog articles with optional status filter and pagination
+func (s *ArticleService) GetBlogArticles(ctx context.Context, page, limit int, status string) (*dto.BlogArticleListResponse, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -472,12 +472,12 @@ func (s *ArticleService) GetBlogArticles(ctx context.Context, page, limit int) (
 	opts.Offset = offset
 	opts.Order = "published_at DESC, created_at DESC"
 
-	articles, err := s.articleRepo.GetBlogArticles(ctx, opts)
+	articles, err := s.articleRepo.GetBlogArticles(ctx, opts, status)
 	if err != nil {
 		return nil, err
 	}
 
-	total, err := s.articleRepo.CountBlogArticles(ctx)
+	total, err := s.articleRepo.CountBlogArticles(ctx, status)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +512,7 @@ func (s *ArticleService) GetBlogArticles(ctx context.Context, page, limit int) (
 			Total:      total,
 			Page:       page,
 			Limit:      limit,
-			TotalPages: totalPages,	
+			TotalPages: totalPages,
 		},
 	}, nil
 }
