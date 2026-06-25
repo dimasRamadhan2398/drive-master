@@ -103,7 +103,7 @@ async function handleBlogSaved(data: CreateBlogPostData) {
         content: data.content,
 
         status: data.publishing?.status || "draft",
-        authorId: ,
+        authorId: "",
       });
       toast.add({ title: "Blog Post Created", color: "success" });
     }

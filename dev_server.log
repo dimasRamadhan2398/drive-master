@@ -1,0 +1,605 @@
+│
+●  Nuxt 4.4.8 (with Nitro 2.13.4, Vite 7.3.6 and Vue 3.5.38)
+[get-port] Unable to find an available port (tried 3000 on host "localhost"). Using alternative port 3001.
+
+  ➜ Local:    http://localhost:3001/
+  ➜ Network:  use --host to expose
+
+  ➜ DevTools: press Shift + Alt + D in the browser (v3.2.4)
+
+ℹ Nuxt Icon server bundle mode is set to local
+✔ Nuxt Icon discovered local-installed 2 collections: lucide, simple-icons
+
+ WARN  Duplicated imports "Faq", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "BlogPost", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "Page", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "PageSection", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "Faq", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "BlogPost", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "Page", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "PageSection", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+✔ Vite client built in 102ms
+✔ Vite server built in 25ms
+[nitro] ✔ Nuxt Nitro ERROR  [request error] [unhandled] [GET] http://localhost:3000/dashboard
+
+
+[31mℹ Erro
+ WARN  Duplicated imports "Faq", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "BlogPost", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "Page", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "PageSection", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+    error[34m.[0mcode [34m=[0m code;
+   [2m367[22m [2m┃[22m      error[34m.[0mreasonCode [34m=[0m reasonCode;
+   [2m368[22m [2m┃[22m      error[34m.[0mloc [34m=[0m loc;
+   [2m369[22m [2m┃[22m      error[34m.[0mpos [34m=[0m loc[34m.[0mindex;
+   [2m370[22m [2m┃[22m      error[34m.[0msyntaxPlugin [34m=[0m syntaxPlugin;
+
+ ⁃ at TypeScriptParserMixin.raise [33m(node_modules/@babel/parser/lib/index.js:6616:19)[39m
+ ⁃ at TypeScriptParserMixin.unexpected [33m(node_modules/@babel/parser/lib/index.js:6636:16)[39m
+ ⁃ at TypeScriptParserMixin.parseExprAtom [33m(node_modules/@babel/parser/lib/index.js:11459:22)[39m
+ ⁃ at TypeScriptParserMixin.parseExprSubscripts [33m(node_modules/@babel/parser/lib/index.js:11098:23)[39m
+ ⁃ at TypeScriptParserMixin.parseUpdate [33m(node_modules/@babel/parser/lib/index.js:11083:21)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:11063:23)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:9854:18)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnaryOrPrivate [33m(node_modules/@babel/parser/lib/index.js:10916:61)[39m
+ ⁃ at TypeScriptParserMixin.parseExprOps [33m(node_modules/@babel/parser/lib/index.js:10921:23)[39m
+
+[31m[CAUSE][39m
+Error {
+  stack: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)\n' +
+  'at constructor (./node_modules/@babel/parser/lib/index.js:365:19)\n' +
+  'at TypeScriptParserMixin.raise (./node_modules/@babel/parser/lib/index.js:6616:19)\n' +
+  'at TypeScriptParserMixin.unexpected (./node_modules/@babel/parser/lib/index.js:6636:16)\n' +
+  'at TypeScriptParserMixin.parseExprAtom (./node_modules/@babel/parser/lib/index.js:11459:22)\n' +
+  'at TypeScriptParserMixin.parseExprSubscripts (./node_modules/@babel/parser/lib/index.js:11098:23)\n' +
+  'at TypeScriptParserMixin.parseUpdate (./node_modules/@babel/parser/lib/index.js:11083:21)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:11063:23)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:9854:18)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (./node_modules/@babel/parser/lib/index.js:10916:61)\n' +
+  'at TypeScriptParserMixin.parseExprOps (./node_modules/@babel/parser/lib/index.js:10921:23)',
+  message: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)',
+  name: 'ViteError',
+  statusText: 'Vite Error',
+  statusMessage: 'Vite Error',
+  code: 'VITE_ERROR',
+  hint: '103 |          content: data.content,\n' +
+
+  '104 |  \n' +
+
+  '105 |          status: data.publishing?.status || "draft",\n' +
+
+  '    |                                                ^\n' +
+
+  '106 |          authorId: ,\n' +
+
+  '107 |        });',
+}
+ERROR  [request error] [unhandled] [GET] http://localhost:3000/__nuxt_error?error=true&url=%2Fdashboard&statusCode=500&statusMessage=Vite+Error&message=%2Fpages%2Fadmin%2Fcontent.vue?macro=true+%E2%80%94+Unexpected+token+(106:18)&stack=%2Fpages%2Fadmin%2Fcontent.vue?macro=true+%E2%80%94+Unexpected+token+(106:18)%0Aat+constructor+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:365:19)%0Aat+TypeScriptParserMixin.raise+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:6616:19)%0Aat+TypeScriptParserMixin.unexpected+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:6636:16)%0Aat+TypeScriptParserMixin.parseExprAtom+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11459:22)%0Aat+TypeScriptParserMixin.parseExprSubscripts+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11098:23)%0Aat+TypeScriptParserMixin.parseUpdate+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11083:21)%0Aat+TypeScriptParserMixin.parseMaybeUnary+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11063:23)%0Aat+TypeScriptParserMixin.parseMaybeUnary+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:9854:18)%0Aat+TypeScriptParserMixin.parseMaybeUnaryOrPrivate+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:10916:61)%0Aat+TypeScriptParserMixin.parseExprOps+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:10921:23)&statusText=Vite+Error
+
+
+[31mℹ Error: /pages/admin/content.vue?macro=true — Unexpected token (106:18)[39m
+
+ ⁃ at constructor [33m(node_modules/@babel/parser/lib/index.js:365:19)[39m
+
+   [2m360[22m [2m┃[22m    };
+   [2m361[22m [2m┃[22m    [31mif[0m (oldReasonCodes[reasonCode]) {
+   [2m362[22m [2m┃[22m      reasonCode [34m=[0m oldReasonCodes[reasonCode];
+   [2m363[22m [2m┃[22m    }
+   [2m364[22m [2m┃[22m    [31mreturn[0m [31mfunction[0m [31mconstructor[0m(loc[34m,[0m details) {
+ [41m❯ 365 ┃      const error = new SyntaxError();[49m
+   [2m366[22m [2m┃[22m      error[34m.[0mcode [34m=[0m code;
+   [2m367[22m [2m┃[22m      error[34m.[0mreasonCode [34m=[0m reasonCode;
+   [2m368[22m [2m┃[22m      error[34m.[0mloc [34m=[0m loc;
+   [2m369[22m [2m┃[22m      error[34m.[0mpos [34m=[0m loc[34m.[0mindex;
+   [2m370[22m [2m┃[22m      error[34m.[0msyntaxPlugin [34m=[0m syntaxPlugin;
+
+ ⁃ at TypeScriptParserMixin.raise [33m(node_modules/@babel/parser/lib/index.js:6616:19)[39m
+ ⁃ at TypeScriptParserMixin.unexpected [33m(node_modules/@babel/parser/lib/index.js:6636:16)[39m
+ ⁃ at TypeScriptParserMixin.parseExprAtom [33m(node_modules/@babel/parser/lib/index.js:11459:22)[39m
+ ⁃ at TypeScriptParserMixin.parseExprSubscripts [33m(node_modules/@babel/parser/lib/index.js:11098:23)[39m
+ ⁃ at TypeScriptParserMixin.parseUpdate [33m(node_modules/@babel/parser/lib/index.js:11083:21)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:11063:23)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:9854:18)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnaryOrPrivate [33m(node_modules/@babel/parser/lib/index.js:10916:61)[39m
+ ⁃ at TypeScriptParserMixin.parseExprOps [33m(node_modules/@babel/parser/lib/index.js:10921:23)[39m
+
+[31m[CAUSE][39m
+Error {
+  stack: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)\n' +
+  'at constructor (./node_modules/@babel/parser/lib/index.js:365:19)\n' +
+  'at TypeScriptParserMixin.raise (./node_modules/@babel/parser/lib/index.js:6616:19)\n' +
+  'at TypeScriptParserMixin.unexpected (./node_modules/@babel/parser/lib/index.js:6636:16)\n' +
+  'at TypeScriptParserMixin.parseExprAtom (./node_modules/@babel/parser/lib/index.js:11459:22)\n' +
+  'at TypeScriptParserMixin.parseExprSubscripts (./node_modules/@babel/parser/lib/index.js:11098:23)\n' +
+  'at TypeScriptParserMixin.parseUpdate (./node_modules/@babel/parser/lib/index.js:11083:21)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:11063:23)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:9854:18)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (./node_modules/@babel/parser/lib/index.js:10916:61)\n' +
+  'at TypeScriptParserMixin.parseExprOps (./node_modules/@babel/parser/lib/index.js:10921:23)',
+  message: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)',
+  name: 'ViteError',
+  statusText: 'Vite Error',
+  statusMessage: 'Vite Error',
+  code: 'VITE_ERROR',
+  hint: '103 |          content: data.content,\n' +
+
+  '104 |  \n' +
+
+  '105 |          status: data.publishing?.status || "draft",\n' +
+
+  '    |                                                ^\n' +
+
+  '106 |          authorId: ,\n' +
+
+  '107 |        });',
+}
+ERROR  [request error] [unhandled] [GET] http://localhost:3000/dashboard
+
+
+[31mℹ Error: /pages/admin/content.vue?macro=true — Unexpected token (106:18)[39m
+
+ ⁃ at constructor [33m(node_modules/@babel/parser/lib/index.js:365:19)[39m
+
+   [2m360[22m [2m┃[22m    };
+   [2m361[22m [2m┃[22m    [31mif[0m (oldReasonCodes[reasonCode]) {
+   [2m362[22m [2m┃[22m      reasonCode [34m=[0m oldReasonCodes[reasonCode];
+   [2m363[22m [2m┃[22m    }
+   [2m364[22m [2m┃[22m    [31mreturn[0m [31mfunction[0m [31mconstructor[0m(loc[34m,[0m details) {
+ [41m❯ 365 ┃      const error = new SyntaxError();[49m
+   [2m366[22m [2m┃[22m      error[34m.[0mcode [34m=[0m code;
+   [2m367[22m [2m┃[22m      error[34m.[0mreasonCode [34m=[0m reasonCode;
+   [2m368[22m [2m┃[22m      error[34m.[0mloc [34m=[0m loc;
+   [2m369[22m [2m┃[22m      error[34m.[0mpos [34m=[0m loc[34m.[0mindex;
+   [2m370[22m [2m┃[22m      error[34m.[0msyntaxPlugin [34m=[0m syntaxPlugin;
+
+ ⁃ at TypeScriptParserMixin.raise [33m(node_modules/@babel/parser/lib/index.js:6616:19)[39m
+ ⁃ at TypeScriptParserMixin.unexpected [33m(node_modules/@babel/parser/lib/index.js:6636:16)[39m
+ ⁃ at TypeScriptParserMixin.parseExprAtom [33m(node_modules/@babel/parser/lib/index.js:11459:22)[39m
+ ⁃ at TypeScriptParserMixin.parseExprSubscripts [33m(node_modules/@babel/parser/lib/index.js:11098:23)[39m
+ ⁃ at TypeScriptParserMixin.parseUpdate [33m(node_modules/@babel/parser/lib/index.js:11083:21)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:11063:23)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:9854:18)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnaryOrPrivate [33m(node_modules/@babel/parser/lib/index.js:10916:61)[39m
+ ⁃ at TypeScriptParserMixin.parseExprOps [33m(node_modules/@babel/parser/lib/index.js:10921:23)[39m
+
+[31m[CAUSE][39m
+Error {
+  stack: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)\n' +
+  'at constructor (./node_modules/@babel/parser/lib/index.js:365:19)\n' +
+  'at TypeScriptParserMixin.raise (./node_modules/@babel/parser/lib/index.js:6616:19)\n' +
+  'at TypeScriptParserMixin.unexpected (./node_modules/@babel/parser/lib/index.js:6636:16)\n' +
+  'at TypeScriptParserMixin.parseExprAtom (./node_modules/@babel/parser/lib/index.js:11459:22)\n' +
+  'at TypeScriptParserMixin.parseExprSubscripts (./node_modules/@babel/parser/lib/index.js:11098:23)\n' +
+  'at TypeScriptParserMixin.parseUpdate (./node_modules/@babel/parser/lib/index.js:11083:21)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:11063:23)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:9854:18)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (./node_modules/@babel/parser/lib/index.js:10916:61)\n' +
+  'at TypeScriptParserMixin.parseExprOps (./node_modules/@babel/parser/lib/index.js:10921:23)',
+  message: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)',
+  name: 'ViteError',
+  statusText: 'Vite Error',
+  statusMessage: 'Vite Error',
+  code: 'VITE_ERROR',
+  hint: '103 |          content: data.content,\n' +
+
+  '104 |  \n' +
+
+  '105 |          status: data.publishing?.status || "draft",\n' +
+
+  '    |                                                ^\n' +
+
+  '106 |          authorId: ,\n' +
+
+  '107 |        });',
+}
+ERROR  [request error] [unhandled] [GET] http://localhost:3000/dashboard/schedule
+
+
+[31mℹ Error: /pages/admin/content.vue?macro=true — Unexpected token (106:18)[39m
+
+ ⁃ at constructor [33m(node_modules/@babel/parser/lib/index.js:365:19)[39m
+
+   [2m360[22m [2m┃[22m    };
+   [2m361[22m [2m┃[22m    [31mif[0m (oldReasonCodes[reasonCode]) {
+   [2m362[22m [2m┃[22m      reasonCode [34m=[0m oldReasonCodes[reasonCode];
+   [2m363[22m [2m┃[22m    }
+   [2m364[22m [2m┃[22m    [31mreturn[0m [31mfunction[0m [31mconstructor[0m(loc[34m,[0m details) {
+ [41m❯ 365 ┃      const error = new SyntaxError();[49m
+   [2m366[22m [2m┃[22m      error[34m.[0mcode [34m=[0m code;
+   [2m367[22m [2m┃[22m      error[34m.[0mreasonCode [34m=[0m reasonCode;
+   [2m368[22m [2m┃[22m      error[34m.[0mloc [34m=[0m loc;
+   [2m369[22m [2m┃[22m      error[34m.[0mpos [34m=[0m loc[34m.[0mindex;
+   [2m370[22m [2m┃[22m      error[34m.[0msyntaxPlugin [34m=[0m syntaxPlugin;
+
+ ⁃ at TypeScriptParserMixin.raise [33m(node_modules/@babel/parser/lib/index.js:6616:19)[39m
+ ⁃ at TypeScriptParserMixin.unexpected [33m(node_modules/@babel/parser/lib/index.js:6636:16)[39m
+ ⁃ at TypeScriptParserMixin.parseExprAtom [33m(node_modules/@babel/parser/lib/index.js:11459:22)[39m
+ ⁃ at TypeScriptParserMixin.parseExprSubscripts [33m(node_modules/@babel/parser/lib/index.js:11098:23)[39m
+ ⁃ at TypeScriptParserMixin.parseUpdate [33m(node_modules/@babel/parser/lib/index.js:11083:21)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:11063:23)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:9854:18)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnaryOrPrivate [33m(node_modules/@babel/parser/lib/index.js:10916:61)[39m
+ ⁃ at TypeScriptParserMixin.parseExprOps [33m(node_modules/@babel/parser/lib/index.js:10921:23)[39m
+
+[31m[CAUSE][39m
+Error {
+  stack: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)\n' +
+  'at constructor (./node_modules/@babel/parser/lib/index.js:365:19)\n' +
+  'at TypeScriptParserMixin.raise (./node_modules/@babel/parser/lib/index.js:6616:19)\n' +
+  'at TypeScriptParserMixin.unexpected (./node_modules/@babel/parser/lib/index.js:6636:16)\n' +
+  'at TypeScriptParserMixin.parseExprAtom (./node_modules/@babel/parser/lib/index.js:11459:22)\n' +
+  'at TypeScriptParserMixin.parseExprSubscripts (./node_modules/@babel/parser/lib/index.js:11098:23)\n' +
+  'at TypeScriptParserMixin.parseUpdate (./node_modules/@babel/parser/lib/index.js:11083:21)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:11063:23)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:9854:18)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (./node_modules/@babel/parser/lib/index.js:10916:61)\n' +
+  'at TypeScriptParserMixin.parseExprOps (./node_modules/@babel/parser/lib/index.js:10921:23)',
+  message: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)',
+  name: 'ViteError',
+  statusText: 'Vite Error',
+  statusMessage: 'Vite Error',
+  code: 'VITE_ERROR',
+  hint: '103 |          content: data.content,\n' +
+
+  '104 |  \n' +
+
+  '105 |          status: data.publishing?.status || "draft",\n' +
+
+  '    |                                                ^\n' +
+
+  '106 |          authorId: ,\n' +
+
+  '107 |        });',
+}
+ERROR  [request error] [unhandled] [GET] http://localhost:3000/__nuxt_error?error=true&url=%2Fdashboard%2Fschedule&statusCode=500&statusMessage=Vite+Error&message=%2Fpages%2Fadmin%2Fcontent.vue?macro=true+%E2%80%94+Unexpected+token+(106:18)&stack=%2Fpages%2Fadmin%2Fcontent.vue?macro=true+%E2%80%94+Unexpected+token+(106:18)%0Aat+constructor+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:365:19)%0Aat+TypeScriptParserMixin.raise+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:6616:19)%0Aat+TypeScriptParserMixin.unexpected+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:6636:16)%0Aat+TypeScriptParserMixin.parseExprAtom+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11459:22)%0Aat+TypeScriptParserMixin.parseExprSubscripts+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11098:23)%0Aat+TypeScriptParserMixin.parseUpdate+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11083:21)%0Aat+TypeScriptParserMixin.parseMaybeUnary+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11063:23)%0Aat+TypeScriptParserMixin.parseMaybeUnary+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:9854:18)%0Aat+TypeScriptParserMixin.parseMaybeUnaryOrPrivate+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:10916:61)%0Aat+TypeScriptParserMixin.parseExprOps+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:10921:23)&statusText=Vite+Error
+
+
+[31mℹ Error: /pages/admin/content.vue?macro=true — Unexpected token (106:18)[39m
+
+ ⁃ at constructor [33m(node_modules/@babel/parser/lib/index.js:365:19)[39m
+
+   [2m360[22m [2m┃[22m    };
+   [2m361[22m [2m┃[22m    [31mif[0m (oldReasonCodes[reasonCode]) {
+   [2m362[22m [2m┃[22m      reasonCode [34m=[0m oldReasonCodes[reasonCode];
+   [2m363[22m [2m┃[22m    }
+   [2m364[22m [2m┃[22m    [31mreturn[0m [31mfunction[0m [31mconstructor[0m(loc[34m,[0m details) {
+ [41m❯ 365 ┃      const error = new SyntaxError();[49m
+   [2m366[22m [2m┃[22m      error[34m.[0mcode [34m=[0m code;
+   [2m367[22m [2m┃[22m      error[34m.[0mreasonCode [34m=[0m reasonCode;
+   [2m368[22m [2m┃[22m      error[34m.[0mloc [34m=[0m loc;
+   [2m369[22m [2m┃[22m      error[34m.[0mpos [34m=[0m loc[34m.[0mindex;
+   [2m370[22m [2m┃[22m      error[34m.[0msyntaxPlugin [34m=[0m syntaxPlugin;
+
+ ⁃ at TypeScriptParserMixin.raise [33m(node_modules/@babel/parser/lib/index.js:6616:19)[39m
+ ⁃ at TypeScriptParserMixin.unexpected [33m(node_modules/@babel/parser/lib/index.js:6636:16)[39m
+ ⁃ at TypeScriptParserMixin.parseExprAtom [33m(node_modules/@babel/parser/lib/index.js:11459:22)[39m
+ ⁃ at TypeScriptParserMixin.parseExprSubscripts [33m(node_modules/@babel/parser/lib/index.js:11098:23)[39m
+ ⁃ at TypeScriptParserMixin.parseUpdate [33m(node_modules/@babel/parser/lib/index.js:11083:21)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:11063:23)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:9854:18)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnaryOrPrivate [33m(node_modules/@babel/parser/lib/index.js:10916:61)[39m
+ ⁃ at TypeScriptParserMixin.parseExprOps [33m(node_modules/@babel/parser/lib/index.js:10921:23)[39m
+
+[31m[CAUSE][39m
+Error {
+  stack: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)\n' +
+  'at constructor (./node_modules/@babel/parser/lib/index.js:365:19)\n' +
+  'at TypeScriptParserMixin.raise (./node_modules/@babel/parser/lib/index.js:6616:19)\n' +
+  'at TypeScriptParserMixin.unexpected (./node_modules/@babel/parser/lib/index.js:6636:16)\n' +
+  'at TypeScriptParserMixin.parseExprAtom (./node_modules/@babel/parser/lib/index.js:11459:22)\n' +
+  'at TypeScriptParserMixin.parseExprSubscripts (./node_modules/@babel/parser/lib/index.js:11098:23)\n' +
+  'at TypeScriptParserMixin.parseUpdate (./node_modules/@babel/parser/lib/index.js:11083:21)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:11063:23)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:9854:18)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (./node_modules/@babel/parser/lib/index.js:10916:61)\n' +
+  'at TypeScriptParserMixin.parseExprOps (./node_modules/@babel/parser/lib/index.js:10921:23)',
+  message: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)',
+  name: 'ViteError',
+  statusText: 'Vite Error',
+  statusMessage: 'Vite Error',
+  code: 'VITE_ERROR',
+  hint: '103 |          content: data.content,\n' +
+
+  '104 |  \n' +
+
+  '105 |          status: data.publishing?.status || "draft",\n' +
+
+  '    |                                                ^\n' +
+
+  '106 |          authorId: ,\n' +
+
+  '107 |        });',
+}
+ERROR  [request error] [unhandled] [GET] http://localhost:3000/dashboard/schedule
+
+
+[31mℹ Error: /pages/admin/content.vue?macro=true — Unexpected token (106:18)[39m
+
+ ⁃ at constructor [33m(node_modules/@babel/parser/lib/index.js:365:19)[39m
+
+   [2m360[22m [2m┃[22m    };
+   [2m361[22m [2m┃[22m    [31mif[0m (oldReasonCodes[reasonCode]) {
+   [2m362[22m [2m┃[22m      reasonCode [34m=[0m oldReasonCodes[reasonCode];
+   [2m363[22m [2m┃[22m    }
+   [2m364[22m [2m┃[22m    [31mreturn[0m [31mfunction[0m [31mconstructor[0m(loc[34m,[0m details) {
+ [41m❯ 365 ┃      const error = new SyntaxError();[49m
+   [2m366[22m [2m┃[22m      error[34m.[0mcode [34m=[0m code;
+   [2m367[22m [2m┃[22m      error[34m.[0mreasonCode [34m=[0m reasonCode;
+   [2m368[22m [2m┃[22m      error[34m.[0mloc [34m=[0m loc;
+   [2m369[22m [2m┃[22m      error[34m.[0mpos [34m=[0m loc[34m.[0mindex;
+   [2m370[22m [2m┃[22m      error[34m.[0msyntaxPlugin [34m=[0m syntaxPlugin;
+
+ ⁃ at TypeScriptParserMixin.raise [33m(node_modules/@babel/parser/lib/index.js:6616:19)[39m
+ ⁃ at TypeScriptParserMixin.unexpected [33m(node_modules/@babel/parser/lib/index.js:6636:16)[39m
+ ⁃ at TypeScriptParserMixin.parseExprAtom [33m(node_modules/@babel/parser/lib/index.js:11459:22)[39m
+ ⁃ at TypeScriptParserMixin.parseExprSubscripts [33m(node_modules/@babel/parser/lib/index.js:11098:23)[39m
+ ⁃ at TypeScriptParserMixin.parseUpdate [33m(node_modules/@babel/parser/lib/index.js:11083:21)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:11063:23)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:9854:18)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnaryOrPrivate [33m(node_modules/@babel/parser/lib/index.js:10916:61)[39m
+ ⁃ at TypeScriptParserMixin.parseExprOps [33m(node_modules/@babel/parser/lib/index.js:10921:23)[39m
+
+[31m[CAUSE][39m
+Error {
+  stack: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)\n' +
+  'at constructor (./node_modules/@babel/parser/lib/index.js:365:19)\n' +
+  'at TypeScriptParserMixin.raise (./node_modules/@babel/parser/lib/index.js:6616:19)\n' +
+  'at TypeScriptParserMixin.unexpected (./node_modules/@babel/parser/lib/index.js:6636:16)\n' +
+  'at TypeScriptParserMixin.parseExprAtom (./node_modules/@babel/parser/lib/index.js:11459:22)\n' +
+  'at TypeScriptParserMixin.parseExprSubscripts (./node_modules/@babel/parser/lib/index.js:11098:23)\n' +
+  'at TypeScriptParserMixin.parseUpdate (./node_modules/@babel/parser/lib/index.js:11083:21)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:11063:23)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:9854:18)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (./node_modules/@babel/parser/lib/index.js:10916:61)\n' +
+  'at TypeScriptParserMixin.parseExprOps (./node_modules/@babel/parser/lib/index.js:10921:23)',
+  message: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)',
+  name: 'ViteError',
+  statusText: 'Vite Error',
+  statusMessage: 'Vite Error',
+  code: 'VITE_ERROR',
+  hint: '103 |          content: data.content,\n' +
+
+  '104 |  \n' +
+
+  '105 |          status: data.publishing?.status || "draft",\n' +
+
+  '    |                                                ^\n' +
+
+  '106 |          authorId: ,\n' +
+
+  '107 |        });',
+}
+ERROR  [request error] [unhandled] [GET] http://localhost:3000/dashboard/history
+
+
+[31mℹ Error: /pages/admin/content.vue?macro=true — Unexpected token (106:18)[39m
+
+ ⁃ at constructor [33m(node_modules/@babel/parser/lib/index.js:365:19)[39m
+
+   [2m360[22m [2m┃[22m    };
+   [2m361[22m [2m┃[22m    [31mif[0m (oldReasonCodes[reasonCode]) {
+   [2m362[22m [2m┃[22m      reasonCode [34m=[0m oldReasonCodes[reasonCode];
+   [2m363[22m [2m┃[22m    }
+   [2m364[22m [2m┃[22m    [31mreturn[0m [31mfunction[0m [31mconstructor[0m(loc[34m,[0m details) {
+ [41m❯ 365 ┃      const error = new SyntaxError();[49m
+   [2m366[22m [2m┃[22m      error[34m.[0mcode [34m=[0m code;
+   [2m367[22m [2m┃[22m      error[34m.[0mreasonCode [34m=[0m reasonCode;
+   [2m368[22m [2m┃[22m      error[34m.[0mloc [34m=[0m loc;
+   [2m369[22m [2m┃[22m      error[34m.[0mpos [34m=[0m loc[34m.[0mindex;
+   [2m370[22m [2m┃[22m      error[34m.[0msyntaxPlugin [34m=[0m syntaxPlugin;
+
+ ⁃ at TypeScriptParserMixin.raise [33m(node_modules/@babel/parser/lib/index.js:6616:19)[39m
+ ⁃ at TypeScriptParserMixin.unexpected [33m(node_modules/@babel/parser/lib/index.js:6636:16)[39m
+ ⁃ at TypeScriptParserMixin.parseExprAtom [33m(node_modules/@babel/parser/lib/index.js:11459:22)[39m
+ ⁃ at TypeScriptParserMixin.parseExprSubscripts [33m(node_modules/@babel/parser/lib/index.js:11098:23)[39m
+ ⁃ at TypeScriptParserMixin.parseUpdate [33m(node_modules/@babel/parser/lib/index.js:11083:21)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:11063:23)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:9854:18)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnaryOrPrivate [33m(node_modules/@babel/parser/lib/index.js:10916:61)[39m
+ ⁃ at TypeScriptParserMixin.parseExprOps [33m(node_modules/@babel/parser/lib/index.js:10921:23)[39m
+
+[31m[CAUSE][39m
+Error {
+  stack: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)\n' +
+  'at constructor (./node_modules/@babel/parser/lib/index.js:365:19)\n' +
+  'at TypeScriptParserMixin.raise (./node_modules/@babel/parser/lib/index.js:6616:19)\n' +
+  'at TypeScriptParserMixin.unexpected (./node_modules/@babel/parser/lib/index.js:6636:16)\n' +
+  'at TypeScriptParserMixin.parseExprAtom (./node_modules/@babel/parser/lib/index.js:11459:22)\n' +
+  'at TypeScriptParserMixin.parseExprSubscripts (./node_modules/@babel/parser/lib/index.js:11098:23)\n' +
+  'at TypeScriptParserMixin.parseUpdate (./node_modules/@babel/parser/lib/index.js:11083:21)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:11063:23)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:9854:18)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (./node_modules/@babel/parser/lib/index.js:10916:61)\n' +
+  'at TypeScriptParserMixin.parseExprOps (./node_modules/@babel/parser/lib/index.js:10921:23)',
+  message: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)',
+  name: 'ViteError',
+  statusText: 'Vite Error',
+  statusMessage: 'Vite Error',
+  code: 'VITE_ERROR',
+  hint: '103 |          content: data.content,\n' +
+
+  '104 |  \n' +
+
+  '105 |          status: data.publishing?.status || "draft",\n' +
+
+  '    |                                                ^\n' +
+
+  '106 |          authorId: ,\n' +
+
+  '107 |        });',
+}
+ERROR  [request error] [unhandled] [GET] http://localhost:3000/__nuxt_error?error=true&url=%2Fdashboard%2Fhistory&statusCode=500&statusMessage=Vite+Error&message=%2Fpages%2Fadmin%2Fcontent.vue?macro=true+%E2%80%94+Unexpected+token+(106:18)&stack=%2Fpages%2Fadmin%2Fcontent.vue?macro=true+%E2%80%94+Unexpected+token+(106:18)%0Aat+constructor+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:365:19)%0Aat+TypeScriptParserMixin.raise+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:6616:19)%0Aat+TypeScriptParserMixin.unexpected+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:6636:16)%0Aat+TypeScriptParserMixin.parseExprAtom+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11459:22)%0Aat+TypeScriptParserMixin.parseExprSubscripts+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11098:23)%0Aat+TypeScriptParserMixin.parseUpdate+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11083:21)%0Aat+TypeScriptParserMixin.parseMaybeUnary+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:11063:23)%0Aat+TypeScriptParserMixin.parseMaybeUnary+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:9854:18)%0Aat+TypeScriptParserMixin.parseMaybeUnaryOrPrivate+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:10916:61)%0Aat+TypeScriptParserMixin.parseExprOps+(%2Fapp%2Fnode_modules%2F@babel%2Fparser%2Flib%2Findex.js:10921:23)&statusText=Vite+Error
+
+
+[31mℹ Error: /pages/admin/content.vue?macro=true — Unexpected token (106:18)[39m
+
+ ⁃ at constructor [33m(node_modules/@babel/parser/lib/index.js:365:19)[39m
+
+   [2m360[22m [2m┃[22m    };
+   [2m361[22m [2m┃[22m    [31mif[0m (oldReasonCodes[reasonCode]) {
+   [2m362[22m [2m┃[22m      reasonCode [34m=[0m oldReasonCodes[reasonCode];
+   [2m363[22m [2m┃[22m    }
+   [2m364[22m [2m┃[22m    [31mreturn[0m [31mfunction[0m [31mconstructor[0m(loc[34m,[0m details) {
+ [41m❯ 365 ┃      const error = new SyntaxError();[49m
+   [2m366[22m [2m┃[22m      error[34m.[0mcode [34m=[0m code;
+   [2m367[22m [2m┃[22m      error[34m.[0mreasonCode [34m=[0m reasonCode;
+   [2m368[22m [2m┃[22m      error[34m.[0mloc [34m=[0m loc;
+   [2m369[22m [2m┃[22m      error[34m.[0mpos [34m=[0m loc[34m.[0mindex;
+   [2m370[22m [2m┃[22m      error[34m.[0msyntaxPlugin [34m=[0m syntaxPlugin;
+
+ ⁃ at TypeScriptParserMixin.raise [33m(node_modules/@babel/parser/lib/index.js:6616:19)[39m
+ ⁃ at TypeScriptParserMixin.unexpected [33m(node_modules/@babel/parser/lib/index.js:6636:16)[39m
+ ⁃ at TypeScriptParserMixin.parseExprAtom [33m(node_modules/@babel/parser/lib/index.js:11459:22)[39m
+ ⁃ at TypeScriptParserMixin.parseExprSubscripts [33m(node_modules/@babel/parser/lib/index.js:11098:23)[39m
+ ⁃ at TypeScriptParserMixin.parseUpdate [33m(node_modules/@babel/parser/lib/index.js:11083:21)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:11063:23)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:9854:18)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnaryOrPrivate [33m(node_modules/@babel/parser/lib/index.js:10916:61)[39m
+ ⁃ at TypeScriptParserMixin.parseExprOps [33m(node_modules/@babel/parser/lib/index.js:10921:23)[39m
+
+[31m[CAUSE][39m
+Error {
+  stack: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)\n' +
+  'at constructor (./node_modules/@babel/parser/lib/index.js:365:19)\n' +
+  'at TypeScriptParserMixin.raise (./node_modules/@babel/parser/lib/index.js:6616:19)\n' +
+  'at TypeScriptParserMixin.unexpected (./node_modules/@babel/parser/lib/index.js:6636:16)\n' +
+  'at TypeScriptParserMixin.parseExprAtom (./node_modules/@babel/parser/lib/index.js:11459:22)\n' +
+  'at TypeScriptParserMixin.parseExprSubscripts (./node_modules/@babel/parser/lib/index.js:11098:23)\n' +
+  'at TypeScriptParserMixin.parseUpdate (./node_modules/@babel/parser/lib/index.js:11083:21)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:11063:23)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:9854:18)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (./node_modules/@babel/parser/lib/index.js:10916:61)\n' +
+  'at TypeScriptParserMixin.parseExprOps (./node_modules/@babel/parser/lib/index.js:10921:23)',
+  message: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)',
+  name: 'ViteError',
+  statusText: 'Vite Error',
+  statusMessage: 'Vite Error',
+  code: 'VITE_ERROR',
+  hint: '103 |          content: data.content,\n' +
+
+  '104 |  \n' +
+
+  '105 |          status: data.publishing?.status || "draft",\n' +
+
+  '    |                                                ^\n' +
+
+  '106 |          authorId: ,\n' +
+
+  '107 |        });',
+}
+ERROR  [request error] [unhandled] [GET] http://localhost:3000/dashboard/history
+
+
+[31mℹ Error: /pages/admin/content.vue?macro=true — Unexpected token (106:18)[39m
+
+ ⁃ at constructor [33m(node_modules/@babel/parser/lib/index.js:365:19)[39m
+
+   [2m360[22m [2m┃[22m    };
+   [2m361[22m [2m┃[22m    [31mif[0m (oldReasonCodes[reasonCode]) {
+   [2m362[22m [2m┃[22m      reasonCode [34m=[0m oldReasonCodes[reasonCode];
+   [2m363[22m [2m┃[22m    }
+   [2m364[22m [2m┃[22m    [31mreturn[0m [31mfunction[0m [31mconstructor[0m(loc[34m,[0m details) {
+ [41m❯ 365 ┃      const error = new SyntaxError();[49m
+   [2m366[22m [2m┃[22m      error[34m.[0mcode [34m=[0m code;
+   [2m367[22m [2m┃[22m      error[34m.[0mreasonCode [34m=[0m reasonCode;
+   [2m368[22m [2m┃[22m      error[34m.[0mloc [34m=[0m loc;
+   [2m369[22m [2m┃[22m      error[34m.[0mpos [34m=[0m loc[34m.[0mindex;
+   [2m370[22m [2m┃[22m      error[34m.[0msyntaxPlugin [34m=[0m syntaxPlugin;
+
+ ⁃ at TypeScriptParserMixin.raise [33m(node_modules/@babel/parser/lib/index.js:6616:19)[39m
+ ⁃ at TypeScriptParserMixin.unexpected [33m(node_modules/@babel/parser/lib/index.js:6636:16)[39m
+ ⁃ at TypeScriptParserMixin.parseExprAtom [33m(node_modules/@babel/parser/lib/index.js:11459:22)[39m
+ ⁃ at TypeScriptParserMixin.parseExprSubscripts [33m(node_modules/@babel/parser/lib/index.js:11098:23)[39m
+ ⁃ at TypeScriptParserMixin.parseUpdate [33m(node_modules/@babel/parser/lib/index.js:11083:21)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:11063:23)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnary [33m(node_modules/@babel/parser/lib/index.js:9854:18)[39m
+ ⁃ at TypeScriptParserMixin.parseMaybeUnaryOrPrivate [33m(node_modules/@babel/parser/lib/index.js:10916:61)[39m
+ ⁃ at TypeScriptParserMixin.parseExprOps [33m(node_modules/@babel/parser/lib/index.js:10921:23)[39m
+
+[31m[CAUSE][39m
+Error {
+  stack: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)\n' +
+  'at constructor (./node_modules/@babel/parser/lib/index.js:365:19)\n' +
+  'at TypeScriptParserMixin.raise (./node_modules/@babel/parser/lib/index.js:6616:19)\n' +
+  'at TypeScriptParserMixin.unexpected (./node_modules/@babel/parser/lib/index.js:6636:16)\n' +
+  'at TypeScriptParserMixin.parseExprAtom (./node_modules/@babel/parser/lib/index.js:11459:22)\n' +
+  'at TypeScriptParserMixin.parseExprSubscripts (./node_modules/@babel/parser/lib/index.js:11098:23)\n' +
+  'at TypeScriptParserMixin.parseUpdate (./node_modules/@babel/parser/lib/index.js:11083:21)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:11063:23)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnary (./node_modules/@babel/parser/lib/index.js:9854:18)\n' +
+  'at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (./node_modules/@babel/parser/lib/index.js:10916:61)\n' +
+  'at TypeScriptParserMixin.parseExprOps (./node_modules/@babel/parser/lib/index.js:10921:23)',
+  message: '/pages/admin/content.vue?macro=true — Unexpected token (106:18)',
+  name: 'ViteError',
+  statusText: 'Vite Error',
+  statusMessage: 'Vite Error',
+  code: 'VITE_ERROR',
+  hint: '103 |          content: data.content,\n' +
+
+  '104 |  \n' +
+
+  '105 |          status: data.publishing?.status || "draft",\n' +
+
+  '    |                                                ^\n' +
+
+  '106 |          authorId: ,\n' +
+
+  '107 |        });',
+}
+ℹ hmr update /assets/css/main.css, /@id/virtual:nuxt:%2Fapp%2F.nuxt%2Froutes.mjs
+
+ WARN  Duplicated imports "Faq", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "BlogPost", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "Page", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+
+ WARN  Duplicated imports "PageSection", the one from "/app/app/composables/useContent.ts" has been ignored and "/app/app/stores/content.ts" is used
+
+ℹ hmr update /@id/virtual:nuxt:%2Fapp%2F.nuxt%2Froutes.mjs
+✔ Vite server hmr 9 files in 1.045ms
+ℹ Vite discovered new dependencies at runtime:
+  ./virtual:nuxt:%2Fapp%2F.nuxt%2Fruntime.vue-devtools-client.mO0jQZn70aHSC8aSferkiM7YJfzA1Me1TLPRySMCbq4.js
+    @vue/devtools-core
+    @vue/devtools-kit
+
+Pre-bundle them in your nuxt.config.ts to avoid page reloads:
+
+export default defineNuxtConfig({
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+      ]
+    }
+  }
+})
+
+Learn more: https://vite.dev/guide/dep-pre-bundling.html
+ℹ New dependencies found: zod

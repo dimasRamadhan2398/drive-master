@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useSchedules } from "../../composables/useSchedules";
-import { useToast } from "@nuxt/ui";
+import { computed, ref, onMounted } from "vue";
 
 const { t } = useI18n();
 definePageMeta({ layout: "dashboard" });
 
 const toast = useToast();
+const authStore = useAuthStore();
+const schedulesStore = useSchedulesStore();
+const enrollmentsStore = useEnrollmentsStore();
 
 // FITUR BARU: Logika Kalender Dinamis
 const currentDate = ref(new Date("2026-04-10T00:00:00")); // Default start di April 2026
@@ -28,7 +29,14 @@ const currentMonthShortStr = computed(() => {
   return currentDate.value.toLocaleDateString("en-US", { month: "short" });
 });
 
-const { slots: globalSlots, bookSlot, updateSlotStatus } = useSchedules();
+const globalSlots = computed(() => schedulesStore.slots);
+
+onMounted(async () => {
+  await Promise.all([
+    schedulesStore.initialize(),
+    enrollmentsStore.fetchActiveEnrollment()
+  ])
+})
 
 // FITUR BARU: Kalender merender hari secara dinamis berdasarkan bulan yang sedang dipilih
 const calendarDays = computed(() => {
@@ -91,27 +99,17 @@ const availableSlots = computed(() => {
     }));
 });
 
-// Mock upcoming sessions
-const upcomingSessions = ref([
-  {
-    id: "1",
-    sessionNumber: 5,
-    date: "Mar 28, 2026",
-    time: "09:30 AM",
-    car: "BYD Atto 1",
-    instructor: "Pak Ahmad",
-    topic: "Highway Driving - Advanced",
-  },
-  {
-    id: "2",
-    sessionNumber: 6,
-    date: "Apr 2, 2026",
-    time: "11:00 AM",
-    car: "BYD Atto 1",
-    instructor: "Bu Sari",
-    topic: "Night Driving Introduction",
-  },
-]);
+// Real upcoming sessions from store
+const upcomingSessions = computed(() => {
+  return [...schedulesStore.slots]
+    .filter(s => s.status === 'booked' || s.status === 'in-progress')
+    .sort((a, b) => new Date(a.date + 'T' + a.time).getTime() - new Date(b.date + 'T' + b.time).getTime())
+    .map((s, index) => ({
+      ...s,
+      sessionNumber: index + 1,
+      topic: s.notes || "General Driving Session"
+    }))
+});
 
 const selectedSlotDetails = computed(() => {
   return globalSlots.value.find((s) => s.id === selectedSlot.value);
@@ -152,39 +150,37 @@ function openRescheduleModal(session: any) {
   showRescheduleModal.value = true;
 }
 
-function confirmReschedule() {
+async function confirmReschedule() {
   const newSlot = rescheduleSlotDetails.value;
-  if (newSlot && sessionToReschedule.value) {
+  const currentEnrollment = enrollmentsStore.currentEnrollment;
+
+  if (newSlot && sessionToReschedule.value && currentEnrollment) {
     const oldSlotId = sessionToReschedule.value.id;
 
-    // 1. Make the old slot available again
-    updateSlotStatus(oldSlotId, "available");
+    try {
+      // 1. Cancel the old booking
+      await schedulesStore.cancelBooking(oldSlotId);
 
-    // 2. Book the new slot
-    bookSlot(newSlot.id, "John Doe");
+      // 2. Book the new slot
+      await schedulesStore.bookSlot(newSlot.id, {
+        userId: authStore.user?.userId || "",
+        entitlementId: currentEnrollment.id,
+        notes: sessionToReschedule.value.topic
+      });
 
-    // 3. Update the session in the upcoming list
-    const index = upcomingSessions.value.findIndex((s) => s.id === oldSlotId);
-    const session = upcomingSessions.value[index];
-
-    if (index !== -1 && session) {
-      upcomingSessions.value[index] = {
-        ...session,
-        id: newSlot.id, // Update the ID to the new slot's ID
-        date: `${currentMonthShortStr.value} ${
-          rescheduleDate.value
-        }, ${currentDate.value.getFullYear()}`,
-        time: newSlot.time,
-        car: newSlot.car,
-        instructor: newSlot.instructor,
-      };
+      showRescheduleModal.value = false;
+      toast.add({
+        title: t("schedule.rescheduleSuccess"),
+        description: t("schedule.rescheduleSuccessDesc"),
+        color: "success",
+      });
+    } catch (error) {
+      toast.add({
+        title: "Reschedule Failed",
+        description: "An error occurred while rescheduling your session.",
+        color: "error"
+      });
     }
-    showRescheduleModal.value = false;
-    toast.add({
-      title: t("schedule.rescheduleSuccess"),
-      description: t("schedule.rescheduleSuccessDesc"),
-      color: "success",
-    });
   }
 }
 
@@ -193,22 +189,24 @@ function openCancelModal(session: any) {
   showCancelModal.value = true;
 }
 
-function confirmCancel() {
+async function confirmCancel() {
   if (sessionToCancel.value) {
     const canceledSlotId = sessionToCancel.value.id;
-    // 1. Make the slot available again in the global state
-    updateSlotStatus(canceledSlotId, "available");
-    // 2. Remove the session from the upcoming list
-    upcomingSessions.value = upcomingSessions.value.filter(
-      (s) => s.id !== canceledSlotId
-    );
-    showCancelModal.value = false;
-    // PERUBAHAN: Pesan toast yang lebih informatif
-    toast.add({
-      title: t("schedule.cancelSuccess"),
-      description: t("schedule.cancelSuccessDesc"),
-      color: "neutral",
-    });
+    try {
+      await schedulesStore.cancelBooking(canceledSlotId);
+      showCancelModal.value = false;
+      toast.add({
+        title: t("schedule.cancelSuccess"),
+        description: t("schedule.cancelSuccessDesc"),
+        color: "neutral",
+      });
+    } catch (error) {
+      toast.add({
+        title: "Cancellation Failed",
+        description: "An error occurred while cancelling your session.",
+        color: "error"
+      });
+    }
   }
 }
 
@@ -219,41 +217,43 @@ function selectSlot(slotId: string) {
   }
 }
 
-function confirmBooking() {
-  if (selectedSlot.value && selectedSlotDetails.value) {
+async function confirmBooking() {
+  const currentEnrollment = enrollmentsStore.currentEnrollment;
+
+  if (selectedSlot.value && selectedSlotDetails.value && currentEnrollment) {
     const bookedSlotId = selectedSlot.value;
-    const bookedSlotDetails = selectedSlotDetails.value;
 
-    // 1. Book the slot in the global state
-    bookSlot(bookedSlotId, "John Doe"); // Assuming 'John Doe' is the current user
+    try {
+      await schedulesStore.bookSlot(bookedSlotId, {
+        userId: authStore.user?.userId || "",
+        entitlementId: currentEnrollment.id,
+        notes: "General Driving Session"
+      });
 
-    // 2. Create a new session object to add to upcomingSessions
-    const newSession = {
-      id: bookedSlotId, // Use the slot ID as session ID
-      sessionNumber: upcomingSessions.value.length + 1, // Simple increment for demo
-      date: `${currentMonthShortStr.value} ${
-        selectedDate.value
-      }, ${currentDate.value.getFullYear()}`,
-      time: bookedSlotDetails.time,
-      car: bookedSlotDetails.car,
-      instructor: bookedSlotDetails.instructor,
-      topic: "General Driving Session", // Default topic for new bookings
-    };
-
-    // 3. Add the new session to the upcomingSessions array
-    upcomingSessions.value.push(newSession);
-
-    showBookingModal.value = false;
+      showBookingModal.value = false;
+      toast.add({
+        title: t("schedule.bookingSuccess"),
+        description: t("schedule.bookingSuccessDesc", {
+          date: selectedSlotDetails.value.date,
+          time: selectedSlotDetails.value.time,
+        }),
+        icon: "i-lucide-check-circle",
+        color: "success",
+      });
+      selectedSlot.value = null;
+    } catch (error) {
+      toast.add({
+        title: "Booking Failed",
+        description: "An error occurred while booking your session.",
+        color: "error"
+      });
+    }
+  } else if (!currentEnrollment) {
     toast.add({
-      title: t("schedule.bookingSuccess"),
-      description: t("schedule.bookingSuccessDesc", {
-        date: newSession.date,
-        time: newSession.time,
-      }),
-      icon: "i-lucide-check-circle",
-      color: "success",
+      title: "No Active Enrollment",
+      description: "Please purchase a package first to book a session.",
+      color: "error"
     });
-    selectedSlot.value = null;
   }
 }
 </script>
