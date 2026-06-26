@@ -51,26 +51,75 @@ func (h *SessionCompletedHandler) HandleEvent(ctx context.Context, event *pkgKaf
 		return uuid.Nil, fmt.Errorf("invalid uuid")
 	}
 
-	if v, ok := event.Data["entitlementID"]; ok {
+	// Parse entitlement_id (snake_case from Kafka producer)
+	if v, ok := event.Data["entitlement_id"]; ok {
 		if id, err := parseUUID(v); err == nil {
 			entitlementID = id
 		}
 	}
-	if v, ok := event.Data["bookingID"]; ok {
+	// Also check entitlementID (camelCase fallback)
+	if entitlementID == uuid.Nil {
+		if v, ok := event.Data["entitlementID"]; ok {
+			if id, err := parseUUID(v); err == nil {
+				entitlementID = id
+			}
+		}
+	}
+
+	// Parse enrollment_id as booking_id (snake_case from Kafka producer)
+	if v, ok := event.Data["enrollment_id"]; ok {
 		if id, err := parseUUID(v); err == nil {
 			bookingID = id
 		}
 	}
-	if v, ok := event.Data["memberID"]; ok {
+	// Also check booking_id (alternative field name)
+	if bookingID == uuid.Nil {
+		if v, ok := event.Data["booking_id"]; ok {
+			if id, err := parseUUID(v); err == nil {
+				bookingID = id
+			}
+		}
+	}
+	// Also check bookingID (camelCase fallback)
+	if bookingID == uuid.Nil {
+		if v, ok := event.Data["bookingID"]; ok {
+			if id, err := parseUUID(v); err == nil {
+				bookingID = id
+			}
+		}
+	}
+
+	// Parse member_id (snake_case from Kafka producer)
+	if v, ok := event.Data["member_id"]; ok {
 		if id, err := parseUUID(v); err == nil {
 			memberID = id
 		}
 	}
-	if v, ok := event.Data["packageID"]; ok {
+	// Also check memberID (camelCase fallback)
+	if memberID == uuid.Nil {
+		if v, ok := event.Data["memberID"]; ok {
+			if id, err := parseUUID(v); err == nil {
+				memberID = id
+			}
+		}
+	}
+
+	// Parse package_id (snake_case from Kafka producer)
+	if v, ok := event.Data["package_id"]; ok {
 		if id, err := parseUUID(v); err == nil {
 			packageID = id
 		}
 	}
+	// Also check packageID (camelCase fallback)
+	if packageID == uuid.Nil {
+		if v, ok := event.Data["packageID"]; ok {
+			if id, err := parseUUID(v); err == nil {
+				packageID = id
+			}
+		}
+	}
+
+	// Parse sessions_used (snake_case from Kafka producer)
 	if v, ok := event.Data["sessions_used"]; ok {
 		switch t := v.(type) {
 		case float64:

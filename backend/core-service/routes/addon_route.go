@@ -26,6 +26,7 @@ func (r *AddOnRoute) Run() {
 	addons := r.group.Group("/addons")
 	{
 		addons.GET("/all", r.controller.GetAddOnController().GetAllAddOns)
+		addons.GET("/active", r.controller.GetAddOnController().GetActiveAddOns)
 		addons.GET("/:id", r.controller.GetAddOnController().GetAddOnByID)
 		addons.POST("/create", r.controller.GetAddOnController().CreateAddOn)
 		addons.PUT("/:id", r.controller.GetAddOnController().UpdateAddOn)

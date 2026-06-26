@@ -56,10 +56,10 @@ func seedPaymentMethods(db *gorm.DB) {
 
 	for _, pm := range paymentMethods {
 		// Check if payment method already exists
-		var existing struct{}
-		db.Raw("SELECT 1 FROM payment_methods WHERE code = ?", pm.Code).Scan(&existing)
+		var count int64
+		db.Raw("SELECT COUNT(1) FROM payment_methods WHERE code = ?", pm.Code).Scan(&count)
 
-		if existing == struct{}{} {
+		if count > 0 {
 			log.Printf("Payment method '%s' already exists, skipping", pm.Code)
 			continue
 		}

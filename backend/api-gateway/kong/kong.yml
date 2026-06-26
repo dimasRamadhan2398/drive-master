@@ -192,6 +192,14 @@ services:
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
+      - name: core-addons-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/addons
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
       - name: core-faq-route
         strip_path: false
         preserve_host: false

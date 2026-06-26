@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useSchedules } from "../../composables/useSchedules";
-import { useToast } from "@nuxt/ui";
 
 const { t } = useI18n();
 definePageMeta({ layout: "dashboard" });

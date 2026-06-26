@@ -22,14 +22,17 @@ export interface Enrollment {
   status: EnrollmentStatus;
   enrollmentDate: string;
   expiryDate: string;
+  expiresAt?: string; // Backend field name
   startDate?: string;
   endDate?: string;
   price: number;
   discountPrice: number;
+  totalPrice?: number; // Backend field name
   paymentStatus: "pending" | "paid" | "failed" | "refunded";
   paymentMethod?: string;
   transactionId?: string;
   notes?: string;
+  paidAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -130,11 +133,15 @@ export const enrollmentService = {
     const { user, extractData } = useApiClients();
 
     try {
-      const response = await user<ApiResponse<Enrollment>>("/enrollments", {
+      const response = await user<any>("/enrollments", {
         method: "POST",
         body: data,
       });
-      return extractData(response);
+      const dataExtracted = extractData(response);
+      if (dataExtracted && typeof dataExtracted === "object" && "enrollment" in dataExtracted) {
+        return (dataExtracted as any).enrollment as Enrollment;
+      }
+      return dataExtracted as Enrollment;
     } catch (error) {
       console.error("[EnrollmentService] Error creating enrollment:", error);
       return null;
@@ -146,11 +153,15 @@ export const enrollmentService = {
     const { user, extractData } = useApiClients();
 
     try {
-      const response = await user<ApiResponse<Enrollment>>(
+      const response = await user<any>(
         `/enrollments/${id}`,
         { method: "GET" },
       );
-      return extractData(response);
+      const dataExtracted = extractData(response);
+      if (dataExtracted && typeof dataExtracted === "object" && "enrollment" in dataExtracted) {
+        return (dataExtracted as any).enrollment as Enrollment;
+      }
+      return dataExtracted as Enrollment;
     } catch {
       return null;
     }

@@ -2,8 +2,6 @@ import { defineStore } from "pinia";
 import {
   type BlogPostMedia,
   contentService,
-  type CreateBlogArticleData,
-  type UpdateBlogPostData,
 } from "../services/contentService";
 
 export interface PageSection {
@@ -214,17 +212,43 @@ export const useContentStore = defineStore("content", {
     },
 
     // Blog Post actions
-    async addPost(data: CreateBlogArticleData) {
+    async addPost(data: {
+      title: string;
+      slug?: string;
+      author?: string;
+      leadParagraph?: string;
+      featuredImage?: File | string;
+      content?: string;
+      status?: "draft" | "published" | "archived";
+    }) {
       this.isLoading = true;
       try {
-        const created = await contentService.createBlogPost(data);
+        // Get authorId from auth store
+        const authStore = useAuthStore();
+        const authorId = authStore.userId;
+
+        // Convert to FormData for file upload support
+        const formData = new FormData();
+        formData.append("title", data.title);
+        if (data.slug) formData.append("slug", data.slug);
+        formData.append("authorId", authorId || "");
+        if (data.leadParagraph) formData.append("leadParagraph", data.leadParagraph);
+        if (data.content) formData.append("content", data.content);
+        if (data.featuredImage) {
+          formData.append("featuredImage", data.featuredImage);
+        }
+        formData.append("status", data.status || "draft");
+
+        const created = await contentService.createBlogPost(formData);
 
         if (created) {
           const newPost: BlogPost = {
             id: created.id as any,
             title: created.title,
             slug: created.slug,
-            author: created.author,
+            author: "Admin",
+            leadParagraph: (created as any).leadParagraph || "",
+            featuredImage: (created as any).featuredImage || "",
             content: created.content,
             excerpt: created.excerpt,
             date: this.formatDate(new Date(created.createdAt)),
@@ -233,6 +257,8 @@ export const useContentStore = defineStore("content", {
             media: created.media || [],
             publishing: created.publishing,
             attractiveness: created.attractiveness,
+            createdAt: created.createdAt,
+            updatedAt: created.updatedAt,
           };
           this.blogPosts.unshift(newPost);
           return newPost;
@@ -246,10 +272,34 @@ export const useContentStore = defineStore("content", {
       return null;
     },
 
-    async updatePost(id: string | number, data: UpdateBlogPostData) {
+    async updatePost(id: string | number, data: {
+      title?: string;
+      slug?: string;
+      author?: string;
+      leadParagraph?: string;
+      featuredImage?: File | string;
+      content?: string;
+      status?: "draft" | "published" | "archived";
+    }) {
       this.isLoading = true;
       try {
-        const updated = await contentService.updateBlogPost(String(id), data);
+        // Get authorId from auth store
+        const authStore = useAuthStore();
+        const authorId = authStore.userId;
+
+        // Convert to FormData for file upload support
+        const formData = new FormData();
+        if (data.title !== undefined) formData.append("title", data.title);
+        if (data.slug !== undefined) formData.append("slug", data.slug);
+        formData.append("authorId", authorId || "");
+        if (data.leadParagraph !== undefined) formData.append("leadParagraph", data.leadParagraph);
+        if (data.content !== undefined) formData.append("content", data.content);
+        if (data.featuredImage !== undefined) {
+          formData.append("featuredImage", data.featuredImage);
+        }
+        if (data.status !== undefined) formData.append("status", data.status);
+
+        const updated = await contentService.updateBlogPost(String(id), formData);
 
         if (updated) {
           const index = this.blogPosts.findIndex((p) => p.id === id);
@@ -260,7 +310,9 @@ export const useContentStore = defineStore("content", {
               ...existing,
               title: updated.title,
               slug: updated.slug,
-              author: updated.author,
+              author: "Admin",
+              leadParagraph: (updated as any).leadParagraph ?? existing.leadParagraph,
+              featuredImage: (updated as any).featuredImage ?? existing.featuredImage,
               content: updated.content,
               excerpt: updated.excerpt,
               date: this.formatDate(new Date(updated.updatedAt)),
@@ -269,6 +321,7 @@ export const useContentStore = defineStore("content", {
               media: updated.media || existing.media,
               publishing: (updated.publishing as any) || existing.publishing,
               attractiveness: updated.attractiveness || existing.attractiveness,
+              updatedAt: updated.updatedAt,
             };
             return this.blogPosts[index];
           }
@@ -346,9 +399,11 @@ export const useContentStore = defineStore("content", {
             title: p.title,
             slug: p.slug || "",
             author: p.author || "Admin",
-            status: p.status,
+            status: p.publishing?.status,
             viewCount: p.viewCount,
             createdAt: p.createdAt,
+            leadParagraph: p.leadParagraph || "",
+            featuredImage: p.featuredImage || "",
           });
           return {
             id: p.id,
@@ -359,21 +414,22 @@ export const useContentStore = defineStore("content", {
             featuredImage: p.featuredImage || "",
             excerpt: p.excerpt || p.leadParagraph || "",
             date: this.formatDate(new Date(p.createdAt)),
-            status: (p.status as "published" | "draft" | "archived") || "draft",
+            status: (p.publishing?.status as "published" | "draft" | "archived") || "draft",
             views: p.viewCount || 0,
             viewCount: p.viewCount || 0,
             likeCount: p.likeCount || 0,
             readingTime: p.readingTime || 1,
             media: [],
             publishing: {
-              status: (p.status as "published" | "draft" | "archived") || "draft",
-              publishedAt: p.publishedAt || undefined,
+              status: (p.publishing?.status as "published" | "draft" | "archived") || "draft",
+              publishedAt: p.publishing?.publishedAt || undefined,
+              scheduledAt: p.publishing?.scheduledAt || undefined,
             },
             attractiveness: {
-              isFeatured: false,
-              isSpotlight: false,
-              priority: 0,
-              highlight: false,
+              isFeatured: p.attractiveness?.isFeatured || false,
+              isSpotlight: p.attractiveness?.isSpotlight || false,
+              priority: p.attractiveness?.priority || 0,
+              highlight: p.attractiveness?.highlight || false,
             },
             createdAt: p.createdAt,
             updatedAt: p.updatedAt,

@@ -268,10 +268,10 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-drivemaster123}
       - KAFKA_ENABLED=true
       - KAFKA_BROKERS=drive_master_kafka:29092
-      - KAFKA_TOPIC=booking.events
+      - KAFKA_TOPIC=payment.events
       - CONFIG_PATH=./pkg/config/config.yaml
       - RUN_MIGRATIONS=true
-      - RUN_SEEDERS=false
+      - RUN_SEEDERS=true
       - MIDTRANS_SERVER_KEY=${MIDTRANS_SERVER_KEY:-}
       - MIDTRANS_CLIENT_KEY=${MIDTRANS_CLIENT_KEY:-}
     networks:

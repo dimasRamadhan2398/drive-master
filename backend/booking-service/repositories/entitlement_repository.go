@@ -25,6 +25,7 @@ type IEntitlementRepository interface {
 	FindBySourceType(ctx context.Context, sourceType string) ([]models.UserEntitlement, error)
 	FindActiveByUserID(ctx context.Context, userID uuid.UUID) ([]models.UserEntitlement, error)
 	UpdateUsedSessions(ctx context.Context, id uuid.UUID, usedSessions int) error
+	UpdateUsedSessionsTx(tx *gorm.DB, id uuid.UUID, usedSessions int) error
 	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
 	CountAll(ctx context.Context) (int64, error)
 	CountByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) (int64, error)
@@ -127,6 +128,13 @@ func (r *EntitlementRepository) UpdateUsedSessions(ctx context.Context, id uuid.
 		"UPDATE user_entitlements SET used_sessions = ?, updated_at = ? WHERE id = ?",
 		usedSessions, time.Now(), id,
 	)
+}
+
+func (r *EntitlementRepository) UpdateUsedSessionsTx(tx *gorm.DB, id uuid.UUID, usedSessions int) error {
+	return tx.Exec(
+		"UPDATE user_entitlements SET used_sessions = ?, updated_at = ? WHERE id = ?",
+		usedSessions, time.Now(), id,
+	).Error
 }
 
 func (r *EntitlementRepository) AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error {

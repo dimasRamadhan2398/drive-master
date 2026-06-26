@@ -103,6 +103,7 @@ type IEventPublisher interface {
 	PublishCertificationIssued(ctx context.Context, userID string, userEmail, userName, certType string, issueDate time.Time) error
 	PublishEnrollmentPaid(ctx context.Context, enrollmentID string, userID string, packageID uuid.UUID, totalPrice float64, totalSessions int, packageName string) error
 	PublishSessionCompleted(ctx context.Context, sessionID uint, entitlementID uuid.UUID, enrollmentID uuid.UUID, userID uuid.UUID, packageID uuid.UUID, sessionsUsed int) error
+	PublishSessionCompletedWithEnrollment(ctx context.Context, sessionID uint, entitlementID uuid.UUID, enrollmentID uuid.UUID, userID uuid.UUID, packageID uuid.UUID, sessionsUsed int, remainingSessions int) error
 
 	// Consumer management
 	StartConsumer(ctx context.Context) error
@@ -352,6 +353,29 @@ func (r *EventPublisher) PublishSessionCompleted(ctx context.Context, sessionID 
 			"member_id":      userID.String(),
 			"package_id":      packageID.String(),
 			"sessions_used":   sessionsUsed,
+		},
+		Timestamp: time.Now().UTC(),
+	}
+	return r.Publish(ctx, event)
+}
+
+// PublishSessionCompletedWithEnrollment publishes a session completed event with enrollment details
+// This event includes remaining sessions count and enrollment status update info
+func (r *EventPublisher) PublishSessionCompletedWithEnrollment(ctx context.Context, sessionID uint, entitlementID uuid.UUID, enrollmentID uuid.UUID, userID uuid.UUID, packageID uuid.UUID, sessionsUsed int, remainingSessions int) error {
+	event := &Event{
+		Type:    EventSessionCompleted,
+		UserID:  userID.String(),
+		Success: true,
+		Data: map[string]interface{}{
+			"session_id":          sessionID,
+			"entitlement_id":      entitlementID.String(),
+			"enrollment_id":       enrollmentID.String(),
+			"member_id":           userID.String(),
+			"package_id":          packageID.String(),
+			"sessions_used":       sessionsUsed,
+			"remaining_sessions":  remainingSessions,
+			"enrollment_status":    "completed", // Will be "in_progress" or "completed" based on logic
+			"enrollment_updated":  remainingSessions <= 0,
 		},
 		Timestamp: time.Now().UTC(),
 	}

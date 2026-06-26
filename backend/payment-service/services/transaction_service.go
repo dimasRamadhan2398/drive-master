@@ -41,7 +41,7 @@ func (s *TransactionService) CreateTransaction(
 	gatewayTxnID string,
 	response interface{},
 ) (*models.Transaction, error) {
-	var gatewayResponse string
+	gatewayResponse := "{}"
 	if response != nil {
 		respBytes, err := json.Marshal(response)
 		if err == nil {

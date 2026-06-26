@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { packageService } from "~/services/packageService";
+import { addonService } from "~/services/addonService";
 import type {
   CreatePackageData,
   UpdatePackageData,
@@ -22,11 +23,15 @@ export interface Package {
 }
 
 export interface Addon {
-  id: number;
-  name: string;
+  id: string; // UUID from API
+  name: string; // mapped from 'title' in API
   price: number;
   description: string;
   sold: number;
+  sessions?: number;
+  status?: "active" | "inactive";
+  imageUrl?: string;
+  sortOrder?: number;
 }
 
 interface PackagesState {
@@ -339,11 +344,13 @@ const initialPackages: Package[] = [
 
 const initialAddons: Addon[] = [
   {
-    id: 1,
+    id: "00000000-0000-0000-0000-000000000001",
     name: "Extra Session",
     price: 350000,
     description: "Additional training session",
     sold: 34,
+    sessions: 1,
+    status: "active",
   },
 ];
 
@@ -529,28 +536,123 @@ export const usePackagesStore = defineStore("packages", {
       }
     },
 
-    addAddon(data: Omit<Addon, "id" | "sold">) {
-      const newId = Math.max(...this.addons.map((a) => a.id), 0) + 1;
+    async fetchAddons() {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const data = await addonService.fetchAll();
+        this.addons = data;
+      } catch (err) {
+        this.error =
+          err instanceof Error ? err.message : "Failed to fetch addons";
+        console.error("Error fetching addons:", err);
+        // API failed, use initial data
+        this.addons = [...initialAddons];
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async addAddon(data: { name: string; price: number; description?: string; sessions?: number }) {
+      this.isAddLoading = true;
+      try {
+        const newAddon = await addonService.create({
+          title: data.name,
+          price: data.price,
+          description: data.description || "",
+          sessions: data.sessions || 1,
+        });
+        this.addons.unshift(newAddon);
+        return newAddon;
+      } catch {
+        // Fallback to local creation if API fails
+        return this.addAddonLocal(data);
+      } finally {
+        this.isAddLoading = false;
+      }
+    },
+
+    // Local creation fallback (when API is not available)
+    addAddonLocal(data: { name: string; price: number; description?: string; sessions?: number }) {
       const newAddon: Addon = {
-        ...data,
-        id: newId,
+        id: crypto.randomUUID(),
+        name: data.name,
+        price: data.price,
+        description: data.description || "",
         sold: 0,
+        sessions: data.sessions || 1,
+        status: "active",
       };
       this.addons.push(newAddon);
       return newAddon;
     },
 
-    updateAddon(id: number, data: Partial<Addon>) {
+    async updateAddon(id: string, data: { name?: string; price?: number; description?: string; sessions?: number; status?: "active" | "inactive" }) {
+      try {
+        const updatedAddon = await addonService.update(id, {
+          title: data.name,
+          description: data.description,
+          price: data.price,
+          sessions: data.sessions,
+          status: data.status,
+        });
+        if (updatedAddon) {
+          const index = this.addons.findIndex((a) => a.id === id);
+          if (index !== -1) {
+            this.addons[index] = updatedAddon;
+          }
+          return updatedAddon;
+        }
+        return null;
+      } catch {
+        // Fallback to local update if API fails
+        return this.updateAddonLocal(id, data);
+      }
+    },
+
+    // Local update fallback (when API is not available)
+    updateAddonLocal(id: string, data: Partial<Addon>): Addon | null {
       const index = this.addons.findIndex((a) => a.id === id);
       if (index !== -1) {
-        this.addons[index] = { ...this.addons[index], ...data } as Addon;
+        this.addons[index] = { ...this.addons[index], ...data };
         return this.addons[index];
       }
       return null;
     },
 
-    deleteAddon(id: number) {
-      this.addons = this.addons.filter((a) => a.id !== id);
+    async deleteAddon(id: string) {
+      try {
+        const success = await addonService.delete(id);
+        if (success) {
+          this.addons = this.addons.filter((a) => a.id !== id);
+        }
+        return success;
+      } catch {
+        // Fallback to local delete if API fails
+        this.addons = this.addons.filter((a) => a.id !== id);
+        return true;
+      }
+    },
+
+    async toggleAddonStatus(id: string) {
+      try {
+        const success = await addonService.toggleStatus(id);
+        if (success) {
+          const addon = this.addons.find((a) => a.id === id);
+          if (addon) {
+            addon.status = addon.status === "active" ? "inactive" : "active";
+          }
+        }
+        return success;
+      } catch {
+        // Fallback to local toggle if API fails
+        const addon = this.addons.find((a) => a.id === id);
+        if (addon) {
+          addon.status = addon.status === "active" ? "inactive" : "active";
+        }
+        return true;
+      }
     },
 
     recordSale(packageId: string) {

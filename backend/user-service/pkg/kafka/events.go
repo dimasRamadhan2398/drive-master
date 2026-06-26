@@ -62,6 +62,9 @@ const (
 	EventCoursePublished EventType = "course.published"
 	EventCourseArchived  EventType = "course.archived"
 
+	// Session Events
+	EventSessionCompleted EventType = "session.completed"
+
 	// User Lifecycle Events
 	EventUserDeleted EventType = "user.deleted"
 )

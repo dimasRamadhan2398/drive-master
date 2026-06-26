@@ -187,10 +187,14 @@ func (s *MidtransService) GetSnapURL() string {
 // generateItemDetails builds item details for a charge request.
 // FIX: return type is []midtrans.ItemDetails
 func generateItemDetails(orderID string, amount float64, packageName string) []midtrans.ItemDetails {
+	name := fmt.Sprintf("Paket %s", packageName)
+	if len(name) > 50 {
+		name = name[:50]
+	}
 	return []midtrans.ItemDetails{
 		{
 			ID:    orderID,
-			Name:  fmt.Sprintf("%s - Paket ", orderID, packageName),
+			Name:  name,
 			Price: int64(amount),
 			Qty:   1,
 			Brand: "Drive Master",

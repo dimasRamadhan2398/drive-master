@@ -1,6 +1,4 @@
-import type {
-  ApiResponse,
-} from "~/composables/useApiClients";
+import type { ApiResponse } from "~/composables/useApiClients";
 import type { Faq, CreateFaqData, UpdateFaqData } from "~/stores/content";
 
 // Blog Post Types (mirroring backend DTOs - blog_post.go)
@@ -33,8 +31,8 @@ export interface CreateBlogPostData {
   slug?: string;
   author: string;
   leadParagraph?: string;
+  featuredImage?: File | string;
   content: string;
-  media?: BlogPostMedia[];
   publishing: {
     status: "draft" | "published" | "archived";
     publishedAt?: string;
@@ -52,6 +50,8 @@ export interface UpdateBlogPostData {
   title?: string;
   slug?: string;
   author?: string;
+  leadParagraph?: string;
+  featuredImage?: File | string;
   content?: string;
   media?: BlogPostMedia[];
   publishing?: {
@@ -206,7 +206,11 @@ export const contentService = {
       }
 
       // Case 2: Paginated response with data array at response.data
-      if (response?.data && Array.isArray(response.data) && !Array.isArray(response.data.data)) {
+      if (
+        response?.data &&
+        Array.isArray(response.data) &&
+        !Array.isArray(response.data.data)
+      ) {
         posts = response.data.map((p: any) => ({
           id: p.id,
           title: p.title,
@@ -301,12 +305,11 @@ export const contentService = {
   async fetchBlogPostById(id: string): Promise<BlogPostResponse | null> {
     const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<BlogPostResponse> | BlogPostResponse | any>(
-        `/articles/blog/${id}`,
-        {
-          method: "GET",
-        },
-      );
+      const response = await core<
+        ApiResponse<BlogPostResponse> | BlogPostResponse | any
+      >(`/articles/blog/${id}`, {
+        method: "GET",
+      });
       if (response && typeof response === "object") {
         return (response as any).data || response;
       }
@@ -318,17 +321,24 @@ export const contentService = {
 
   // POST /articles/blog - Create blog post
   async createBlogPost(
-    data: CreateBlogArticleData,
+    data: CreateBlogArticleData | FormData,
   ): Promise<BlogPostResponse | null> {
     const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<BlogPostResponse> | BlogPostResponse | any>(
-        "/articles/blog",
-        {
-          method: "POST",
-          body: data,
-        },
-      );
+      // Check if data is FormData
+      const isFormData = data instanceof FormData;
+      const body = isFormData ? data : JSON.stringify(data);
+      const headers = isFormData
+        ? undefined
+        : { "Content-Type": "application/json" };
+
+      const response = await core<
+        ApiResponse<BlogPostResponse> | BlogPostResponse | any
+      >("/articles/blog", {
+        method: "POST",
+        body,
+        headers,
+      });
       if (response && typeof response === "object") {
         return (response as any).data || response;
       }
@@ -341,17 +351,24 @@ export const contentService = {
   // PUT /articles/blog/:id - Update blog post
   async updateBlogPost(
     id: string,
-    data: UpdateBlogPostData,
+    data: UpdateBlogPostData | FormData,
   ): Promise<BlogPostResponse | null> {
     const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<BlogPostResponse> | BlogPostResponse | any>(
-        `/articles/blog/${id}`,
-        {
-          method: "PUT",
-          body: data,
-        },
-      );
+      // Check if data is FormData
+      const isFormData = data instanceof FormData;
+      const body = isFormData ? data : JSON.stringify(data);
+      const headers = isFormData
+        ? undefined
+        : { "Content-Type": "application/json" };
+
+      const response = await core<
+        ApiResponse<BlogPostResponse> | BlogPostResponse | any
+      >(`/articles/blog/${id}`, {
+        method: "PUT",
+        body,
+        headers,
+      });
       if (response && typeof response === "object") {
         return (response as any).data || response;
       }
@@ -399,9 +416,12 @@ export const contentService = {
   async fetchFaqById(id: string): Promise<Faq | null> {
     const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq> | Faq | any>(`/articles/faq/${id}`, {
-        method: "GET",
-      });
+      const response = await core<ApiResponse<Faq> | Faq | any>(
+        `/articles/faq/${id}`,
+        {
+          method: "GET",
+        },
+      );
       if (response && typeof response === "object") {
         return (response as any).data || response;
       }
@@ -415,10 +435,13 @@ export const contentService = {
   async createFaq(data: CreateFaqData): Promise<Faq | null> {
     const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq> | Faq | any>("/articles/faq", {
-        method: "POST",
-        body: data,
-      });
+      const response = await core<ApiResponse<Faq> | Faq | any>(
+        "/articles/faq",
+        {
+          method: "POST",
+          body: data,
+        },
+      );
       if (response && typeof response === "object") {
         return (response as any).data || response;
       }
@@ -432,10 +455,13 @@ export const contentService = {
   async updateFaq(id: string, data: UpdateFaqData): Promise<Faq | null> {
     const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq> | Faq | any>(`/articles/faq/${id}`, {
-        method: "PUT",
-        body: data,
-      });
+      const response = await core<ApiResponse<Faq> | Faq | any>(
+        `/articles/faq/${id}`,
+        {
+          method: "PUT",
+          body: data,
+        },
+      );
       if (response && typeof response === "object") {
         return (response as any).data || response;
       }

@@ -90,23 +90,51 @@ export const useEnrollmentsStore = defineStore("enrollments", {
       this.error = null;
 
       try {
-        const newEnrollment = await enrollmentService.create(data);
-        if (newEnrollment) {
+        const response = await enrollmentService.create(data);
+        console.log("[ENROLLMENT STORE] createEnrollment response:", response);
+
+        const newEnrollment = response && typeof response === "object" && "enrollment" in response
+          ? (response as any).enrollment
+          : response;
+
+        if (newEnrollment && newEnrollment.id) {
+          // Normalize the enrollment data to match our interface
+          const normalizedEnrollment: Enrollment = {
+            id: newEnrollment.id,
+            userId: newEnrollment.userId || data.userId,
+            userName: newEnrollment.userName || "",
+            userEmail: newEnrollment.userEmail || "",
+            packageId: newEnrollment.packageId || data.packageId,
+            packageName: newEnrollment.packageName || "",
+            totalSessions: newEnrollment.totalSessions || 0,
+            completedSessions: newEnrollment.completedSessions || 0,
+            remainingSessions: newEnrollment.remainingSessions || 0,
+            status: newEnrollment.status || "pending",
+            enrollmentDate: newEnrollment.enrollmentDate || new Date().toISOString(),
+            expiryDate: newEnrollment.expiryDate || newEnrollment.expiresAt || "",
+            price: newEnrollment.price || newEnrollment.totalPrice || data.price || 0,
+            discountPrice: newEnrollment.discountPrice || data.discountPrice || 0,
+            paymentStatus: newEnrollment.paymentStatus || "pending",
+            createdAt: newEnrollment.createdAt,
+            updatedAt: newEnrollment.updatedAt,
+          };
+
           // Add to enrollments list
           this.enrollments.unshift({
-            id: newEnrollment.id,
-            packageName: newEnrollment.packageName,
-            totalSessions: newEnrollment.totalSessions,
-            completedSessions: newEnrollment.completedSessions,
-            remainingSessions: newEnrollment.remainingSessions,
-            status: newEnrollment.status,
-            enrollmentDate: newEnrollment.enrollmentDate,
-            expiryDate: newEnrollment.expiryDate,
-            paymentStatus: newEnrollment.paymentStatus,
+            id: normalizedEnrollment.id,
+            packageName: normalizedEnrollment.packageName,
+            totalSessions: normalizedEnrollment.totalSessions,
+            completedSessions: normalizedEnrollment.completedSessions,
+            remainingSessions: normalizedEnrollment.remainingSessions,
+            status: normalizedEnrollment.status,
+            enrollmentDate: normalizedEnrollment.enrollmentDate,
+            expiryDate: normalizedEnrollment.expiryDate,
+            paymentStatus: normalizedEnrollment.paymentStatus,
           });
-          this.currentEnrollment = newEnrollment;
+          this.currentEnrollment = normalizedEnrollment;
+          return normalizedEnrollment;
         }
-        return newEnrollment;
+        return null;
       } catch (err) {
         this.error =
           err instanceof Error ? err.message : "Failed to create enrollment";

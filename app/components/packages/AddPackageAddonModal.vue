@@ -18,14 +18,17 @@ const newAddon = ref({
   name: "",
   price: 0,
   description: "",
+  sessions: 1,
 });
+
+const isSubmitting = ref(false);
 
 function handleClose() {
   emit("update:open", false);
-  newAddon.value = { name: "", price: 0, description: "" };
+  newAddon.value = { name: "", price: 0, description: "", sessions: 1 };
 }
 
-function saveNewAddon() {
+async function saveNewAddon() {
   if (!newAddon.value.name || newAddon.value.price <= 0) {
     toast.add({
       title: t('common.error'),
@@ -35,19 +38,39 @@ function saveNewAddon() {
     return;
   }
 
-  packagesStore.addAddon({
-    name: newAddon.value.name,
-    price: newAddon.value.price,
-    description: newAddon.value.description,
-  });
+  isSubmitting.value = true;
+  try {
+    const result = await packagesStore.addAddon({
+      name: newAddon.value.name,
+      price: newAddon.value.price,
+      description: newAddon.value.description,
+      sessions: newAddon.value.sessions,
+    });
 
-  toast.add({
-    title: t('admin.addon.added'),
-    description: `"${newAddon.value.name}" ${t('admin.studentAddedDesc').replace('{name} telah ditambahkan.', 'telah dibuat.')}`,
-    color: "success",
-  });
-
-  handleClose();
+    if (result) {
+      toast.add({
+        title: t('admin.addon.added'),
+        description: `"${newAddon.value.name}" telah dibuat.`,
+        color: "success",
+      });
+      handleClose();
+    } else {
+      toast.add({
+        title: t('common.error'),
+        description: "Gagal membuat add-on. Silakan coba lagi.",
+        color: "error",
+      });
+    }
+  } catch (error) {
+    console.error("Error creating addon:", error);
+    toast.add({
+      title: t('common.error'),
+      description: "Gagal membuat add-on. Silakan coba lagi.",
+      color: "error",
+    });
+  } finally {
+    isSubmitting.value = false;
+  }
 }
 </script>
 
@@ -80,6 +103,15 @@ function saveNewAddon() {
             color="warning"
           />
         </UFormField>
+        <UFormField :label="t('admin.package.sessions')">
+          <UInput
+            v-model="newAddon.sessions"
+            type="number"
+            :min="1"
+            class="w-full"
+            color="warning"
+          />
+        </UFormField>
       </div>
     </template>
     <template #footer>
@@ -88,12 +120,14 @@ function saveNewAddon() {
           :label="t('common.cancel')"
           variant="ghost"
           color="neutral"
+          :disabled="isSubmitting"
           @click="handleClose"
         />
         <UButton
           :label="t('admin.addon.add')"
           icon="i-lucide-plus"
           color="warning"
+          :loading="isSubmitting"
           @click="saveNewAddon"
         />
       </div>

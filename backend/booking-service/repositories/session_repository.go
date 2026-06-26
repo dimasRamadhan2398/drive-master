@@ -30,6 +30,7 @@ type ISessionRepository interface {
 	UpdateStatus(ctx context.Context, id uint, status string) error
 	StartSession(ctx context.Context, id uint, startedAt time.Time) error
 	CompleteSession(ctx context.Context, id uint, completedAt time.Time) error
+	CompleteSessionTx(tx *gorm.DB, id uint, completedAt time.Time) error
 	CancelSession(ctx context.Context, id uint) error
 	GetStats(ctx context.Context) (*SessionStats, error)
 	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
@@ -175,6 +176,13 @@ func (r *SessionRepository) CompleteSession(ctx context.Context, id uint, comple
 		"UPDATE driving_sessions SET status = 'completed', completed_at = ?, updated_at = ? WHERE id = ?",
 		completedAt, time.Now(), id,
 	)
+}
+
+func (r *SessionRepository) CompleteSessionTx(tx *gorm.DB, id uint, completedAt time.Time) error {
+	return tx.Exec(
+		"UPDATE driving_sessions SET status = 'completed', completed_at = ?, updated_at = ? WHERE id = ?",
+		completedAt, time.Now(), id,
+	).Error
 }
 
 // SessionStats holds session statistics

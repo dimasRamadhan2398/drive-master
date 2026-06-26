@@ -140,7 +140,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	}
 
 	// Run seeders if enabled
-	if serveSeed {
+	if serveSeed || getEnv("RUN_SEEDERS", "false") == "true" {
 		runSeeders(db)
 	}
 
@@ -215,6 +215,6 @@ func runMigrations(db *gorm.DB) {
 
 func runSeeders(db *gorm.DB) {
 	log.Println("Starting database seeding...")
-	// Add seeders here if needed
+	seedPaymentMethods(db)
 	log.Println("Database seeding completed successfully")
 }

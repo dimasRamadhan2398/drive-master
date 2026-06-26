@@ -35,12 +35,12 @@ const blogColumns: TableColumn<BlogPost>[] = [
   { accessorKey: "title", header: t("admin.content.title") },
   { accessorKey: "author", header: "Author" },
   {
-    accessorKey: "status",
+    accessorKey: "publishing.status",
     header: t("admin.content.status"),
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
+      const status = row.getValue("publishing.status") as string;
       return h(resolveComponent("UBadge"), {
-        label: status.toUpperCase(),
+        label: status?.toUpperCase(),
         color:
           status === "published" ? "success" : status === "draft" ? "neutral" : "error",
         variant: "subtle",
@@ -48,6 +48,18 @@ const blogColumns: TableColumn<BlogPost>[] = [
     },
   },
   { accessorKey: "views", header: "Views" },
+  {
+    accessorKey: "attractiveness.isFeatured",
+    header: "Featured",
+    cell: ({ row }) => {
+      const isFeatured = row.getValue("attractiveness.isFeatured") as boolean;
+      return h(resolveComponent("UBadge"), {
+        label: isFeatured ? "FEATURED" : "—",
+        color: isFeatured ? "warning" : "neutral",
+        variant: "subtle",
+      });
+    },
+  },
   { id: "actions" },
 ];
 
@@ -70,7 +82,6 @@ function openEditBlog(post: BlogPost) {
     author: post.author,
     leadParagraph: "",
     content: post.content,
-    status: post.status,
     media: post.media || [],
     publishing: {
       status: post.publishing?.status || post.status,
@@ -96,7 +107,7 @@ async function handleBlogSaved(data: CreateBlogArticleData) {
         slug: data.slug,
         author: data.author,
         content: data.content,
-        media: data.media,
+        featuredImage: data.featuredImage,
         publishing: data.publishing,
         attractiveness: data.attractiveness,
       };
@@ -111,10 +122,9 @@ async function handleBlogSaved(data: CreateBlogArticleData) {
         authorId: data.authorId,
         leadParagraph: data.leadParagraph,
         content: data.content,
-        media: data.media,
+        featuredImage: data.featuredImage,
         publishing: data.publishing,
         attractiveness: data.attractiveness,
-        status: data.status,
       });
 
       // Check if the result indicates an error (store returns null on failure)

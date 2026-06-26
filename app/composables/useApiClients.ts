@@ -68,8 +68,14 @@ export const useApiClients = () => {
   };
 
   // Extract data from API response wrapper
-  const extractData = <T>(response: ApiResponse<T>): T => {
-    return response.data;
+  // Handles both wrapped { data: X } and direct X responses
+  const extractData = <T>(response: ApiResponse<T> | any): T | null => {
+    // If response has a data property, use it (wrapped format)
+    if (response && typeof response === "object" && "data" in response) {
+      return response.data as T;
+    }
+    // Otherwise return the response directly (unwrapped format)
+    return response as T;
   };
 
   // Extract data and pagination from paginated response

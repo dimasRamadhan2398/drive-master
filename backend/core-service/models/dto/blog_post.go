@@ -54,42 +54,31 @@ type Attractiveness struct {
 	Highlight   bool `json:"highlight"`   // Mark as highlighted/popular
 }
 
-// CreateBlogArticleRequest is the DTO for creating a new blog article
-type CreateBlogArticleRequest struct {
-	Title         string    `json:"title" binding:"required,max=255"`
-	Slug          string    `json:"slug" binding:"max=255"`
-	LeadParagraph string    `json:"leadParagraph"`
-	Content       string    `json:"content"`
-	FeaturedImage string    `json:"featuredImage"`
-	CategoryID    uuid.UUID `json:"categoryId"`
-	AuthorID      uuid.UUID `json:"authorId" binding:"required"`
-	Tags          []string  `json:"tags"`
-	Status        string    `json:"status"`
-}
-
 // CreateBlogPostRequest is the DTO for creating a new blog post
 type CreateBlogPostRequest struct {
-	Title         string         `json:"title" binding:"required,max=255"`
-	Slug          string         `json:"slug" binding:"max=255"`
-	Author        string         `json:"author" binding:"max=100"`
-	LeadParagraph string         `json:"leadParagraph"`
-	Content       string         `json:"content"`
-	AuthorID      uuid.UUID      `json:"authorId" binding:"required"`
-	FeaturedImage *FileUpload    `json:"featuredImage"`
-	Publishing    *Publishing    `json:"publishing"`
+	Title          string          `json:"title" form:"title" binding:"required,max=255"`
+	Slug           string          `json:"slug" form:"slug" binding:"max=255"`
+	Author         string          `json:"author" form:"author" binding:"max=100"`
+	LeadParagraph  string          `json:"leadParagraph" form:"leadParagraph"`
+	Content        string          `json:"content" form:"content"`
+	AuthorID       uuid.UUID       `json:"authorId" form:"authorId" binding:"required"`
+	Status         string          `json:"status" form:"status"` // Top-level status support for FormData
+	FeaturedImage  *FileUpload     `json:"featuredImage"`
+	Publishing     *Publishing     `json:"publishing"`
 	Attractiveness *Attractiveness `json:"attractiveness"`
 }
 
 // UpdateBlogPostRequest is the DTO for updating an existing blog post
 type UpdateBlogPostRequest struct {
-	Title         string         `json:"title" binding:"max=255"`
-	Slug          string         `json:"slug" binding:"max=255"`
-	Author        string         `json:"author" binding:"max=100"`
-	LeadParagraph string         `json:"leadParagraph"`
-	Content       string         `json:"content"`
-	AuthorID      uuid.UUID      `json:"authorId" binding:"required"`
-	FeaturedImage *FileUpload    `json:"featuredImage"`
-	Publishing    *Publishing    `json:"publishing"`
+	Title          string          `json:"title" form:"title" binding:"max=255"`
+	Slug           string          `json:"slug" form:"slug" binding:"max=255"`
+	Author         string          `json:"author" form:"author" binding:"max=100"`
+	LeadParagraph  string          `json:"leadParagraph" form:"leadParagraph"`
+	Content        string          `json:"content" form:"content"`
+	AuthorID       uuid.UUID       `json:"authorId" form:"authorId" binding:"required"`
+	Status         string          `json:"status" form:"status"` // Top-level status support for FormData
+	FeaturedImage  *FileUpload     `json:"featuredImage"`
+	Publishing     *Publishing     `json:"publishing"`
 	Attractiveness *Attractiveness `json:"attractiveness"`
 }
 

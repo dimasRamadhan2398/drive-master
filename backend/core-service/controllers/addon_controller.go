@@ -22,6 +22,7 @@ type AddOnController struct {
 // IAddOnController defines the interface for add-on controller
 type IAddOnController interface {
 	GetAllAddOns(ctx *gin.Context)
+	GetActiveAddOns(ctx *gin.Context)
 	GetAddOnByID(ctx *gin.Context)
 	CreateAddOn(ctx *gin.Context)
 	UpdateAddOn(ctx *gin.Context)
@@ -84,6 +85,40 @@ func (c *AddOnController) GetAllAddOns(ctx *gin.Context) {
 
 	pagination := dto.NewPaginationMeta(total, page, limit)
 	response.Paginated(ctx, http.StatusOK, "Add-ons fetched successfully", items, &pagination)
+}
+
+// GetActiveAddOns handles GET /api/v1/addons/active
+// @Summary Get all active add-ons
+// @Description Retrieves all active add-ons for selection
+// @Tags AddOns
+// @Produce json
+// @Success 200 {object} response.Response
+// @Router /addons/active [get]
+func (c *AddOnController) GetActiveAddOns(ctx *gin.Context) {
+	addons, err := c.addOnService.GetActiveAddOns(ctx.Request.Context())
+	if err != nil {
+		response.InternalServerError(ctx, "Failed to fetch active add-ons")
+		return
+	}
+
+	// Build response items
+	var items []dto.AddOnResponse
+	for _, addon := range addons {
+		items = append(items, dto.AddOnResponse{
+			ID:          addon.ID,
+			Title:       addon.Title,
+			Description: addon.Description,
+			Price:       addon.Price,
+			Sessions:    addon.Sessions,
+			Status:      addon.Status,
+			ImageURL:    addon.ImageURL,
+			SortOrder:   addon.SortOrder,
+			CreatedAt:   addon.CreatedAt,
+			UpdatedAt:   addon.UpdatedAt,
+		})
+	}
+
+	response.OK(ctx, "Active add-ons fetched successfully", items)
 }
 
 // GetAddOnByID handles GET /api/v1/addons/:id

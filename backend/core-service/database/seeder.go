@@ -46,6 +46,11 @@ func RunSeeders(db *gorm.DB) error {
 		return err
 	}
 
+	// Run addon seeder
+	if err := seeders.RunAddonSeeder(db); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -68,6 +73,8 @@ func RunSeederByName(db *gorm.DB, name string) error {
 		return seeders.RunGeneralSettingsSeeder(db)
 	case "faqs":
 		return seeders.RunFAQSeeder(db)
+	case "addons":
+		return seeders.RunAddonSeeder(db)
 	case "all":
 		return RunSeeders(db)
 	default:

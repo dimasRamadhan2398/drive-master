@@ -18,6 +18,7 @@ type IEnrollmentRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*models.Enrollment, error)
 	FindByIDWithPreload(ctx context.Context, id uuid.UUID) (*models.Enrollment, error)
 	Update(ctx context.Context, enrollment *models.Enrollment) error
+	UpdateTx(tx *gorm.DB, enrollment *models.Enrollment) error
 	Delete(ctx context.Context, enrollment *models.Enrollment) error
 	FindAll(ctx context.Context) ([]models.Enrollment, error)
 	FindAllPaginated(ctx context.Context, page, limit int) ([]models.Enrollment, error)
@@ -26,6 +27,7 @@ type IEnrollmentRepository interface {
 	FindByStatus(ctx context.Context, status models.EnrollmentStatus) ([]models.Enrollment, int64, error)
 	FindByPackageID(ctx context.Context, packageID uuid.UUID) ([]models.Enrollment, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status models.EnrollmentStatus) error
+	UpdateStatusTx(tx *gorm.DB, id uuid.UUID, status models.EnrollmentStatus) error
 	MarkAsPaid(ctx context.Context, id uuid.UUID, paidAt time.Time, totalPrice float64) error
 	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
 	CountAll(ctx context.Context) (int64, error)
@@ -72,6 +74,10 @@ func (r *EnrollmentRepository) FindByIDWithPreload(ctx context.Context, id uuid.
 
 func (r *EnrollmentRepository) Update(ctx context.Context, enrollment *models.Enrollment) error {
 	return r.BaseRepository.Update(enrollment)
+}
+
+func (r *EnrollmentRepository) UpdateTx(tx *gorm.DB, enrollment *models.Enrollment) error {
+	return tx.Save(enrollment).Error
 }
 
 func (r *EnrollmentRepository) Delete(ctx context.Context, enrollment *models.Enrollment) error {
@@ -157,6 +163,13 @@ func (r *EnrollmentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, s
 		"UPDATE enrollments SET status = ?, updated_at = ? WHERE id = ?",
 		status, time.Now(), id,
 	)
+}
+
+func (r *EnrollmentRepository) UpdateStatusTx(tx *gorm.DB, id uuid.UUID, status models.EnrollmentStatus) error {
+	return tx.Exec(
+		"UPDATE enrollments SET status = ?, updated_at = ? WHERE id = ?",
+		status, time.Now(), id,
+	).Error
 }
 
 func (r *EnrollmentRepository) MarkAsPaid(ctx context.Context, id uuid.UUID, paidAt time.Time, totalPrice float64) error {

@@ -31,7 +31,9 @@ type SessionService struct {
 	sessionRepo     repositories.ISessionRepository
 	scheduleRepo    repositories.IScheduleRepository
 	entitlementRepo repositories.IEntitlementRepository
+	enrollmentRepo  repositories.IEnrollmentRepository
 	eventPublisher  kafka.IEventPublisher
+	db              *gorm.DB
 }
 
 func NewSessionService(
@@ -58,6 +60,25 @@ func NewSessionServiceWithEventPublisher(
 		scheduleRepo:    scheduleRepo,
 		entitlementRepo: entitlementRepo,
 		eventPublisher:  eventPublisher,
+	}
+}
+
+// NewSessionServiceWithAllDeps creates a session service with all dependencies including enrollment repo and DB
+func NewSessionServiceWithAllDeps(
+	sessionRepo repositories.ISessionRepository,
+	scheduleRepo repositories.IScheduleRepository,
+	entitlementRepo repositories.IEntitlementRepository,
+	enrollmentRepo repositories.IEnrollmentRepository,
+	eventPublisher kafka.IEventPublisher,
+	db *gorm.DB,
+) ISessionService {
+	return &SessionService{
+		sessionRepo:     sessionRepo,
+		scheduleRepo:    scheduleRepo,
+		entitlementRepo: entitlementRepo,
+		enrollmentRepo:  enrollmentRepo,
+		eventPublisher:  eventPublisher,
+		db:              db,
 	}
 }
 
@@ -203,41 +224,125 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 		return nil, errors.New("session cannot be completed: must be in progress")
 	}
 
-	// Complete the session
-	completedAt := time.Now()
-	if err := s.sessionRepo.CompleteSession(ctx, id, completedAt); err != nil {
-		return nil, err
-	}
-
-	// Update associated schedule if any
+	// Update associated schedule if any (do this before completing session)
 	if session.ScheduleID != nil {
 		if err := s.scheduleRepo.UpdateStatus(ctx, *session.ScheduleID, dto.ScheduleStatusCompleted); err != nil {
-			// Log error
+			// Log error but continue
 		}
 	}
 
-	// Increment used sessions in entitlement and publish event
-	if session.EntitlementID != uuid.Nil {
-		entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
-		if err == nil && entitlement != nil {
-			newUsedSessions := entitlement.UsedSessions + 1
-			if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, newUsedSessions); err != nil {
-				// Log error but continue
+	// If we have enrollment repo and db, use transaction for atomic updates
+	if s.enrollmentRepo != nil && s.db != nil {
+		err = s.db.Transaction(func(tx *gorm.DB) error {
+			// Complete the session
+			completedAt := time.Now()
+			if err := s.sessionRepo.CompleteSessionTx(tx, id, completedAt); err != nil {
+				return err
 			}
 
-			// Publish session.completed event for user-service to sync entitlement
-			if s.eventPublisher != nil {
-				// Get package ID from enrollment
-				var packageID uuid.UUID
+			// Increment used sessions in entitlement
+			if session.EntitlementID != uuid.Nil {
+				entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
+				if err != nil || entitlement == nil {
+					return err
+				}
+
+				newUsedSessions := entitlement.UsedSessions + 1
+				if err := s.entitlementRepo.UpdateUsedSessionsTx(tx, entitlement.ID, newUsedSessions); err != nil {
+					return err
+				}
+
+				// Check if all sessions are used → update enrollment to completed
 				if session.EnrollmentID != uuid.Nil {
-					enrollments, _ := s.entitlementRepo.FindByEnrollmentID(ctx, session.EnrollmentID)
-					if len(enrollments) > 0 {
-						packageID, _ = uuid.Parse(enrollments[0].SourceID)
+					enrollment, err := s.enrollmentRepo.FindByID(ctx, session.EnrollmentID)
+					if err == nil && enrollment != nil {
+						// Check if all entitlements for this enrollment are exhausted
+						allEntitlements, err := s.entitlementRepo.FindByEnrollmentID(ctx, session.EnrollmentID)
+						if err == nil && len(allEntitlements) > 0 {
+							allExhausted := true
+							for _, ent := range allEntitlements {
+								if ent.ID != entitlement.ID {
+									// Check remaining for other entitlements
+									// For simplicity, we only mark completed if this entitlement is the last one
+									// and all others have been used up
+								}
+								if ent.UsedSessions < ent.TotalSessions {
+									allExhausted = false
+								}
+							}
+
+							// If this was the last entitlement to be exhausted, mark enrollment as completed
+							if allExhausted || (entitlement.UsedSessions >= entitlement.TotalSessions) {
+								if enrollment.Status != models.EnrollmentStatusCompleted {
+									if err := s.enrollmentRepo.UpdateStatusTx(tx, enrollment.ID, models.EnrollmentStatusCompleted); err != nil {
+										return err
+									}
+								}
+							} else if enrollment.Status == models.EnrollmentStatusPendingPayment {
+								// If enrollment was pending, mark as in_progress when first session is completed
+								if err := s.enrollmentRepo.UpdateStatusTx(tx, enrollment.ID, models.EnrollmentStatusInProgress); err != nil {
+									return err
+								}
+							}
+						}
 					}
 				}
-				_ = s.eventPublisher.PublishSessionCompleted(ctx, id, session.EntitlementID, session.EnrollmentID, session.UserID, packageID, 1)
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Fallback: non-transactional update (backward compatibility)
+		completedAt := time.Now()
+		if err := s.sessionRepo.CompleteSession(ctx, id, completedAt); err != nil {
+			return nil, err
+		}
+
+		// Increment used sessions in entitlement
+		if session.EntitlementID != uuid.Nil {
+			entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
+			if err == nil && entitlement != nil {
+				newUsedSessions := entitlement.UsedSessions + 1
+				if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, newUsedSessions); err != nil {
+					// Log error but continue
+				}
 			}
 		}
+	}
+
+	// Publish Kafka event for session completion (for external services like core-service)
+	if s.eventPublisher != nil {
+		var packageID uuid.UUID
+		if session.EnrollmentID != uuid.Nil {
+			enrollments, _ := s.entitlementRepo.FindByEnrollmentID(ctx, session.EnrollmentID)
+			if len(enrollments) > 0 {
+				packageID, _ = uuid.Parse(enrollments[0].SourceID)
+			}
+		}
+
+		// Get updated entitlement for remaining sessions count
+		var sessionsRemaining int
+		if session.EntitlementID != uuid.Nil {
+			entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
+			if err == nil && entitlement != nil {
+				sessionsRemaining = entitlement.TotalSessions - entitlement.UsedSessions
+			}
+		}
+
+		_ = s.eventPublisher.PublishSessionCompletedWithEnrollment(
+			ctx,
+			id,
+			session.EntitlementID,
+			session.EnrollmentID,
+			session.UserID,
+			packageID,
+			1,
+			sessionsRemaining,
+		)
 	}
 
 	// Reload session

@@ -113,8 +113,33 @@ async function handleAddPackage(pkg: CreatePackageData) {
   }
 }
 
+async function deleteAddon(addonId: string) {
+  if (
+    confirm(
+      `Anda yakin ingin menghapus add-on ini? Aksi ini tidak dapat dibatalkan.`,
+    )
+  ) {
+    const success = await packagesStore.deleteAddon(addonId);
+    if (success) {
+      toast.add({
+        title: "Add-on Dihapus",
+        description: `Add-on telah dihapus.`,
+        color: "error",
+        icon: "i-lucide-trash",
+      });
+    } else {
+      toast.add({
+        title: t('common.error'),
+        description: "Gagal menghapus add-on. Silakan coba lagi.",
+        color: "error",
+      });
+    }
+  }
+}
+
 onMounted(() => {
   packagesStore.fetchPackages();
+  packagesStore.fetchAddons();
 });
 </script>
 
@@ -338,11 +363,17 @@ onMounted(() => {
                     variant="subtle"
                     color="warning"
                   />
+                  <UBadge
+                    v-if="addon.sessions && addon.sessions > 1"
+                    :label="`${addon.sessions} ${t('billing.sessions')}`"
+                    variant="subtle"
+                    color="info"
+                  />
                 </div>
                 <p class="text-md text-muted mt-1">{{ addon.description }}</p>
               </div>
-              <div class="flex items-center gap-4">
-                <div class="text-right">
+              <div class="flex items-center gap-2">
+                <div class="text-right mr-4">
                   <p class="font-bold">{{ addon.sold }}</p>
                   <p class="text-md text-muted">{{ t('admin.unitsSold').replace('Total ', '') }}</p>
                 </div>
@@ -352,6 +383,13 @@ onMounted(() => {
                   variant="ghost"
                   size="md"
                   @click="openEditAddonModal(addon)"
+                />
+                <UButton
+                  icon="i-lucide-trash"
+                  color="error"
+                  variant="ghost"
+                  size="md"
+                  @click="deleteAddon(addon.id)"
                 />
               </div>
             </div>

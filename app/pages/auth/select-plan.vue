@@ -128,10 +128,24 @@ async function selectPlan() {
     });
 
     if (enrollment) {
-      console.log("[SELECT PLAN] Enrollment created:", enrollment.id);
+      console.log("[SELECT PLAN] Enrollment created:", enrollment);
+      console.log("[SELECT PLAN] Enrollment ID:", enrollment.id);
+      console.log("[SELECT PLAN] Enrollment object keys:", Object.keys(enrollment));
 
-      // Store enrollment ID in session storage for payment page
+      // Store full enrollment object in session storage for payment page
       if (import.meta.client) {
+        const enrollmentData = {
+          id: enrollment.id,
+          userId: enrollment.userId,
+          packageId: enrollment.packageId,
+          packageName: enrollment.packageName || "Selected Package",
+          price: enrollment.price || enrollment.totalPrice || 0,
+          discountPrice: enrollment.discountPrice || 0,
+          status: enrollment.status,
+          createdAt: enrollment.createdAt,
+        };
+        console.log("[SELECT PLAN] Storing enrollment to session:", enrollmentData);
+        sessionStorage.setItem('dm_enrollment', JSON.stringify(enrollmentData));
         sessionStorage.setItem('dm_enrollment_id', enrollment.id);
         sessionStorage.setItem('dm_selected_plan', currentPlan.value.id);
       }

@@ -50,10 +50,11 @@ func (t *TransactionRoute) Run() {
 	paymentsGroup := t.group.Group("/payments")
 	paymentsGroup.POST("/transactions", t.authMiddleware.Authenticate(), t.controller.CreateTransaction)
 	paymentsGroup.GET("", t.authMiddleware.Authenticate(), t.controller.ListPayments)
-	paymentsGroup.GET("/:id", t.authMiddleware.Authenticate(), t.controller.GetPayment)
+	// Use :id consistently and handle orderId vs paymentId in controller
 	paymentsGroup.GET("/order/:orderId", t.authMiddleware.Authenticate(), t.controller.GetPaymentByOrderID)
-	paymentsGroup.GET("/:orderId/details", t.authMiddleware.Authenticate(), t.controller.GetPaymentDetail)
-	paymentsGroup.GET("/:orderId/status", t.authMiddleware.Authenticate(), t.controller.GetPaymentStatus)
+	paymentsGroup.GET("/:id/details", t.authMiddleware.Authenticate(), t.controller.GetPaymentDetail)
+	paymentsGroup.GET("/:id/status", t.authMiddleware.Authenticate(), t.controller.GetPaymentStatus)
+	paymentsGroup.GET("/:id", t.authMiddleware.Authenticate(), t.controller.GetPayment)
 
 	publicPaymentsGroup := t.publicGroup.Group("/payments")
 	publicPaymentsGroup.POST("/callback", t.controller.Callback)

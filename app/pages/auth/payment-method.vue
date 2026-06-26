@@ -19,10 +19,25 @@ const enrollmentsStore = useEnrollmentsStore();
 const packagesStore = usePackagesStore();
 
 // ── Resolved data ─────────────────────────────────────────────────────────────
+// Store resolved enrollment from session storage
+interface StoredEnrollment {
+  id: string;
+  packageId: string;
+  packageName?: string;
+  price: number;
+  discountPrice: number;
+  userId: string;
+  status: string;
+  createdAt: string;
+  [key: string]: any;
+}
+
 const resolvedEnrollmentId = ref<string | null>(null);
+const resolvedEnrollment = ref<StoredEnrollment | null>(null);
 const resolvedAmount = ref<number>(0);
 const resolvedPackageName = ref<string>("");
 const errorMessage = ref<string | null>(null);
+const isResolvingEnrollment = ref<boolean>(false);
 
 const paymentMethods = computed(() => [
   {
@@ -73,6 +88,12 @@ const formData = reactive({
 
 // Pre-fill form & resolve enrollment/package info on mount
 onMounted(async () => {
+  console.log("[PAYMENT] Page mounted, resolving enrollment...");
+  console.log("[PAYMENT] Route query:", route.query);
+  console.log("[PAYMENT] Session storage keys:", Object.keys(sessionStorage || {}));
+
+  isResolvingEnrollment.value = true;
+
   // Pre-fill contact info
   if (authStore.user?.email) {
     formData.email = authStore.user.email;
@@ -90,22 +111,80 @@ onMounted(async () => {
 
   // Resolve enrollment ID: query param → sessionStorage
   const enrollmentFromQuery = route.query.enrollment as string | undefined;
+  console.log("[PAYMENT] Enrollment from query:", enrollmentFromQuery);
+
   if (enrollmentFromQuery) {
     resolvedEnrollmentId.value = enrollmentFromQuery;
+    console.log("[PAYMENT] Set enrollment ID from query:", enrollmentFromQuery);
   } else if (import.meta.client) {
     const stored = sessionStorage.getItem("dm_enrollment_id");
+    console.log("[PAYMENT] Enrollment ID from session:", stored);
     if (stored) resolvedEnrollmentId.value = stored;
   }
 
-  // Fetch enrollment to get amount & package name
-  if (resolvedEnrollmentId.value) {
-    const enrollment = await enrollmentService.fetchById(resolvedEnrollmentId.value);
-    if (enrollment) {
-      resolvedAmount.value = enrollment.discountPrice || enrollment.price;
-      resolvedPackageName.value = enrollment.packageName;
-      return;
+  // Resolve full enrollment from sessionStorage first (preferred)
+  if (import.meta.client) {
+    const storedEnrollment = sessionStorage.getItem("dm_enrollment");
+    console.log("[PAYMENT] Stored enrollment raw:", storedEnrollment);
+    if (storedEnrollment) {
+      try {
+        const parsed = JSON.parse(storedEnrollment) as StoredEnrollment;
+        console.log("[PAYMENT] Parsed enrollment:", parsed);
+        resolvedEnrollment.value = parsed;
+        // Use enrollment ID from stored object if not already set
+        if (!resolvedEnrollmentId.value) {
+          resolvedEnrollmentId.value = parsed.id;
+          console.log("[PAYMENT] Set enrollment ID from parsed:", parsed.id);
+        }
+        // Use stored enrollment data for amount and package name
+        resolvedAmount.value = parsed.discountPrice || parsed.price || 0;
+        resolvedPackageName.value = parsed.packageName || "Selected Package";
+      } catch (e) {
+        console.error("[PAYMENT] Failed to parse stored enrollment:", e);
+      }
     }
   }
+
+  console.log("[PAYMENT] Resolved enrollment ID:", resolvedEnrollmentId.value);
+  console.log("[PAYMENT] Resolved enrollment object:", resolvedEnrollment.value);
+
+  // Fetch enrollment to get amount & package name (if not already resolved from session)
+  if (resolvedEnrollmentId.value && !resolvedEnrollment.value) {
+    console.log("[PAYMENT] Fetching enrollment by ID:", resolvedEnrollmentId.value);
+    const response = await enrollmentService.fetchById(resolvedEnrollmentId.value);
+    console.log("[PAYMENT] Fetched enrollment response:", response);
+    const enrollment = response && typeof response === "object" && "enrollment" in response
+      ? (response as any).enrollment
+      : response;
+
+    if (enrollment) {
+      resolvedAmount.value = enrollment.discountPrice || enrollment.price || 0;
+      resolvedPackageName.value = enrollment.packageName || "Selected Package";
+      // Also store it for reference
+      resolvedEnrollment.value = {
+        id: enrollment.id,
+        packageId: enrollment.packageId,
+        packageName: enrollment.packageName,
+        price: enrollment.price,
+        discountPrice: enrollment.discountPrice,
+        userId: enrollment.userId,
+        status: enrollment.status,
+        createdAt: enrollment.createdAt,
+      };
+      // Update sessionStorage with full enrollment
+      if (import.meta.client) {
+        sessionStorage.setItem("dm_enrollment", JSON.stringify(resolvedEnrollment.value));
+      }
+    } else {
+      console.error("[PAYMENT] Failed to fetch enrollment by ID");
+    }
+  } else if (resolvedEnrollmentId.value) {
+    console.log("[PAYMENT] Skipping fetch - enrollment already resolved from session");
+  } else {
+    console.error("[PAYMENT] No enrollment ID found anywhere!");
+  }
+
+  isResolvingEnrollment.value = false;
 
   // Fallback: use packages store with plan UUID from query
   const planId = route.query.plan as string | undefined;
@@ -128,6 +207,18 @@ async function onSubmit() {
   errorMessage.value = null;
 
   try {
+    // Wait for enrollment to be resolved if still loading
+    if (isResolvingEnrollment.value) {
+      console.log("[PAYMENT] Waiting for enrollment to be resolved...");
+      // Poll until resolved or timeout
+      const maxWait = 10000; // 10 seconds
+      const startTime = Date.now();
+      while (isResolvingEnrollment.value && Date.now() - startTime < maxWait) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      console.log("[PAYMENT] After waiting - enrollment ID:", resolvedEnrollmentId.value);
+    }
+
     if (!authStore.userId) {
       errorMessage.value = "You must be logged in to complete payment.";
       return;
@@ -140,12 +231,20 @@ async function onSubmit() {
 
     const paymentMethodCode = mapMethodIdToCode(formData.paymentMethod);
 
-    const payment = await paymentsStore.createPayment({
+    // Build payment request with enrollment data
+    const paymentData: any = {
       enrollmentId: resolvedEnrollmentId.value,
       userId: authStore.userId,
       amount: resolvedAmount.value,
       paymentMethod: paymentMethodCode,
-    });
+    };
+
+    // Include full enrollment data if available
+    if (resolvedEnrollment.value) {
+      paymentData.enrollment = resolvedEnrollment.value;
+    }
+
+    const payment = await paymentsStore.createPayment(paymentData);
 
     if (payment) {
       // Store order ID for status tracking
