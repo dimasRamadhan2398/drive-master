@@ -78,6 +78,8 @@ type Transaction struct {
 	GatewayResponse string           `json:"gatewayResponse" gorm:"type:jsonb"`
 	ErrorCode       string           `json:"errorCode" gorm:"type:varchar(50)"`
 	ErrorMessage    string           `json:"errorMessage" gorm:"type:text"`
+	PaymentMethodID *uint            `json:"paymentMethodId" gorm:"index"`
+	PaymentMethod   *PaymentMethod   `json:"paymentMethod,omitempty" gorm:"foreignKey:PaymentMethodID"`
 	ProcessedAt     *time.Time       `json:"processedAt"`
 	CreatedAt       time.Time        `json:"createdAt"`
 	UpdatedAt       time.Time        `json:"updatedAt"`

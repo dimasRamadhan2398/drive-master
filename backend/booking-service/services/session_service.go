@@ -9,6 +9,7 @@ import (
 
 	"booking-service/models"
 	"booking-service/models/dto"
+	"booking-service/pkg/kafka"
 	"booking-service/repositories"
 
 	"gorm.io/gorm"
@@ -30,6 +31,7 @@ type SessionService struct {
 	sessionRepo     repositories.ISessionRepository
 	scheduleRepo    repositories.IScheduleRepository
 	entitlementRepo repositories.IEntitlementRepository
+	eventPublisher  kafka.IEventPublisher
 }
 
 func NewSessionService(
@@ -41,6 +43,21 @@ func NewSessionService(
 		sessionRepo:     sessionRepo,
 		scheduleRepo:    scheduleRepo,
 		entitlementRepo: entitlementRepo,
+	}
+}
+
+// NewSessionServiceWithEventPublisher creates a new session service with event publisher
+func NewSessionServiceWithEventPublisher(
+	sessionRepo repositories.ISessionRepository,
+	scheduleRepo repositories.IScheduleRepository,
+	entitlementRepo repositories.IEntitlementRepository,
+	eventPublisher kafka.IEventPublisher,
+) ISessionService {
+	return &SessionService{
+		sessionRepo:     sessionRepo,
+		scheduleRepo:    scheduleRepo,
+		entitlementRepo: entitlementRepo,
+		eventPublisher:  eventPublisher,
 	}
 }
 
@@ -182,7 +199,7 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 	}
 
 	// Validate session can be completed
-	if session.Status != "in_progress" {
+	if session.Status != "in-progress" {
 		return nil, errors.New("session cannot be completed: must be in progress")
 	}
 
@@ -196,6 +213,30 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 	if session.ScheduleID != nil {
 		if err := s.scheduleRepo.UpdateStatus(ctx, *session.ScheduleID, dto.ScheduleStatusCompleted); err != nil {
 			// Log error
+		}
+	}
+
+	// Increment used sessions in entitlement and publish event
+	if session.EntitlementID != uuid.Nil {
+		entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
+		if err == nil && entitlement != nil {
+			newUsedSessions := entitlement.UsedSessions + 1
+			if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, newUsedSessions); err != nil {
+				// Log error but continue
+			}
+
+			// Publish session.completed event for user-service to sync entitlement
+			if s.eventPublisher != nil {
+				// Get package ID from enrollment
+				var packageID uuid.UUID
+				if session.EnrollmentID != uuid.Nil {
+					enrollments, _ := s.entitlementRepo.FindByEnrollmentID(ctx, session.EnrollmentID)
+					if len(enrollments) > 0 {
+						packageID, _ = uuid.Parse(enrollments[0].SourceID)
+					}
+				}
+				_ = s.eventPublisher.PublishSessionCompleted(ctx, id, session.EntitlementID, session.EnrollmentID, session.UserID, packageID, 1)
+			}
 		}
 	}
 
@@ -239,11 +280,13 @@ func (s *SessionService) CancelSession(ctx context.Context, id uint) (*dto.Sessi
 		}
 	}
 
-	// Decrement used sessions in entitlement
+	// Decrement used sessions in entitlement (session cancelled, so it doesn't count)
 	entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
 	if err == nil && entitlement != nil {
-		if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, entitlement.UsedSessions-1); err != nil {
-			// Log error
+		if entitlement.UsedSessions > 0 {
+			if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, entitlement.UsedSessions-1); err != nil {
+				// Log error
+			}
 		}
 	}
 

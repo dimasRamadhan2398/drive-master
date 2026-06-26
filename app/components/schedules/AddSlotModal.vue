@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
+import { useI18n } from "#imports";
 
 const props = defineProps<{
   open: boolean;
@@ -25,8 +26,8 @@ const emit = defineEmits<{
       date: string;
       time: string;
       duration: string;
-      car: string;
-      instructor: string;
+      carId: string;
+      instructorId: string;
     }
   ): void;
 }>();
@@ -37,15 +38,15 @@ const toast = useToast();
 const form = ref({
   time: "08:00",
   duration: "60",
-  car: "",
-  instructor: "",
+  carId: "",
+  instructorId: "",
 });
 
 watch(
   () => props.open,
   (open) => {
     if (!open) {
-      form.value = { time: "08:00", duration: "60", car: "", instructor: "" };
+      form.value = { time: "08:00", duration: "60", carId: "", instructorId: "" };
     }
   }
 );
@@ -55,7 +56,7 @@ function handleClose() {
 }
 
 function handleSave() {
-  if (!form.value.time || !form.value.car || !form.value.instructor) {
+  if (!form.value.time || !form.value.carId || !form.value.instructorId) {
     toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
     return;
   }
@@ -99,8 +100,8 @@ function handleSave() {
     date: props.date,
     time: form.value.time,
     duration: form.value.duration,
-    car: form.value.car,
-    instructor: form.value.instructor,
+    carId: form.value.carId,
+    instructorId: form.value.instructorId,
   });
 }
 </script>
@@ -159,7 +160,7 @@ function handleSave() {
         </div>
         <UFormField label="Vehicle" required>
           <USelect
-            v-model="form.car"
+            v-model="form.carId"
             :items="vehicles"
             placeholder="Select vehicle"
             class="w-full"
@@ -168,7 +169,7 @@ function handleSave() {
         <UFormField :label="t('dashboard.instructor')" required>
           <USelect
             :items="instructors"
-            v-model="form.instructor"
+            v-model="form.instructorId"
             placeholder="Select instructor"
             class="w-full"
           />

@@ -62,7 +62,17 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
     if (authStore.userRole?.toLowerCase().includes("admin")) {
       navigateTo("/admin");
     } else {
-      navigateTo("/dashboard");
+      // Check if student has entitlements (has purchased a package)
+      const profile = await authStore.fetchMemberProfile();
+      const hasEntitlements =
+        profile?.entitlements && profile.entitlements.length > 0;
+
+      if (hasEntitlements) {
+        navigateTo("/dashboard");
+      } else {
+        // Redirect to onboarding if no entitlements
+        navigateTo("/auth/onboarding");
+      }
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : t('auth.loginError');

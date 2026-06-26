@@ -15,6 +15,7 @@ import (
 	"payment-service/pkg/redis"
 	"payment-service/repositories"
 	"payment-service/routes"
+	"payment-service/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -171,24 +172,21 @@ func runServe(cmd *cobra.Command, args []string) {
 	apiGroup := router.Group("/api/v1")
 	apiGroup.Use(authMiddleware.Authenticate())
 
-	// Payment endpoints (placeholder routes)
-	apiGroup.GET("/payments", func(c *gin.Context) {
-		payments, total, err := repoRegistry.GetPayment().List(repositories.ListPaymentsFilter{}, 1, 10)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"data":  payments,
-			"total": total,
-			"page":  1,
-			"limit": 10,
-		})
-	})
+	// Initialize service registry
+	serviceRegistry := services.NewServiceRegistry(repoRegistry, &loadedConfig.Midtrans)
+
+	// Create public API router group for unauthenticated endpoints (like webhook callbacks)
+	publicApi := router.Group("/api/v1")
 
 	// Initialize and register transaction routes
-	transactionController := controllers.NewTransactionController(repoRegistry.GetTransaction())
-	transactionRoute := routes.NewTransactionRoute(transactionController, apiGroup, authMiddleware)
+	transactionController := controllers.NewTransactionController(
+		repoRegistry.GetTransaction(),
+		repoRegistry.GetPayment(),
+		repoRegistry.GetPaymentMethod(),
+		serviceRegistry.GetMidtrans(),
+		eventPublisher,
+	)
+	transactionRoute := routes.NewTransactionRoute(transactionController, apiGroup, publicApi, authMiddleware)
 	transactionRoute.Run()
 
 	addr := fmt.Sprintf("%s:%d", serveHost, loadedConfig.Server.Port)
@@ -197,7 +195,6 @@ func runServe(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 
-	_ = eventPublisher // unused for now
 	_ = redisClient    // unused for now
 }
 

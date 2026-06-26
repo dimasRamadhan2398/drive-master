@@ -164,6 +164,13 @@ func runServe(cmd *cobra.Command, args []string) {
 		logger.Warn("Failed to register profile.update listener", logger.LogField("error", err))
 	}
 
+	// Register enrollment paid handler to create entitlements when payment is confirmed
+	entitlementService := serviceRegistry.GetEntitlementService()
+	enrollmentPaidHandler := listeners.NewEnrollmentPaidHandler(entitlementService)
+	if err := eventPublisher.RegisterHandler(enrollmentPaidHandler); err != nil {
+		logger.Warn("Failed to register enrollment.paid handler", logger.LogField("error", err))
+	}
+
 	// Start consumer in background so it can deliver events to registered handlers
 	go func() {
 		if err := eventPublisher.StartConsumer(context.Background()); err != nil {

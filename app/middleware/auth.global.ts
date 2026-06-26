@@ -1,7 +1,7 @@
 import { useAuthStore } from "~/stores/auth";
 import { useTokenValidator } from "~/composables/useTokenValidator";
 
-export default defineNuxtRouteMiddleware((to: any) => {
+export default defineNuxtRouteMiddleware(async (to: any) => {
   // Rehydrate auth state from cookies if needed (handles SSR/client hydration)
   const authToken = useCookie("auth_token");
   const userData = useCookie("user_data");
@@ -102,5 +102,23 @@ export default defineNuxtRouteMiddleware((to: any) => {
   // Check if user is authenticated
   if (!authStore.isAuthenticated) {
     return navigateTo("/auth/login");
+  }
+
+  // Check if accessing dashboard routes - verify member has entitlements
+  if (to.path.startsWith("/dashboard")) {
+    // Fetch member profile if not already loaded
+    if (!authStore.memberProfile) {
+      await authStore.fetchMemberProfile();
+    }
+
+    // Check if member has entitlements (purchased a package)
+    const hasEntitlements =
+      authStore.memberProfile?.entitlements &&
+      authStore.memberProfile.entitlements.length > 0;
+
+    // Redirect to onboarding if no entitlements
+    if (!hasEntitlements) {
+      return navigateTo("/auth/onboarding");
+    }
   }
 });

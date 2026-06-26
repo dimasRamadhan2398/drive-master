@@ -19,6 +19,8 @@ type ICoreClient interface {
 	GetCarByID(ctx context.Context, carID uuid.UUID) (*CarInfo, error)
 	GetSalesOverview(ctx context.Context, startDate, endDate string) (*SalesOverviewResponse, error)
 	IncrementPackageCount(ctx context.Context, packageID uint) error
+	GetPackageByID(ctx context.Context, packageID uuid.UUID) (*PackageResponse, error)
+	GetAddOnByID(ctx context.Context, addOnID uuid.UUID) (*AddOnResponse, error)
 }
 
 // CoreClient implements ICoreClient
@@ -202,4 +204,84 @@ func (c *CoreClient) IncrementPackageCount(ctx context.Context, packageID uint) 
 	}
 
 	return nil
+}
+
+// GetPackageByID retrieves a package by ID from core-service
+func (c *CoreClient) GetPackageByID(ctx context.Context, packageID uuid.UUID) (*PackageResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/packages/%s", c.baseURL, packageID.String())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call core-service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("core-service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var apiResp APIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if !apiResp.Success {
+		return nil, fmt.Errorf("API error: %s", apiResp.Message)
+	}
+
+	var pkg PackageResponse
+	if err := json.Unmarshal(apiResp.Data, &pkg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal package: %w", err)
+	}
+
+	return &pkg, nil
+}
+
+// GetAddOnByID retrieves an add-on by ID from core-service
+func (c *CoreClient) GetAddOnByID(ctx context.Context, addOnID uuid.UUID) (*AddOnResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/addons/%s", c.baseURL, addOnID.String())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call core-service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("core-service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var apiResp APIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if !apiResp.Success {
+		return nil, fmt.Errorf("API error: %s", apiResp.Message)
+	}
+
+	var addon AddOnResponse
+	if err := json.Unmarshal(apiResp.Data, &addon); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal add-on: %w", err)
+	}
+
+	return &addon, nil
 }

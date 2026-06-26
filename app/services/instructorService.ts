@@ -282,6 +282,17 @@ export const instructorService = {
     }
   },
 
+  // DELETE /instructors/:id - Delete instructor fully (user + profile)
+  async delete(userId: string): Promise<boolean> {
+    const { user } = useApiClients();
+    try {
+      await user(`/instructors/${userId}`, { method: "DELETE" });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
   // GET /instructors/:id/media/metadata - Get media metadata
   async getMediaMetadata(userId: string): Promise<MediaMetadata | null> {
     const { user, extractData } = useApiClients();

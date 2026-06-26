@@ -7,7 +7,7 @@ import (
 	"core-service/pkg/base"
 	"core-service/pkg/kafka"
 	"core-service/repositories"
-	"encoding/json"
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -36,8 +36,10 @@ type IArticleService interface {
 	ArchiveArticle(ctx context.Context, id uuid.UUID) error
 
 	// Blog endpoints
-	GetBlogArticles(ctx context.Context, page, limit int, status string) (*dto.BlogArticleListResponse, error)
+	GetBlogArticles(ctx context.Context, page, limit int, status string) (*dto.BlogPostListResponse, error)
 	CreateBlogArticle(ctx context.Context, req *dto.CreateBlogArticleRequest) (*models.Article, error)
+	CreateBlogPost(ctx context.Context, req *dto.CreateBlogPostRequest) (*models.Article, error)
+	UpdateBlogPost(ctx context.Context, id uuid.UUID, req *dto.UpdateBlogPostRequest) (*models.Article, error)
 	DeleteBlogArticle(ctx context.Context, id uuid.UUID) error
 
 	// FAQ endpoints
@@ -51,14 +53,15 @@ type ArticleService struct {
 	articleRepo    repositories.IArticleRepository
 	faqRepo        repositories.IFAQRepository
 	eventPublisher *kafka.EventPublisher
-	mediaSvc IMediaService
+	mediaSvc       IMediaService
 }
 
-func NewArticleService(articleRepo repositories.IArticleRepository, faqRepo repositories.IFAQRepository, eventPublisher *kafka.EventPublisher) IArticleService {
+func NewArticleService(articleRepo repositories.IArticleRepository, faqRepo repositories.IFAQRepository, eventPublisher *kafka.EventPublisher, mediaSvc IMediaService) IArticleService {
 	return &ArticleService{
 		articleRepo:    articleRepo,
 		faqRepo:        faqRepo,
 		eventPublisher: eventPublisher,
+		mediaSvc:       mediaSvc,
 	}
 }
 
@@ -82,8 +85,8 @@ func (s *ArticleService) CreateArticle(ctx context.Context, req *dto.CreateArtic
 		ogDescription = s.truncate(req.LeadParagraph, 200)
 	}
 
-	// Calculate reading time from body blocks (avg 200 words/min)
-	readingTime := s.calculateReadingTimeFromBlocks(req.BodyBlocks)
+	// Calculate reading time from content (avg 200 words/min)
+	readingTime := s.calculateReadingTimeFromContent(req.Content)
 
 	status := models.ArticleStatus(req.Status)
 	if status == "" {
@@ -100,7 +103,7 @@ func (s *ArticleService) CreateArticle(ctx context.Context, req *dto.CreateArtic
 		Title:           req.Title,
 		Slug:            req.Slug,
 		LeadParagraph:   req.LeadParagraph,
-		BodyBlocks:      req.BodyBlocks,
+		Content:         req.Content,
 		Footer:          req.Footer,
 		FeaturedImage:   req.FeaturedImage,
 		CategoryID:      categoryID,
@@ -218,9 +221,9 @@ func (s *ArticleService) UpdateArticle(ctx context.Context, id uuid.UUID, req *d
 	if req.LeadParagraph != "" {
 		article.LeadParagraph = req.LeadParagraph
 	}
-	if len(req.BodyBlocks) > 0 {
-		article.BodyBlocks = req.BodyBlocks
-		article.ReadingTime = s.calculateReadingTimeFromBlocks(req.BodyBlocks)
+	if req.Content != "" {
+		article.Content = req.Content
+		article.ReadingTime = s.calculateReadingTimeFromContent(req.Content)
 	}
 	if req.Footer != "" {
 		article.Footer = req.Footer
@@ -455,7 +458,7 @@ func (s *ArticleService) ArchiveArticle(ctx context.Context, id uuid.UUID) error
 }
 
 // GetBlogArticles retrieves blog articles with optional status filter and pagination
-func (s *ArticleService) GetBlogArticles(ctx context.Context, page, limit int, status string) (*dto.BlogArticleListResponse, error) {
+func (s *ArticleService) GetBlogArticles(ctx context.Context, page, limit int, status string) (*dto.BlogPostListResponse, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -487,27 +490,37 @@ func (s *ArticleService) GetBlogArticles(ctx context.Context, page, limit int, s
 		totalPages++
 	}
 
-	// Convert to blog article response
-	blogArticles := make([]dto.BlogArticleResponse, len(articles))
+	// Convert to blog post response
+	blogPosts := make([]dto.BlogPostResponse, len(articles))
 	for i, a := range articles {
-		blogArticles[i] = dto.BlogArticleResponse{
+		blogPosts[i] = dto.BlogPostResponse{
 			ID:            a.ID,
 			Title:         a.Title,
 			Slug:          a.Slug,
-			LeadParagraph: a.LeadParagraph,
+			Content:       a.Content,
+			Excerpt:       a.LeadParagraph,
 			FeaturedImage: a.FeaturedImage,
-			ReadingTime:   a.ReadingTime,
 			ViewCount:     a.ViewCount,
 			LikeCount:     a.LikeCount,
-			Status:        string(a.Status),
-			PublishedAt:   a.PublishedAt,
+			ShareCount:    a.ShareCount,
+			ReadingTime:   a.ReadingTime,
 			CreatedAt:     a.CreatedAt,
 			UpdatedAt:     a.UpdatedAt,
+			Publishing: &dto.Publishing{
+				Status:      string(a.Status),
+				PublishedAt: a.PublishedAt,
+				ScheduledAt: a.ScheduledAt,
+			},
+			Attractiveness: &dto.Attractiveness{
+				IsFeatured:  a.IsFeatured,
+				IsSpotlight: a.IsSpotlight,
+				Priority:    a.Priority,
+			},
 		}
 	}
 
-	return &dto.BlogArticleListResponse{
-		Data:   blogArticles,
+	return &dto.BlogPostListResponse{
+		Data: blogPosts,
 		Pagination: dto.PaginationMeta{
 			Total:      total,
 			Page:       page,
@@ -519,8 +532,8 @@ func (s *ArticleService) GetBlogArticles(ctx context.Context, page, limit int, s
 
 // CreateBlogArticle creates a new blog article
 func (s *ArticleService) CreateBlogArticle(ctx context.Context, req *dto.CreateBlogArticleRequest) (*models.Article, error) {
-	// Calculate reading time from body blocks
-	readingTime := s.calculateReadingTimeFromBlocks(req.BodyBlocks)
+	// Calculate reading time from content
+	readingTime := s.calculateReadingTimeFromContent(req.Content)
 
 	status := models.ArticleStatus(req.Status)
 	if status == "" {
@@ -537,7 +550,7 @@ func (s *ArticleService) CreateBlogArticle(ctx context.Context, req *dto.CreateB
 		Title:         req.Title,
 		Slug:          req.Slug,
 		LeadParagraph: req.LeadParagraph,
-		BodyBlocks:    req.BodyBlocks,
+		Content:       req.Content,
 		FeaturedImage: req.FeaturedImage,
 		CategoryID:    categoryID,
 		AuthorID:      req.AuthorID,
@@ -564,6 +577,136 @@ func (s *ArticleService) DeleteBlogArticle(ctx context.Context, id uuid.UUID) er
 	}
 
 	return s.articleRepo.Delete(ctx, article)
+}
+
+// CreateBlogPost creates a new blog post with featured image upload to ImageKit
+func (s *ArticleService) CreateBlogPost(ctx context.Context, req *dto.CreateBlogPostRequest) (*models.Article, error) {
+	// Calculate reading time from content
+	readingTime := s.calculateReadingTimeFromContent(req.Content)
+
+	status := models.ArticleStatusDraft
+	if req.Publishing != nil && req.Publishing.Status != "" {
+		status = models.ArticleStatus(req.Publishing.Status)
+	}
+
+	// Build article model first (without featured image) to get the ID
+	article := &models.Article{
+		Title:         req.Title,
+		Slug:          req.Slug,
+		LeadParagraph: req.LeadParagraph,
+		Content:       req.Content,
+		AuthorID:      req.AuthorID,
+		Status:        status,
+		ReadingTime:   readingTime,
+		IsFeatured:    req.Attractiveness != nil && req.Attractiveness.IsFeatured,
+		IsSpotlight:   req.Attractiveness != nil && req.Attractiveness.IsSpotlight,
+		Priority:      0,
+	}
+
+	if req.Attractiveness != nil {
+		article.Priority = req.Attractiveness.Priority
+	}
+
+	if req.Publishing != nil {
+		article.PublishedAt = req.Publishing.PublishedAt
+		article.ScheduledAt = req.Publishing.ScheduledAt
+	}
+
+	// Create article first to get the ID
+	if err := s.articleRepo.Create(ctx, article); err != nil {
+		return nil, err
+	}
+
+	// Upload featured image to ImageKit if provided
+	if req.FeaturedImage != nil && req.FeaturedImage.Data != "" {
+		// Validate file format
+		if !dto.IsSupportedImageFormat(req.FeaturedImage.FileName) {
+			return nil, fmt.Errorf("unsupported image format: only jpg, jpeg, and png are supported")
+		}
+
+		// Upload to ImageKit with folder /blogs/{blogId}
+		uploadResp, err := s.mediaSvc.UploadBase64Media(ctx, req.FeaturedImage.Data, req.FeaturedImage.FileName, fmt.Sprintf("blogs/%s", article.ID.String()))
+		if err != nil {
+			return nil, fmt.Errorf("failed to upload featured image: %w", err)
+		}
+
+		// Update article with featured image URL
+		article.FeaturedImage = uploadResp.URL
+		if err := s.articleRepo.Update(ctx, article); err != nil {
+			return nil, fmt.Errorf("failed to update article with featured image: %w", err)
+		}
+	}
+
+	return article, nil
+}
+
+// UpdateBlogPost updates an existing blog post with optional featured image upload
+func (s *ArticleService) UpdateBlogPost(ctx context.Context, id uuid.UUID, req *dto.UpdateBlogPostRequest) (*models.Article, error) {
+	article, err := s.articleRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if article == nil {
+		return nil, fmt.Errorf("article not found")
+	}
+
+	// Update basic fields
+	if req.Title != "" {
+		article.Title = req.Title
+	}
+	if req.Slug != "" {
+		article.Slug = req.Slug
+	}
+	if req.LeadParagraph != "" {
+		article.LeadParagraph = req.LeadParagraph
+	}
+	if req.Content != "" {
+		article.Content = req.Content
+		article.ReadingTime = s.calculateReadingTimeFromContent(req.Content)
+	}
+
+	// Update publishing fields
+	if req.Publishing != nil {
+		if req.Publishing.Status != "" {
+			article.Status = models.ArticleStatus(req.Publishing.Status)
+		}
+		if req.Publishing.PublishedAt != nil {
+			article.PublishedAt = req.Publishing.PublishedAt
+		}
+		if req.Publishing.ScheduledAt != nil {
+			article.ScheduledAt = req.Publishing.ScheduledAt
+		}
+	}
+
+	// Update attractiveness fields
+	if req.Attractiveness != nil {
+		article.IsFeatured = req.Attractiveness.IsFeatured
+		article.IsSpotlight = req.Attractiveness.IsSpotlight
+		article.Priority = req.Attractiveness.Priority
+	}
+
+	// Handle featured image upload if provided
+	if req.FeaturedImage != nil {
+		if req.FeaturedImage.Data != "" {
+			// Validate file format
+			if !dto.IsSupportedImageFormat(req.FeaturedImage.FileName) {
+				return nil, fmt.Errorf("unsupported image format: only jpg, jpeg, and png are supported")
+			}
+
+			// Upload new featured image to ImageKit
+			uploadResp, err := s.mediaSvc.UploadBase64Media(ctx, req.FeaturedImage.Data, req.FeaturedImage.FileName, fmt.Sprintf("blogs/%s", article.ID.String()))
+			if err != nil {
+				return nil, fmt.Errorf("failed to upload featured image: %w", err)
+			}
+			article.FeaturedImage = uploadResp.URL
+		}
+	}
+
+	if err := s.articleRepo.Update(ctx, article); err != nil {
+		return nil, err
+	}
+
+	return article, nil
 }
 
 // GetFAQs retrieves all FAQs
@@ -623,27 +766,13 @@ func (s *ArticleService) DeleteFAQ(ctx context.Context, id uuid.UUID) error {
 
 // Helper methods
 
-// calculateReadingTimeFromBlocks calculates reading time from body blocks (avg 200 words/min)
-func (s *ArticleService) calculateReadingTimeFromBlocks(bodyBlocks []byte) int {
-	if len(bodyBlocks) == 0 {
+// calculateReadingTimeFromContent calculates reading time from content string (avg 200 words/min)
+func (s *ArticleService) calculateReadingTimeFromContent(content string) int {
+	if content == "" {
 		return 1
 	}
 
-	// Try to extract text content from JSON blocks
-	var blocks []map[string]interface{}
-	if err := json.Unmarshal(bodyBlocks, &blocks); err != nil {
-		return 1
-	}
-
-	var textContent strings.Builder
-	for _, block := range blocks {
-		if content, ok := block["content"].(string); ok {
-			textContent.WriteString(content)
-			textContent.WriteString(" ")
-		}
-	}
-
-	wordCount := len(strings.Fields(textContent.String()))
+	wordCount := len(strings.Fields(content))
 	minutes := wordCount / 200
 	if minutes < 1 {
 		minutes = 1

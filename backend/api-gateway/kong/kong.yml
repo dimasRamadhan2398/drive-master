@@ -344,14 +344,6 @@ services:
   - name: payment-service
     url: http://payment-service-upstream
     routes:
-      - name: payment-route
-        strip_path: false
-        preserve_host: false
-        paths:
-          - /api/v1/payments
-        protocols: [http, https]
-        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
-
       - name: payment-transactions-route
         strip_path: false
         preserve_host: false
@@ -366,6 +358,14 @@ services:
         paths:
           - /notifications
         protocols: [http, https]
+
+      - name: payment-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/payments
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
   - name: payment-service-docs-service
     url: http://payment-service-upstream

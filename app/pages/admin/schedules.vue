@@ -37,7 +37,9 @@ const filterVehicle = ref("All Vehicles");
 // Use store's slots for display
 const timeSlots = computed(() => {
   if (schedulesStore.isInitialized) {
-    return schedulesStore.slots;
+    const slots = schedulesStore.slots;
+    console.log('[AdminSchedules] timeSlots computed:', slots.map(s => ({ id: s.id, status: s.status })));
+    return slots;
   }
   return [];
 });
@@ -100,7 +102,7 @@ const filteredSlots = computed(() => {
       slot.instructor === filterInstructor.value;
     const matchVeh =
       filterVehicle.value === "All Vehicles" ||
-      slot.vehicleId === filterVehicle.value ||
+      slot.carId === filterVehicle.value ||
       slot.car === filterVehicle.value;
     return matchDate && matchInst && matchVeh;
   });
@@ -219,10 +221,10 @@ async function handleAddSlot(form: {
   date?: string;
   time: string;
   duration: string;
-  car: string;
-  instructor: string;
+  carId: string;
+  instructorId: string;
 }) {
-  if (!form.time || !form.car || !form.instructor) {
+  if (!form.time || !form.carId || !form.instructorId) {
     toast.add({
       title: t("common.error"),
       description: "Please fill all fields",
@@ -261,10 +263,10 @@ async function handleAddSlot(form: {
   const id = Date.now().toString();
   await schedulesStore.createSlot({
     date: form.date ?? localDateStr.value,
-    startTime: form.time,
+    time: form.time,
     duration: parseInt(form.duration),
-    vehicleId: form.car, // Should be ID
-    instructorId: form.instructor, // Should be ID
+    carId: form.carId,
+    instructorId: form.instructorId,
   });
 
   toast.add({ title: "New Slot Added", color: "success", icon: "i-lucide-check" });
@@ -286,7 +288,7 @@ function openEditModal(slot: ScheduleSlot) {
   }
   selectedEditSlot.value = {
     ...slot,
-    car: slot.vehicleId,
+    car: slot.carId,
     instructor: slot.instructorId
   };
   showEditSlotModal.value = true;
@@ -296,10 +298,10 @@ async function handleEditSlot(updated: {
   id: string;
   time: string;
   duration: string;
-  car: string;
-  instructor: string;
+  carId: string;
+  instructorId: string;
 }) {
-  if (!updated.time || !updated.car || !updated.instructor) {
+  if (!updated.time || !updated.carId || !updated.instructorId) {
     toast.add({
       title: t("common.error"),
       description: "Please fill all fields",
@@ -337,10 +339,10 @@ async function handleEditSlot(updated: {
   }
 
   await schedulesStore.updateSlot(updated.id, {
-    startTime: updated.time,
+    time: updated.time,
     duration: parseInt(updated.duration),
-    vehicleId: updated.car,
-    instructorId: updated.instructor,
+    carId: updated.carId,
+    instructorId: updated.instructorId,
   });
 
   toast.add({ title: "Slot Updated", color: "success", icon: "i-lucide-check" });
@@ -352,6 +354,15 @@ onMounted(() => {
   vehiclesStore.fetchVehicles();
   schedulesStore.initialize();
 });
+
+// Debug: Watch for slot changes
+watch(
+  () => schedulesStore.slots,
+  (newSlots) => {
+    console.log('[AdminSchedules] slots changed:', newSlots.map(s => ({ id: s.id, status: s.status })));
+  },
+  { deep: true }
+);
 </script>
 
 <template>

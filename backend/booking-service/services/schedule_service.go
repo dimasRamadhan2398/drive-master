@@ -330,12 +330,6 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 		return nil, errors.New("schedule slot is not available")
 	}
 
-	// Re-validate instructor availability (schedule was created with availability check,
-	// but we check again to handle cases where schedule might have been created externally)
-	if err := s.availabilityService.CheckAvailability(ctx, schedule.InstructorID, schedule.Date, schedule.Time, schedule.Duration); err != nil {
-		return nil, err
-	}
-
 	// Check if entitlement exists and is active
 	entitlement, err := s.entitlementRepo.FindByID(ctx, req.EntitlementID)
 	if err != nil {

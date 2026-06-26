@@ -17,7 +17,7 @@ export interface ScheduleSlot {
   time: string;
   duration: string;
   car: string;
-  vehicleId: string;
+  carId: string;
   instructor: string;
   instructorId: string;
   student: string | null;
@@ -26,11 +26,11 @@ export interface ScheduleSlot {
 
 export interface ScheduleFormFullData {
   date?: string;
-  startTime?: string;
+  time?: string;
   duration?: number;
-  vehicleId?: string;
+  carId?: string;
   instructorId?: string;
-  vehicleName?: string;
+  carName?: string;
   instructorName?: string;
   status?: ScheduleStatus;
   notes?: string;
@@ -41,15 +41,15 @@ export const mapScheduleToSlot = (
   schedule: Schedule | ScheduleBrief,
 ): ScheduleSlot => {
   return {
-    id: schedule.id,
+    id: String(schedule.id), // Ensure ID is always a string
     date: schedule.date,
-    time: schedule.startTime,
+    time: schedule.time,
     duration:
       schedule.duration >= 60
         ? `${Math.floor(schedule.duration / 60)}h ${schedule.duration % 60 > 0 ? `${schedule.duration % 60}m` : ""}`.trim()
         : `${schedule.duration} min`,
-    car: "vehicleName" in schedule ? schedule.vehicleName : "",
-    vehicleId: "vehicleId" in schedule ? schedule.vehicleId : "",
+    car: "carName" in schedule ? schedule.carName : "",
+    carId: "carId" in schedule ? schedule.carId : "",
     instructor: "instructorName" in schedule ? schedule.instructorName : "",
     instructorId: "instructorId" in schedule ? schedule.instructorId : "",
     student: "studentName" in schedule ? schedule.studentName || null : null,
@@ -62,10 +62,10 @@ export const mapSlotToCreateData = (slot: ScheduleSlot): CreateScheduleData => {
   const durationNum = parseInt(slot.duration.replace(/[^0-9]/g, "")) || 60;
   return {
     date: slot.date,
-    startTime: slot.time,
+    time: slot.time,
     duration: durationNum,
-    vehicleId: "", // Will be resolved by UI layer
-    instructorId: "", // Will be resolved by UI layer
+    carId: slot.carId,
+    instructorId: slot.instructorId,
   };
 };
 
@@ -297,7 +297,10 @@ export const useSchedulesStore = defineStore("schedules", {
 
       try {
         const schedules = await scheduleService.fetchByDate(date);
+        console.log('[SchedulesStore] fetchByDate - Raw schedules:', schedules);
+        console.log('[SchedulesStore] First schedule status:', schedules[0]?.status);
         this.slots = schedules.map(mapScheduleToSlot);
+        console.log('[SchedulesStore] Mapped slots:', this.slots.map(s => ({ id: s.id, status: s.status })));
       } catch (err) {
         this.error =
           err instanceof Error
@@ -363,18 +366,18 @@ export const useSchedulesStore = defineStore("schedules", {
     async createSlot(data: ScheduleFormFullData): Promise<ScheduleSlot | null> {
       if (
         !data.date ||
-        !data.startTime ||
+        !data.time ||
         !data.duration ||
-        !data.vehicleId ||
+        !data.carId ||
         !data.instructorId
       ) {
         return null;
       }
       const createData: CreateScheduleData = {
         date: data.date,
-        startTime: data.startTime,
+        time: data.time,
         duration: data.duration,
-        vehicleId: data.vehicleId,
+        carId: data.carId,
         instructorId: data.instructorId,
         notes: data.notes,
       };
@@ -397,10 +400,12 @@ export const useSchedulesStore = defineStore("schedules", {
       const slot: ScheduleSlot = {
         id: crypto.randomUUID(),
         date: data.date,
-        time: data.startTime,
+        time: data.time,
         duration: `${data.duration} min`,
-        car: "Vehicle", // Will be resolved by UI
-        instructor: "Instructor", // Will be resolved by UI
+        car: "Vehicle",
+        carId: data.carId,
+        instructor: "Instructor",
+        instructorId: data.instructorId,
         student: null,
         status: "available",
       };
@@ -415,9 +420,9 @@ export const useSchedulesStore = defineStore("schedules", {
       try {
         const updateData: UpdateScheduleData = {
           date: data.date,
-          startTime: data.startTime,
+          time: data.time,
           duration: data.duration,
-          vehicleId: data.vehicleId,
+          carId: data.carId,
           instructorId: data.instructorId,
           status: data.status,
           notes: data.notes,
@@ -425,9 +430,17 @@ export const useSchedulesStore = defineStore("schedules", {
         const schedule = await scheduleService.update(id, updateData);
         if (schedule) {
           const slot = mapScheduleToSlot(schedule);
-          const index = this.slots.findIndex((s) => s.id === id);
+          // Convert IDs to string for proper comparison
+          const slotIdStr = String(slot.id);
+          const index = this.slots.findIndex((s) => String(s.id) === slotIdStr);
           if (index !== -1) {
             this.slots[index] = slot;
+          } else {
+            // If not found, try to find by original id
+            const altIndex = this.slots.findIndex((s) => s.id === id || String(s.id) === id);
+            if (altIndex !== -1) {
+              this.slots[altIndex] = slot;
+            }
           }
           return slot;
         }
@@ -546,11 +559,21 @@ export const useSchedulesStore = defineStore("schedules", {
           entitlementId: data.entitlementId,
           notes: data.notes,
         });
+        console.log('[SchedulesStore] bookSlot - API response:', schedule);
         if (schedule) {
           const slot = mapScheduleToSlot(schedule);
-          const index = this.slots.findIndex((s) => s.id === id);
+          console.log('[SchedulesStore] bookSlot - Mapped slot:', slot);
+          // Convert IDs to string for proper comparison
+          const slotIdStr = String(slot.id);
+          const index = this.slots.findIndex((s) => String(s.id) === slotIdStr);
           if (index !== -1) {
             this.slots[index] = slot;
+          } else {
+            // If not found, try to find by original id
+            const altIndex = this.slots.findIndex((s) => s.id === id || String(s.id) === id);
+            if (altIndex !== -1) {
+              this.slots[altIndex] = slot;
+            }
           }
           return slot;
         }
@@ -583,9 +606,17 @@ export const useSchedulesStore = defineStore("schedules", {
         const schedule = await scheduleService.cancelBooking(id);
         if (schedule) {
           const slot = mapScheduleToSlot(schedule);
-          const index = this.slots.findIndex((s) => s.id === id);
+          // Convert IDs to string for proper comparison
+          const slotIdStr = String(slot.id);
+          const index = this.slots.findIndex((s) => String(s.id) === slotIdStr);
           if (index !== -1) {
             this.slots[index] = slot;
+          } else {
+            // If not found, try to find by original id
+            const altIndex = this.slots.findIndex((s) => s.id === id || String(s.id) === id);
+            if (altIndex !== -1) {
+              this.slots[altIndex] = slot;
+            }
           }
           return slot;
         }
@@ -614,11 +645,23 @@ export const useSchedulesStore = defineStore("schedules", {
     async startSession(id: string): Promise<ScheduleSlot | null> {
       try {
         const schedule = await scheduleService.startSession(id);
+        console.log('[SchedulesStore] startSession - API response:', schedule);
         if (schedule) {
           const slot = mapScheduleToSlot(schedule);
-          const index = this.slots.findIndex((s) => s.id === id);
+          console.log('[SchedulesStore] startSession - Mapped slot:', slot);
+          // Convert IDs to string for proper comparison
+          const slotIdStr = String(slot.id);
+          const index = this.slots.findIndex((s) => String(s.id) === slotIdStr);
+          console.log('[SchedulesStore] startSession - Found index:', index);
           if (index !== -1) {
             this.slots[index] = slot;
+          } else {
+            // If not found, try to find by original id
+            const altIndex = this.slots.findIndex((s) => s.id === id || String(s.id) === id);
+            console.log('[SchedulesStore] startSession - Alt index:', altIndex);
+            if (altIndex !== -1) {
+              this.slots[altIndex] = slot;
+            }
           }
           return slot;
         }
@@ -634,9 +677,17 @@ export const useSchedulesStore = defineStore("schedules", {
         const schedule = await scheduleService.completeSession(id);
         if (schedule) {
           const slot = mapScheduleToSlot(schedule);
-          const index = this.slots.findIndex((s) => s.id === id);
+          // Convert IDs to string for proper comparison
+          const slotIdStr = String(slot.id);
+          const index = this.slots.findIndex((s) => String(s.id) === slotIdStr);
           if (index !== -1) {
             this.slots[index] = slot;
+          } else {
+            // If not found, try to find by original id
+            const altIndex = this.slots.findIndex((s) => s.id === id || String(s.id) === id);
+            if (altIndex !== -1) {
+              this.slots[altIndex] = slot;
+            }
           }
           return slot;
         }

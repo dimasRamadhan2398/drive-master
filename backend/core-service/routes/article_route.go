@@ -50,7 +50,8 @@ func (r *ArticleRoute) Run() {
 
 		// blog endpoints
 		articles.GET("/blog", r.controller.GetArticleController().GetBlogArticles)
-		articles.POST("/blog", r.controller.GetArticleController().CreateBlogArticle)
+		articles.POST("/blog", r.controller.GetArticleController().CreateBlogPost)
+		articles.PUT("/blog/:id", r.controller.GetArticleController().UpdateBlogPost)
 		articles.DELETE("/blog/:id", r.controller.GetArticleController().DeleteBlogArticle)
 
 		// FAQ endpoints

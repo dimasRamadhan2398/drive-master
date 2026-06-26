@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
+import { useToast } from "@nuxt/ui/runtime/composables/index.js";
 import { computed, ref, onMounted, reactive, h, resolveComponent } from "vue";
 import type { TableColumn } from "@nuxt/ui";
 import { useContentStore } from "~/stores/content";
 import type { Faq, BlogPost } from "~/stores/content";
-import type { CreateBlogPostData } from "~/services/contentService";
-import PostBlogModal, { type PostFormData } from "~/components/content/PostBlogModal.vue";
+import type {
+  CreateBlogArticleData,
+  UpdateBlogPostData,
+} from "~/services/contentService";
+import PostBlogModal from "~/components/content/PostBlogModal.vue";
+import type { PostFormData } from "~/types/content-form";
 
 const { t } = useI18n();
 definePageMeta({ layout: "admin" });
@@ -23,7 +27,9 @@ const activeTab = ref("blog");
 
 // ==================== BLOG SECTION ====================
 
-const blogPosts = computed(() => contentStore.blogPosts);
+const blogPosts = computed(() => {
+  return contentStore.blogPosts;
+});
 
 const blogColumns: TableColumn<BlogPost>[] = [
   { accessorKey: "title", header: t("admin.content.title") },
@@ -81,41 +87,78 @@ function openEditBlog(post: BlogPost) {
   isBlogModalOpen.value = true;
 }
 
-async function handleBlogSaved(data: CreateBlogPostData) {
+async function handleBlogSaved(data: CreateBlogArticleData) {
   try {
     if (editingPost.value) {
       // Update existing post
-      await contentStore.updatePost(editingPost.value.id, {
+      const updateData: UpdateBlogPostData = {
         title: data.title,
         slug: data.slug,
         author: data.author,
         content: data.content,
+        media: data.media,
         publishing: data.publishing,
         attractiveness: data.attractiveness,
-      });
+      };
+      await contentStore.updatePost(editingPost.value.id, updateData);
       toast.add({ title: "Blog Post Updated", color: "success" });
     } else {
-      // Create new post
-      await contentStore.addPost({
+      // Create new post - pass full data including authorId
+      const result = await contentStore.addPost({
         title: data.title,
         slug: data.slug,
         author: data.author,
+        authorId: data.authorId,
+        leadParagraph: data.leadParagraph,
         content: data.content,
-
-        status: data.publishing?.status || "draft",
-        authorId: ,
+        media: data.media,
+        publishing: data.publishing,
+        attractiveness: data.attractiveness,
+        status: data.status,
       });
+
+      // Check if the result indicates an error (store returns null on failure)
+      if (!result) {
+        // Error was already handled by the store, but we can add UI feedback here
+        return;
+      }
+
       toast.add({ title: "Blog Post Created", color: "success" });
     }
     // Refresh the list
     contentStore.fetchBlogPosts();
-  } catch (err) {
-    toast.add({
-      title: t("common.error"),
-      description: "Failed to save blog post.",
-      color: "error",
-    });
+  } catch (err: any) {
+    // Handle API errors
+    const errorMessage = err?.message || err?.data?.message || "";
+
+    if (
+      errorMessage.toLowerCase().includes("duplicate") ||
+      errorMessage.toLowerCase().includes("already exists") ||
+      errorMessage.toLowerCase().includes("unique constraint") ||
+      errorMessage.toLowerCase().includes("title")
+    ) {
+      toast.add({
+        title: "Validation Error",
+        description:
+          "A post with this title already exists. Please use a different title.",
+        color: "error",
+      });
+    } else {
+      toast.add({
+        title: t("common.error"),
+        description: "Failed to save blog post.",
+        color: "error",
+      });
+    }
   }
+}
+
+function handleBlogError(message: string) {
+  toast.add({
+    title: "Validation Error",
+    description: message,
+    color: "error",
+  });
 }
 
 async function deleteBlog(id: string | number) {
@@ -384,5 +427,6 @@ onMounted(() => {
     :post="editingPost"
     @update:open="(val) => (isBlogModalOpen = val)"
     @saved="handleBlogSaved"
+    @error="handleBlogError"
   />
 </template>

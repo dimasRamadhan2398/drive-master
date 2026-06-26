@@ -16,7 +16,8 @@ type IAvailabilityService interface {
 	CheckAvailability(ctx context.Context, instructorID uuid.UUID, date time.Time, startTime string, duration int) error
 }
 
-// AvailabilityService checks instructor availability against recurring schedules
+// AvailabilityService detects conflicts between admin-created schedules and recurring schedules.
+// It prevents double-booking by ensuring admin schedules don't overlap with recurring slots.
 type AvailabilityService struct {
 	userClient user.IUserClient
 }
@@ -28,8 +29,15 @@ func NewAvailabilityService(userClient user.IUserClient) IAvailabilityService {
 	}
 }
 
-// CheckAvailability validates that an instructor is available at the given time
-// It checks the instructor's recurring schedules in user-service
+// CheckAvailability validates that an instructor's proposed schedule does not conflict
+// with their recurring schedules. Recurring schedules automatically generate slots via cron,
+// so admin-created schedules that overlap with recurring schedules would cause double-booking.
+//
+// Returns error if:
+//   - The proposed schedule conflicts (overlaps) with any active recurring schedule
+//   - User-service is unavailable (fail-closed for safety)
+//
+// Returns nil if no conflict exists (admin can proceed with creating the schedule).
 func (s *AvailabilityService) CheckAvailability(ctx context.Context, instructorID uuid.UUID, date time.Time, startTime string, duration int) error {
 	// Get the day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
 	dayOfWeek := int(date.Weekday())
@@ -37,8 +45,8 @@ func (s *AvailabilityService) CheckAvailability(ctx context.Context, instructorI
 	// Call user-service to get instructor's recurring schedules
 	schedules, err := s.userClient.GetInstructorRecurringSchedules(ctx, instructorID)
 	if err != nil {
-		// If we can't reach user-service, allow the booking (fail open)
-		// In production, you might want to fail closed instead
+		// Fail closed: if we can't verify availability, reject the schedule
+		// to prevent potential double-booking of the instructor
 		return fmt.Errorf("failed to check instructor availability: %w", err)
 	}
 
@@ -48,7 +56,7 @@ func (s *AvailabilityService) CheckAvailability(ctx context.Context, instructorI
 		return err
 	}
 
-	// Check if any active schedule matches the requested day and time
+	// Check if proposed schedule conflicts with any active recurring schedule
 	for _, schedule := range schedules {
 		// Only check active schedules
 		if !schedule.IsActive {
@@ -60,14 +68,15 @@ func (s *AvailabilityService) CheckAvailability(ctx context.Context, instructorI
 			continue
 		}
 
-		// Check if time overlaps
+		// Check if time overlaps (conflict detected)
 		if timesOverlap(startTime, endTime, schedule.StartTime, schedule.EndTime) {
-			return nil // Availability confirmed
+			// Conflict found: instructor already has a recurring slot at this time
+			return errors.New("instructor is not available at this time")
 		}
 	}
 
-	// No matching schedule found - instructor not available at this time
-	return errors.New("instructor is not available at this time")
+	// No conflict found - admin can proceed with creating the schedule
+	return nil
 }
 
 // calculateEndTime computes the end time given start time and duration in minutes

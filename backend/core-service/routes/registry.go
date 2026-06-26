@@ -26,6 +26,7 @@ func (r *Registry) Serve() {
 	r.GetRegionRoute().Run()
 	r.GetCarRoute().Run()
 	r.GetPackageRoute().Run()
+	r.GetAddOnRoute().Run()
 	r.GetArticleRoute().Run()
 	r.GetAnalyticsRoute().Run()
 	r.GetSalesRoute().Run()
@@ -42,6 +43,10 @@ func (r *Registry) GetCarRoute() ICarRoute {
 
 func (r *Registry) GetPackageRoute() IPackageRoute {
 	return NewPackageRoute(r.controller, r.group)
+}
+
+func (r *Registry) GetAddOnRoute() IAddOnRoute {
+	return NewAddOnRoute(r.controller, r.group)
 }
 
 func (r *Registry) GetArticleRoute() IArticleRoute {

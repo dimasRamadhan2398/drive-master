@@ -2,7 +2,6 @@ package seeders
 
 import (
 	"core-service/models"
-	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,19 +17,22 @@ func RunArticleSeeder(db *gorm.DB) error {
 			Title:          "5 Tips for First-Time Drivers to Pass Their SIM A Test",
 			Slug:           "5-tips-first-time-drivers-pass-sim-a-test",
 			LeadParagraph:  "Getting your SIM A license is a milestone. Here are expert tips to help you pass on your first attempt.",
-			BodyBlocks:     mustMarshalJSON([]map[string]interface{}{
-				{"type": "paragraph", "content": "Passing your SIM A driving test on the first try requires preparation and confidence. Here are five essential tips that have helped thousands of new drivers succeed."},
-				{"type": "heading", "content": "1. Practice Regularly", "level": 2},
-				{"type": "paragraph", "content": "Consistency is key. Aim to practice at least 3-4 times per week before your test date. Each session should be at least 60 minutes to build muscle memory."},
-				{"type": "heading", "content": "2. Master the Basics", "level": 2},
-				{"type": "paragraph", "content": "Before attempting complex maneuvers, ensure you have complete control of the basics: starting, steering, braking, and parking."},
-				{"type": "heading", "content": "3. Know Your Vehicle", "level": 2},
-				{"type": "paragraph", "content": "Understand your vehicle's dimensions, blind spots, and controls. This knowledge will help you navigate confidently during the test."},
-				{"type": "heading", "content": "4. Study Traffic Rules", "level": 2},
-				{"type": "paragraph", "content": "The written portion of the test requires knowledge of Indonesian traffic regulations. Study the rulebook thoroughly."},
-				{"type": "heading", "content": "5. Stay Calm and Focused", "level": 2},
-				{"type": "paragraph", "content": "Nervousness is normal but don't let it control you. Take deep breaths, follow instructions carefully, and trust your preparation."},
-			}),
+			Content: `<p>Passing your SIM A driving test on the first try requires preparation and confidence. Here are five essential tips that have helped thousands of new drivers succeed.</p>
+
+<h2>1. Practice Regularly</h2>
+<p>Consistency is key. Aim to practice at least 3-4 times per week before your test date. Each session should be at least 60 minutes to build muscle memory.</p>
+
+<h2>2. Master the Basics</h2>
+<p>Before attempting complex maneuvers, ensure you have complete control of the basics: starting, steering, braking, and parking.</p>
+
+<h2>3. Know Your Vehicle</h2>
+<p>Understand your vehicle's dimensions, blind spots, and controls. This knowledge will help you navigate confidently during the test.</p>
+
+<h2>4. Study Traffic Rules</h2>
+<p>The written portion of the test requires knowledge of Indonesian traffic regulations. Study the rulebook thoroughly.</p>
+
+<h2>5. Stay Calm and Focused</h2>
+<p>Nervousness is normal but don't let it control you. Take deep breaths, follow instructions carefully, and trust your preparation.</p>`,
 			Footer:           "Good luck with your test! Remember, practice makes perfect.",
 			MetaTitle:         "5 Tips for First-Time Drivers to Pass Their SIM A Test",
 			MetaDescription:   "Discover expert tips to help you pass your SIM A driving test on the first attempt. Essential advice for new drivers in Indonesia.",
@@ -65,17 +67,19 @@ func RunArticleSeeder(db *gorm.DB) error {
 			Title:          "Understanding Indonesian Road Signs: A Complete Guide",
 			Slug:           "understanding-indonesian-road-signs-complete-guide",
 			LeadParagraph:  "Navigate Indonesian roads with confidence by mastering these essential traffic signs and their meanings.",
-			BodyBlocks:     mustMarshalJSON([]map[string]interface{}{
-				{"type": "paragraph", "content": "Indonesian roads can be challenging for new drivers. Understanding road signs is crucial for safe navigation."},
-				{"type": "heading", "content": "Warning Signs", "level": 2},
-				{"type": "paragraph", "content": "Warning signs in Indonesia are typically triangular with red borders. They alert drivers to potential hazards ahead."},
-				{"type": "heading", "content": "Prohibitory Signs", "level": 2},
-				{"type": "paragraph", "content": "These circular signs with red borders indicate actions that are not permitted, such as no entry or no left turn."},
-				{"type": "heading", "content": "Mandatory Signs", "level": 2},
-				{"type": "paragraph", "content": "Blue circular signs indicate mandatory actions, such as the direction you must take or activities you must do."},
-				{"type": "heading", "content": "Information Signs", "level": 2},
-				{"type": "paragraph", "content": "These rectangular blue or green signs provide helpful information about nearby facilities and directions."},
-			}),
+			Content: `<p>Indonesian roads can be challenging for new drivers. Understanding road signs is crucial for safe navigation.</p>
+
+<h2>Warning Signs</h2>
+<p>Warning signs in Indonesia are typically triangular with red borders. They alert drivers to potential hazards ahead.</p>
+
+<h2>Prohibitory Signs</h2>
+<p>These circular signs with red borders indicate actions that are not permitted, such as no entry or no left turn.</p>
+
+<h2>Mandatory Signs</h2>
+<p>Blue circular signs indicate mandatory actions, such as the direction you must take or activities you must do.</p>
+
+<h2>Information Signs</h2>
+<p>These rectangular blue or green signs provide helpful information about nearby facilities and directions.</p>`,
 			Footer:           "Stay safe on Indonesian roads by always paying attention to traffic signs.",
 			MetaTitle:         "Indonesian Road Signs Guide - Complete Reference",
 			MetaDescription:   "Learn all Indonesian road signs with our comprehensive guide. Essential reading for new drivers.",
@@ -102,17 +106,19 @@ func RunArticleSeeder(db *gorm.DB) error {
 			Title:          "Night Driving: Essential Tips for Safety",
 			Slug:           "night-driving-essential-tips-for-safety",
 			LeadParagraph:  "Night driving presents unique challenges. Learn how to stay safe when driving after dark.",
-			BodyBlocks:     mustMarshalJSON([]map[string]interface{}{
-				{"type": "paragraph", "content": "Night driving requires extra attention and different techniques than daytime driving."},
-				{"type": "heading", "content": "Check Your Lights", "level": 2},
-				{"type": "paragraph", "content": "Before driving at night, ensure all your lights are working properly. This includes headlights, tail lights, brake lights, and turn signals."},
-				{"type": "heading", "content": "Adjust Your Speed", "level": 2},
-				{"type": "paragraph", "content": "Reduce your speed to account for reduced visibility. The faster you drive, the less time you have to react."},
-				{"type": "heading", "content": "Use High Beams Wisely", "level": 2},
-				{"type": "paragraph", "content": "Use high beams on roads with minimal traffic. Switch to low beams when approaching other vehicles."},
-				{"type": "heading", "content": "Watch for Pedestrians", "level": 2},
-				{"type": "paragraph", "content": "Pedestrians can be harder to see at night. Be extra vigilant near crosswalks and populated areas."},
-			}),
+			Content: `<p>Night driving requires extra attention and different techniques than daytime driving.</p>
+
+<h2>Check Your Lights</h2>
+<p>Before driving at night, ensure all your lights are working properly. This includes headlights, tail lights, brake lights, and turn signals.</p>
+
+<h2>Adjust Your Speed</h2>
+<p>Reduce your speed to account for reduced visibility. The faster you drive, the less time you have to react.</p>
+
+<h2>Use High Beams Wisely</h2>
+<p>Use high beams on roads with minimal traffic. Switch to low beams when approaching other vehicles.</p>
+
+<h2>Watch for Pedestrians</h2>
+<p>Pedestrians can be harder to see at night. Be extra vigilant near crosswalks and populated areas.</p>`,
 			Footer:           "Drive safely and arrive alive.",
 			MetaTitle:         "Night Driving Safety Tips - Complete Guide",
 			MetaDescription:   "Master night driving with these essential safety tips. Learn techniques for driving safely after dark.",
@@ -139,17 +145,19 @@ func RunArticleSeeder(db *gorm.DB) error {
 			Title:          "How to Handle Wet Weather Driving",
 			Slug:           "how-to-handle-wet-weather-driving",
 			LeadParagraph:  "Rainy conditions require special driving techniques. Here's how to stay safe on wet roads.",
-			BodyBlocks:     mustMarshalJSON([]map[string]interface{}{
-				{"type": "paragraph", "content": "Indonesia's rainy season brings challenging driving conditions. Learn how to navigate safely."},
-				{"type": "heading", "content": "Reduce Speed", "level": 2},
-				{"type": "paragraph", "content": "Slow down when roads are wet. Hydroplaning becomes a risk at higher speeds."},
-				{"type": "heading", "content": "Increase Following Distance", "level": 2},
-				{"type": "paragraph", "content": "Wet roads mean longer braking distances. Keep more space between you and the vehicle ahead."},
-				{"type": "heading", "content": "Use Defoggers", "level": 2},
-				{"type": "paragraph", "content": "Keep your windshield clear using defoggers. Humidity can quickly fog up windows."},
-				{"type": "heading", "content": "Check Tire Condition", "level": 2},
-				{"type": "paragraph", "content": "Ensure your tires have adequate tread depth for proper water dispersion."},
-			}),
+			Content: `<p>Indonesia's rainy season brings challenging driving conditions. Learn how to navigate safely.</p>
+
+<h2>Reduce Speed</h2>
+<p>Slow down when roads are wet. Hydroplaning becomes a risk at higher speeds.</p>
+
+<h2>Increase Following Distance</h2>
+<p>Wet roads mean longer braking distances. Keep more space between you and the vehicle ahead.</p>
+
+<h2>Use Defoggers</h2>
+<p>Keep your windshield clear using defoggers. Humidity can quickly fog up windows.</p>
+
+<h2>Check Tire Condition</h2>
+<p>Ensure your tires have adequate tread depth for proper water dispersion.</p>`,
 			Footer:           "Stay safe during rainy season by following these guidelines.",
 			MetaTitle:         "Wet Weather Driving Guide - Rain Safety Tips",
 			MetaDescription:   "Learn essential techniques for driving safely in wet weather conditions. Complete guide for Indonesian drivers.",
@@ -176,17 +184,19 @@ func RunArticleSeeder(db *gorm.DB) error {
 			Title:          "The Benefits of Enrolling in a Professional Driving School",
 			Slug:           "benefits-professional-driving-school",
 			LeadParagraph:  "Professional driving schools offer advantages that self-learning simply cannot match.",
-			BodyBlocks:     mustMarshalJSON([]map[string]interface{}{
-				{"type": "paragraph", "content": "While some people learn to drive from family or friends, professional driving schools provide structured, comprehensive training."},
-				{"type": "heading", "content": "Structured Curriculum", "level": 2},
-				{"type": "paragraph", "content": "Professional schools follow a proven curriculum that covers all essential skills in a logical progression."},
-				{"type": "heading", "content": "Certified Instructors", "level": 2},
-				{"type": "paragraph", "content": "Learn from trained professionals who know exactly what examiners look for."},
-				{"type": "heading", "content": "Proper Equipment", "level": 2},
-				{"type": "paragraph", "content": "Driving schools maintain vehicles equipped with dual controls for safety."},
-				{"type": "heading", "content": "Higher Pass Rates", "level": 2},
-				{"type": "paragraph", "content": "Students from professional schools typically have higher first-time pass rates."},
-			}),
+			Content: `<p>While some people learn to drive from family or friends, professional driving schools provide structured, comprehensive training.</p>
+
+<h2>Structured Curriculum</h2>
+<p>Professional schools follow a proven curriculum that covers all essential skills in a logical progression.</p>
+
+<h2>Certified Instructors</h2>
+<p>Learn from trained professionals who know exactly what examiners look for.</p>
+
+<h2>Proper Equipment</h2>
+<p>Driving schools maintain vehicles equipped with dual controls for safety.</p>
+
+<h2>Higher Pass Rates</h2>
+<p>Students from professional schools typically have higher first-time pass rates.</p>`,
 			Footer:           "Invest in professional training for better driving skills.",
 			MetaTitle:         "Why Choose Professional Driving School - Benefits Guide",
 			MetaDescription:   "Discover the benefits of enrolling in a professional driving school vs self-learning.",
@@ -215,17 +225,19 @@ func RunArticleSeeder(db *gorm.DB) error {
 			Title:          "Understanding Car Maintenance Basics",
 			Slug:           "understanding-car-maintenance-basics",
 			LeadParagraph:  "Every driver should know basic car maintenance. Keep your vehicle running smoothly with these essential tips.",
-			BodyBlocks:     mustMarshalJSON([]map[string]interface{}{
-				{"type": "paragraph", "content": "Basic car maintenance knowledge helps prevent breakdowns and extends your vehicle's lifespan."},
-				{"type": "heading", "content": "Check Fluid Levels", "level": 2},
-				{"type": "paragraph", "content": "Regularly check engine oil, coolant, brake fluid, and windshield washer fluid levels."},
-				{"type": "heading", "content": "Monitor Tire Pressure", "level": 2},
-				{"type": "paragraph", "content": "Proper tire pressure improves fuel efficiency and safety. Check monthly."},
-				{"type": "heading", "content": "Replace Wipers", "level": 2},
-				{"type": "paragraph", "content": "Replace windshield wipers every 6-12 months for clear visibility during rain."},
-				{"type": "heading", "content": "Schedule Regular Services", "level": 2},
-				{"type": "paragraph", "content": "Follow your car's service schedule for oil changes, filter replacements, and inspections."},
-			}),
+			Content: `<p>Basic car maintenance knowledge helps prevent breakdowns and extends your vehicle's lifespan.</p>
+
+<h2>Check Fluid Levels</h2>
+<p>Regularly check engine oil, coolant, brake fluid, and windshield washer fluid levels.</p>
+
+<h2>Monitor Tire Pressure</h2>
+<p>Proper tire pressure improves fuel efficiency and safety. Check monthly.</p>
+
+<h2>Replace Wipers</h2>
+<p>Replace windshield wipers every 6-12 months for clear visibility during rain.</p>
+
+<h2>Schedule Regular Services</h2>
+<p>Follow your car's service schedule for oil changes, filter replacements, and inspections.</p>`,
 			Footer:           "A well-maintained car is a safer car.",
 			MetaTitle:         "Car Maintenance Basics - Every Driver's Guide",
 			MetaDescription:   "Learn essential car maintenance tips every driver should know. Keep your vehicle in top condition.",
@@ -252,17 +264,19 @@ func RunArticleSeeder(db *gorm.DB) error {
 			Title:          "Parking Techniques for Beginners",
 			Slug:           "parking-techniques-for-beginners",
 			LeadParagraph:  "Parking is often the biggest challenge for new drivers. Master these techniques to park with confidence.",
-			BodyBlocks:     mustMarshalJSON([]map[string]interface{}{
-				{"type": "paragraph", "content": "Good parking skills are essential for everyday driving. Practice these techniques regularly."},
-				{"type": "heading", "content": "Parallel Parking", "level": 2},
-				{"type": "paragraph", "content": "Find a space 1.5x your car's length. Use mirrors and turn indicators. Reverse slowly while turning the wheel."},
-				{"type": "heading", "content": "Perpendicular Parking", "level": 2},
-				{"type": "paragraph", "content": "Position your car parallel to the space. Reverse until aligned, then turn into the space."},
-				{"type": "heading", "content": "Angle Parking", "level": 2},
-				{"type": "paragraph", "content": "Approach at an angle. Use reference points to judge distance and steering angle."},
-				{"type": "heading", "content": "Tips for Success", "level": 2},
-				{"type": "paragraph", "content": "Always check mirrors and blind spots. Take your time - rushing leads to mistakes."},
-			}),
+			Content: `<p>Good parking skills are essential for everyday driving. Practice these techniques regularly.</p>
+
+<h2>Parallel Parking</h2>
+<p>Find a space 1.5x your car's length. Use mirrors and turn indicators. Reverse slowly while turning the wheel.</p>
+
+<h2>Perpendicular Parking</h2>
+<p>Position your car parallel to the space. Reverse until aligned, then turn into the space.</p>
+
+<h2>Angle Parking</h2>
+<p>Approach at an angle. Use reference points to judge distance and steering angle.</p>
+
+<h2>Tips for Success</h2>
+<p>Always check mirrors and blind spots. Take your time - rushing leads to mistakes.</p>`,
 			Footer:           "Practice makes perfect when it comes to parking.",
 			MetaTitle:         "Parking Techniques for Beginners - Complete Guide",
 			MetaDescription:   "Learn essential parking techniques for new drivers. Master parallel, perpendicular, and angle parking.",
@@ -386,12 +400,4 @@ func ptrTime(t time.Time) *time.Time {
 
 func ptrUUID(u uuid.UUID) *uuid.UUID {
 	return &u
-}
-
-func mustMarshalJSON(v interface{}) []byte {
-	data, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
-	}
-	return data
 }

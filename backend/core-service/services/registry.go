@@ -38,9 +38,14 @@ func (r *Registry) GetPackageService() IPackageService {
 	return NewPackageService(r.repoRegistry.GetPackage(), r.eventPublisher)
 }
 
+// GetAddOnService implements [IServiceRegistry].
+func (r *Registry) GetAddOnService() IAddOnService {
+	return NewAddOnService(r.repoRegistry.GetAddOn())
+}
+
 // GetArticleService implements [IServiceRegistry].
 func (r *Registry) GetArticleService() IArticleService {
-	return NewArticleService(r.repoRegistry.GetArticle(), r.repoRegistry.GetFAQ(), r.eventPublisher)
+	return NewArticleService(r.repoRegistry.GetArticle(), r.repoRegistry.GetFAQ(), r.eventPublisher, r.GetMediaService())
 }
 
 // GetAnalyticsService implements [IServiceRegistry].
@@ -75,6 +80,7 @@ type IServiceRegistry interface {
 	GetRegionService() IRegionService
 	GetCarService() ICarService
 	GetPackageService() IPackageService
+	GetAddOnService() IAddOnService
 	GetArticleService() IArticleService
 	GetAnalyticsService() IAnalyticsService
 	GetCacheService() ICacheService

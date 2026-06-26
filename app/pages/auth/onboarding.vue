@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
@@ -8,8 +8,20 @@ definePageMeta({
   layout: 'blank'
 })
 
+const auth = useAuthStore()
 const loading = ref(false)
 const showTermsModal = ref(false)
+
+// Fetch member profile on mount
+onMounted(async () => {
+  if (auth.userId && !auth.memberProfile) {
+    await auth.fetchMemberProfile()
+  }
+  // Pre-fill form if identity fullname already exists
+  if (auth.memberIdentityFullname) {
+    formData.fullName = auth.memberIdentityFullname
+  }
+})
 
 const schema = computed(() => z.object({
   fullName: z.string().min(3, t('validation.minLength', { min: 3 })),
@@ -21,20 +33,27 @@ const formData = reactive({
   agreedToTerms: false
 })
 
-async function onSubmit(event: FormSubmitEvent<any>) {
+async function onSubmit(_event: FormSubmitEvent<any>) {
   loading.value = true
 
   try {
-    // Simulate API call to save profile
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    console.log('Onboarding completed:', formData)
-    
+    // Update member profile with identity fullname
+    const result = await auth.updateMemberProfile({
+      identityFullname: formData.fullName
+    })
+
+    if (!result) {
+      console.error('[ONBOARDING] Failed to update member profile')
+      // Continue anyway since API might not be available
+    } else {
+      console.log('[ONBOARDING] Member profile updated successfully:', result)
+    }
+
     let plan = null
     if (import.meta.client) {
       plan = sessionStorage.getItem('dm_selected_plan')
     }
-    
+
     if (plan) {
       navigateTo(`/auth/payment-method?plan=${plan}`)
     } else {

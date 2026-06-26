@@ -1,9 +1,9 @@
 import { defineStore } from "pinia";
 import {
-  BlogPostMedia,
+  type BlogPostMedia,
   contentService,
-  CreateBlogArticleData,
-  UpdateBlogPostData,
+  type CreateBlogArticleData,
+  type UpdateBlogPostData,
 } from "../services/contentService";
 
 export interface PageSection {
@@ -27,6 +27,8 @@ export interface BlogPost {
   title: string;
   slug?: string;
   author: string;
+  leadParagraph?: string;
+  featuredImage?: string;
   excerpt?: string;
   date: string;
   status: "published" | "draft" | "archived";
@@ -338,32 +340,52 @@ export const useContentStore = defineStore("content", {
         const result = await contentService.fetchBlogPosts(params);
         // Use the posts array from the result
         const posts = result?.posts || [];
-        this.blogPosts = posts.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          slug: p.slug || "",
-          author: p.author || "Admin",
-          content: "",
-          excerpt: p.excerpt || p.leadParagraph || "",
-          date: this.formatDate(new Date(p.createdAt)),
-          status: (p.status as "published" | "draft" | "archived") || "draft",
-          views: p.viewCount || 0,
-          media: [],
-          publishing: {
+        this.blogPosts = posts.map((p: any) => {
+          console.log("Fetched blog post:", {
+            id: p.id,
+            title: p.title,
+            slug: p.slug || "",
+            author: p.author || "Admin",
+            status: p.status,
+            viewCount: p.viewCount,
+            createdAt: p.createdAt,
+          });
+          return {
+            id: p.id,
+            title: p.title,
+            slug: p.slug || "",
+            author: "Admin",
+            leadParagraph: p.leadParagraph || "",
+            featuredImage: p.featuredImage || "",
+            excerpt: p.excerpt || p.leadParagraph || "",
+            date: this.formatDate(new Date(p.createdAt)),
             status: (p.status as "published" | "draft" | "archived") || "draft",
-          },
-          attractiveness: {
-            isFeatured: false,
-            isSpotlight: false,
-            priority: 0,
-            highlight: false,
-          },
-        }));
+            views: p.viewCount || 0,
+            viewCount: p.viewCount || 0,
+            likeCount: p.likeCount || 0,
+            readingTime: p.readingTime || 1,
+            media: [],
+            publishing: {
+              status: (p.status as "published" | "draft" | "archived") || "draft",
+              publishedAt: p.publishedAt || undefined,
+            },
+            attractiveness: {
+              isFeatured: false,
+              isSpotlight: false,
+              priority: 0,
+              highlight: false,
+            },
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+          };
+        });
         return result;
       } catch (err) {
         this.error =
           err instanceof Error ? err.message : "Failed to fetch blog posts";
         console.error("Error fetching blog posts:", err);
+        // Reset to initial posts on failure
+        this.blogPosts = [...initialBlogPosts];
         return null;
       } finally {
         this.isLoading = false;

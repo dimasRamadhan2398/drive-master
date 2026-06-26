@@ -1,16 +1,19 @@
 import { defineStore } from "pinia";
+import { salesService } from "~/services/salesService";
+import { useStudentsStore } from "~/stores/students";
+import { usePackagesStore } from "~/stores/packages";
 
 export interface Transaction {
-  id: number;
+  id: string | number;
   studentName: string;
-  packageId: number;
+  packageId: string | number;
   purchaseDate: string;
   amount: number;
   status: "Completed" | "Pending" | "Refunded";
 }
 
 export interface PackageSummary {
-  id: number;
+  id: string | number;
   name: string;
   price: number;
   color: string;
@@ -30,7 +33,7 @@ const initialTransactions: Transaction[] = [
   {
     id: 101,
     studentName: "John Doe",
-    packageId: 1,
+    packageId: "11111111-1111-1111-1111-111111111101",
     purchaseDate: "2026-03-10",
     amount: 1750000,
     status: "Completed",
@@ -38,7 +41,7 @@ const initialTransactions: Transaction[] = [
   {
     id: 102,
     studentName: "Jane Smith",
-    packageId: 1,
+    packageId: "11111111-1111-1111-1111-111111111101",
     purchaseDate: "2026-03-12",
     amount: 1750000,
     status: "Completed",
@@ -46,7 +49,7 @@ const initialTransactions: Transaction[] = [
   {
     id: 103,
     studentName: "Budi Santoso",
-    packageId: 2,
+    packageId: "11111111-1111-1111-1111-111111111102",
     purchaseDate: "2026-03-15",
     amount: 1950000,
     status: "Completed",
@@ -54,7 +57,7 @@ const initialTransactions: Transaction[] = [
   {
     id: 104,
     studentName: "Amanda Chen",
-    packageId: 1,
+    packageId: "11111111-1111-1111-1111-111111111101",
     purchaseDate: "2026-03-20",
     amount: 1750000,
     status: "Completed",
@@ -62,7 +65,7 @@ const initialTransactions: Transaction[] = [
   {
     id: 105,
     studentName: "David Lee",
-    packageId: 2,
+    packageId: "11111111-1111-1111-1111-111111111102",
     purchaseDate: "2026-03-22",
     amount: 1950000,
     status: "Completed",
@@ -70,7 +73,7 @@ const initialTransactions: Transaction[] = [
   {
     id: 106,
     studentName: "Sarah Putri",
-    packageId: 3,
+    packageId: "11111111-1111-1111-1111-111111111103",
     purchaseDate: "2026-04-01",
     amount: 2250000,
     status: "Completed",
@@ -78,7 +81,7 @@ const initialTransactions: Transaction[] = [
   {
     id: 107,
     studentName: "Michael Brown",
-    packageId: 1,
+    packageId: "11111111-1111-1111-1111-111111111101",
     purchaseDate: "2026-04-02",
     amount: 1750000,
     status: "Completed",
@@ -86,7 +89,7 @@ const initialTransactions: Transaction[] = [
   {
     id: 108,
     studentName: "Emily Davis",
-    packageId: 4,
+    packageId: "11111111-1111-1111-1111-111111111104",
     purchaseDate: "2026-04-05",
     amount: 2650000,
     status: "Completed",
@@ -94,7 +97,7 @@ const initialTransactions: Transaction[] = [
   {
     id: 109,
     studentName: "Ricky Wijaya",
-    packageId: 2,
+    packageId: "11111111-1111-1111-1111-111111111102",
     purchaseDate: "2026-04-10",
     amount: 1950000,
     status: "Completed",
@@ -102,7 +105,7 @@ const initialTransactions: Transaction[] = [
   {
     id: 110,
     studentName: "Anita Sari",
-    packageId: 3,
+    packageId: "11111111-1111-1111-1111-111111111103",
     purchaseDate: "2026-04-12",
     amount: 2250000,
     status: "Completed",
@@ -128,7 +131,7 @@ export const useSalesStore = defineStore("sales", {
       });
     },
 
-    transactionsByPackage: (state) => (packageId: string) => {
+    transactionsByPackage: (state) => (packageId: string | number) => {
       return state.transactions.filter((t) => t.packageId === packageId);
     },
 
@@ -147,10 +150,8 @@ export const useSalesStore = defineStore("sales", {
     },
 
     packageSummary(): PackageSummary[] {
-      // This assumes packages are imported or defined elsewhere
-      // For now, we'll create a dynamic summary from transactions
       const packageMap = new Map<
-        number,
+        string | number,
         { totalSales: number; revenue: number }
       >();
 
@@ -176,11 +177,11 @@ export const useSalesStore = defineStore("sales", {
     },
 
     revenueByPackage(): {
-      packageId: number;
+      packageId: string | number;
       revenue: number;
       sales: number;
     }[] {
-      const map = new Map<number, { revenue: number; sales: number }>();
+      const map = new Map<string | number, { revenue: number; sales: number }>();
 
       this.filteredTransactions.forEach((t) => {
         const existing = map.get(t.packageId) || { revenue: 0, sales: 0 };
@@ -207,8 +208,56 @@ export const useSalesStore = defineStore("sales", {
       this.endDate = "";
     },
 
+    async fetchTransactions(page: number = 1, limit: number = 100) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const result = await salesService.listTransactions(page, limit);
+        
+        // Resolve student and packages stores
+        const studentsStore = useStudentsStore();
+        const packagesStore = usePackagesStore();
+        
+        // Map API response to Transaction model
+        this.transactions = result.transactions.map((item) => {
+          // Resolve student name
+          const student = studentsStore.students.find((s) => s.id === item.payment?.userId) || 
+                          studentsStore.allStudents.find((s) => s.id === item.payment?.userId);
+          const studentName = student ? student.name : (item.payment?.description || "Student");
+          
+          // Resolve package ID (matching amount/price)
+          const pkg = packagesStore.packages.find(
+            (p) => p.price === item.amount || p.discountPrice === item.amount
+          );
+          const packageId = pkg ? pkg.id : (item.payment?.bookingId || "");
+          
+          // Map status
+          let status: "Completed" | "Pending" | "Refunded" = "Pending";
+          if (item.status === "success") {
+            status = "Completed";
+          } else if (item.status === "failed" || item.status === "reversed") {
+            status = "Refunded";
+          }
+
+          return {
+            id: item.id,
+            studentName,
+            packageId,
+            purchaseDate: item.processedAt || item.createdAt,
+            amount: item.amount,
+            status,
+          };
+        });
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : "Failed to fetch transactions";
+        console.error("Error fetching transactions:", err);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     addTransaction(data: Omit<Transaction, "id">) {
-      const newId = Math.max(...this.transactions.map((t) => t.id), 0) + 1;
+      const newId = this.transactions.length > 0 ? Math.max(...this.transactions.map((t) => typeof t.id === 'number' ? t.id : 0), 0) + 1 : 1;
       const transaction: Transaction = {
         ...data,
         id: newId,
@@ -217,21 +266,21 @@ export const useSalesStore = defineStore("sales", {
       return transaction;
     },
 
-    getTransactionById(id: number) {
+    getTransactionById(id: string | number) {
       return this.transactions.find((t) => t.id === id);
     },
 
-    getTransactionsByPackage(packageId: number) {
+    getTransactionsByPackage(packageId: string | number) {
       return this.transactions.filter((t) => t.packageId === packageId);
     },
 
-    getPackageRevenue(packageId: number) {
+    getPackageRevenue(packageId: string | number) {
       return this.transactions
         .filter((t) => t.packageId === packageId)
         .reduce((sum, t) => sum + t.amount, 0);
     },
 
-    getPackageSales(packageId: number) {
+    getPackageSales(packageId: string | number) {
       return this.transactions.filter((t) => t.packageId === packageId).length;
     },
 

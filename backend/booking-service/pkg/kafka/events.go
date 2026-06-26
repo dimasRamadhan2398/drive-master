@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // EventType represents the type of auth event
@@ -57,6 +59,10 @@ const (
 	// Enrollment Events
 	EventEnrollmentPaid    EventType = "enrollment.paid"
 	EventEnrollmentCreated EventType = "enrollment.created"
+	EventTransactionPaid   EventType = "transaction.paid"
+
+	// Session Events
+	EventSessionCompleted EventType = "session.completed"
 )
 
 // Event represents a generic auth event
@@ -95,7 +101,8 @@ type IEventPublisher interface {
 	PublishSecurityEvent(ctx context.Context, userID, username string, eventType EventType, ip string, data map[string]interface{}) error
 	PublishRoleEvent(ctx context.Context, userID, username, role string, eventType EventType) error
 	PublishCertificationIssued(ctx context.Context, userID string, userEmail, userName, certType string, issueDate time.Time) error
-	PublishEnrollmentPaid(ctx context.Context, enrollmentID string, userID string, packageID uint, totalPrice float64) error
+	PublishEnrollmentPaid(ctx context.Context, enrollmentID string, userID string, packageID uuid.UUID, totalPrice float64, totalSessions int, packageName string) error
+	PublishSessionCompleted(ctx context.Context, sessionID uint, entitlementID uuid.UUID, enrollmentID uuid.UUID, userID uuid.UUID, packageID uuid.UUID, sessionsUsed int) error
 
 	// Consumer management
 	StartConsumer(ctx context.Context) error
@@ -315,15 +322,36 @@ func (r *EventPublisher) PublishCertificationIssued(ctx context.Context, userID 
 }
 
 // PublishEnrollmentPaid publishes an enrollment paid event
-func (r *EventPublisher) PublishEnrollmentPaid(ctx context.Context, enrollmentID string, userID string, packageID uint, totalPrice float64) error {
+func (r *EventPublisher) PublishEnrollmentPaid(ctx context.Context, enrollmentID string, userID string, packageID uuid.UUID, totalPrice float64, totalSessions int, packageName string) error {
 	event := &Event{
 		Type:     EventEnrollmentPaid,
 		UserID:   userID,
 		Success:  true,
 		Data: map[string]interface{}{
-			"enrollment_id": enrollmentID,
-			"package_id":    packageID,
-			"total_price":   totalPrice,
+			"enrollment_id":  enrollmentID,
+			"package_id":     packageID.String(),
+			"total_price":    totalPrice,
+			"total_sessions": totalSessions,
+			"package_name":   packageName,
+		},
+		Timestamp: time.Now().UTC(),
+	}
+	return r.Publish(ctx, event)
+}
+
+// PublishSessionCompleted publishes a session completed event
+func (r *EventPublisher) PublishSessionCompleted(ctx context.Context, sessionID uint, entitlementID uuid.UUID, enrollmentID uuid.UUID, userID uuid.UUID, packageID uuid.UUID, sessionsUsed int) error {
+	event := &Event{
+		Type:    EventSessionCompleted,
+		UserID:  userID.String(),
+		Success: true,
+		Data: map[string]interface{}{
+			"session_id":     sessionID,
+			"entitlement_id": entitlementID.String(),
+			"booking_id":     enrollmentID.String(),
+			"member_id":      userID.String(),
+			"package_id":      packageID.String(),
+			"sessions_used":   sessionsUsed,
 		},
 		Timestamp: time.Now().UTC(),
 	}
@@ -603,9 +631,19 @@ func (h *EnrollmentPaidHandler) HandleEvent(ctx context.Context, event *Event) e
 		return fmt.Errorf("missing package_id in enrollment.paid event")
 	}
 
-	// Handle both float64 (from JSON) and uint types
+	// Handle string type (from UUID)
 	var packageID uint
 	switch v := packageIDData.(type) {
+	case string:
+		// Parse UUID string to get a numeric identifier
+		// For now, use hash or extract part of UUID
+		// In a real scenario, core-service should provide the numeric ID
+		parsedUUID, err := uuid.Parse(v)
+		if err != nil {
+			return fmt.Errorf("invalid package_id UUID: %w", err)
+		}
+		// Convert UUID bytes to uint (simple approach)
+		packageID = uint(parsedUUID[0])<<24 | uint(parsedUUID[1])<<16 | uint(parsedUUID[2])<<8 | uint(parsedUUID[3])
 	case float64:
 		packageID = uint(v)
 	case int:
@@ -622,4 +660,61 @@ func (h *EnrollmentPaidHandler) HandleEvent(ctx context.Context, event *Event) e
 // GetEventTypes returns the event types this handler handles
 func (h *EnrollmentPaidHandler) GetEventTypes() []EventType {
 	return []EventType{EventEnrollmentPaid}
+}
+
+// TransactionPaidHandler handles transaction.paid events to mark enrollment as paid
+type TransactionPaidHandler struct {
+	onPaid func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64) error
+}
+
+// NewTransactionPaidHandler creates a new transaction paid handler
+func NewTransactionPaidHandler(onPaid func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64) error) *TransactionPaidHandler {
+	return &TransactionPaidHandler{onPaid: onPaid}
+}
+
+// HandleEvent processes the transaction.paid event
+func (h *TransactionPaidHandler) HandleEvent(ctx context.Context, event *Event) error {
+	if event.Type != EventTransactionPaid {
+		return nil
+	}
+
+	if h.onPaid == nil {
+		return nil
+	}
+
+	enrollmentIDStr, ok := event.Data["enrollment_id"].(string)
+	if !ok {
+		return fmt.Errorf("missing enrollment_id in transaction.paid event")
+	}
+
+	enrollmentID, err := uuid.Parse(enrollmentIDStr)
+	if err != nil {
+		return fmt.Errorf("invalid enrollment_id in transaction.paid event: %w", err)
+	}
+
+	totalPriceVal, ok := event.Data["total_price"]
+	if !ok {
+		return fmt.Errorf("missing total_price in transaction.paid event")
+	}
+
+	var totalPrice float64
+	switch v := totalPriceVal.(type) {
+	case float64:
+		totalPrice = v
+	case float32:
+		totalPrice = float64(v)
+	case int:
+		totalPrice = float64(v)
+	case int64:
+		totalPrice = float64(v)
+	default:
+		return fmt.Errorf("invalid total_price type in transaction.paid event")
+	}
+
+	return h.onPaid(ctx, enrollmentID, totalPrice)
+}
+
+// GetEventTypes returns the event types this handler handles
+func (h *TransactionPaidHandler) GetEventTypes() []EventType {
+	return []EventType{EventTransactionPaid}
 }

@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useSalesStore } from '~/stores/sales'
 import { usePackagesStore } from '~/stores/packages'
+import { useStudentsStore } from '~/stores/students'
 
 const { t } = useI18n()
 definePageMeta({ layout: 'admin' })
@@ -10,8 +11,17 @@ definePageMeta({ layout: 'admin' })
 const route = useRoute()
 const salesStore = useSalesStore()
 const packagesStore = usePackagesStore()
+const studentsStore = useStudentsStore()
 
-const packageId = computed(() => route.query.packageId ? route.query.packageId : null)
+onMounted(async () => {
+  await Promise.all([
+    packagesStore.fetchPackages(),
+    studentsStore.fetchStudentsNoPagination()
+  ])
+  await salesStore.fetchTransactions()
+})
+
+const packageId = computed(() => route.query.packageId ? String(route.query.packageId) : null)
 
 // Get packages from store
 const packages = computed(() => packagesStore.packages)

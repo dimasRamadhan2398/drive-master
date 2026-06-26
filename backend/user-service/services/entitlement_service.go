@@ -19,6 +19,7 @@ type IEntitlementService interface {
 	UpdateEntitlement(ctx context.Context, memberID, entitlementID uuid.UUID, input dto.UpdateEntitlementInput) (*dto.EntitlementResponse, error)
 	DeleteEntitlement(ctx context.Context, memberID, entitlementID uuid.UUID) error
 	GetEntitlement(ctx context.Context, memberID, entitlementID uuid.UUID) (*dto.EntitlementResponse, error)
+	GetEntitlementByID(ctx context.Context, entitlementID uuid.UUID) (*dto.EntitlementResponse, error)
 	ListEntitlements(ctx context.Context, memberID uuid.UUID, page, limit int) (*dto.EntitlementListResponse, error)
 	UseSession(ctx context.Context, memberID, entitlementID uuid.UUID, input dto.UseSessionInput) (*dto.EntitlementResponse, error)
 	SyncEntitlementFromBooking(ctx context.Context, memberID, bookingID uuid.UUID, packageID uuid.UUID, packageName string, totalSessions int) (*dto.EntitlementResponse, error)
@@ -149,6 +150,14 @@ func (s *EntitlementService) DeleteEntitlement(ctx context.Context, memberID, en
 
 func (s *EntitlementService) GetEntitlement(ctx context.Context, memberID, entitlementID uuid.UUID) (*dto.EntitlementResponse, error) {
 	entitlement, err := s.entitlementRepo.FindByMemberAndID(ctx, memberID, entitlementID)
+	if err != nil {
+		return nil, err
+	}
+	return toEntitlementResponse(entitlement), nil
+}
+
+func (s *EntitlementService) GetEntitlementByID(ctx context.Context, entitlementID uuid.UUID) (*dto.EntitlementResponse, error) {
+	entitlement, err := s.entitlementRepo.FindByID(ctx, entitlementID)
 	if err != nil {
 		return nil, err
 	}

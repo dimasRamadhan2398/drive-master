@@ -15,11 +15,11 @@ export type ScheduleStatus =
 export interface Schedule {
   id: string;
   date: string;
-  startTime: string;
+  time: string;
   endTime: string;
   duration: number; // in minutes
-  vehicleId: string;
-  vehicleName: string;
+  carId: string;
+  carName: string;
   instructorId: string;
   instructorName: string;
   studentId?: string;
@@ -35,11 +35,11 @@ export interface Schedule {
 export interface ScheduleBrief {
   id: string;
   date: string;
-  startTime: string;
+  time: string;
   endTime: string;
   duration: number;
-  vehicleId: string;
-  vehicleName: string;
+  carId: string;
+  carName: string;
   instructorId: string;
   instructorName: string;
   studentName?: string;
@@ -50,7 +50,7 @@ export interface ScheduleBrief {
 export interface ScheduleApiResponse {
   id: string;
   date: string;
-  time: string; // API uses "time" instead of "startTime"
+  time: string;
   duration: number;
   instructorId?: string;
   instructorName?: string;
@@ -70,11 +70,11 @@ export const mapApiToScheduleBrief = (item: ScheduleApiResponse): ScheduleBrief 
   return {
     id: item.id,
     date: item.date,
-    startTime: item.time, // Map "time" to "startTime"
+    time: item.time,
     endTime: "", // Not provided in API response
     duration: item.duration,
-    vehicleId: item.carId?.toString() || "",
-    vehicleName: item.carName || "", // Map "carName" to "vehicleName"
+    carId: item.carId?.toString() || "",
+    carName: item.carName || "",
     instructorId: item.instructorId || "",
     instructorName: item.instructorName || "",
     studentName: item.userName || undefined, // Map "userName" to "studentName"
@@ -93,18 +93,18 @@ export interface ScheduleListResponse {
 // Request DTOs (matching backend)
 export interface CreateScheduleData {
   date: string;
-  startTime: string;
+  time: string;
   duration: number;
-  vehicleId: string;
+  carId: string;
   instructorId: string;
   notes?: string;
 }
 
 export interface UpdateScheduleData {
   date?: string;
-  startTime?: string;
+  time?: string;
   duration?: number;
-  vehicleId?: string;
+  carId?: string;
   instructorId?: string;
   status?: ScheduleStatus;
   notes?: string;
@@ -142,10 +142,10 @@ export interface ScheduleFilterParams {
   startDate?: string;
   endDate?: string;
   instructorId?: string;
-  vehicleId?: string;
+  carId?: string;
   status?: ScheduleStatus;
   studentId?: string;
-  sortBy?: "date" | "startTime" | "createdAt";
+  sortBy?: "date" | "time" | "createdAt";
   sortOrder?: "asc" | "desc";
 }
 
@@ -154,7 +154,7 @@ export interface AvailableScheduleParams {
   startDate?: string;
   endDate?: string;
   instructorId?: string;
-  vehicleId?: string;
+  carId?: string;
   duration?: number;
 }
 
@@ -183,7 +183,7 @@ export const scheduleService = {
     if (params.endDate) queryParams.set("endDate", params.endDate);
     if (params.instructorId)
       queryParams.set("instructorId", params.instructorId);
-    if (params.vehicleId) queryParams.set("vehicleId", params.vehicleId);
+    if (params.carId) queryParams.set("carId", params.carId);
     if (params.status) queryParams.set("status", params.status);
     if (params.studentId) queryParams.set("studentId", params.studentId);
     if (params.sortBy) queryParams.set("sortBy", params.sortBy);
@@ -276,7 +276,7 @@ export const scheduleService = {
     if (params.endDate) queryParams.set("endDate", params.endDate);
     if (params.instructorId)
       queryParams.set("instructorId", params.instructorId);
-    if (params.vehicleId) queryParams.set("vehicleId", params.vehicleId);
+    if (params.carId) queryParams.set("carId", params.carId);
     if (params.status) queryParams.set("status", params.status);
     if (params.studentId) queryParams.set("studentId", params.studentId);
     if (params.sortBy) queryParams.set("sortBy", params.sortBy);
@@ -306,13 +306,16 @@ export const scheduleService = {
     const targetDate = date || formatDateString(new Date());
 
     try {
-      const response = await core<ApiResponse<ScheduleApiResponse[]>>(
+      const response = await core<PaginatedResponse<ScheduleApiResponse[]>>(
         `/schedules/filter?date=${targetDate}`,
         { method: "GET" },
       );
-      const data = extractData(response);
+      // Handle paginated response format: { data: [...], pagination: {...} }
+      const schedulesData = "data" in response && Array.isArray(response.data)
+        ? response.data
+        : extractData(response);
       // Map API response to ScheduleBrief format
-      return Array.isArray(data) ? data.map(mapApiToScheduleBrief) : [];
+      return Array.isArray(schedulesData) ? schedulesData.map(mapApiToScheduleBrief) : [];
     } catch (err) {
       console.error("Error fetching schedules by date:", err);
       return [];
@@ -336,7 +339,7 @@ export const scheduleService = {
     if (params.endDate) queryParams.set("endDate", params.endDate);
     if (params.instructorId)
       queryParams.set("instructorId", params.instructorId);
-    if (params.vehicleId) queryParams.set("vehicleId", params.vehicleId);
+    if (params.carId) queryParams.set("carId", params.carId);
     if (params.duration) queryParams.set("duration", String(params.duration));
 
     const queryString = queryParams.toString();

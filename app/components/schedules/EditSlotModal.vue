@@ -19,13 +19,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "update:open", val: boolean): void;
-  (e: "saved", data: { id: string; time: string; duration: string; car: string; instructor: string }): void;
+  (e: "saved", data: { id: string; time: string; duration: string; carId: string; instructorId: string }): void;
 }>();
 
 const { t } = useI18n()
 const toast = useToast();
 
-const form = ref({ id: "", time: "08:00", duration: "60", car: "", instructor: "" });
+const form = ref({ id: "", time: "08:00", duration: "60", carId: "", instructorId: "" });
 
 watch(
   () => props.initialSlot,
@@ -34,8 +34,8 @@ watch(
       form.value.id = s.id ?? "";
       form.value.time = s.time ?? "08:00";
       form.value.duration = (s.duration || "60").toString().replace(" min", "");
-      form.value.car = s.car ?? "";
-      form.value.instructor = s.instructor ?? "";
+      form.value.carId = s.carId ?? "";
+      form.value.instructorId = s.instructorId ?? "";
     }
   },
   { immediate: true },
@@ -45,7 +45,7 @@ watch(
   () => props.open,
   (open) => {
     if (!open) {
-      form.value = { id: "", time: "08:00", duration: "60", car: "", instructor: "" };
+      form.value = { id: "", time: "08:00", duration: "60", carId: "", instructorId: "" };
     }
   },
 );
@@ -55,7 +55,7 @@ function handleClose() {
 }
 
 function handleSave() {
-  if (!form.value.time || !form.value.car || !form.value.instructor) {
+  if (!form.value.time || !form.value.carId || !form.value.instructorId) {
     toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
     return;
   }
@@ -87,8 +87,8 @@ function handleSave() {
     id: form.value.id,
     time: form.value.time,
     duration: form.value.duration,
-    car: form.value.car,
-    instructor: form.value.instructor,
+    carId: form.value.carId,
+    instructorId: form.value.instructorId,
   });
 }
 </script>
@@ -112,10 +112,10 @@ function handleSave() {
           </UFormField>
         </div>
         <UFormField label="Vehicle" required>
-          <USelect v-model="form.car" :items="vehicles" placeholder="Select vehicle" class="w-full" />
+          <USelect v-model="form.carId" :items="vehicles" placeholder="Select vehicle" class="w-full" />
         </UFormField>
         <UFormField :label="t('dashboard.instructor')" required>
-          <USelect :items="instructors" v-model="form.instructor" placeholder="Select instructor" class="w-full" />
+          <USelect :items="instructors" v-model="form.instructorId" placeholder="Select instructor" class="w-full" />
         </UFormField>
       </div>
     </template>

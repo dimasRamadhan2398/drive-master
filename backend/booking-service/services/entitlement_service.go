@@ -28,7 +28,7 @@ func (s *EntitlementService) CreateEntitlement(ctx context.Context, req dto.Crea
 		SourceType:        req.SourceType,
 		SourceID:          req.SourceID,
 		TotalSessions:     req.TotalSessions,
-		UsedSessions: 		req.SessionsRemaining,
+		UsedSessions:      0, // UsedSessions should always start at 0
 		ExpiresAt:         req.ExpiresAt,
 	}
 

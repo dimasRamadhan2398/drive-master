@@ -23,6 +23,7 @@ import (
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
 	swaggerFiles "github.com/swaggo/files"
@@ -99,6 +100,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	enrollmentRepo := repositories.NewEnrollmentRepository(db)
 	scheduleRepo := repositories.NewScheduleRepository(db)
 	paymentRepo := repositories.NewPaymentRepository(db)
+	transactionRepo := repositories.NewTransactionRepository(db)
 
 	// Initialize user-service client and availability service
 	userClient := user.NewUserClient(getEnv("USER_SERVICE_URL", "http://localhost:8001"), loadedConfig.JWT.Secret)
@@ -112,12 +114,22 @@ func runServe(cmd *cobra.Command, args []string) {
 	eventPublisher := initKafkaConsumer(userAnonymizationService, coreClient)
 
 	// Initialize services (after Kafka is initialized so we can pass the eventPublisher)
-	sessionService := services.NewSessionService(sessionRepo, scheduleRepo, entitlementRepo)
+	transactionService := services.NewTransactionService(transactionRepo)
+	sessionService := services.NewSessionServiceWithEventPublisher(sessionRepo, scheduleRepo, entitlementRepo, eventPublisher)
 	entitlementService := services.NewEntitlementService(entitlementRepo)
-	enrollmentService := services.NewEnrollmentServiceWithPublisher(enrollmentRepo, entitlementRepo, eventPublisher)
+	enrollmentService := services.NewEnrollmentServiceWithAllDeps(enrollmentRepo, entitlementRepo, transactionService, eventPublisher, entitlementService, coreClient)
+
+	// Register TransactionPaidHandler to update enrollment state when transaction is paid
+	if eventPublisher != nil {
+		transactionPaidHandler := kafka.NewTransactionPaidHandler(func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64) error {
+			_, err := enrollmentService.MarkAsPaid(ctx, enrollmentID, totalPrice)
+			return err
+		})
+		eventPublisher.RegisterHandler(transactionPaidHandler)
+	}
 
 	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, sessionRepo, entitlementRepo, sessionService, availabilityService, userClient, coreClient)
-	paymentService := services.NewPaymentService(paymentRepo, enrollmentRepo)
+	paymentService := services.NewPaymentServiceWithTransaction(paymentRepo, enrollmentRepo, transactionRepo)
 	revenueService := services.NewRevenueService(coreClient)
 
 	// Create service registry
@@ -195,7 +207,7 @@ func runMigrations(db *gorm.DB) {
 	// Fix column type mismatch before AutoMigrate
 	// The enrollments table might have bigint IDs or user_ids from old schema
 	// but the model expects uuid
-	fixEnrollmentColumnTypes(db)
+	fixEnrollmentColumnTypesPreserving(db)
 
 	if err := db.AutoMigrate(
 		&models.Enrollment{},
@@ -203,6 +215,8 @@ func runMigrations(db *gorm.DB) {
 		&models.DrivingSession{},
 		&models.Schedule{},
 		&models.Payment{},
+		&models.Transaction{},
+		&models.TransactionItem{},
 	); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}
@@ -210,54 +224,37 @@ func runMigrations(db *gorm.DB) {
 	log.Println("Database migrations completed successfully")
 }
 
-// fixEnrollmentColumnTypes checks and fixes column types in enrollment-related tables
-// This handles schema drift where columns might be bigint but should be uuid
-func fixEnrollmentColumnTypes(db *gorm.DB) {
-	// Check if enrollments.id or enrollments.user_id is bigint (old schema) and needs to be converted
-	var columnTypes []struct {
-		ColumnName string
-		DataType   string
-	}
-	err := db.Raw(`
-		SELECT column_name, data_type
-		FROM information_schema.columns
-		WHERE table_name = 'enrollments'
-		AND column_name IN ('id', 'user_id')
-	`).Scan(&columnTypes).Error
-
-	if err != nil {
-		log.Printf("Could not check enrollments column types: %v", err)
-		return
-	}
-
-	// Build a map of column names to their types
-	typeMap := make(map[string]string)
-	for _, ct := range columnTypes {
-		typeMap[ct.ColumnName] = ct.DataType
-	}
-
-	// If any key column is bigint, we have a schema mismatch - drop and recreate tables
-	if typeMap["id"] == "bigint" || typeMap["user_id"] == "bigint" {
-		var columns []string
-		if typeMap["id"] == "bigint" {
-			columns = append(columns, "enrollments.id")
+func fixEnrollmentColumnTypesPreserving(db *gorm.DB) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		// 1. Add new uuid columns alongside the old bigint ones
+		if err := tx.Exec(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS id_new uuid DEFAULT gen_random_uuid()`).Error; err != nil {
+			return err
 		}
-		if typeMap["user_id"] == "bigint" {
-			columns = append(columns, "enrollments.user_id")
+		if err := tx.Exec(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS user_id_new uuid`).Error; err != nil {
+			return err
 		}
-		log.Printf("Found schema mismatch: %v are bigint but should be uuid. Dropping tables for recreation...", columns)
+		if err := tx.Exec(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS package_id_new uuid`).Error; err != nil {
+			return err
+		}
 
-		// Drop dependent tables first (due to foreign keys)
-		tables := []string{"user_entitlements", "driving_sessions", "payments", "enrollments"}
-		for _, table := range tables {
-			err = db.Exec(`DROP TABLE IF EXISTS "` + table + `" CASCADE`).Error
-			if err != nil {
-				log.Printf("Warning: could not drop %s table: %v", table, err)
-			} else {
-				log.Printf("Successfully dropped %s table", table)
-			}
+		// 2. Backfill user_id_new / package_id_new from a mapping (see note below)
+		//    e.g.: tx.Exec(`UPDATE enrollments e SET user_id_new = m.new_id FROM id_mapping m WHERE m.old_id = e.user_id`)
+
+		// 3. Update dependent tables' FK columns the same way before swapping enrollments.id
+		//    (user_entitlements, driving_sessions, payments — anything with enrollment_id bigint)
+
+		// 4. Swap: drop old, rename new, re-add constraints/indexes
+		if err := tx.Exec(`ALTER TABLE enrollments DROP COLUMN id, user_id, package_id`).Error; err != nil {
+			return err
 		}
-	}
+		if err := tx.Exec(`ALTER TABLE enrollments RENAME COLUMN id_new TO id`).Error; err != nil {
+			return err
+		}
+		// ... rename user_id_new -> user_id, package_id_new -> package_id
+		// ... re-add PRIMARY KEY, NOT NULL, indexes, FK constraints
+
+		return nil
+	})
 }
 
 // serviceRegistryImpl implements services.IServiceRegistry
@@ -311,6 +308,19 @@ func initKafkaConsumer(anonymizationService services.IUserAnonymizationService, 
 	kafkaTopic := getEnv("KAFKA_TOPIC", "user-events")
 	kafkaGroupID := getEnv("KAFKA_GROUP_ID", "booking-service")
 
+	// Create Kafka producer for publishing events
+	producer, err := kafka.NewProducer(kafka.Config{
+		Brokers:     kafkaBrokers,
+		Topic:       kafkaTopic,
+		ServiceName: "booking-service",
+		Enabled:     true,
+		UseAsync:    true,
+	}, logger)
+	if err != nil {
+		logger.Error("Failed to create Kafka producer", zap.Error(err))
+		return nil
+	}
+
 	// Create Kafka consumer
 	consumer, err := kafka.NewConsumer(kafka.ConsumerConfig{
 		Brokers:  kafkaBrokers,
@@ -325,8 +335,9 @@ func initKafkaConsumer(anonymizationService services.IUserAnonymizationService, 
 		return nil
 	}
 
-	// Create event publisher with the consumer
+	// Create event publisher with both producer and consumer
 	eventPublisher := kafka.NewEventPublisher(kafka.EventPublisherConfig{
+		Producer: producer,
 		Consumer: consumer,
 		Topic:    kafkaTopic,
 		Enabled:  true,

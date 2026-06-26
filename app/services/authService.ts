@@ -5,7 +5,7 @@ import type {
   BackendUserResponse,
   RegisterResponse,
 } from "~/types/auth";
-import type { ApiResponse } from "~/composables/useApiClients";
+import { useApiClients, type ApiResponse } from "~/composables/useApiClients";
 
 export const authService = {
   async login(

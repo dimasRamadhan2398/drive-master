@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
-import type { Entitlement } from "~/services/scheduleService";
+import { ref, computed } from "vue";
 import { useToast, useStudentsStore, useSchedulesStore, useI18n } from "#imports";
 
 const props = defineProps<{
@@ -18,23 +17,47 @@ const toast = useToast();
 const studentsStore = useStudentsStore();
 const schedulesStore = useSchedulesStore();
 
-const selectedStudentId = ref("");
+// selectedStudent holds the entire selected item { value, label, student }
+const selectedStudent = ref<any>(null);
 const notes = ref("");
 const isSubmitting = ref(false);
+const isLoadingStudents = ref(false);
 
-// Format students for USelectMenu
+// Check if student has available sessions (active entitlements with remaining > 0)
+function hasAvailableSessions(student: any) {
+  if (!student?.entitlements) return false;
+  return student.entitlements.some(
+    (e: any) => e.status === "active" && e.remaining > 0
+  );
+}
+
+// Format students for USelectMenu - filter out students with no sessions
 const studentItems = computed(() => {
-  return studentsStore.students.map((s: any) => ({
-    value: s.id,
-    label: `${s.firstName} ${s.lastName}`,
-    student: s,
-  }));
+  return studentsStore.allStudents
+    .filter((s) => hasAvailableSessions(s))
+    .map((s) => ({
+      value: s.id,
+      label: s.name,
+      student: s,
+    }));
+});
+
+// Extract the actual student data from selected item
+const selectedStudentData = computed(() => {
+  return selectedStudent.value?.student || null;
+});
+
+// Get the student ID from selected item
+const selectedStudentId = computed(() => {
+  return selectedStudent.value?.value || null;
 });
 
 // Helper function to get active entitlements for any student
 function getActiveEntitlements(student: any) {
   if (!student?.entitlements) return [];
-  return student.entitlements.filter((e: any) => e.status === "active" && e.remaining > 0);
+  return student.entitlements.filter(
+    (e: any) => e.status === "active" && e.remaining > 0
+  );
 }
 
 // Get the primary entitlement (first one or the one with most remaining sessions)
@@ -42,9 +65,9 @@ function getPrimaryEntitlement(student: any) {
   const active = getActiveEntitlements(student);
   if (active.length === 0) return null;
   if (active.length === 1) return active[0];
-  // Return the entitlement with the most remaining sessions
-  return active.reduce((prev: any, curr: any) =>
-    curr.remaining > prev.remaining ? curr : prev
+  return active.reduce(
+    (prev: any, curr: any) =>
+      curr.remaining > prev.remaining ? curr : prev
   );
 }
 
@@ -60,33 +83,56 @@ function getEntitlementColor(ent: any): "success" | "warning" | "error" {
   return usagePercent >= 0.8 ? "warning" : "success";
 }
 
-// Selected student data for the card display
-const selectedStudent = computed(() => {
-  if (!selectedStudentId.value) return null;
-  return studentsStore.students.find((s: any) => s.id === selectedStudentId.value);
-});
-
 // Get active entitlements for the selected student
 const activeEntitlements = computed(() => {
-  return getActiveEntitlements(selectedStudent.value);
+  return getActiveEntitlements(selectedStudentData.value);
 });
 
+// Watch for modal open to fetch students
 watch(
   () => props.open,
-  (isOpen) => {
+  async (isOpen) => {
     if (isOpen) {
-      selectedStudentId.value = "";
+      selectedStudent.value = null;
       notes.value = "";
-      studentsStore.fetchStudentsNoPagination();
+      if (studentsStore.allStudents.length === 0) {
+        isLoadingStudents.value = true;
+        await studentsStore.fetchStudentsNoPagination();
+        isLoadingStudents.value = false;
+      }
     }
-  }
+  },
+  { immediate: true }
 );
 
 async function handleBook() {
-  if (!selectedStudentId.value || activeEntitlements.value.length === 0) {
+  const studentData = selectedStudentData.value;
+  const studentId = selectedStudentId.value;
+
+  if (!studentData || !studentId) {
     toast.add({
       title: "Validation Error",
-      description: "Please select a student with active entitlements",
+      description: "Please select a student",
+      color: "error",
+    });
+    return;
+  }
+
+  const entitlements = activeEntitlements.value;
+  if (entitlements.length === 0) {
+    toast.add({
+      title: "Validation Error",
+      description: "Student has no active entitlements",
+      color: "error",
+    });
+    return;
+  }
+
+  const entitlement = getPrimaryEntitlement(studentData);
+  if (!entitlement) {
+    toast.add({
+      title: "Booking Failed",
+      description: "No valid entitlement found",
       color: "error",
     });
     return;
@@ -94,19 +140,8 @@ async function handleBook() {
 
   isSubmitting.value = true;
   try {
-    // Use the primary entitlement (the one with most remaining sessions)
-    const entitlement = getPrimaryEntitlement(selectedStudent.value);
-    if (!entitlement) {
-      toast.add({
-        title: "Booking Failed",
-        description: "No valid entitlement found",
-        color: "error",
-      });
-      return;
-    }
-
     const success = await schedulesStore.bookSlot(props.slotId, {
-      userId: selectedStudentId.value,
+      userId: studentId,
       entitlementId: entitlement.id,
       notes: notes.value,
     });
@@ -144,8 +179,9 @@ async function handleBook() {
         <!-- Student Selection Dropdown -->
         <UFormField label="Select Student" required>
           <USelectMenu
-            v-model="selectedStudentId"
+            v-model="selectedStudent"
             :items="studentItems"
+            :loading="isLoadingStudents"
             placeholder="Select student..."
             icon="i-lucide-user"
             color="neutral"
@@ -157,13 +193,6 @@ async function handleBook() {
                 <div class="flex-1 min-w-0 space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="font-medium truncate">{{ item.student.name }}</span>
-                    <UBadge
-                      v-if="item.student.memberProfile?.nickname"
-                      :label="item.student.memberProfile.nickname"
-                      variant="subtle"
-                      color="neutral"
-                      size="sm"
-                    />
                   </div>
                   <div class="text-xs text-muted truncate">
                     {{ item.student.email || "No email" }}
@@ -189,12 +218,19 @@ async function handleBook() {
                           ? 'warning'
                           : 'error'
                       "
-                      :variant="getPrimaryEntitlement(item.student)?.id === ent.id ? 'solid' : 'subtle'"
+                      :variant="
+                        getPrimaryEntitlement(item.student)?.id === ent.id
+                          ? 'solid'
+                          : 'subtle'
+                      "
                       size="sm"
                       class="font-mono"
                     />
                     <UIcon
-                      v-if="hasMultipleEntitlements(item.student) && getPrimaryEntitlement(item.student)?.id === ent.id"
+                      v-if="
+                        hasMultipleEntitlements(item.student) &&
+                        getPrimaryEntitlement(item.student)?.id === ent.id
+                      "
                       name="i-lucide-star"
                       class="size-3 text-warning"
                     />
@@ -213,7 +249,7 @@ async function handleBook() {
 
         <!-- Student Info Card -->
         <div
-          v-if="selectedStudent"
+          v-if="selectedStudentData"
           class="border border-default rounded-lg p-4 bg-muted/30"
         >
           <div class="flex items-start justify-between gap-4">
@@ -222,27 +258,18 @@ async function handleBook() {
               <!-- Row 1: Full Name -->
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-user" class="text-muted size-4" />
-                <span class="font-semibold text-md">{{ selectedStudent.name }} </span>
-                <!-- <UBadge
-                  v-if="selectedStudent.memberProfile?.nickname"
-                  :label="selectedStudent.memberProfile.nickname"
-                  variant="subtle"
-                  color="neutral"
-                  size="sm"
-                /> -->
+                <span class="font-semibold text-md">{{ selectedStudentData.name }}</span>
               </div>
               <!-- Row 2: Email -->
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-mail" class="text-muted size-4" />
-                <span class="text-sm text-muted">{{
-                  selectedStudent.email || "N/A"
-                }}</span>
+                <span class="text-sm text-muted">{{ selectedStudentData.email || "N/A" }}</span>
               </div>
               <!-- Row 3: Phone -->
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-phone" class="text-muted size-4" />
                 <span class="text-sm text-muted">{{
-                  selectedStudent.phoneNumber || "N/A"
+                  selectedStudentData.phone || "N/A"
                 }}</span>
               </div>
             </div>
@@ -254,13 +281,20 @@ async function handleBook() {
                   <UBadge
                     :label="`${ent.usedSessions}/${ent.totalSessions}`"
                     :color="getEntitlementColor(ent)"
-                    :variant="getPrimaryEntitlement(selectedStudent)?.id === ent.id ? 'solid' : 'subtle'"
+                    :variant="
+                      getPrimaryEntitlement(selectedStudentData)?.id === ent.id
+                        ? 'solid'
+                        : 'subtle'
+                    "
                     size="lg"
                     class="font-mono"
                   />
                   <span class="text-xs text-muted">{{ ent.packageName }}</span>
                   <UIcon
-                    v-if="hasMultipleEntitlements(selectedStudent) && getPrimaryEntitlement(selectedStudent)?.id === ent.id"
+                    v-if="
+                      hasMultipleEntitlements(selectedStudentData) &&
+                      getPrimaryEntitlement(selectedStudentData)?.id === ent.id
+                    "
                     name="i-lucide-star"
                     class="size-3 text-warning"
                   />
@@ -291,7 +325,7 @@ async function handleBook() {
           icon="i-lucide-calendar-check"
           color="warning"
           :loading="isSubmitting"
-          :disabled="!selectedStudentId || activeEntitlements.length === 0"
+          :disabled="!selectedStudentData"
           @click="handleBook"
         />
       </div>

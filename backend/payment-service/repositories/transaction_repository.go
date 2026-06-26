@@ -30,7 +30,7 @@ func (r *TransactionRepository) Create(tx *models.Transaction) error {
 
 func (r *TransactionRepository) GetByID(id uuid.UUID) (*models.Transaction, error) {
 	var tx models.Transaction
-	err := r.db.First(&tx, "id = ?", id).Error
+	err := r.db.Preload("Payment").First(&tx, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (r *TransactionRepository) GetByID(id uuid.UUID) (*models.Transaction, erro
 
 func (r *TransactionRepository) GetByPaymentID(paymentID uuid.UUID) ([]models.Transaction, error) {
 	var transactions []models.Transaction
-	err := r.db.Where("payment_id = ?", paymentID).
+	err := r.db.Preload("Payment").Where("payment_id = ?", paymentID).
 		Order("created_at DESC").
 		Find(&transactions).Error
 	return transactions, err
@@ -51,7 +51,7 @@ func (r *TransactionRepository) Update(tx *models.Transaction) error {
 
 func (r *TransactionRepository) ListWithPagination(offset, limit int) ([]models.Transaction, error) {
 	var transactions []models.Transaction
-	err := r.db.Order("created_at DESC").
+	err := r.db.Preload("Payment").Order("created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&transactions).Error

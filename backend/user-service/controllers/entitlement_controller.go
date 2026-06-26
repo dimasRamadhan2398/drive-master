@@ -20,6 +20,7 @@ type EntitlementController struct {
 type IEntitlementController interface {
 	CreateEntitlement(ctx *gin.Context)
 	GetEntitlement(ctx *gin.Context)
+	GetEntitlementByID(ctx *gin.Context)
 	UpdateEntitlement(ctx *gin.Context)
 	DeleteEntitlement(ctx *gin.Context)
 	ListEntitlements(ctx *gin.Context)
@@ -87,6 +88,30 @@ func (c *EntitlementController) GetEntitlement(ctx *gin.Context) {
 	}
 
 	resp, err := c.entitlementService.GetEntitlement(ctx.Request.Context(), memberID, entitlementID)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Entitlement retrieved successfully", resp)
+}
+
+// @Summary Get Entitlement By ID
+// @Description Get a specific entitlement by its ID (internal use)
+// @Tags Members
+// @Produce json
+// @Param entId path string true "Entitlement ID (UUID)"
+// @Success 200 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /entitlements/{entId} [get]
+func (c *EntitlementController) GetEntitlementByID(ctx *gin.Context) {
+	entitlementID, err := parseUUID(ctx, "entId")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	resp, err := c.entitlementService.GetEntitlementByID(ctx.Request.Context(), entitlementID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return

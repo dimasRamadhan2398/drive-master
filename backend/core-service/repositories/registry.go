@@ -33,6 +33,7 @@ type IRepositoryRegistry interface {
 	GetEvent() IEventRepository
 	GetCar() ICarRepository
 	GetPackage() IPackageRepository
+	GetAddOn() IAddOnRepository
 	GetArticle() IArticleRepository
 	GetSales() ISalesRepository
 	GetGeneralSettings() IGeneralSettingsRepository
@@ -65,6 +66,11 @@ func (r *Registry) GetCar() ICarRepository {
 // GetPackage returns the package repository
 func (r *Registry) GetPackage() IPackageRepository {
 	return NewPackageRepository(r.baseRepo)
+}
+
+// GetAddOn returns the add-on repository
+func (r *Registry) GetAddOn() IAddOnRepository {
+	return NewAddOnRepository(r.baseRepo)
 }
 
 // GetArticle returns the article repository

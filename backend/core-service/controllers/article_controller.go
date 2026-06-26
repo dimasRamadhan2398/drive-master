@@ -66,6 +66,49 @@ func (c *ArticleController) CreateBlogArticle(ctx *gin.Context) {
 	response.Created(ctx, "Blog article created successfully", article)
 }
 
+// CreateBlogPost implements [IArticleController].
+// Creates a new blog post with featured image upload to ImageKit.
+func (c *ArticleController) CreateBlogPost(ctx *gin.Context) {
+	var req dto.CreateBlogPostRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(ctx, "Invalid request body: "+err.Error())
+		return
+	}
+
+	article, err := c.articleService.CreateBlogPost(ctx.Request.Context(), &req)
+	if err != nil {
+		response.InternalServerError(ctx, "Failed to create blog post: "+err.Error())
+		return
+	}
+
+	response.Created(ctx, "Blog post created successfully", article)
+}
+
+// UpdateBlogPost implements [IArticleController].
+// Updates an existing blog post with optional featured image upload.
+func (c *ArticleController) UpdateBlogPost(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		response.BadRequest(ctx, "Invalid article ID format")
+		return
+	}
+
+	var req dto.UpdateBlogPostRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(ctx, "Invalid request body: "+err.Error())
+		return
+	}
+
+	article, err := c.articleService.UpdateBlogPost(ctx.Request.Context(), id, &req)
+	if err != nil {
+		response.InternalServerError(ctx, "Failed to update blog post: "+err.Error())
+		return
+	}
+
+	response.OK(ctx, "Blog post updated successfully", article)
+}
+
 // CreateFAQArticle implements [IArticleController].
 func (c *ArticleController) CreateFAQArticle(ctx *gin.Context) {
 	var req dto.CreateFAQRequest
@@ -143,6 +186,8 @@ type IArticleController interface {
 	// Blog endpoints
 	GetBlogArticles(ctx *gin.Context)
 	CreateBlogArticle(ctx *gin.Context)
+	CreateBlogPost(ctx *gin.Context)
+	UpdateBlogPost(ctx *gin.Context)
 	DeleteBlogArticle(ctx *gin.Context)
 
 	// FAQ endpoints

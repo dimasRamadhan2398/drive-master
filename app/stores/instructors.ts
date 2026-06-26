@@ -319,7 +319,7 @@ export const useInstructorsStore = defineStore("instructors", {
 
     async deleteInstructor(userId: string) {
       try {
-        const success = await instructorService.deleteProfilePic(userId);
+        const success = await instructorService.delete(userId);
         if (success) {
           this.instructors = this.instructors.filter(
             (i) => i.userId !== userId,

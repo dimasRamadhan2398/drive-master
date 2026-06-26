@@ -9,9 +9,55 @@ import (
 // Enrollment DTOs (represents package purchase/enrollment)
 
 type CreateEnrollmentRequest struct {
-	UserID    uuid.UUID `json:"userId" binding:"required"`
-	PackageID uint      `json:"packageId" binding:"required"` // ref: core-service (package)
-	AddOns    []uint `json:"addOns"`                      // optional add-ons (night driving, weekend, etc.)
+	UserID    uuid.UUID  `json:"userId" binding:"required"`
+	PackageID uuid.UUID  `json:"packageId" binding:"required"` // ref: core-service (package)
+	AddOns    []uuid.UUID `json:"addOns"`                     // optional add-ons (night driving, weekend, etc.)
+}
+
+// AddOnSelection represents a selected add-on with quantity
+type AddOnSelection struct {
+	AddOnID  uuid.UUID `json:"addOnId" binding:"required"`
+	Quantity int      `json:"quantity" binding:"required,min=1"`
+}
+
+// Transaction DTOs
+
+type TransactionItemResponse struct {
+	ID        uuid.UUID `json:"id"`
+	ItemType  string    `json:"itemType"` // "package" or "addon"
+	ItemID    uuid.UUID `json:"itemId"`
+	ItemName  string    `json:"itemName"`
+	Quantity  int       `json:"quantity"`
+	UnitPrice float64   `json:"unitPrice"`
+	Subtotal  float64   `json:"subtotal"`
+	Sessions  int       `json:"sessions"`
+}
+
+type TransactionResponse struct {
+	ID           uuid.UUID               `json:"id"`
+	EnrollmentID uuid.UUID               `json:"enrollmentId"`
+	UserID      uuid.UUID               `json:"userId"`
+	BasePrice   float64                `json:"basePrice"`
+	AddOnsTotal float64                `json:"addOnsTotal"`
+	TotalAmount float64                `json:"totalAmount"`
+	Status      string                  `json:"status"`
+	PaidAt      *time.Time             `json:"paidAt,omitempty"`
+	Items       []TransactionItemResponse `json:"items"`
+	CreatedAt   time.Time              `json:"createdAt"`
+	UpdatedAt   time.Time              `json:"updatedAt"`
+}
+
+type TransactionListResponse struct {
+	Data       []TransactionResponse `json:"data"`
+	Total      int64                `json:"total"`
+	Page       int                  `json:"page"`
+	Limit      int                  `json:"limit"`
+	TotalPages int                  `json:"totalPages"`
+}
+
+type EnrollmentWithTransactionResponse struct {
+	Enrollment  EnrollmentResponse  `json:"enrollment"`
+	Transaction *TransactionResponse `json:"transaction,omitempty"`
 }
 
 type UpdateEnrollmentRequest struct {
@@ -20,15 +66,15 @@ type UpdateEnrollmentRequest struct {
 }
 
 type EnrollmentResponse struct {
-	ID         uuid.UUID `json:"id"`
-	UserID     uuid.UUID `json:"userId"`
-	PackageID  uint      `json:"packageId"`
-	Status     string    `json:"status"`
-	TotalPrice float64   `json:"totalPrice"`
+	ID         uuid.UUID  `json:"id"`
+	UserID     uuid.UUID  `json:"userId"`
+	PackageID  uuid.UUID  `json:"packageId"`
+	Status     string     `json:"status"`
+	TotalPrice float64    `json:"totalPrice"`
 	PaidAt     *time.Time `json:"paidAt"`
-	ExpiresAt  time.Time `json:"expiresAt"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
+	ExpiresAt  time.Time  `json:"expiresAt"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	UpdatedAt  time.Time  `json:"updatedAt"`
 }
 
 type EnrollmentListResponse = PagedData[EnrollmentResponse]
@@ -170,10 +216,10 @@ type EntitlementListResponse struct {
 // Certification DTOs
 
 type CreateCertificationRequest struct {
-	Type       string `json:"type" binding:"required"`
-	Recipient  string `json:"recipient" binding:"required"`
+	Type       string    `json:"type" binding:"required"`
+	Recipient  string    `json:"recipient" binding:"required"`
 	IssueDate  time.Time `json:"issueDate" binding:"required"`
-	PackageID  uint   `json:"packageId" binding:"required"`
+	PackageID  uuid.UUID `json:"packageId" binding:"required"`
 }
 
 type UpdateCertificationRequest struct {
@@ -181,14 +227,14 @@ type UpdateCertificationRequest struct {
 }
 
 type CertificationResponse struct {
-	ID         uuid.UUID `json:"id"`
-	Type       string    `json:"type"`
-	Recipient  string    `json:"recipient"`
-	IssueDate  time.Time `json:"issueDate"`
-	PackageID  uint      `json:"packageId"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
+	ID         uuid.UUID          `json:"id"`
+	Type       string             `json:"type"`
+	Recipient  string             `json:"recipient"`
+	IssueDate  time.Time          `json:"issueDate"`
+	PackageID  uuid.UUID          `json:"packageId"`
+	Status     string             `json:"status"`
+	CreatedAt  time.Time          `json:"createdAt"`
+	UpdatedAt  time.Time          `json:"updatedAt"`
 }
 
 type CertificationListResponse struct {

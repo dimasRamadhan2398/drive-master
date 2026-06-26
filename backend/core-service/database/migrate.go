@@ -22,6 +22,8 @@ func Migrate(db *gorm.DB) error {
 		&models.Package{},
 		&models.PackageBenefit{},
 
+		// AddOn tables
+		&models.AddOn{},
 
 		// Sales tables
 		&models.Sale{},
@@ -65,6 +67,13 @@ func MigratePackages(db *gorm.DB) error {
 	)
 }
 
+// MigrateAddOns runs add-on specific migrations
+func MigrateAddOns(db *gorm.DB) error {
+	return db.AutoMigrate(
+		&models.AddOn{},
+	)
+}
+
 func MigrateArticles(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&models.Article{},
@@ -101,6 +110,8 @@ func RunMigration(db *gorm.DB, name string) error {
 		return MigrateCars(db)
 	case "packages":
 		return MigratePackages(db)
+	case "addons":
+		return MigrateAddOns(db)
 	case "articles":
 		return MigrateArticles(db)
 	case "sales":
@@ -125,6 +136,7 @@ func GetMigrationStatus(db *gorm.DB) ([]models.TableStatus, error) {
 		"cars",
 		"packages",
 		"package_benefits",
+		"add_ons",
 		"articles",
 		"categories",
 		"tags",

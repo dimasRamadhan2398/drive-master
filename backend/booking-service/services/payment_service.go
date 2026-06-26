@@ -29,8 +29,9 @@ type IPaymentService interface {
 
 // PaymentService handles payment operations
 type PaymentService struct {
-	paymentRepo    repositories.IPaymentRepository
-	enrollmentRepo repositories.IEnrollmentRepository
+	paymentRepo     repositories.IPaymentRepository
+	enrollmentRepo  repositories.IEnrollmentRepository
+	transactionRepo repositories.ITransactionRepository
 }
 
 // NewPaymentService creates a new payment service
@@ -44,15 +45,46 @@ func NewPaymentService(
 	}
 }
 
+// NewPaymentServiceWithTransaction creates a new payment service with transaction support
+func NewPaymentServiceWithTransaction(
+	paymentRepo repositories.IPaymentRepository,
+	enrollmentRepo repositories.IEnrollmentRepository,
+	transactionRepo repositories.ITransactionRepository,
+) IPaymentService {
+	return &PaymentService{
+		paymentRepo:     paymentRepo,
+		enrollmentRepo:  enrollmentRepo,
+		transactionRepo: transactionRepo,
+	}
+}
+
 // CreatePayment creates a new payment record
 func (s *PaymentService) CreatePayment(ctx context.Context, req dto.CreatePaymentRequest) (*dto.PaymentResponse, error) {
 	// Check if enrollment exists
-	_, err := s.enrollmentRepo.FindByID(ctx, req.EnrollmentID)
+	enrollment, err := s.enrollmentRepo.FindByID(ctx, req.EnrollmentID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("enrollment not found")
 		}
 		return nil, err
+	}
+
+	// If transaction repo is available, validate amount against transaction
+	var expectedAmount float64
+	if s.transactionRepo != nil {
+		tx, err := s.transactionRepo.FindByEnrollmentID(ctx, req.EnrollmentID)
+		if err == nil && tx != nil {
+			expectedAmount = tx.TotalAmount
+			// Validate that the payment amount matches the transaction amount
+			if req.Amount != expectedAmount {
+				return nil, fmt.Errorf("payment amount (%.2f) does not match transaction amount (%.2f)", req.Amount, expectedAmount)
+			}
+		} else {
+			// Fallback to enrollment total price if no transaction exists
+			expectedAmount = enrollment.TotalPrice
+		}
+	} else {
+		expectedAmount = enrollment.TotalPrice
 	}
 
 	// Generate unique order ID
@@ -196,11 +228,21 @@ func (s *PaymentService) HandleCallback(ctx context.Context, callback dto.Paymen
 		return err
 	}
 
-	// If payment is successful, update enrollment status
+	// If payment is successful, update enrollment and transaction status
 	if newStatus == dto.PaymentStatusPaid {
 		if err := s.enrollmentRepo.MarkAsPaid(ctx, payment.EnrollmentID, time.Now(), payment.Amount); err != nil {
 			// Log error but don't fail the callback
 			fmt.Printf("Failed to mark enrollment as paid: %v\n", err)
+		}
+
+		// Also mark transaction as paid if transaction repo is available
+		if s.transactionRepo != nil {
+			tx, err := s.transactionRepo.FindByEnrollmentID(ctx, payment.EnrollmentID)
+			if err == nil && tx != nil {
+				if err := s.transactionRepo.MarkAsPaid(ctx, tx.ID); err != nil {
+					fmt.Printf("Failed to mark transaction as paid: %v\n", err)
+				}
+			}
 		}
 	}
 

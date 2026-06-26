@@ -22,6 +22,7 @@ export interface Student {
 
 interface StudentsState {
   students: Student[];
+  allStudents: Student[]; // All fetched students for client-side filtering
   searchResults: Student[];
   isLoading: boolean;
   error: string | null;
@@ -35,8 +36,6 @@ interface StudentsState {
   // Client-side search/filter state
   searchQuery: string;
   statusFilter: string;
-  // Server-side pagination mode
-  useServerPagination: boolean;
 }
 
 const packageSessionMap: { [key: string]: number } = {
@@ -189,6 +188,7 @@ const initialStudents: Student[] = [
 export const useStudentsStore = defineStore("students", {
   state: (): StudentsState => ({
     students: [],
+    allStudents: [], // All fetched students for client-side filtering
     searchResults: [],
     isLoading: false,
     error: null,
@@ -200,7 +200,6 @@ export const useStudentsStore = defineStore("students", {
     },
     searchQuery: "",
     statusFilter: "all",
-    useServerPagination: true, // Default to server-side pagination
   }),
 
   getters: {
@@ -214,9 +213,9 @@ export const useStudentsStore = defineStore("students", {
   },
 
   actions: {
-    // Client-side filtering helper
+    // Apply client-side filtering to allStudents
     applyClientSideFiltering() {
-      let filtered = [...initialStudents];
+      let filtered = [...this.allStudents];
 
       // Apply search filter
       if (this.searchQuery) {
@@ -233,12 +232,18 @@ export const useStudentsStore = defineStore("students", {
         filtered = filtered.filter((s) => s.status === this.statusFilter);
       }
 
-      this.students = filtered;
+      // Apply pagination
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / this.pagination.limit);
+      const start = (this.pagination.page - 1) * this.pagination.limit;
+      const end = start + this.pagination.limit;
+
+      this.students = filtered.slice(start, end);
       this.pagination = {
-        page: 1,
-        limit: this.pagination.limit,
-        total: filtered.length,
-        totalPages: 1,
+        ...this.pagination,
+        page: this.pagination.page,
+        total,
+        totalPages,
       };
     },
 
@@ -252,33 +257,23 @@ export const useStudentsStore = defineStore("students", {
           this.pagination.page = page;
         }
 
-        const params: {
-          page: number;
-          limit: number;
-          search?: string;
-          status?: string;
-        } = {
-          page: this.pagination.page,
-          limit: this.pagination.limit,
-        };
+        // Fetch all students without pagination for client-side filtering
+        const result = await studentService.fetchAll({
+          page: 1,
+          limit: 1000, // Fetch all (reasonable limit)
+        });
 
-        // Add search/filter params
-        if (this.searchQuery) {
-          params.search = this.searchQuery;
-        }
-        if (this.statusFilter !== "all") {
-          params.status = this.statusFilter;
-        }
+        // Store all students
+        this.allStudents = result.students;
 
-        const result = await studentService.fetchAll(params);
-
-        this.students = result.students;
-        this.pagination = result.pagination;
+        // Apply current search/filter
+        this.applyClientSideFiltering();
       } catch (err) {
         this.error =
           err instanceof Error ? err.message : "Failed to fetch students";
         console.error("Error fetching students:", err);
         // API failed, use dummy data with client-side filtering
+        this.allStudents = [...initialStudents];
         this.applyClientSideFiltering();
       } finally {
         this.isLoading = false;
@@ -291,13 +286,15 @@ export const useStudentsStore = defineStore("students", {
       try {
         const students = await studentService.fetchAllFlat();
         if (students.length > 0) {
-          this.students = students;
+          this.allStudents = students;
+          this.applyClientSideFiltering();
         }
       } catch (err) {
         this.error =
           err instanceof Error ? err.message : "Failed to fetch students";
         console.error("Error fetching students:", err);
         // API failed, use dummy data with client-side filtering
+        this.allStudents = [...initialStudents];
         this.applyClientSideFiltering();
       } finally {
         this.isLoading = false;
@@ -307,27 +304,28 @@ export const useStudentsStore = defineStore("students", {
     // Set search query and apply client-side filter
     setSearchQuery(query: string) {
       this.searchQuery = query;
-      // Apply local filtering without API call
+      this.pagination.page = 1; // Reset to first page when searching
       this.applyClientSideFiltering();
     },
 
     // Set status filter and apply client-side filter
     setStatusFilter(status: string) {
       this.statusFilter = status;
-      // Apply local filtering without API call
+      this.pagination.page = 1; // Reset to first page when filtering
       this.applyClientSideFiltering();
     },
 
-    // Change page for server-side pagination
+    // Change page for client-side pagination
     setPage(page: number) {
       this.pagination.page = page;
-      this.fetchStudents(page, false); // Don't reset page
+      this.applyClientSideFiltering();
     },
 
     async addStudent(data: CreateStudentData) {
       try {
         const newStudent = await studentService.create(data);
-        this.students.unshift(newStudent);
+        this.allStudents.unshift(newStudent);
+        this.applyClientSideFiltering();
         return newStudent;
       } catch {
         // Fallback to local creation if API fails
@@ -366,7 +364,8 @@ export const useStudentsStore = defineStore("students", {
         entitlements: [],
       };
 
-      this.students.unshift(newStudent);
+      this.allStudents.unshift(newStudent);
+      this.applyClientSideFiltering();
       return newStudent;
     },
 
@@ -374,10 +373,11 @@ export const useStudentsStore = defineStore("students", {
       try {
         const updatedStudent = await studentService.update(id, data);
         if (updatedStudent) {
-          const index = this.students.findIndex((s) => s.id === id);
+          const index = this.allStudents.findIndex((s) => s.id === id);
           if (index !== -1) {
-            this.students[index] = updatedStudent;
+            this.allStudents[index] = updatedStudent;
           }
+          this.applyClientSideFiltering();
           return updatedStudent;
         }
         return null;
@@ -393,9 +393,9 @@ export const useStudentsStore = defineStore("students", {
 
     // Local update fallback (when API is not available)
     updateStudentLocal(id: string, data: Partial<Student>): Student | null {
-      const index = this.students.findIndex((s) => s.id === id);
+      const index = this.allStudents.findIndex((s) => s.id === id);
       if (index !== -1) {
-        const existing = this.students[index];
+        const existing = this.allStudents[index];
         if (!existing) return null;
 
         const updatedData: Student = {
@@ -425,7 +425,8 @@ export const useStudentsStore = defineStore("students", {
           );
         }
 
-        this.students[index] = updatedData;
+        this.allStudents[index] = updatedData;
+        this.applyClientSideFiltering();
         return updatedData;
       }
       return null;
@@ -435,22 +436,24 @@ export const useStudentsStore = defineStore("students", {
       try {
         const success = await studentService.delete(id);
         if (success) {
-          this.students = this.students.filter((s) => s.id !== id);
+          this.allStudents = this.allStudents.filter((s) => s.id !== id);
+          this.applyClientSideFiltering();
         }
         return success;
       } catch {
         // Fallback to local delete if API fails
-        this.students = this.students.filter((s) => s.id !== id);
+        this.allStudents = this.allStudents.filter((s) => s.id !== id);
+        this.applyClientSideFiltering();
         return true;
       }
     },
 
     getStudentById(id: string) {
-      return this.students.find((s) => s.id === id);
+      return this.allStudents.find((s) => s.id === id);
     },
 
     filterStudents(searchQuery: string, status: string) {
-      return this.students.filter((student) => {
+      return this.allStudents.filter((student) => {
         const matchesSearch =
           student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           student.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -479,10 +482,11 @@ export const useStudentsStore = defineStore("students", {
           completedSessions,
         );
         if (updatedStudent) {
-          const index = this.students.findIndex((s) => s.id === id);
+          const index = this.allStudents.findIndex((s) => s.id === id);
           if (index !== -1) {
-            this.students[index] = updatedStudent;
+            this.allStudents[index] = updatedStudent;
           }
+          this.applyClientSideFiltering();
           return;
         }
       } catch {
@@ -490,8 +494,9 @@ export const useStudentsStore = defineStore("students", {
       }
 
       // Local progress update fallback
-      const student = this.students.find((s) => s.id === id);
-      if (student) {
+      const index = this.allStudents.findIndex((s) => s.id === id);
+      if (index !== -1) {
+        const student = this.allStudents[index];
         student.completedSessions = completedSessions;
         student.totalSessions =
           packageSessionMap[student.package] || student.totalSessions;
@@ -504,6 +509,7 @@ export const useStudentsStore = defineStore("students", {
         if (student.progress >= 100 && student.status !== "completed") {
           student.status = "completed";
         }
+        this.applyClientSideFiltering();
       }
     },
 
@@ -513,6 +519,7 @@ export const useStudentsStore = defineStore("students", {
 
     reset() {
       this.students = [...initialStudents];
+      this.allStudents = [...initialStudents];
       this.isLoading = false;
       this.error = null;
     },

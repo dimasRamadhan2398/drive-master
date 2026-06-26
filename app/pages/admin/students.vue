@@ -25,7 +25,7 @@ const newStudent = ref({
   status: "pending" as "active" | "pending",
 });
 
-// Use store's state instead of local refs for server-side pagination
+// Use store's state for server-side pagination
 const searchQuery = computed({
   get: () => studentsStore.searchQuery,
   set: (value) => studentsStore.setSearchQuery(value),

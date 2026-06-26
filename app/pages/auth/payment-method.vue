@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { z } from "zod";
-import type { FormSubmitEvent } from "@nuxt/ui";
 import { computed, reactive, ref, onMounted } from "vue";
+import { enrollmentService } from "~/services/enrollmentService";
+import { mapMethodIdToCode } from "~/services/paymentService";
+
 
 const { t } = useI18n()
 definePageMeta({
@@ -9,11 +11,18 @@ definePageMeta({
 });
 
 const route = useRoute();
-const router = useRouter();
 const showPrivacyModal = ref(false);
 const showTermsModal = ref(false);
+const authStore = useAuthStore();
+const paymentsStore = usePaymentsStore();
+const enrollmentsStore = useEnrollmentsStore();
+const packagesStore = usePackagesStore();
 
-const selectedPlan = computed(() => (route.query.plan as string) || "eight_package");
+// ── Resolved data ─────────────────────────────────────────────────────────────
+const resolvedEnrollmentId = ref<string | null>(null);
+const resolvedAmount = ref<number>(0);
+const resolvedPackageName = ref<string>("");
+const errorMessage = ref<string | null>(null);
 
 const paymentMethods = computed(() => [
   {
@@ -62,13 +71,53 @@ const formData = reactive({
   privacy: false,
 });
 
-// Isi otomatis dari data registrasi yang tersimpan di sessionStorage
-onMounted(() => {
-  if (import.meta.client) {
+// Pre-fill form & resolve enrollment/package info on mount
+onMounted(async () => {
+  // Pre-fill contact info
+  if (authStore.user?.email) {
+    formData.email = authStore.user.email;
+  } else if (import.meta.client) {
     const savedEmail = sessionStorage.getItem("dm_reg_email");
-    const savedPhone = sessionStorage.getItem("dm_reg_phone");
     if (savedEmail) formData.email = savedEmail;
+  }
+
+  if (authStore.user?.phoneNumber) {
+    formData.phone = authStore.user.phoneNumber;
+  } else if (import.meta.client) {
+    const savedPhone = sessionStorage.getItem("dm_reg_phone");
     if (savedPhone) formData.phone = savedPhone;
+  }
+
+  // Resolve enrollment ID: query param → sessionStorage
+  const enrollmentFromQuery = route.query.enrollment as string | undefined;
+  if (enrollmentFromQuery) {
+    resolvedEnrollmentId.value = enrollmentFromQuery;
+  } else if (import.meta.client) {
+    const stored = sessionStorage.getItem("dm_enrollment_id");
+    if (stored) resolvedEnrollmentId.value = stored;
+  }
+
+  // Fetch enrollment to get amount & package name
+  if (resolvedEnrollmentId.value) {
+    const enrollment = await enrollmentService.fetchById(resolvedEnrollmentId.value);
+    if (enrollment) {
+      resolvedAmount.value = enrollment.discountPrice || enrollment.price;
+      resolvedPackageName.value = enrollment.packageName;
+      return;
+    }
+  }
+
+  // Fallback: use packages store with plan UUID from query
+  const planId = route.query.plan as string | undefined;
+  if (planId) {
+    if (packagesStore.packages.length === 0) {
+      await packagesStore.fetchPackages();
+    }
+    const pkg = packagesStore.getPackageById(planId);
+    if (pkg) {
+      resolvedAmount.value = pkg.discountPrice || pkg.price;
+      resolvedPackageName.value = pkg.name;
+    }
   }
 });
 
@@ -76,53 +125,49 @@ const loading = ref(false);
 
 async function onSubmit() {
   loading.value = true;
+  errorMessage.value = null;
 
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1500));
+  try {
+    if (!authStore.userId) {
+      errorMessage.value = "You must be logged in to complete payment.";
+      return;
+    }
 
-  loading.value = false;
+    if (!resolvedEnrollmentId.value) {
+      errorMessage.value = "No enrollment found. Please go back and select a plan.";
+      return;
+    }
 
-  // // Redirect to payment page
-  // navigateTo(`/auth/payment?method=${formData.paymentMethod}&plan=${selectedPlan.value}&email=${formData.email}&phone=${formData.phone}`)
+    const paymentMethodCode = mapMethodIdToCode(formData.paymentMethod);
+
+    const payment = await paymentsStore.createPayment({
+      enrollmentId: resolvedEnrollmentId.value,
+      userId: authStore.userId,
+      amount: resolvedAmount.value,
+      paymentMethod: paymentMethodCode,
+    });
+
+    if (payment) {
+      // Store order ID for status tracking
+      if (import.meta.client) {
+        sessionStorage.setItem("dm_order_id", payment.orderId);
+      }
+
+      // If Midtrans returns a redirect URL, navigate there
+      if (payment.paymentUrl) {
+        window.location.href = payment.paymentUrl;
+      } else {
+        navigateTo(`/auth/payment-status?orderId=${payment.orderId}`);
+      }
+    } else {
+      errorMessage.value = paymentsStore.error || "Failed to create payment. Please try again.";
+    }
+  } finally {
+    loading.value = false;
+  }
 }
 
-const packagePrices = {
-  six_package: "Rp 1.750.000",
-  six_package_night: "Rp 1.850.000",
-  six_package_weekend: "Rp 1.850.000",
-  six_package_weekend_night: "Rp 1.950.000",
-  eight_package: "Rp 1.950.000",
-  eight_package_night: "Rp 2.100.000",
-  eight_package_weekend: "Rp 2.100.000",
-  eight_package_weekend_night: "Rp 2.250.000",
-  ten_package: "Rp 2.250.000",
-  ten_package_night: "Rp 2.450.000",
-  ten_package_weekend: "Rp 2.450.000",
-  ten_package_weekend_night: "Rp 2.650.000",
-  twelve_package: "Rp 2.650.000",
-  twelve_package_night: "Rp 2.900.000",
-  twelve_package_weekend: "Rp 2.900.000",
-  twelve_package_weekend_night: "Rp 3.150.000",
-};
 
-const packageNames = {
-  six_package: "6x Sessions",
-  six_package_night: "6x Sessions + Night Session",
-  six_package_weekend: "6x Sessions + Weekend Session",
-  six_package_weekend_night: "6x Sessions + Weekend & Night Session",
-  eight_package: "8x Sessions",
-  eight_package_night: "8x Sessions + Night Session",
-  eight_package_weekend: "8x Sessions + Weekend Session",
-  eight_package_weekend_night: "8x Sessions + Weekend & Night Session",
-  ten_package: "10x Sessions",
-  ten_package_night: "10x Sessions + Night Session",
-  ten_package_weekend: "10x Sessions + Weekend Session",
-  ten_package_weekend_night: "10x Sessions + Weekend & Night Session",
-  twelve_package: "12x Sessions",
-  twelve_package_night: "12x Sessions + Night Session",
-  twelve_package_weekend: "12x Sessions + Weekend Session",
-  twelve_package_weekend_night: "12x Sessions + Weekend & Night Session",
-};
 </script>
 
 <template>
@@ -136,8 +181,8 @@ const packageNames = {
         </div>
         <h1 class="text-2xl font-bold">{{ t('auth.completePurchase') }}</h1>
         <p class="text-muted mt-2">
-          {{ packageNames[selectedPlan as keyof typeof packageNames] }} -
-          {{ packagePrices[selectedPlan as keyof typeof packagePrices] }}
+          <span v-if="resolvedPackageName">{{ resolvedPackageName }} - Rp {{ resolvedAmount.toLocaleString('id-ID') }}</span>
+          <span v-else class="text-muted italic">Loading package info…</span>
         </p>
       </div>
 
@@ -550,6 +595,15 @@ const packageNames = {
               </template>
             </UCheckbox>
           </UFormField>
+
+          <!-- Error Message -->
+          <UAlert
+            v-if="errorMessage"
+            icon="i-lucide-alert-circle"
+            color="error"
+            :description="errorMessage"
+            class="mt-2"
+          />
 
           <!-- Actions -->
           <div class="flex gap-3 pt-4 border-t">

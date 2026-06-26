@@ -24,7 +24,7 @@ type IEnrollmentRepository interface {
 	FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.Enrollment, error)
 	FindByUserIDPaginated(ctx context.Context, userID uuid.UUID, page, limit int) ([]models.Enrollment, error)
 	FindByStatus(ctx context.Context, status models.EnrollmentStatus) ([]models.Enrollment, int64, error)
-	FindByPackageID(ctx context.Context, packageID uint) ([]models.Enrollment, error)
+	FindByPackageID(ctx context.Context, packageID uuid.UUID) ([]models.Enrollment, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status models.EnrollmentStatus) error
 	MarkAsPaid(ctx context.Context, id uuid.UUID, paidAt time.Time, totalPrice float64) error
 	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
@@ -140,7 +140,7 @@ func (r *EnrollmentRepository) FindByStatus(ctx context.Context, status models.E
 	return enrollments, int64(len(enrollments)), nil
 }
 
-func (r *EnrollmentRepository) FindByPackageID(ctx context.Context, packageID uint) ([]models.Enrollment, error) {
+func (r *EnrollmentRepository) FindByPackageID(ctx context.Context, packageID uuid.UUID) ([]models.Enrollment, error) {
 	var enrollments []models.Enrollment
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"package_id": packageID}).

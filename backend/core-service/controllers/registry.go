@@ -14,6 +14,7 @@ type IControllerRegistry interface {
 	GetRegionController() IRegionController
 	GetCarController() ICarController
 	GetPackageController() IPackageController
+	GetAddOnController() IAddOnController
 	GetArticleController() IArticleController
 	GetAnalyticsController() IAnalyticsController
 	GetSalesController() ISalesController
@@ -58,6 +59,11 @@ func (r *Registry) GetCarController() ICarController {
 // GetPackageController returns the package controller
 func (r *Registry) GetPackageController() IPackageController {
 	return NewPackageController(r.svcRegistry.GetPackageService())
+}
+
+// GetAddOnController returns the add-on controller
+func (r *Registry) GetAddOnController() IAddOnController {
+	return NewAddOnController(r.svcRegistry.GetAddOnService())
 }
 
 // GetArticleController returns the article controller
