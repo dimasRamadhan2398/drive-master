@@ -58,10 +58,7 @@ function changeStatus(
 }
 
 function handleAddTestimonial(testimonial: Testimonial) {
-  // Add the new testimonial from API response to the store
-  testimonialsStore.addTestimonial(testimonial);
-  // Optionally refresh from API
-  // testimonialsStore.fetchTestimonials();
+  // The testimonial has already been created and added to the store by AddTestimonialModal.vue
 }
 
 function handleEditTestimonial(testimonial: Testimonial) {
@@ -356,10 +353,10 @@ onMounted(() => {
                           ],
                           [
                             {
-                              label: 'Publish',
+                              label: testimonial.status === 'published' ? 'Pending' : 'Publish',
                               icon: 'i-lucide-check-circle',
                               onSelect: () =>
-                                changeStatus(testimonial.id!, 'published'),
+                                changeStatus(testimonial.id!, testimonial.status === 'published' ? 'pending' : 'published'),
                             },
                             {
                               label: 'Archive',

@@ -1,23 +1,14 @@
-import type { BlogPostMedia } from "~/services/contentService";
+import type { Publishing, Attractiveness } from "~/services/contentService";
 
+/** PostFormData is the shape passed into PostBlogModal for edit mode */
 export interface PostFormData {
-  id: number;
+  id: string;
   title: string;
   slug: string;
   author: string;
   leadParagraph: string;
   content: string;
-  status: "draft" | "published" | "archived";
-  media: BlogPostMedia[];
-  publishing: {
-    status: "draft" | "published" | "archived";
-    publishedAt?: string;
-    scheduledAt?: string;
-  };
-  attractiveness: {
-    isFeatured: boolean;
-    isSpotlight: boolean;
-    priority: number;
-    highlight: boolean;
-  };
+  featuredImage: string;
+  publishing: Publishing;
+  attractiveness: Attractiveness;
 }

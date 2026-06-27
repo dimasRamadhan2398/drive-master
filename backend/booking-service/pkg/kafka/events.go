@@ -388,8 +388,7 @@ func (r *EventPublisher) StartConsumer(ctx context.Context) error {
 		return nil
 	}
 
-	// Register a single handler that dispatches to all registered handlers
-	r.consumer.RegisterHandler(r.topic, NewJSONMessageHandler(func(ctx context.Context, msg LogMessage) error {
+	handler := NewJSONMessageHandler(func(ctx context.Context, msg LogMessage) error {
 		if eventData, ok := msg.Fields["event"]; ok {
 			if eventBytes, err := json.Marshal(eventData); err == nil {
 				var event Event
@@ -403,7 +402,11 @@ func (r *EventPublisher) StartConsumer(ctx context.Context) error {
 			}
 		}
 		return nil
-	}))
+	})
+
+	for _, topic := range r.consumer.topics {
+		r.consumer.RegisterHandler(topic, handler)
+	}
 
 	return r.consumer.Start()
 }

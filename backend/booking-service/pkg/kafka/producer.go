@@ -70,16 +70,33 @@ func NewProducer(cfg Config, logger *zap.Logger) (*Producer, error) {
 	var asyncProducer sarama.AsyncProducer
 	var err error
 
+	// Always initialize sync producer for synchronous reliability fallback/events
+	producer, err = sarama.NewSyncProducer(cfg.Brokers, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Kafka sync producer: %w", err)
+	}
+
 	if cfg.UseAsync {
 		asyncProducer, err = sarama.NewAsyncProducer(cfg.Brokers, config)
 		if err != nil {
+			producer.Close()
 			return nil, fmt.Errorf("failed to create Kafka async producer: %w", err)
 		}
-	} else {
-		producer, err = sarama.NewSyncProducer(cfg.Brokers, config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create Kafka sync producer: %w", err)
-		}
+
+		// Drain successes and errors to prevent blocking/memory leaks
+		go func(ap sarama.AsyncProducer, l *zap.Logger) {
+			for {
+				select {
+				case <-ap.Successes():
+					// Message delivered successfully, do nothing
+				case err, ok := <-ap.Errors():
+					if !ok {
+						return
+					}
+					l.Error("Kafka async producer error", zap.Error(err))
+				}
+			}
+		}(asyncProducer, logger)
 	}
 
 	logger.Info("Kafka producer initialized",
@@ -246,10 +263,11 @@ func (p *Producer) Close() error {
 	}
 
 	var err error
+	if p.producer != nil {
+		err = p.producer.Close()
+	}
 	if p.useAsync && p.asyncProducer != nil {
 		p.asyncProducer.AsyncClose()
-	} else if p.producer != nil {
-		err = p.producer.Close()
 	}
 
 	if err != nil {

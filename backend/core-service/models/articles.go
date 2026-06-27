@@ -21,7 +21,7 @@ type Article struct {
 
 	// === Content Fields ===
 	Title         string `json:"title" gorm:"size:255;not null"`
-	Slug          string `json:"slug" gorm:"size:255;uniqueIndex;not null"`
+	Slug          string `json:"slug" gorm:"size:255;uniqueIndex:idx_articles_slug,where:deleted_at IS NULL;not null"`
 	LeadParagraph string `json:"leadParagraph" gorm:"type:text"` // highlighted paragraph
 	Content       string `json:"content" gorm:"type:text"`       // article content (markdown/HTML)
 	Footer        string `json:"footer" gorm:"type:text"`        // author info, related links

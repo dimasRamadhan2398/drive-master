@@ -66,7 +66,9 @@ func (r *ScheduleRepository) Delete(ctx context.Context, schedule *dto.Schedule)
 
 func (r *ScheduleRepository) FindAll(ctx context.Context) ([]dto.Schedule, error) {
 	var schedules []dto.Schedule
-	opts := base.NewQueryOptions().WithOrder("date ASC, time ASC")
+	opts := base.NewQueryOptions()
+	opts.Order = "date ASC, time ASC"
+	opts.Limit = 0 // No limit for fetching all records
 	if err := r.BaseRepository.FindMany(&dto.Schedule{}, &schedules, opts); err != nil {
 		return nil, err
 	}

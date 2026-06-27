@@ -29,6 +29,7 @@ func (r *CertificationRoute) Run() {
 		certGroup.POST("", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().IssueCertificate)
 		certGroup.GET("/member/:memberId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetMemberCertificates)
 		certGroup.DELETE("/:id", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().RevokeCertificate)
+		certGroup.GET("", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetAllCertificates)
 
 		// Member routes - View and download their certificates
 		certGroup.GET("/:id", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertificate)

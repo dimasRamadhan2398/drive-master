@@ -20,6 +20,7 @@ type ICertificationService interface {
 	RevokeCertificate(ctx context.Context, certID uuid.UUID) error
 	GetMemberCertificates(ctx context.Context, memberID uuid.UUID) ([]dto.MemberCertificateResponse, error)
 	GetCertificateStats(ctx context.Context) (*dto.CertificateStatsResponse, error)
+	GetAllCertificates(ctx context.Context) ([]dto.MemberCertificateResponse, error)
 
 	// Member operations
 	GetCertificate(ctx context.Context, certID uuid.UUID) (*dto.MemberCertificateDetail, error)
@@ -46,13 +47,28 @@ func NewCertificationService(
 
 // IssueCertificate creates a new certificate for a member (admin action)
 func (s *CertificationService) IssueCertificate(ctx context.Context, input dto.IssueMemberCertificateInput) (*dto.IssueMemberCertificateResponse, error) {
-	// Check if certificate already exists for this entitlement
-	existingCerts, err := s.repo.FindAllByMemberID(ctx, input.MemberID)
-	if err == nil {
-		for _, cert := range existingCerts {
-			if cert.Notes != "" && containsString(cert.Notes, input.EntitlementID.String()) {
-				return nil, fmt.Errorf("certificate already issued for this entitlement")
+	// Check via the proper FK — if a cert already exists for this entitlement, skip.
+	if input.EntitlementID != uuid.Nil {
+		existing, err := s.repo.FindByEntitlementID(ctx, input.EntitlementID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check existing certificate: %w", err)
+		}
+		if existing != nil {
+			// Return the already-issued cert details instead of an error so callers
+			// can be idempotent (e.g. the entitlement completion listener).
+			user, _ := s.userRepo.FindByID(ctx, existing.MemberID)
+			memberName := ""
+			if user != nil {
+				memberName = fmt.Sprintf("%s %s", user.FirstName, user.LastName)
 			}
+			return &dto.IssueMemberCertificateResponse{
+				ID:         existing.ID,
+				CertNumber: existing.CertNumber,
+				MemberID:   existing.MemberID,
+				IssuedDate: existing.IssuedDate,
+				IssuedBy:   existing.IssuedBy,
+				Message:    fmt.Sprintf("Certificate already issued to %s for completing %s", memberName, input.PackageName),
+			}, nil
 		}
 	}
 
@@ -66,18 +82,26 @@ func (s *CertificationService) IssueCertificate(ctx context.Context, input dto.I
 	certNumber := fmt.Sprintf("CERT-%s-%s", input.PackageID.String()[:8], input.MemberID.String()[:8])
 	now := time.Now()
 
+	// Capture entitlement ID as a pointer for the FK field
+	var entitlementID *uuid.UUID
+	if input.EntitlementID != uuid.Nil {
+		id := input.EntitlementID
+		entitlementID = &id
+	}
+
 	cert := &models.Certification{
-		ID:         uuid.New(),
-		MemberID:   input.MemberID,
-		CertType:   "package_completion",
-		CertNumber: certNumber,
-		IssuedBy:   input.PackageName,
-		IssuedDate: now,
-		Status:     models.CertificationStatusVerified,
-		Notes:      fmt.Sprintf("Package: %s | Entitlement: %s", input.PackageName, input.EntitlementID.String()),
-		VerifiedAt: &now,
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:            uuid.New(),
+		MemberID:      input.MemberID,
+		EntitlementID: entitlementID,
+		CertType:      "package_completion",
+		CertNumber:    certNumber,
+		IssuedBy:      input.PackageName,
+		IssuedDate:    now,
+		Status:        models.CertificationStatusVerified,
+		Notes:         fmt.Sprintf("Package: %s | Entitlement: %s", input.PackageName, input.EntitlementID.String()),
+		VerifiedAt:    &now,
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 
 	if err := s.repo.Create(ctx, cert); err != nil {
@@ -357,6 +381,62 @@ func (s *CertificationService) GetCertificateStats(ctx context.Context) (*dto.Ce
 		MonthlyGrowth:    monthlyGrowth,
 		GrowthPercentage: monthlyGrowth,
 	}, nil
+}
+
+// GetAllCertificates retrieves all certificates for admin view
+func (s *CertificationService) GetAllCertificates(ctx context.Context) ([]dto.MemberCertificateResponse, error) {
+	certs, err := s.repo.FindAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all certificates: %w", err)
+	}
+
+	users, err := s.userRepo.FindAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch users: %w", err)
+	}
+
+	userMap := make(map[uuid.UUID]models.User)
+	for _, u := range users {
+		userMap[u.ID] = u
+	}
+
+	responses := make([]dto.MemberCertificateResponse, 0, len(certs))
+	for _, cert := range certs {
+		status := "issued"
+		if cert.Status == models.CertificationStatusRevoked {
+			status = "revoked"
+		} else if cert.Status == models.CertificationStatusExpired {
+			status = "expired"
+		} else if cert.Status == models.CertificationStatusPending {
+			status = "eligible"
+		}
+
+		completedAt := ""
+		if cert.VerifiedAt != nil {
+			completedAt = cert.VerifiedAt.Format("2006-01-02")
+		}
+
+		memberName := "Unknown"
+		memberEmail := ""
+		if user, exists := userMap[cert.MemberID]; exists {
+			memberName = fmt.Sprintf("%s %s", user.FirstName, user.LastName)
+			memberEmail = user.EmailAddress
+		}
+
+		responses = append(responses, dto.MemberCertificateResponse{
+			ID:          cert.ID,
+			MemberID:    cert.MemberID,
+			MemberName:  memberName,
+			MemberEmail: memberEmail,
+			PackageName: cert.IssuedBy,
+			CertNumber:  cert.CertNumber,
+			IssuedDate:  cert.IssuedDate.Format("2006-01-02"),
+			CompletedAt: completedAt,
+			Status:      status,
+		})
+	}
+
+	return responses, nil
 }
 
 // containsString checks if a string contains a substring

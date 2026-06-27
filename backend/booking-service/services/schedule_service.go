@@ -250,16 +250,14 @@ func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.
 		match := true
 
 		if params.Date != "" {
-			parsedDate, _ := time.Parse("2006-01-02", params.Date)
-			if !sched.Date.Equal(parsedDate) {
+			if sched.Date.Format("2006-01-02") != params.Date {
 				match = false
 			}
 		}
 
 		if params.StartDate != "" && params.EndDate != "" {
-			startDate, _ := time.Parse("2006-01-02", params.StartDate)
-			endDate, _ := time.Parse("2006-01-02", params.EndDate)
-			if sched.Date.Before(startDate) || sched.Date.After(endDate) {
+			schedDateStr := sched.Date.Format("2006-01-02")
+			if schedDateStr < params.StartDate || schedDateStr > params.EndDate {
 				match = false
 			}
 		} 
@@ -336,7 +334,20 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 		return nil, errors.New("entitlement not found")
 	}
 
-	if entitlement.UsedSessions >= entitlement.TotalSessions {
+	// Count existing non-cancelled sessions for this entitlement to verify remaining count
+	sessions, err := s.sessionRepo.FindByEntitlementID(ctx, req.EntitlementID)
+	if err != nil {
+		return nil, err
+	}
+
+	activeCount := 0
+	for _, sess := range sessions {
+		if sess.Status != "cancelled" {
+			activeCount++
+		}
+	}
+
+	if activeCount >= entitlement.TotalSessions {
 		return nil, errors.New("entitlement has no sessions remaining")
 	}
 
@@ -364,11 +375,6 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 	})
 	if err != nil {
 		log.Printf("Failed to create driving session: %v", err)
-	}
-
-	// Increment used sessions
-	if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, entitlement.UsedSessions+1); err != nil {
-		log.Printf("Failed to increment used sessions: %v", err)
 	}
 
 	// Reload schedule
@@ -491,7 +497,12 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
-				fetchErr = fmt.Errorf("failed to fetch user %s: %w", userID, err)
+				log.Printf("Warning: failed to fetch user %s, using fallback: %v", userID, err)
+				userMap[userID] = uClient.UserInfo{
+					ID:        parsedID,
+					FirstName: "Unknown",
+					LastName:  "User",
+				}
 				return
 			}
 			userMap[userID] = *info

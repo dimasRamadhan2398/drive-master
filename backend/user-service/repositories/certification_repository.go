@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"time"
 	"user-service/models"
 	"user-service/pkg/base"
@@ -18,8 +19,11 @@ type ICertificationRepository interface {
 	FindByInstructorID(ctx context.Context, instructorID uuid.UUID, page, limit int) ([]models.Certification, int64, error)
 	FindByMemberID(ctx context.Context, memberID uuid.UUID, page, limit int) ([]models.Certification, int64, error)
 	FindAllByMemberID(ctx context.Context, memberID uuid.UUID) ([]models.Certification, error)
+	FindAll(ctx context.Context) ([]models.Certification, error)
 	FindByMemberIDAndCertID(ctx context.Context, memberID, certID uuid.UUID) (*models.Certification, error)
 	FindByInstructorAndID(ctx context.Context, instructorID, certID uuid.UUID) (*models.Certification, error)
+	// FindByEntitlementID returns the certificate linked to the given entitlement, or nil if none exists yet.
+	FindByEntitlementID(ctx context.Context, entitlementID uuid.UUID) (*models.Certification, error)
 	CountByInstructorID(ctx context.Context, instructorID uuid.UUID) (int64, error)
 	CountByMemberID(ctx context.Context, memberID uuid.UUID) (int64, error)
 	CountByDateRange(ctx context.Context, startDate, endDate time.Time) (int64, error)
@@ -93,6 +97,18 @@ func (r *CertificationRepository) FindAllByMemberID(ctx context.Context, memberI
 	return certs, nil
 }
 
+func (r *CertificationRepository) FindAll(ctx context.Context) ([]models.Certification, error) {
+	var certs []models.Certification
+
+	if err := r.BaseRepository.FindWithOptions(&models.Certification{}, &certs, &base.QueryOptions{
+		Order: "created_at DESC",
+	}); err != nil {
+		return nil, err
+	}
+
+	return certs, nil
+}
+
 func (r *CertificationRepository) FindByMemberIDAndCertID(ctx context.Context, memberID, certID uuid.UUID) (*models.Certification, error) {
 	var cert models.Certification
 	if err := r.BaseRepository.FindWithOptions(&models.Certification{}, &cert, &base.QueryOptions{
@@ -139,6 +155,20 @@ func (r *CertificationRepository) FindByInstructorAndID(ctx context.Context, ins
 		},
 		Limit: 1,
 	}); err != nil {
+		return nil, err
+	}
+	return &cert, nil
+}
+
+// FindByEntitlementID returns the certificate linked to the given entitlement ID.
+// Returns nil, nil when no certificate has been issued yet for that entitlement.
+func (r *CertificationRepository) FindByEntitlementID(ctx context.Context, entitlementID uuid.UUID) (*models.Certification, error) {
+	var cert models.Certification
+	err := r.DB.Where("entitlement_id = ?", entitlementID).First(&cert).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &cert, nil

@@ -118,8 +118,10 @@ func (r *Registry) GetCertificationService() ICertificationService {
 
 func (r *Registry) GetEntitlementService() IEntitlementService {
 	certService := r.GetCertificationService()
-	// Initialize the completion listener
-	listener := listeners.NewEntitlementCompletedListener(certService, r.eventPublisher)
+	// Initialize the completion listener.
+	// Passing certRepo allows the listener to check for an existing certificate
+	// via the entitlement_id FK before attempting issuance (idempotent behaviour).
+	listener := listeners.NewEntitlementCompletedListener(certService, r.repoRegistry.GetCertification(), r.eventPublisher)
 	return NewEntitlementService(
 		r.repoRegistry.GetEntitlement(),
 		r.repoRegistry.GetMember(),

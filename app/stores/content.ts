@@ -1,8 +1,15 @@
 import { defineStore } from "pinia";
 import {
-  type BlogPostMedia,
   contentService,
+  dataUriToFileUpload,
+  type Publishing,
+  type Attractiveness,
+  type FileUpload,
 } from "../services/contentService";
+
+// ============================================================
+// Local types
+// ============================================================
 
 export interface PageSection {
   id: string;
@@ -20,39 +27,31 @@ export interface Page {
   sections: PageSection[];
 }
 
+/** Internal BlogPost representation used by the store / UI */
 export interface BlogPost {
-  id: number;
+  id: string;
   title: string;
-  slug?: string;
+  slug: string;
   author: string;
-  leadParagraph?: string;
-  featuredImage?: string;
-  excerpt?: string;
+  leadParagraph: string;
+  featuredImage: string;
+  excerpt: string;
   date: string;
   status: "published" | "draft" | "archived";
   views: number;
   content: string;
-  media: BlogPostMedia[];
-  publishing: {
-    status: "draft" | "published" | "archived";
-    publishedAt?: string;
-    scheduledAt?: string;
-  };
-  attractiveness: {
-    isFeatured: boolean;
-    isSpotlight: boolean;
-    priority: number;
-    highlight: boolean;
-  };
-  viewCount?: number;
-  likeCount?: number;
-  shareCount?: number;
-  readingTime?: number;
-  createdAt?: string;
-  updatedAt?: string;
+  publishing: Publishing;
+  attractiveness: Attractiveness;
+  viewCount: number;
+  likeCount: number;
+  readingTime: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
+// -------------------------------------------------------
 // FAQ Types
+// -------------------------------------------------------
 export interface Faq {
   id: string;
   question: string;
@@ -76,6 +75,10 @@ export interface UpdateFaqData {
   sortOrder?: number;
   isActive?: boolean;
 }
+
+// ============================================================
+// Store state
+// ============================================================
 
 interface ContentState {
   pages: Page[];
@@ -105,33 +108,10 @@ const initialPages: Page[] = [
   },
 ];
 
-const initialBlogPosts: BlogPost[] = [
-  {
-    id: 1,
-    title: "Welcome to Our New Blog!",
-    author: "Admin",
-    date: "Apr 10, 2026",
-    status: "published",
-    views: 120,
-    content:
-      "This is the first post on our brand new blog. Stay tuned for more updates!",
-    media: [],
-    publishing: {
-      status: "published",
-    },
-    attractiveness: {
-      isFeatured: false,
-      isSpotlight: false,
-      priority: 0,
-      highlight: false,
-    },
-  },
-];
-
 export const useContentStore = defineStore("content", {
   state: (): ContentState => ({
     pages: initialPages,
-    blogPosts: initialBlogPosts,
+    blogPosts: [],
     faqs: [],
     currentFaq: null,
     isLoading: false,
@@ -144,30 +124,25 @@ export const useContentStore = defineStore("content", {
     draftPages: (state) => state.pages.filter((p) => p.status === "draft"),
     publishedPosts: (state) =>
       state.blogPosts.filter((p) => p.status === "published"),
-    draftPosts: (state) => state.blogPosts.filter((p) => p.status === "draft"),
+    draftPosts: (state) =>
+      state.blogPosts.filter((p) => p.status === "draft"),
     totalPages: (state) => state.pages.length,
     totalPosts: (state) => state.blogPosts.length,
-    getPageById: (state) => (id: number) =>
-      state.pages.find((p) => p.id === id),
-    getPageBySlug: (state) => (slug: string) =>
-      state.pages.find((p) => p.slug === slug),
-    getPostById: (state) => (id: number) =>
-      state.blogPosts.find((p) => p.id === id),
+    getPageById: (state) => (id: number) => state.pages.find((p) => p.id === id),
+    getPageBySlug: (state) => (slug: string) => state.pages.find((p) => p.slug === slug),
+    getPostById: (state) => (id: string) => state.blogPosts.find((p) => p.id === id),
     // FAQ getters
     activeFaqs: (state) => state.faqs.filter((f) => f.isActive),
-    sortedFaqs: (state) =>
-      [...state.faqs].sort((a, b) => a.sortOrder - b.sortOrder),
+    sortedFaqs: (state) => [...state.faqs].sort((a, b) => a.sortOrder - b.sortOrder),
     totalFaqs: (state) => state.faqs.length,
     getFaqById: (state) => (id: string) => state.faqs.find((f) => f.id === id),
   },
 
   actions: {
+    // ----------------------------------------------------------
     // Page actions
-    addPage(data: {
-      title: string;
-      slug: string;
-      status: "published" | "draft";
-    }) {
+    // ----------------------------------------------------------
+    addPage(data: { title: string; slug: string; status: "published" | "draft" }) {
       const newId = Math.max(...this.pages.map((p) => p.id), 0) + 1;
       const newPage: Page = {
         ...data,
@@ -211,55 +186,69 @@ export const useContentStore = defineStore("content", {
       return null;
     },
 
+    // ----------------------------------------------------------
     // Blog Post actions
+    // ----------------------------------------------------------
+
+    /**
+     * Create a new blog post. Sends a JSON payload matching Go's
+     * CreateBlogPostRequest. If featuredImage is a data URI string,
+     * it is converted to a FileUpload object for upload.
+     */
     async addPost(data: {
       title: string;
       slug?: string;
       author?: string;
+      authorId: string;
       leadParagraph?: string;
+      /** Either a data URI (newly selected file) or an existing URL */
       featuredImage?: File | string;
+      /** Raw filename of the selected file (needed for format validation) */
+      featuredImageFileName?: string;
       content?: string;
       status?: "draft" | "published" | "archived";
+      publishing?: Partial<Publishing>;
+      attractiveness?: Partial<Attractiveness>;
     }) {
       this.isLoading = true;
       try {
-        // Get authorId from auth store
-        const authStore = useAuthStore();
-        const authorId = authStore.userId;
-
-        // Convert to FormData for file upload support
-        const formData = new FormData();
-        formData.append("title", data.title);
-        if (data.slug) formData.append("slug", data.slug);
-        formData.append("authorId", authorId || "");
-        if (data.leadParagraph) formData.append("leadParagraph", data.leadParagraph);
-        if (data.content) formData.append("content", data.content);
-        if (data.featuredImage) {
-          formData.append("featuredImage", data.featuredImage);
+        // Build featuredImage FileUpload if a data URI was provided
+        let featuredImagePayload: FileUpload | undefined;
+        if (data.featuredImage && typeof data.featuredImage === "string") {
+          const parsed = dataUriToFileUpload(
+            data.featuredImage,
+            data.featuredImageFileName || "image.jpg",
+          );
+          if (parsed) featuredImagePayload = parsed;
+          // If not a data URI it's an existing URL – skip (backend ignores it)
         }
-        formData.append("status", data.status || "draft");
 
-        const created = await contentService.createBlogPost(formData);
+        const status = data.status || data.publishing?.status || "draft";
+
+        const created = await contentService.createBlogPost({
+          title: data.title,
+          slug: data.slug,
+          author: data.author,
+          authorId: data.authorId,
+          leadParagraph: data.leadParagraph,
+          content: data.content,
+          status,
+          featuredImage: featuredImagePayload,
+          publishing: {
+            status: status as "draft" | "published" | "archived",
+            publishedAt: data.publishing?.publishedAt ?? null,
+            scheduledAt: data.publishing?.scheduledAt ?? null,
+          },
+          attractiveness: {
+            isFeatured: data.attractiveness?.isFeatured ?? false,
+            isSpotlight: data.attractiveness?.isSpotlight ?? false,
+            priority: data.attractiveness?.priority ?? 0,
+            highlight: data.attractiveness?.highlight ?? false,
+          },
+        });
 
         if (created) {
-          const newPost: BlogPost = {
-            id: created.id as any,
-            title: created.title,
-            slug: created.slug,
-            author: "Admin",
-            leadParagraph: (created as any).leadParagraph || "",
-            featuredImage: (created as any).featuredImage || "",
-            content: created.content,
-            excerpt: created.excerpt,
-            date: this.formatDate(new Date(created.createdAt)),
-            status: created.publishing?.status || "draft",
-            views: created.viewCount || 0,
-            media: created.media || [],
-            publishing: created.publishing,
-            attractiveness: created.attractiveness,
-            createdAt: created.createdAt,
-            updatedAt: created.updatedAt,
-          };
+          const newPost = this._mapResponseToPost(created);
           this.blogPosts.unshift(newPost);
           return newPost;
         }
@@ -272,59 +261,75 @@ export const useContentStore = defineStore("content", {
       return null;
     },
 
-    async updatePost(id: string | number, data: {
-      title?: string;
-      slug?: string;
-      author?: string;
-      leadParagraph?: string;
-      featuredImage?: File | string;
-      content?: string;
-      status?: "draft" | "published" | "archived";
-    }) {
+    /**
+     * Update an existing blog post. Same JSON payload approach.
+     */
+    async updatePost(
+      id: string,
+      data: {
+        title?: string;
+        slug?: string;
+        author?: string;
+        authorId: string;
+        leadParagraph?: string;
+        /** Either a data URI (new upload) or an existing URL (no-op) */
+        featuredImage?: File | string;
+        featuredImageFileName?: string;
+        content?: string;
+        status?: "draft" | "published" | "archived";
+        publishing?: Partial<Publishing>;
+        attractiveness?: Partial<Attractiveness>;
+      },
+    ) {
       this.isLoading = true;
       try {
-        // Get authorId from auth store
-        const authStore = useAuthStore();
-        const authorId = authStore.userId;
-
-        // Convert to FormData for file upload support
-        const formData = new FormData();
-        if (data.title !== undefined) formData.append("title", data.title);
-        if (data.slug !== undefined) formData.append("slug", data.slug);
-        formData.append("authorId", authorId || "");
-        if (data.leadParagraph !== undefined) formData.append("leadParagraph", data.leadParagraph);
-        if (data.content !== undefined) formData.append("content", data.content);
-        if (data.featuredImage !== undefined) {
-          formData.append("featuredImage", data.featuredImage);
+        let featuredImagePayload: FileUpload | undefined;
+        if (data.featuredImage && typeof data.featuredImage === "string") {
+          const parsed = dataUriToFileUpload(
+            data.featuredImage,
+            data.featuredImageFileName || "image.jpg",
+          );
+          if (parsed) featuredImagePayload = parsed;
         }
-        if (data.status !== undefined) formData.append("status", data.status);
 
-        const updated = await contentService.updateBlogPost(String(id), formData);
+        const status = data.status || data.publishing?.status;
+
+        const updated = await contentService.updateBlogPost(id, {
+          title: data.title,
+          slug: data.slug,
+          author: data.author,
+          authorId: data.authorId,
+          leadParagraph: data.leadParagraph,
+          content: data.content,
+          status,
+          featuredImage: featuredImagePayload,
+          publishing: data.publishing
+            ? {
+                status: (data.publishing.status || status || "draft") as
+                  | "draft"
+                  | "published"
+                  | "archived",
+                publishedAt: data.publishing.publishedAt ?? null,
+                scheduledAt: data.publishing.scheduledAt ?? null,
+              }
+            : undefined,
+          attractiveness: data.attractiveness
+            ? {
+                isFeatured: data.attractiveness.isFeatured ?? false,
+                isSpotlight: data.attractiveness.isSpotlight ?? false,
+                priority: data.attractiveness.priority ?? 0,
+                highlight: data.attractiveness.highlight ?? false,
+              }
+            : undefined,
+        });
 
         if (updated) {
           const index = this.blogPosts.findIndex((p) => p.id === id);
+          const updatedPost = this._mapResponseToPost(updated);
           if (index !== -1) {
-            const existing = this.blogPosts[index];
-            if (!existing) return null;
-            this.blogPosts[index] = {
-              ...existing,
-              title: updated.title,
-              slug: updated.slug,
-              author: "Admin",
-              leadParagraph: (updated as any).leadParagraph ?? existing.leadParagraph,
-              featuredImage: (updated as any).featuredImage ?? existing.featuredImage,
-              content: updated.content,
-              excerpt: updated.excerpt,
-              date: this.formatDate(new Date(updated.updatedAt)),
-              status: (updated.publishing?.status as any) || existing.status,
-              views: updated.viewCount || existing.views,
-              media: updated.media || existing.media,
-              publishing: (updated.publishing as any) || existing.publishing,
-              attractiveness: updated.attractiveness || existing.attractiveness,
-              updatedAt: updated.updatedAt,
-            };
-            return this.blogPosts[index];
+            this.blogPosts[index] = updatedPost;
           }
+          return updatedPost;
         }
       } catch (e) {
         console.error("Failed to update blog post:", e);
@@ -335,10 +340,10 @@ export const useContentStore = defineStore("content", {
       return null;
     },
 
-    async deletePost(id: string | number) {
+    async deletePost(id: string) {
       this.isLoading = true;
       try {
-        const success = await contentService.deleteBlogPost(String(id));
+        const success = await contentService.deleteBlogPost(id);
         if (success) {
           this.blogPosts = this.blogPosts.filter((p) => p.id !== id);
           return true;
@@ -350,33 +355,6 @@ export const useContentStore = defineStore("content", {
         this.isLoading = false;
       }
       return false;
-    },
-
-    togglePostStatus(id: number) {
-      const post = this.blogPosts.find((p) => p.id === id);
-      if (post) {
-        post.status = post.status === "published" ? "draft" : "published";
-        post.date = this.formatDate(new Date());
-        return post.status;
-      }
-      return null;
-    },
-
-    incrementPostViews(id: number) {
-      const post = this.blogPosts.find((p) => p.id === id);
-      if (post) {
-        post.views++;
-      }
-    },
-
-    async incrementBlogPostViewCount(id: number) {
-      try {
-        await contentService.incrementBlogPostViewCount(String(id));
-        // Also increment locally
-        this.incrementPostViews(id);
-      } catch {
-        // Silent fail for view count - don't disrupt user experience
-      }
     },
 
     async fetchBlogPosts(
@@ -391,64 +369,109 @@ export const useContentStore = defineStore("content", {
       this.error = null;
       try {
         const result = await contentService.fetchBlogPosts(params);
-        // Use the posts array from the result
-        const posts = result?.posts || [];
-        this.blogPosts = posts.map((p: any) => {
-          console.log("Fetched blog post:", {
-            id: p.id,
-            title: p.title,
-            slug: p.slug || "",
-            author: p.author || "Admin",
-            status: p.publishing?.status,
-            viewCount: p.viewCount,
-            createdAt: p.createdAt,
-            leadParagraph: p.leadParagraph || "",
-            featuredImage: p.featuredImage || "",
-          });
-          return {
-            id: p.id,
-            title: p.title,
-            slug: p.slug || "",
-            author: "Admin",
-            leadParagraph: p.leadParagraph || "",
-            featuredImage: p.featuredImage || "",
-            excerpt: p.excerpt || p.leadParagraph || "",
-            date: this.formatDate(new Date(p.createdAt)),
-            status: (p.publishing?.status as "published" | "draft" | "archived") || "draft",
-            views: p.viewCount || 0,
-            viewCount: p.viewCount || 0,
-            likeCount: p.likeCount || 0,
-            readingTime: p.readingTime || 1,
-            media: [],
-            publishing: {
-              status: (p.publishing?.status as "published" | "draft" | "archived") || "draft",
-              publishedAt: p.publishing?.publishedAt || undefined,
-              scheduledAt: p.publishing?.scheduledAt || undefined,
-            },
-            attractiveness: {
-              isFeatured: p.attractiveness?.isFeatured || false,
-              isSpotlight: p.attractiveness?.isSpotlight || false,
-              priority: p.attractiveness?.priority || 0,
-              highlight: p.attractiveness?.highlight || false,
-            },
-            createdAt: p.createdAt,
-            updatedAt: p.updatedAt,
-          };
-        });
+        this.blogPosts = (result?.posts ?? []).map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          slug: p.slug || "",
+          author: p.author || "Admin",
+          leadParagraph: p.leadParagraph || p.excerpt || "",
+          featuredImage: p.featuredImage || "",
+          excerpt: p.excerpt || p.leadParagraph || "",
+          date: this.formatDate(new Date(p.createdAt)),
+          status: (p.publishing?.status || p.status || "draft") as
+            | "published"
+            | "draft"
+            | "archived",
+          views: p.viewCount || 0,
+          content: p.content || "",
+          publishing: {
+            status: (p.publishing?.status || p.status || "draft") as
+              | "draft"
+              | "published"
+              | "archived",
+            publishedAt: p.publishing?.publishedAt ?? null,
+            scheduledAt: p.publishing?.scheduledAt ?? null,
+          },
+          attractiveness: {
+            isFeatured: p.attractiveness?.isFeatured ?? false,
+            isSpotlight: p.attractiveness?.isSpotlight ?? false,
+            priority: p.attractiveness?.priority ?? 0,
+            highlight: p.attractiveness?.highlight ?? false,
+          },
+          viewCount: p.viewCount || 0,
+          likeCount: p.likeCount || 0,
+          readingTime: p.readingTime || 1,
+          createdAt: p.createdAt || new Date().toISOString(),
+          updatedAt: p.updatedAt || new Date().toISOString(),
+        }));
         return result;
       } catch (err) {
         this.error =
           err instanceof Error ? err.message : "Failed to fetch blog posts";
         console.error("Error fetching blog posts:", err);
-        // Reset to initial posts on failure
-        this.blogPosts = [...initialBlogPosts];
         return null;
       } finally {
         this.isLoading = false;
       }
     },
 
-    // Helper functions
+    async incrementBlogPostViewCount(id: string) {
+      try {
+        await contentService.incrementBlogPostViewCount(id);
+        const post = this.blogPosts.find((p) => p.id === id);
+        if (post) {
+          post.viewCount++;
+          post.views++;
+        }
+      } catch {
+        // Silent fail – don't disrupt UX
+      }
+    },
+
+    // ----------------------------------------------------------
+    // Helper: map a BlogPostResponse to the internal BlogPost type
+    // ----------------------------------------------------------
+    _mapResponseToPost(r: any): BlogPost {
+      return {
+        id: r.id,
+        title: r.title,
+        slug: r.slug || "",
+        author: r.author || "Admin",
+        leadParagraph: r.leadParagraph || r.excerpt || "",
+        featuredImage: r.featuredImage || "",
+        excerpt: r.excerpt || r.leadParagraph || "",
+        date: this.formatDate(new Date(r.createdAt || Date.now())),
+        status: (r.publishing?.status || r.status || "draft") as
+          | "published"
+          | "draft"
+          | "archived",
+        views: r.viewCount || 0,
+        content: r.content || "",
+        publishing: {
+          status: (r.publishing?.status || "draft") as
+            | "draft"
+            | "published"
+            | "archived",
+          publishedAt: r.publishing?.publishedAt ?? null,
+          scheduledAt: r.publishing?.scheduledAt ?? null,
+        },
+        attractiveness: {
+          isFeatured: r.attractiveness?.isFeatured ?? false,
+          isSpotlight: r.attractiveness?.isSpotlight ?? false,
+          priority: r.attractiveness?.priority ?? 0,
+          highlight: r.attractiveness?.highlight ?? false,
+        },
+        viewCount: r.viewCount || 0,
+        likeCount: r.likeCount || 0,
+        readingTime: r.readingTime || 1,
+        createdAt: r.createdAt || new Date().toISOString(),
+        updatedAt: r.updatedAt || new Date().toISOString(),
+      };
+    },
+
+    // ----------------------------------------------------------
+    // Helpers
+    // ----------------------------------------------------------
     formatDate(date: Date): string {
       return date.toLocaleDateString("en-US", {
         month: "short",
@@ -467,37 +490,18 @@ export const useContentStore = defineStore("content", {
       );
     },
 
-    // Media helpers
-    addMediaToPost(postId: number, media: BlogPostMedia) {
-      const post = this.blogPosts.find((p) => p.id === postId);
-      if (post) {
-        post.media.push(media);
-        return true;
-      }
-      return false;
-    },
-
-    removeMediaFromPost(postId: number, mediaIndex: number) {
-      const post = this.blogPosts.find((p) => p.id === postId);
-      if (post && mediaIndex >= 0 && mediaIndex < post.media.length) {
-        post.media.splice(mediaIndex, 1);
-        return true;
-      }
-      return false;
-    },
-
+    // ----------------------------------------------------------
     // FAQ Actions
+    // ----------------------------------------------------------
     async fetchFaqs() {
       this.isLoading = true;
       this.error = null;
-
       try {
         const faqs = await contentService.fetchFaqs();
         this.faqs = faqs;
         return faqs;
       } catch (err) {
-        this.error =
-          err instanceof Error ? err.message : "Failed to fetch FAQs";
+        this.error = err instanceof Error ? err.message : "Failed to fetch FAQs";
         console.error("Error fetching FAQs:", err);
         return [];
       } finally {
@@ -508,7 +512,6 @@ export const useContentStore = defineStore("content", {
     async fetchFaqById(id: string) {
       this.isLoading = true;
       this.error = null;
-
       try {
         const faq = await contentService.fetchFaqById(id);
         if (faq) {
@@ -528,7 +531,6 @@ export const useContentStore = defineStore("content", {
     async createFaq(data: CreateFaqData) {
       this.isLoading = true;
       this.error = null;
-
       try {
         const faq = await contentService.createFaq(data);
         if (faq) {
@@ -537,8 +539,7 @@ export const useContentStore = defineStore("content", {
         }
         return null;
       } catch (err) {
-        this.error =
-          err instanceof Error ? err.message : "Failed to create FAQ";
+        this.error = err instanceof Error ? err.message : "Failed to create FAQ";
         console.error("Error creating FAQ:", err);
         return null;
       } finally {
@@ -549,23 +550,17 @@ export const useContentStore = defineStore("content", {
     async updateFaq(id: string, data: UpdateFaqData) {
       this.isLoading = true;
       this.error = null;
-
       try {
         const faq = await contentService.updateFaq(id, data);
         if (faq) {
           const index = this.faqs.findIndex((f) => f.id === id);
-          if (index !== -1) {
-            this.faqs[index] = faq;
-          }
-          if (this.currentFaq?.id === id) {
-            this.currentFaq = faq;
-          }
+          if (index !== -1) this.faqs[index] = faq;
+          if (this.currentFaq?.id === id) this.currentFaq = faq;
           return faq;
         }
         return null;
       } catch (err) {
-        this.error =
-          err instanceof Error ? err.message : "Failed to update FAQ";
+        this.error = err instanceof Error ? err.message : "Failed to update FAQ";
         console.error("Error updating FAQ:", err);
         return null;
       } finally {
@@ -576,19 +571,15 @@ export const useContentStore = defineStore("content", {
     async deleteFaq(id: string) {
       this.isLoading = true;
       this.error = null;
-
       try {
         const success = await contentService.deleteFaq(id);
         if (success) {
           this.faqs = this.faqs.filter((f) => f.id !== id);
-          if (this.currentFaq?.id === id) {
-            this.currentFaq = null;
-          }
+          if (this.currentFaq?.id === id) this.currentFaq = null;
         }
         return success;
       } catch (err) {
-        this.error =
-          err instanceof Error ? err.message : "Failed to delete FAQ";
+        this.error = err instanceof Error ? err.message : "Failed to delete FAQ";
         console.error("Error deleting FAQ:", err);
         return false;
       } finally {
@@ -604,10 +595,7 @@ export const useContentStore = defineStore("content", {
       const faq = this.faqs.splice(fromIndex, 1)[0];
       if (faq) {
         this.faqs.splice(toIndex, 0, faq);
-        // Update sort order locally first
         this.faqs.forEach((f, i) => (f.sortOrder = i + 1));
-
-        // Then sync with API
         try {
           await Promise.all(
             this.faqs.map((f, i) => contentService.reorderFaq(f.id, i + 1)),
@@ -618,10 +606,9 @@ export const useContentStore = defineStore("content", {
       }
     },
 
-    // Reset state
     reset() {
       this.pages = [...initialPages];
-      this.blogPosts = [...initialBlogPosts];
+      this.blogPosts = [];
       this.faqs = [];
       this.currentFaq = null;
       this.isLoading = false;

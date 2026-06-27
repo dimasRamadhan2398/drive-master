@@ -4,12 +4,8 @@ import { computed, ref, onMounted, reactive, h, resolveComponent } from "vue";
 import type { TableColumn } from "@nuxt/ui";
 import { useContentStore } from "~/stores/content";
 import type { Faq, BlogPost } from "~/stores/content";
-import type {
-  CreateBlogArticleData,
-  UpdateBlogPostData,
-} from "~/services/contentService";
 import PostBlogModal from "~/components/content/PostBlogModal.vue";
-import type { PostFormData } from "~/types/content-form";
+import type { PostFormData, SavedPayload } from "~/components/content/PostBlogModal.vue";
 
 const { t } = useI18n();
 definePageMeta({ layout: "admin" });
@@ -17,7 +13,9 @@ definePageMeta({ layout: "admin" });
 const contentStore = useContentStore();
 const toast = useToast();
 
-// Tabs - Only Blog and FAQ (static array for proper UTabs reactivity)
+// ============================================================
+// Tabs
+// ============================================================
 const tabs = [
   { value: "blog", label: "Blog", icon: "i-lucide-newspaper", slot: "blog" },
   { value: "faqs", label: "FAQs", icon: "i-lucide-help-circle", slot: "faqs" },
@@ -25,11 +23,11 @@ const tabs = [
 
 const activeTab = ref("blog");
 
-// ==================== BLOG SECTION ====================
+// ============================================================
+// Blog section
+// ============================================================
 
-const blogPosts = computed(() => {
-  return contentStore.blogPosts;
-});
+const blogPosts = computed(() => contentStore.blogPosts);
 
 const blogColumns: TableColumn<BlogPost>[] = [
   { accessorKey: "title", header: t("admin.content.title") },
@@ -38,11 +36,15 @@ const blogColumns: TableColumn<BlogPost>[] = [
     accessorKey: "publishing.status",
     header: t("admin.content.status"),
     cell: ({ row }) => {
-      const status = row.getValue("publishing.status") as string;
+      const status = row.original.publishing?.status;
       return h(resolveComponent("UBadge"), {
         label: status?.toUpperCase(),
         color:
-          status === "published" ? "success" : status === "draft" ? "neutral" : "error",
+          status === "published"
+            ? "success"
+            : status === "draft"
+              ? "neutral"
+              : "error",
         variant: "subtle",
       });
     },
@@ -52,7 +54,7 @@ const blogColumns: TableColumn<BlogPost>[] = [
     accessorKey: "attractiveness.isFeatured",
     header: "Featured",
     cell: ({ row }) => {
-      const isFeatured = row.getValue("attractiveness.isFeatured") as boolean;
+      const isFeatured = row.original.attractiveness?.isFeatured;
       return h(resolveComponent("UBadge"), {
         label: isFeatured ? "FEATURED" : "—",
         color: isFeatured ? "warning" : "neutral",
@@ -80,65 +82,63 @@ function openEditBlog(post: BlogPost) {
     title: post.title,
     slug: post.slug || "",
     author: post.author,
-    leadParagraph: "",
+    leadParagraph: post.leadParagraph || "",
     content: post.content,
-    media: post.media || [],
+    featuredImage: post.featuredImage || "",
     publishing: {
       status: post.publishing?.status || post.status,
-      publishedAt: post.publishing?.publishedAt,
-      scheduledAt: post.publishing?.scheduledAt,
+      publishedAt: post.publishing?.publishedAt ?? null,
+      scheduledAt: post.publishing?.scheduledAt ?? null,
     },
     attractiveness: {
-      isFeatured: post.attractiveness?.isFeatured || false,
-      isSpotlight: post.attractiveness?.isSpotlight || false,
-      priority: post.attractiveness?.priority || 0,
-      highlight: post.attractiveness?.highlight || false,
+      isFeatured: post.attractiveness?.isFeatured ?? false,
+      isSpotlight: post.attractiveness?.isSpotlight ?? false,
+      priority: post.attractiveness?.priority ?? 0,
+      highlight: post.attractiveness?.highlight ?? false,
     },
   };
   isBlogModalOpen.value = true;
 }
 
-async function handleBlogSaved(data: CreateBlogArticleData) {
+async function handleBlogSaved(payload: SavedPayload) {
   try {
-    if (editingPost.value) {
+    if (payload.id) {
       // Update existing post
-      const updateData: UpdateBlogPostData = {
-        title: data.title,
-        slug: data.slug,
-        author: data.author,
-        content: data.content,
-        featuredImage: data.featuredImage,
-        publishing: data.publishing,
-        attractiveness: data.attractiveness,
-      };
-      await contentStore.updatePost(editingPost.value.id, updateData);
+      await contentStore.updatePost(payload.id, {
+        title: payload.title,
+        slug: payload.slug,
+        author: payload.author,
+        authorId: payload.authorId,
+        leadParagraph: payload.leadParagraph,
+        content: payload.content,
+        featuredImage: payload.featuredImage,
+        featuredImageFileName: payload.featuredImageFileName,
+        publishing: payload.publishing,
+        attractiveness: payload.attractiveness,
+      });
       toast.add({ title: "Blog Post Updated", color: "success" });
     } else {
-      // Create new post - pass full data including authorId
+      // Create new post
       const result = await contentStore.addPost({
-        title: data.title,
-        slug: data.slug,
-        author: data.author,
-        authorId: data.authorId,
-        leadParagraph: data.leadParagraph,
-        content: data.content,
-        featuredImage: data.featuredImage,
-        publishing: data.publishing,
-        attractiveness: data.attractiveness,
+        title: payload.title,
+        slug: payload.slug,
+        author: payload.author,
+        authorId: payload.authorId,
+        leadParagraph: payload.leadParagraph,
+        content: payload.content,
+        featuredImage: payload.featuredImage,
+        featuredImageFileName: payload.featuredImageFileName,
+        publishing: payload.publishing,
+        attractiveness: payload.attractiveness,
       });
 
-      // Check if the result indicates an error (store returns null on failure)
-      if (!result) {
-        // Error was already handled by the store, but we can add UI feedback here
-        return;
-      }
+      if (!result) return;
 
       toast.add({ title: "Blog Post Created", color: "success" });
     }
     // Refresh the list
     contentStore.fetchBlogPosts();
   } catch (err: any) {
-    // Handle API errors
     const errorMessage = err?.message || err?.data?.message || "";
 
     if (
@@ -171,7 +171,7 @@ function handleBlogError(message: string) {
   });
 }
 
-async function deleteBlog(id: string | number) {
+async function deleteBlog(id: string) {
   if (confirm("Are you sure you want to delete this blog post?")) {
     try {
       await contentStore.deletePost(id);
@@ -182,12 +182,13 @@ async function deleteBlog(id: string | number) {
   }
 }
 
-// ==================== FAQ SECTION ====================
+// ============================================================
+// FAQ section
+// ============================================================
 
 const faqs = computed(() => contentStore.faqs);
 const isFaqsLoading = ref(false);
 
-// FAQ Modal State
 const isFaqEditing = ref(false);
 const editingFaqId = ref<string | null>(null);
 
@@ -223,7 +224,6 @@ async function fetchFAQs() {
   }
 }
 
-// FAQ Modal
 const isFAQModalOpen = ref(false);
 
 const faqForm = reactive({
@@ -378,10 +378,11 @@ onMounted(() => {
           </template>
         </UTabs>
       </div>
+
       <!-- FAQ Modal -->
       <UModal
         v-model:open="isFAQModalOpen"
-        :title="isEditing ? t('admin.content.editFaq') : t('admin.content.addFaq')"
+        :title="isFaqEditing ? t('admin.content.editFaq') : t('admin.content.addFaq')"
       >
         <template #body>
           <div class="space-y-4">

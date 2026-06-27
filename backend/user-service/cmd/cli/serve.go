@@ -116,7 +116,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	kafkaConsumer, err := pkgKafka.NewConsumer(pkgKafka.ConsumerConfig{
 		Brokers:  loadedConfig.Kafka.Brokers,
 		GroupID:  "user-service-consumer",
-		Topics:   []string{loadedConfig.Kafka.Topic},
+		Topics:   []string{loadedConfig.Kafka.Topic, "booking.events"},
 		Enabled:  loadedConfig.Kafka.Enabled,
 		Version:  "3.6.0",
 		Assignor: "roundrobin",

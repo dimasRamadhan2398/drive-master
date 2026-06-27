@@ -154,21 +154,24 @@ const (
 
 // Certification represents a member's certification (e.g., package completion certificate)
 type Certification struct {
-	ID           uuid.UUID           `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	InstructorID uuid.UUID           `json:"instructorId" gorm:"type:uuid;not null;index"`
-	MemberID     uuid.UUID           `json:"memberId" gorm:"type:uuid;not null;index"`
-	CertType     string              `json:"certType" gorm:"size:50;not null"`    // e.g., "BNSP", "SIM", "AWS"
-	CertNumber   string              `json:"certNumber" gorm:"size:100;not null"` // Certificate number
-	IssuedBy     string              `json:"issuedBy" gorm:"size:255"`            // Issuing authority
-	IssuedDate   time.Time           `json:"issuedDate" gorm:"not null"`          // Date of issue
-	ExpiryDate   *time.Time          `json:"expiryDate"`                          // Expiration date (nullable)
-	Status       CertificationStatus `json:"status" gorm:"type:varchar(20);default:'pending'"`
-	DocumentURL  string              `json:"documentUrl" gorm:"size:500"` // URL to scanned document
-	Notes        string              `json:"notes" gorm:"type:text"`      // Additional notes
-	VerifiedAt   *time.Time          `json:"verifiedAt"`                  // When it was verified
-	VerifiedBy   *uuid.UUID          `json:"verifiedBy"`                  // Who verified it
-	CreatedAt    time.Time           `json:"createdAt"`
-	UpdatedAt    time.Time           `json:"updatedAt"`
+	ID            uuid.UUID           `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	InstructorID  uuid.UUID           `json:"instructorId" gorm:"type:uuid;not null;index"`
+	MemberID      uuid.UUID           `json:"memberId" gorm:"type:uuid;not null;index"`
+	// EntitlementID links the certificate to the specific entitlement that was completed.
+	// This is a nullable FK — older certs issued before this field existed will have NULL here.
+	EntitlementID *uuid.UUID          `json:"entitlementId" gorm:"type:uuid;index"`
+	CertType      string              `json:"certType" gorm:"size:50;not null"`    // e.g., "BNSP", "SIM", "AWS"
+	CertNumber    string              `json:"certNumber" gorm:"size:100;not null"` // Certificate number
+	IssuedBy      string              `json:"issuedBy" gorm:"size:255"`            // Issuing authority
+	IssuedDate    time.Time           `json:"issuedDate" gorm:"not null"`          // Date of issue
+	ExpiryDate    *time.Time          `json:"expiryDate"`                          // Expiration date (nullable)
+	Status        CertificationStatus `json:"status" gorm:"type:varchar(20);default:'pending'"`
+	DocumentURL   string              `json:"documentUrl" gorm:"size:500"` // URL to scanned document
+	Notes         string              `json:"notes" gorm:"type:text"`      // Additional notes
+	VerifiedAt    *time.Time          `json:"verifiedAt"`                  // When it was verified
+	VerifiedBy    *uuid.UUID          `json:"verifiedBy"`                  // Who verified it
+	CreatedAt     time.Time           `json:"createdAt"`
+	UpdatedAt     time.Time           `json:"updatedAt"`
 }
 
 // EntitlementStatus represents the status of an entitlement

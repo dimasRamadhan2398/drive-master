@@ -43,6 +43,38 @@ const pagination = computed(() => studentsStore.pagination);
 // For display purposes - students list is now directly from store
 const studentsList = computed(() => studentsStore.students);
 
+const studentsWithProgress = computed(() => {
+  return studentsList.value.map((student) => ({
+    ...student,
+    _progress: getActiveEntitlementProgress(student),
+    _sessions: getActiveEntitlementSessions(student),
+  }));
+});
+
+function getActiveEntitlementProgress(student: Student) {
+  if (!student || !student.entitlements) return 0;
+  const active = student.entitlements.find((e) => e.status === "active");
+  if (!active || !active.totalSessions) return 0;
+
+  const remaining = Number(active.remaining ?? 0);
+  const total = Number(active.totalSessions);
+
+  if (total <= 0 || isNaN(remaining) || isNaN(total)) return 0;
+
+  const progress = Math.round((remaining / total) * 100);
+  return isNaN(progress) || !isFinite(progress) ? 0 : Math.min(100, Math.max(0, progress));
+}
+
+function getActiveEntitlementSessions(student: Student) {
+  if (!student || !student.entitlements) return { remaining: 0, total: 0 };
+  const active = student.entitlements.find((e) => e.status === "active");
+  if (!active) return { remaining: 0, total: 0 };
+  return { 
+    remaining: active.remaining ?? 0, 
+    total: active.totalSessions ?? 0 
+  };
+}
+
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -397,8 +429,8 @@ onMounted(() => {
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  v-for="student in studentsList"
+                 <tr
+                  v-for="student in studentsWithProgress"
                   :key="student.id"
                   class="border-b border-default hover:bg-muted/30 transition-colors"
                 >
@@ -423,13 +455,18 @@ onMounted(() => {
                     <div class="w-32">
                       <div class="flex justify-between text-md mb-1">
                         <span
-                          >{{ student.completedSessions }}/{{
-                            student.totalSessions
+                          >{{ student._sessions.remaining }}/{{
+                            student._sessions.total
                           }}</span
                         >
-                        <span>{{ student.progress }}%</span>
+                        <span>{{ student._progress }}%</span>
                       </div>
-                      <UProgress :value="student.progress" size="md" />
+                      <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div 
+                          class="bg-primary h-full rounded-full transition-all duration-300"
+                          :style="{ width: `${student._progress}%` }"
+                        ></div>
+                      </div>
                     </div>
                   </td>
                   <td class="py-3 px-4 text-md">{{ student.joinDate }}</td>
@@ -538,7 +575,12 @@ onMounted(() => {
                 </div>
                 <div>
                   <p class="text-md text-muted mb-2">{{ t('common.progress') }}</p>
-                  <UProgress :value="selectedStudent.progress" />
+                  <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <div 
+                      class="bg-primary h-full rounded-full transition-all duration-300"
+                      :style="{ width: `${selectedStudent.progress}%` }"
+                    ></div>
+                  </div>
                   <p class="text-md text-right mt-1">
                     {{ selectedStudent.progress }}% {{ t('common.completed').toLowerCase() }}
                   </p>

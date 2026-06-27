@@ -9,7 +9,8 @@ import (
 
 // Migrate runs all database migrations
 func Migrate(db *gorm.DB) error {
-	return db.AutoMigrate(
+	db.Exec("DROP INDEX IF EXISTS idx_articles_slug")
+	err := db.AutoMigrate(
 		// Region tables
 		&models.Province{},
 		&models.Regency{},
@@ -43,6 +44,10 @@ func Migrate(db *gorm.DB) error {
 		// FAQ tables
 		&models.FAQ{},
 	)
+	if err != nil {
+		return err
+	}
+	return db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_slug ON articles (slug) WHERE deleted_at IS NULL").Error
 }
 
 // MigrateRegions runs region-specific migrations
@@ -75,9 +80,14 @@ func MigrateAddOns(db *gorm.DB) error {
 }
 
 func MigrateArticles(db *gorm.DB) error {
-	return db.AutoMigrate(
+	db.Exec("DROP INDEX IF EXISTS idx_articles_slug")
+	err := db.AutoMigrate(
 		&models.Article{},
 	)
+	if err != nil {
+		return err
+	}
+	return db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_slug ON articles (slug) WHERE deleted_at IS NULL").Error
 }
 
 

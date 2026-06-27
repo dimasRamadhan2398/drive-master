@@ -32,6 +32,8 @@ plugins:
         - X-Request-ID
         - Content-Length
         - Authorization
+        - Content-Disposition
+        - Content-Type
       credentials: true
       max_age: 3600
       preflight_continue: false
@@ -135,13 +137,13 @@ services:
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
-      # - name: user-entitlements-route
-      #   strip_path: false
-      #   preserve_host: false
-      #   paths:
-      #     - /api/v1/entitlements
-      #   protocols: [http, https]
-      #   methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+      - name: user-certificates-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/certificates
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
       - name: user-testimonials-all-route
         strip_path: false

@@ -1,24 +1,34 @@
 <script setup lang="ts">
-import { computed, h, ref, resolveComponent } from 'vue'
+import { computed, h, ref, resolveComponent, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
+import { useStudentsStore } from '~/stores/students'
+import { certificateService } from '~/services/certificateService'
+import { useApiClients } from '~/composables/useApiClients'
 
 const { t } = useI18n()
 definePageMeta({ layout: 'admin' })
 
 const toast = useToast()
+const studentsStore = useStudentsStore()
 const searchQuery = ref('')
 const showIssueModal = ref(false)
+const selectedStudent = ref<any>(null)
+const isLoading = ref(false)
+
 type EligibleStudent = {
-  id: number
+  id: string
   name: string
   email: string
   package: string
+  packageId: string
+  entitlementId: string
   completedDate: string
 }
 
 type Certificate = {
   id: string
+  certNumber: string
   studentName: string
   email: string
   package: string
@@ -26,54 +36,138 @@ type Certificate = {
   status: 'issued' | 'revoked'
 }
 
-const eligibleStudents = ref<EligibleStudent[]>([
-  { id: 1, name: 'Budi Santoso', email: 'budi@example.com', package: '6x', completedDate: 'Mar 28, 2026' },
-  { id: 2, name: 'Maria Garcia', email: 'maria@example.com', package: '8x', completedDate: 'Mar 30, 2026' }
-])
+const eligibleStudents = ref<EligibleStudent[]>([])
+const issuedCertificates = ref<Certificate[]>([])
 
-const issuedCertificates = ref<Certificate[]>([
-  { id: 'EVDA-2026-001230', studentName: 'Ahmad Rizky', email: 'ahmad@example.com', package: '12x', issueDate: 'Mar 20, 2026', status: 'issued' },
-  { id: 'EVDA-2026-001229', studentName: 'Linda Wijaya', email: 'linda@example.com', package: '10x', issueDate: 'Mar 18, 2026', status: 'issued' },
-  { id: 'EVDA-2026-001228', studentName: 'Kevin Tanaka', email: 'kevin@example.com', package: '6x', issueDate: 'Mar 15, 2026', status: 'issued' }
-])
+async function loadData() {
+  isLoading.value = true
+  try {
+    // 1. Fetch all issued certificates
+    const certsResponse = await certificateService.getAllCertificates()
+    issuedCertificates.value = certsResponse.map(c => ({
+      id: c.id,
+      certNumber: c.certNumber,
+      studentName: c.memberName,
+      email: c.memberEmail,
+      package: c.packageName,
+      issueDate: new Date(c.issuedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      status: c.status === 'revoked' ? 'revoked' : 'issued'
+    }))
+
+    // 2. Fetch all students to see who completed a package
+    await studentsStore.fetchStudentsNoPagination()
+    const completedStudentsList = studentsStore.allStudents.filter(s => s.status === 'completed' || s.progress >= 100)
+
+    // 3. Filter out students who already have an active certificate for their package
+    const tempEligible: EligibleStudent[] = []
+    for (const student of completedStudentsList) {
+      for (const entitlement of student.entitlements) {
+        if (entitlement.remaining === 0 || entitlement.status === 'completed') {
+          const alreadyIssued = certsResponse.some(c => 
+            c.memberId === student.id && 
+            c.packageName === entitlement.packageName && 
+            c.status != 'revoked'
+          )
+          if (!alreadyIssued) {
+            tempEligible.push({
+              id: student.id,
+              name: student.name,
+              email: student.email,
+              package: entitlement.packageName,
+              packageId: entitlement.packageId,
+              entitlementId: entitlement.id,
+              completedDate: new Date(entitlement.updatedAt || entitlement.createdAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              })
+            })
+          }
+        }
+      }
+    }
+    eligibleStudents.value = tempEligible
+  } catch (error) {
+    console.error('Failed to load certificates data:', error)
+    toast.add({ title: 'Error', description: 'Failed to load certificate records.', color: 'error' })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadData()
+})
 
 const filteredCertificates = computed(() => {
   return issuedCertificates.value.filter(cert => {
     return cert.studentName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-           cert.id.toLowerCase().includes(searchQuery.value.toLowerCase())
+           cert.certNumber.toLowerCase().includes(searchQuery.value.toLowerCase())
   })
 })
 
-function issueCertificate(studentId: number) {
-  const student = eligibleStudents.value.find(s => s.id === studentId)
-  if (student) {
-    const newCertId = `EVDA-2026-00${1231 + issuedCertificates.value.length}`
-    issuedCertificates.value.unshift({
-      id: newCertId,
-      studentName: student.name,
-      email: student.email,
-      package: student.package,
-      issueDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      status: 'issued'
-    })
-    eligibleStudents.value = eligibleStudents.value.filter(s => s.id !== studentId)
-    toast.add({ title: 'Certificate Issued', description: `Certificate ${newCertId} has been issued to ${student.name}.`, icon: 'i-lucide-award', color: 'success' })
+async function issueCertificate(studentId: string | null) {
+  const targetStudent = studentId 
+    ? eligibleStudents.value.find(s => s.id === studentId) 
+    : selectedStudent.value?.student
+
+  if (targetStudent) {
+    try {
+      await certificateService.issueCertificate({
+        memberId: targetStudent.id,
+        packageId: targetStudent.packageId,
+        packageName: targetStudent.package,
+        entitlementId: targetStudent.entitlementId
+      })
+      toast.add({ title: 'Certificate Issued', description: `Certificate has been issued to ${targetStudent.name}.`, icon: 'i-lucide-award', color: 'success' })
+      showIssueModal.value = false
+      selectedStudent.value = null
+      await loadData()
+    } catch (error) {
+      console.error('Failed to issue certificate:', error)
+      toast.add({ title: 'Error', description: 'Failed to issue certificate.', color: 'error' })
+    }
+  } else {
+    toast.add({ title: 'Error', description: 'Please select a student to issue certificate.', color: 'error' })
   }
 }
 
-function revokeCertificate(certId: string) {
-  const cert = issuedCertificates.value.find(c => c.id === certId)
-  if (cert) {
-    cert.status = 'revoked'
-    toast.add({ title: 'Certificate Revoked', description: `Certificate ${certId} has been revoked.`, icon: 'i-lucide-x-circle', color: 'error' })
+async function revokeCertificate(certId: string) {
+  try {
+    await certificateService.revokeCertificate(certId)
+    toast.add({ title: 'Certificate Revoked', description: `Certificate has been successfully revoked.`, icon: 'i-lucide-x-circle', color: 'success' })
+    await loadData()
+  } catch (error) {
+    console.error('Failed to revoke certificate:', error)
+    toast.add({ title: 'Error', description: 'Failed to revoke certificate.', color: 'error' })
+  }
+}
+
+async function viewCertificate(certId: string) {
+  try {
+    const url = await certificateService.getCertificatePDFBlobUrl(certId)
+    window.open(url, '_blank')
+  } catch (error) {
+    console.error('Failed to view certificate:', error)
+    toast.add({ title: 'Error', description: 'Failed to load certificate preview.', color: 'error' })
+  }
+}
+
+async function downloadCertificatePDF(certId: string, certNumber: string) {
+  try {
+    await certificateService.downloadCertificatePDF(certId, certNumber)
+    toast.add({ title: 'Success', description: 'Certificate PDF downloaded successfully.', color: 'success' })
+  } catch (error) {
+    console.error('Failed to download certificate PDF:', error)
+    toast.add({ title: 'Error', description: 'Failed to download certificate PDF.', color: 'error' })
   }
 }
 
 const columns: TableColumn<Certificate>[] = [
   {
-    accessorKey: 'id',
+    accessorKey: 'certNumber',
     header: t('admin.certId'),
-    cell: ({ row }) => h('span', { class: 'font-mono text-md' }, row.getValue('id'))
+    cell: ({ row }) => h('span', { class: 'font-mono text-md' }, row.getValue('certNumber'))
   },
   {
     accessorKey: 'studentName',
@@ -117,9 +211,15 @@ const columns: TableColumn<Certificate>[] = [
       const DropdownMenu = resolveComponent('UDropdownMenu')
       const Button = resolveComponent('UButton')
       const certId = row.original.id
+      const certNumber = row.original.certNumber
       const items = [
-        [{ label: 'View Certificate', icon: 'i-lucide-eye' }, { label: 'Download PDF', icon: 'i-lucide-download' }, { label: 'Resend Email', icon: 'i-lucide-mail' }],
-        [{ label: 'Revoke Certificate', icon: 'i-lucide-x-circle', color: 'error', onSelect: () => revokeCertificate(certId) }]
+        [
+          { label: 'View Certificate', icon: 'i-lucide-eye', onSelect: () => viewCertificate(certId) },
+          { label: 'Download PDF', icon: 'i-lucide-download', onSelect: () => downloadCertificatePDF(certId, certNumber) }
+        ],
+        [
+          { label: 'Revoke Certificate', icon: 'i-lucide-x-circle', color: 'error', onSelect: () => revokeCertificate(certId) }
+        ]
       ]
       return h(DropdownMenu, { items }, () => h(Button, { icon: 'i-lucide-ellipsis-vertical', color: 'neutral', variant: 'ghost' }))
     }
@@ -138,7 +238,7 @@ const columns: TableColumn<Certificate>[] = [
             <template #body>
               <div class="space-y-4">
                 <UFormField :label="t('admin.selectStudent')" required>
-                  <USelectMenu :items="eligibleStudents.map(s => ({ label: s.name, value: s.id.toString() }))" placeholder="Search and select student..." searchable color="warning" class="w-full"/>
+                  <USelectMenu v-model="selectedStudent" :items="eligibleStudents.map(s => ({ label: s.name, value: s.id, student: s }))" placeholder="Search and select student..." searchable color="warning" class="w-full"/>
                 </UFormField>
                 <UFormField :label="t('admin.certType')" required>
                   <USelect :items="[{ label: 'Basic Completion Certificate', value: 'basic' }, { label: 'Premium Certificate', value: 'premium' }]" color="warning" class="w-full" />
@@ -150,8 +250,8 @@ const columns: TableColumn<Certificate>[] = [
             </template>
             <template #footer>
               <div class="flex justify-end gap-3">
-                <UButton :label="t('common.cancel')" variant="ghost" color="neutral" @click="showIssueModal = false" />
-                <UButton :label="t('admin.issueCert')" color="warning" icon="i-lucide-award" @click="showIssueModal = false" />
+                <UButton :label="t('common.cancel')" variant="ghost" color="neutral" @click="showIssueModal = false; selectedStudent = null" />
+                <UButton :label="t('admin.issueCert')" color="warning" icon="i-lucide-award" @click="issueCertificate(null)" />
               </div>
             </template>
           </UModal>

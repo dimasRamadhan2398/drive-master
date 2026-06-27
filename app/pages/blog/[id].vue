@@ -8,8 +8,8 @@ const contentStore = useContentStore();
 
 // Extract post ID from route param (format: "1-slug-title")
 const postId = computed(() => {
-  const param = route.params.id as string;
-  return param.split("-")[0];
+  const param = (route.params.id as string) || "";
+  return param.split("-")[0] || "";
 });
 
 const post = computed(() =>
@@ -24,7 +24,7 @@ onMounted(async () => {
   }
 
   // Increment view count to backend (fire-and-forget, non-blocking)
-  contentStore.incrementBlogPostViewCount(Number(postId.value));
+  contentStore.incrementBlogPostViewCount(postId.value);
 });
 
 // Related posts (exclude current)
@@ -75,9 +75,7 @@ function getExcerpt(content: string, maxLength = 120): string {
 }
 
 function getPostThumbnail(p: any): string | null {
-  if (!p.media || p.media.length === 0) return null;
-  const image = p.media.find((m: any) => m.fileType === "image");
-  return image ? image.url : null;
+  return p.featuredImage || null;
 }
 
 const gradientColors = [
@@ -96,17 +94,13 @@ const contentParagraphs = computed(() => {
   return post.value.content.split("\n").filter((p: string) => p.trim());
 });
 
-// Images from media
+// Featured image (single URL from backend)
 const postImages = computed(() => {
-  if (!post.value?.media) return [];
-  return post.value.media.filter((m) => m.fileType === "image");
+  return post.value?.featuredImage ? [{ url: post.value.featuredImage, fileType: 'image' }] : [];
 });
 
-// Videos from media
-const postVideos = computed(() => {
-  if (!post.value?.media) return [];
-  return post.value.media.filter((m) => m.fileType === "video");
-});
+// Videos not supported in current backend model
+const postVideos = computed<{ url: string; fileType: string }[]>(() => []);
 
 // SEO
 if (post.value) {
@@ -250,7 +244,7 @@ if (!post.value && import.meta.server) {
             >
               <img
                 :src="img.url"
-                :alt="img.name"
+                :alt="post?.title || 'Featured Image'"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
               <div
@@ -387,7 +381,7 @@ if (!post.value && import.meta.server) {
                 <img
                   v-if="postImages[lightboxIndex]"
                   :src="postImages[lightboxIndex]?.url"
-                  :alt="postImages[lightboxIndex]?.name"
+                  :alt="post?.title || 'Featured Image'"
                   class="max-h-[70vh] max-w-full object-contain rounded-lg"
                 />
               </div>

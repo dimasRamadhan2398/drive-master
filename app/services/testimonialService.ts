@@ -194,19 +194,20 @@ export const testimonialService = {
   },
 
   async publish(id: string): Promise<boolean> {
-    const { core } = useApiClients();
-    try {
-      await core(`/testimonials/${id}/publish`, { method: "PATCH" });
-      return true;
-    } catch {
-      return false;
-    }
+    return this.updateStatus(id, "published");
   },
 
   async archive(id: string): Promise<boolean> {
+    return this.updateStatus(id, "archived");
+  },
+
+  async updateStatus(id: string, status: TestimonialStatus): Promise<boolean> {
     const { core } = useApiClients();
     try {
-      await core(`/testimonials/${id}/archive`, { method: "PATCH" });
+      await core(`/testimonials/${id}/status`, {
+        method: "PATCH",
+        body: { status },
+      });
       return true;
     } catch {
       return false;

@@ -21,6 +21,7 @@ type ITestimonialRepository interface {
 	DeleteTestimonial(ctx context.Context, id uuid.UUID) error
 	CountTestimonials(ctx context.Context) (int64, error)
 	ToggleFeatured(ctx context.Context, id uuid.UUID, isFeatured bool) error
+	UpdateStatus(ctx context.Context, id uuid.UUID, status models.TestimonialStatus) error
 }
 
 type TestimonialRepository struct {
@@ -121,4 +122,9 @@ func (r *TestimonialRepository) CountTestimonials(ctx context.Context) (int64, e
 // ToggleFeatured toggles the featured status of a testimonial
 func (r *TestimonialRepository) ToggleFeatured(ctx context.Context, id uuid.UUID, isFeatured bool) error {
 	return r.BaseRepository.DB.Model(&models.Testimonial{}).Where("id = ?", id).Update("is_featured", isFeatured).Error
+}
+
+// UpdateStatus updates the status of a testimonial
+func (r *TestimonialRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status models.TestimonialStatus) error {
+	return r.BaseRepository.DB.Model(&models.Testimonial{}).Where("id = ?", id).Update("status", status).Error
 }

@@ -44,13 +44,9 @@ const blogPosts = computed(() =>
   }))
 );
 
-// Helper: get featured image from media array
+// Helper: get featured image
 function getFeaturedImage(post: BlogPost): string | null {
-  if (post.media && post.media.length > 0) {
-    const image = post.media.find((m) => m.fileType === "image");
-    return image?.url || null;
-  }
-  return null;
+  return post.featuredImage || null;
 }
 
 // Helper: get author name

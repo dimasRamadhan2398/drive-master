@@ -23,6 +23,7 @@ type ICertificationController interface {
 	GetMemberCertificates(ctx *gin.Context)
 	DownloadCertificatePDF(ctx *gin.Context)
 	GetCertificateStats(ctx *gin.Context)
+	GetAllCertificates(ctx *gin.Context)
 }
 
 func NewCertificationController(certificationService services.ICertificationService) ICertificationController {
@@ -175,4 +176,21 @@ func (c *CertificationController) GetCertificateStats(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Certificate stats retrieved successfully", resp)
+}
+
+// GetAllCertificates godoc
+// @Summary Get all certificates
+// @Description Admin views all certificates
+// @Tags Certificates
+// @Produce json
+// @Success 200 {object} response.Response
+// @Router /api/v1/certificates [get]
+func (c *CertificationController) GetAllCertificates(ctx *gin.Context) {
+	resp, err := c.certificationService.GetAllCertificates(ctx.Request.Context())
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Certificates retrieved successfully", resp)
 }

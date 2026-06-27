@@ -220,7 +220,7 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 	}
 
 	// Validate session can be completed
-	if session.Status != "in-progress" {
+	if session.Status != "in_progress" {
 		return nil, errors.New("session cannot be completed: must be in progress")
 	}
 
@@ -248,6 +248,10 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 				}
 
 				newUsedSessions := entitlement.UsedSessions + 1
+				if newUsedSessions > entitlement.TotalSessions {
+					return errors.New("cannot complete session: used sessions would exceed total sessions")
+				}
+
 				if err := s.entitlementRepo.UpdateUsedSessionsTx(tx, entitlement.ID, newUsedSessions); err != nil {
 					return err
 				}
@@ -261,18 +265,18 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 						if err == nil && len(allEntitlements) > 0 {
 							allExhausted := true
 							for _, ent := range allEntitlements {
-								if ent.ID != entitlement.ID {
-									// Check remaining for other entitlements
-									// For simplicity, we only mark completed if this entitlement is the last one
-									// and all others have been used up
+								// Since entitlement in memory has old value, we use updated count for this entitlement
+								usedVal := ent.UsedSessions
+								if ent.ID == entitlement.ID {
+									usedVal = newUsedSessions
 								}
-								if ent.UsedSessions < ent.TotalSessions {
+								if usedVal < ent.TotalSessions {
 									allExhausted = false
 								}
 							}
 
 							// If this was the last entitlement to be exhausted, mark enrollment as completed
-							if allExhausted || (entitlement.UsedSessions >= entitlement.TotalSessions) {
+							if allExhausted || (newUsedSessions >= entitlement.TotalSessions) {
 								if enrollment.Status != models.EnrollmentStatusCompleted {
 									if err := s.enrollmentRepo.UpdateStatusTx(tx, enrollment.ID, models.EnrollmentStatusCompleted); err != nil {
 										return err
@@ -307,8 +311,10 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 			entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
 			if err == nil && entitlement != nil {
 				newUsedSessions := entitlement.UsedSessions + 1
-				if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, newUsedSessions); err != nil {
-					// Log error but continue
+				if newUsedSessions <= entitlement.TotalSessions {
+					if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, newUsedSessions); err != nil {
+						// Log error but continue
+					}
 				}
 			}
 		}
@@ -385,15 +391,7 @@ func (s *SessionService) CancelSession(ctx context.Context, id uint) (*dto.Sessi
 		}
 	}
 
-	// Decrement used sessions in entitlement (session cancelled, so it doesn't count)
-	entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
-	if err == nil && entitlement != nil {
-		if entitlement.UsedSessions > 0 {
-			if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, entitlement.UsedSessions-1); err != nil {
-				// Log error
-			}
-		}
-	}
+
 
 	// Reload session
 	session, err = s.sessionRepo.FindByID(ctx, id)

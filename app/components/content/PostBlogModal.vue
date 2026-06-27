@@ -1,32 +1,42 @@
 <script setup lang="ts">
 import { useToast } from "@nuxt/ui/runtime/composables/index.js";
-import type {
-  CreateBlogArticleData,
-} from "../../services/contentService";
-import RichTextEditor from "./RichTextEditor.vue";
 import { computed, ref, watch } from "vue";
 import { useAuthStore } from "../../stores/auth";
+import RichTextEditor from "./RichTextEditor.vue";
+import type { Publishing, Attractiveness } from "../../services/contentService";
 
+// ============================================================
+// PostFormData – what the parent passes in for edit mode
+// ============================================================
 export interface PostFormData {
-  id: number;
+  id: string;
   title: string;
   slug: string;
   author: string;
   leadParagraph: string;
   content: string;
-  status: "draft" | "published" | "archived";
   featuredImage: string;
-  publishing: {
-    status: "draft" | "published" | "archived";
-    publishedAt?: string;
-    scheduledAt?: string;
-  };
-  attractiveness: {
-    isFeatured: boolean;
-    isSpotlight: boolean;
-    priority: number;
-    highlight: boolean;
-  };
+  publishing: Publishing;
+  attractiveness: Attractiveness;
+}
+
+// ============================================================
+// SavedPayload – emitted to the parent upon save
+// ============================================================
+export interface SavedPayload {
+  id?: string; // present in edit mode
+  title: string;
+  slug?: string;
+  author?: string;
+  authorId: string;
+  leadParagraph?: string;
+  content?: string;
+  /** data URI string when a new file was selected; existing URL when not changed */
+  featuredImage?: string;
+  /** Original filename of the newly selected image (for format validation) */
+  featuredImageFileName?: string;
+  publishing: Publishing;
+  attractiveness: Attractiveness;
 }
 
 const props = defineProps<{
@@ -36,7 +46,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "update:open", value: boolean): void;
-  (e: "saved", data: CreateBlogArticleData): void;
+  (e: "saved", data: SavedPayload): void;
   (e: "error", message: string): void;
 }>();
 
@@ -47,25 +57,37 @@ const isEditing = computed(() => !!props.post?.id);
 const validationError = ref<string | null>(null);
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 const mediaInputRef = ref<HTMLInputElement | null>(null);
 const featuredImagePreview = ref<string | null>(null);
+/** Filename of the newly selected image file (undefined = no new file selected) */
+const newImageFileName = ref<string | undefined>(undefined);
 
-const postForm = ref<PostFormData>({
-  id: 0,
+// ============================================================
+// Form state
+// ============================================================
+interface FormState {
+  id: string;
+  title: string;
+  slug: string;
+  author: string;
+  leadParagraph: string;
+  content: string;
+  featuredImage: string;
+  publishing: Publishing;
+  attractiveness: Attractiveness;
+}
+
+const postForm = ref<FormState>({
+  id: "",
   title: "",
   slug: "",
   author: "Admin",
   leadParagraph: "",
   content: "",
-  status: "draft",
   featuredImage: "",
-  publishing: {
-    status: "draft",
-    publishedAt: undefined,
-    scheduledAt: undefined,
-  },
+  publishing: { status: "draft", publishedAt: null, scheduledAt: null },
   attractiveness: {
     isFeatured: false,
     isSpotlight: false,
@@ -76,19 +98,14 @@ const postForm = ref<PostFormData>({
 
 function resetForm() {
   postForm.value = {
-    id: 0,
+    id: "",
     title: "",
     slug: "",
     author: "Admin",
     leadParagraph: "",
     content: "",
-    status: "draft",
     featuredImage: "",
-    publishing: {
-      status: "draft",
-      publishedAt: undefined,
-      scheduledAt: undefined,
-    },
+    publishing: { status: "draft", publishedAt: null, scheduledAt: null },
     attractiveness: {
       isFeatured: false,
       isSpotlight: false,
@@ -97,48 +114,51 @@ function resetForm() {
     },
   };
   featuredImagePreview.value = null;
+  newImageFileName.value = undefined;
+  validationError.value = null;
 }
 
 function initForm() {
   if (props.post) {
-    // Editing mode: featuredImage is a URL from backend
     postForm.value = {
       id: props.post.id,
       title: props.post.title,
       slug: props.post.slug || "",
-      author: props.post.author,
+      author: props.post.author || "Admin",
       leadParagraph: props.post.leadParagraph || "",
       content: props.post.content || "",
-      status: props.post.status,
       featuredImage: props.post.featuredImage || "",
       publishing: {
-        status: props.post.publishing.status,
-        publishedAt: props.post.publishing.publishedAt,
-        scheduledAt: props.post.publishing.scheduledAt,
+        status: props.post.publishing?.status || "draft",
+        publishedAt: props.post.publishing?.publishedAt ?? null,
+        scheduledAt: props.post.publishing?.scheduledAt ?? null,
       },
       attractiveness: {
-        isFeatured: props.post.attractiveness.isFeatured,
-        isSpotlight: props.post.attractiveness.isSpotlight,
-        priority: props.post.attractiveness.priority,
-        highlight: props.post.attractiveness.highlight,
+        isFeatured: props.post.attractiveness?.isFeatured ?? false,
+        isSpotlight: props.post.attractiveness?.isSpotlight ?? false,
+        priority: props.post.attractiveness?.priority ?? 0,
+        highlight: props.post.attractiveness?.highlight ?? false,
       },
     };
-    // For editing, use the URL directly as preview
+    // Show existing image as preview
     featuredImagePreview.value = props.post.featuredImage || null;
+    newImageFileName.value = undefined;
   } else {
     resetForm();
   }
+  validationError.value = null;
 }
 
 watch(
   () => props.open,
   (newVal) => {
-    if (newVal) {
-      initForm();
-    }
+    if (newVal) initForm();
   }
 );
 
+// ============================================================
+// Image handling
+// ============================================================
 function triggerMediaUpload() {
   mediaInputRef.value?.click();
 }
@@ -147,7 +167,7 @@ function handleMediaSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   if (!input.files || !input.files[0]) return;
 
-  const file = input.files[0];
+  const file = input.files[0]!;
 
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
     toast.add({
@@ -162,30 +182,35 @@ function handleMediaSelect(event: Event) {
   if (file.size > MAX_IMAGE_SIZE) {
     toast.add({
       title: "File Too Large",
-      description: `"${file.name}" exceeds the 5MB limit for images.`,
+      description: `"${file.name}" exceeds the 5 MB limit for images.`,
       color: "error",
     });
     input.value = "";
     return;
   }
 
+  // Store original filename for backend format validation
+  newImageFileName.value = file.name;
+
   const reader = new FileReader();
   reader.onload = (e) => {
-    // For create mode: store as base64 data URL (bytes)
+    // Store full data URI; the service/store will strip the prefix for upload
     postForm.value.featuredImage = e.target?.result as string;
     featuredImagePreview.value = e.target?.result as string;
   };
   reader.readAsDataURL(file);
-
   input.value = "";
 }
 
 function removeFeaturedImage() {
   postForm.value.featuredImage = "";
   featuredImagePreview.value = null;
+  newImageFileName.value = undefined;
 }
 
-// Generate slug from title (auto-generate if empty and not editing)
+// ============================================================
+// Slug generation
+// ============================================================
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
@@ -193,46 +218,20 @@ function generateSlug(title: string): string {
     .replace(/^-|-$/g, "");
 }
 
-// Parse API error and return user-friendly message
-function parseApiError(error: any): string | null {
-  if (!error) return null;
-
-  // Handle various error formats
-  const errorMessage = error?.message || error?.data?.message || "";
-
-  // Check for duplicate title error
-  if (
-    errorMessage.toLowerCase().includes("duplicate") ||
-    errorMessage.toLowerCase().includes("already exists") ||
-    errorMessage.toLowerCase().includes("unique constraint") ||
-    errorMessage.toLowerCase().includes("title")
-  ) {
-    return "A post with this title already exists. Please use a different title.";
-  }
-
-  // Generic error
-  if (errorMessage) {
-    return errorMessage;
-  }
-
-  return null;
-}
-
 watch(
   () => postForm.value.title,
   (newTitle) => {
-    // Clear validation error when user changes title
-    if (validationError.value) {
-      validationError.value = null;
-    }
+    if (validationError.value) validationError.value = null;
     if (!isEditing.value && newTitle) {
       postForm.value.slug = generateSlug(newTitle);
     }
   }
 );
 
+// ============================================================
+// Save
+// ============================================================
 async function savePost() {
-  // Clear previous validation error
   validationError.value = null;
 
   if (!postForm.value.title.trim()) {
@@ -245,7 +244,6 @@ async function savePost() {
     return;
   }
 
-  // Get authorId from authStore
   const authorId = authStore.currentUser?.userId || authStore.user?.userId;
   if (!authorId) {
     validationError.value = "Unable to identify author. Please log in again.";
@@ -258,44 +256,29 @@ async function savePost() {
   }
 
   isSaving.value = true;
-
   try {
-    const data: CreateBlogArticleData = {
+    const payload: SavedPayload = {
+      ...(isEditing.value ? { id: postForm.value.id } : {}),
       title: postForm.value.title,
       slug: postForm.value.slug || undefined,
-      author: postForm.value.author,
-      authorId: authorId,
+      author: postForm.value.author || undefined,
+      authorId,
       leadParagraph: postForm.value.leadParagraph || undefined,
       content: postForm.value.content || undefined,
-      // For create mode: featuredImage is base64/dataURL (bytes)
-      // For edit mode: featuredImage is a URL string (already stored)
       featuredImage: postForm.value.featuredImage || undefined,
-      publishing: {
-        status: postForm.value.publishing.status,
-      },
-      attractiveness: {
-        isFeatured: postForm.value.attractiveness.isFeatured,
-        isSpotlight: postForm.value.attractiveness.isSpotlight,
-        priority: postForm.value.attractiveness.priority,
-        highlight: postForm.value.attractiveness.highlight,
-      },
-      status: postForm.value.status,
+      featuredImageFileName: newImageFileName.value,
+      publishing: { ...postForm.value.publishing },
+      attractiveness: { ...postForm.value.attractiveness },
     };
 
-    emit("saved", data);
+    emit("saved", payload);
     emit("update:open", false);
     resetForm();
   } catch (error: any) {
-    const errorMessage = parseApiError(error);
-    if (errorMessage) {
-      validationError.value = errorMessage;
-      emit("error", errorMessage);
-      toast.add({
-        title: "Validation Error",
-        description: errorMessage,
-        color: "error",
-      });
-    }
+    const msg = error?.message || "An unexpected error occurred.";
+    validationError.value = msg;
+    emit("error", msg);
+    toast.add({ title: "Error", description: msg, color: "error" });
   } finally {
     isSaving.value = false;
   }
@@ -306,7 +289,7 @@ async function savePost() {
   <UModal
     :open="open"
     title="Post Blog"
-    @update:open="(val:any) => emit('update:open', val)"
+    @update:open="(val: any) => emit('update:open', val)"
   >
     <template #content>
       <div class="bg-default rounded-2xl w-full">
@@ -321,7 +304,9 @@ async function savePost() {
             @click="emit('update:open', false)"
           />
         </div>
+
         <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          <!-- Title -->
           <UFormField label="Post Title" required :error="validationError!">
             <UInput
               v-model="postForm.title"
@@ -329,6 +314,8 @@ async function savePost() {
               class="w-full"
             />
           </UFormField>
+
+          <!-- Slug -->
           <UFormField label="Slug">
             <template #hint>
               <span>URL-friendly version (auto-generated from title)</span>
@@ -339,9 +326,13 @@ async function savePost() {
               class="w-full"
             />
           </UFormField>
+
+          <!-- Author -->
           <UFormField label="Author">
             <UInput v-model="postForm.author" placeholder="Admin" class="w-full" />
           </UFormField>
+
+          <!-- Lead Paragraph -->
           <UFormField label="Lead Paragraph">
             <template #hint>
               <span>Brief summary shown in blog listings</span>
@@ -353,12 +344,16 @@ async function savePost() {
               :rows="3"
             />
           </UFormField>
+
+          <!-- Content -->
           <UFormField label="Content">
             <RichTextEditor
               v-model="postForm.content"
               placeholder="Write your blog post content here..."
             />
           </UFormField>
+
+          <!-- Featured Image -->
           <UFormField label="Featured Image">
             <template #hint>
               <span>Single featured image for the blog post</span>
@@ -371,8 +366,11 @@ async function savePost() {
               @change="handleMediaSelect"
             />
 
-            <!-- Featured Image Preview -->
-            <div v-if="featuredImagePreview" class="relative group rounded-lg border border-default overflow-hidden bg-muted/30">
+            <!-- Preview -->
+            <div
+              v-if="featuredImagePreview"
+              class="relative group rounded-lg border border-default overflow-hidden bg-muted/30"
+            >
               <img
                 :src="featuredImagePreview"
                 alt="Featured Image"
@@ -386,8 +384,8 @@ async function savePost() {
                   color="error"
                   variant="ghost"
                   size="sm"
-                  @click="removeFeaturedImage"
                   class="text-white"
+                  @click="removeFeaturedImage"
                 />
               </div>
               <div
@@ -399,25 +397,27 @@ async function savePost() {
                   color="neutral"
                   variant="ghost"
                   size="xs"
-                  @click="triggerMediaUpload"
                   class="text-white hover:text-white ml-auto"
+                  @click="triggerMediaUpload"
                 />
               </div>
             </div>
 
-            <!-- Upload Button (shown when no image) -->
+            <!-- Upload Button -->
             <button
               v-else
-              @click="triggerMediaUpload"
               class="w-full border-2 border-dashed border-default rounded-lg p-4 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer flex flex-col items-center gap-2"
+              @click="triggerMediaUpload"
             >
               <UIcon name="i-lucide-image-plus" class="size-6 text-muted" />
-              <span class="text-sm font-medium text-muted">Click to add featured image</span>
-              <span class="text-xs text-muted">JPG, PNG, WebP (max 5MB)</span>
+              <span class="text-sm font-medium text-muted"
+                >Click to add featured image</span
+              >
+              <span class="text-xs text-muted">JPG, PNG, WebP (max 5 MB)</span>
             </button>
           </UFormField>
 
-          <!-- Publishing Section -->
+          <!-- Publishing -->
           <div class="border-t border-default pt-4">
             <h4 class="text-sm font-medium mb-3 flex items-center gap-2">
               <UIcon name="i-lucide-send" class="size-4" />
@@ -425,7 +425,7 @@ async function savePost() {
             </h4>
             <UFormField label="Status">
               <USelect
-                v-model="postForm.publishing!.status"
+                v-model="postForm.publishing.status"
                 :items="[
                   { label: 'Draft', value: 'draft' },
                   { label: 'Published', value: 'published' },
@@ -436,7 +436,7 @@ async function savePost() {
             </UFormField>
           </div>
 
-          <!-- Attractiveness Section -->
+          <!-- Attractiveness -->
           <div class="border-t border-default pt-4">
             <h4 class="text-sm font-medium mb-3 flex items-center gap-2">
               <UIcon name="i-lucide-star" class="size-4" />
@@ -444,23 +444,23 @@ async function savePost() {
             </h4>
             <div class="space-y-3">
               <USwitch
-                v-model="postForm.attractiveness!.isFeatured"
+                v-model="postForm.attractiveness.isFeatured"
                 label="Featured"
                 color="warning"
               />
               <USwitch
-                v-model="postForm.attractiveness!.isSpotlight"
+                v-model="postForm.attractiveness.isSpotlight"
                 label="Spotlight"
                 color="warning"
               />
               <USwitch
-                v-model="postForm.attractiveness!.highlight"
+                v-model="postForm.attractiveness.highlight"
                 label="Highlighted"
                 color="warning"
               />
               <UFormField label="Priority">
                 <UInput
-                  v-model="postForm.attractiveness!.priority"
+                  v-model="postForm.attractiveness.priority"
                   type="number"
                   :min="0"
                   :max="100"
@@ -470,6 +470,7 @@ async function savePost() {
             </div>
           </div>
         </div>
+
         <div class="px-6 py-4 border-t border-default flex justify-end gap-3">
           <UButton
             :label="isEditing ? 'Save Changes' : 'Create Post'"

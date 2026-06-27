@@ -1,23 +1,25 @@
 import type { ApiResponse } from "~/composables/useApiClients";
 import type { Faq, CreateFaqData, UpdateFaqData } from "~/stores/content";
 
-// Blog Post Types (mirroring backend DTOs - blog_post.go)
-export interface BlogPostMedia {
-  id?: string;
-  name: string;
-  type: string;
-  size: string;
-  url: string;
-  fileType: "image" | "video";
-  order?: number;
+// ============================================================
+// Types matching Go backend DTOs exactly (blog_post.go)
+// ============================================================
+
+/** Mirrors dto.FileUpload in Go – base64-encoded file sent in JSON body */
+export interface FileUpload {
+  data: string;     // base64 encoded file data (without data: URI prefix)
+  fileName: string; // e.g. "cover.jpg"
+  mimeType: string; // e.g. "image/jpeg"
 }
 
+/** Mirrors dto.Publishing */
 export interface Publishing {
   status: "draft" | "published" | "archived";
-  publishedAt?: string;
-  scheduledAt?: string;
+  publishedAt?: string | null;
+  scheduledAt?: string | null;
 }
 
+/** Mirrors dto.Attractiveness */
 export interface Attractiveness {
   isFeatured: boolean;
   isSpotlight: boolean;
@@ -25,49 +27,42 @@ export interface Attractiveness {
   highlight: boolean;
 }
 
-// Request DTOs (matching backend CreateBlogPostRequest, UpdateBlogPostRequest)
+// -------------------------------------------------------
+// Request DTOs (matching Go CreateBlogPostRequest)
+// -------------------------------------------------------
 export interface CreateBlogPostData {
   title: string;
   slug?: string;
-  author: string;
+  author?: string;
   leadParagraph?: string;
-  featuredImage?: File | string;
-  content: string;
-  publishing: {
-    status: "draft" | "published" | "archived";
-    publishedAt?: string;
-    scheduledAt?: string;
-  };
-  attractiveness: {
-    isFeatured: boolean;
-    isSpotlight: boolean;
-    priority: number;
-    highlight: boolean;
-  };
+  content?: string;
+  authorId: string;
+  /** Top-level status mirror (backend reads this for form-data compat) */
+  status?: string;
+  featuredImage?: FileUpload;
+  publishing?: Publishing;
+  attractiveness?: Attractiveness;
 }
 
+// -------------------------------------------------------
+// Request DTOs (matching Go UpdateBlogPostRequest)
+// -------------------------------------------------------
 export interface UpdateBlogPostData {
   title?: string;
   slug?: string;
   author?: string;
   leadParagraph?: string;
-  featuredImage?: File | string;
   content?: string;
-  media?: BlogPostMedia[];
-  publishing?: {
-    status?: "draft" | "published" | "archived";
-    publishedAt?: string;
-    scheduledAt?: string;
-  };
-  attractiveness?: {
-    isFeatured?: boolean;
-    isSpotlight?: boolean;
-    priority?: number;
-    highlight?: boolean;
-  };
+  authorId: string;
+  status?: string;
+  featuredImage?: FileUpload;
+  publishing?: Publishing;
+  attractiveness?: Attractiveness;
 }
 
-// Response DTOs (matching backend BlogPostResponse)
+// -------------------------------------------------------
+// Response DTOs (matching Go BlogPostResponse)
+// -------------------------------------------------------
 export interface BlogPostResponse {
   id: string;
   title: string;
@@ -75,7 +70,7 @@ export interface BlogPostResponse {
   author: string;
   content: string;
   excerpt: string;
-  media: BlogPostMedia[];
+  featuredImage: string;
   publishing: Publishing;
   attractiveness: Attractiveness;
   viewCount: number;
@@ -86,52 +81,34 @@ export interface BlogPostResponse {
   updatedAt: string;
 }
 
-// Brief response for lists (matching backend BlogPostBrief)
+// -------------------------------------------------------
+// List response (matching Go BlogPostBrief)
+// -------------------------------------------------------
 export interface BlogPostBrief {
   id: string;
   title: string;
   slug: string;
   author: string;
   excerpt: string;
+  content?: string;
   featuredImage?: string;
   readingTime: number;
   status: string;
-  publishedAt?: string;
+  publishedAt?: string | null;
   viewCount: number;
   createdAt: string;
+  /** Nested publishing object – present when the list returns BlogPostResponse */
+  publishing?: Publishing;
+  /** Nested attractiveness object – present when the list returns BlogPostResponse */
+  attractiveness?: Attractiveness;
 }
 
 export interface BlogPostListResponse {
   posts: BlogPostBrief[];
-  articles?: BlogPostBrief[]; // Backend may return data in 'articles' field
   total: number;
   page: number;
   limit: number;
   totalPages: number;
-}
-
-// Matching backend CreateBlogPostRequest
-export interface CreateBlogArticleData {
-  title: string;
-  slug?: string;
-  author?: string;
-  leadParagraph?: string;
-  content?: string;
-  authorId: string;
-  media?: BlogPostMedia[];
-  publishing?: {
-    status: "draft" | "published" | "archived";
-  };
-  attractiveness?: {
-    isFeatured: boolean;
-    isSpotlight: boolean;
-    priority: number;
-    highlight: boolean;
-  };
-  tags?: string[];
-  featuredImage?: string;
-  categoryId?: string;
-  status: string;
 }
 
 export interface BlogPostFilterParams {
@@ -146,11 +123,31 @@ export interface BlogPostFilterParams {
   sortOrder?: "asc" | "desc";
 }
 
+// ============================================================
+// Helper: parse a data: URI into a FileUpload object
+// Returns null if the value is not a data URI (e.g. it's already a URL)
+// ============================================================
+export function dataUriToFileUpload(
+  dataUri: string,
+  fileName: string,
+): FileUpload | null {
+  // e.g. "data:image/jpeg;base64,/9j/4AAQ..."
+  const match = dataUri.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return null;
+  return {
+    mimeType: match[1]!,
+    data: match[2]!,
+    fileName,
+  };
+}
+
+// ============================================================
+// Service
+// ============================================================
 export const contentService = {
   // ==================== BLOG POST METHODS ====================
-  // Endpoint: /articles/blog
 
-  // GET /articles/blog - Get all blog posts
+  /** GET /articles/blog – returns paginated list */
   async fetchBlogPosts(
     params: BlogPostFilterParams = {},
   ): Promise<BlogPostListResponse> {
@@ -173,145 +170,58 @@ export const contentService = {
     const url = `/articles/blog${queryString ? `?${queryString}` : ""}`;
 
     try {
-      const response: any = await core(url, {
-        method: "GET",
-      });
+      const response: any = await core(url, { method: "GET" });
 
-      // Handle different response structures
-      let posts: BlogPostBrief[] = [];
+      // Backend wraps the response as:
+      // { success, message, data: { data: BlogPostResponse[], pagination: { total, page, limit, totalPages } } }
+      const inner = response?.data ?? response;
+      const rawPosts: any[] = Array.isArray(inner?.data)
+        ? inner.data
+        : Array.isArray(inner)
+          ? inner
+          : [];
 
-      // Case 1: Backend response { success, message, data: { data: [...], pagination: {...} } }
-      // The array is at response.data.data
-      if (response?.data?.data && Array.isArray(response.data.data)) {
-        posts = response.data.data.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          slug: p.slug || "",
-          author: p.author || "Admin",
-          excerpt: p.leadParagraph || "",
-          featuredImage: p.featuredImage || "",
-          readingTime: p.readingTime || 5,
-          status: p.status || "draft",
-          publishedAt: p.publishedAt,
-          viewCount: p.viewCount || 0,
-          createdAt: p.createdAt || new Date().toISOString(),
-        }));
-        return {
-          posts,
-          total: response.data.pagination?.total || posts.length,
-          page: response.data.pagination?.page || 1,
-          limit: response.data.pagination?.limit || 10,
-          totalPages: response.data.pagination?.totalPages || 1,
-        };
-      }
+      const pagination = inner?.pagination ?? {};
 
-      // Case 2: Paginated response with data array at response.data
-      if (
-        response?.data &&
-        Array.isArray(response.data) &&
-        !Array.isArray(response.data.data)
-      ) {
-        posts = response.data.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          slug: p.slug || "",
-          author: p.author || "Admin",
-          excerpt: p.leadParagraph || p.excerpt || "",
-          featuredImage: p.featuredImage || "",
-          readingTime: p.readingTime || 5,
-          status: p.status || p.publishing?.status || "draft",
-          publishedAt: p.publishedAt || p.publishing?.publishedAt,
-          viewCount: p.viewCount || 0,
-          createdAt: p.createdAt || new Date().toISOString(),
-        }));
-        return {
-          posts,
-          total: response.pagination?.total || posts.length,
-          page: response.pagination?.page || 1,
-          limit: response.pagination?.limit || 10,
-          totalPages: response.pagination?.totalPages || 1,
-        };
-      }
+      const posts: BlogPostBrief[] = rawPosts.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        slug: p.slug || "",
+        author: p.author || "Admin",
+        excerpt: p.excerpt || p.leadParagraph || "",
+        content: p.content || "",
+        featuredImage: p.featuredImage || "",
+        readingTime: p.readingTime || 1,
+        status: p.publishing?.status || p.status || "draft",
+        publishedAt: p.publishing?.publishedAt ?? p.publishedAt ?? null,
+        viewCount: p.viewCount || 0,
+        createdAt: p.createdAt || new Date().toISOString(),
+        publishing: p.publishing,
+        attractiveness: p.attractiveness,
+      }));
 
-      // Case 3: Direct array response
-      if (Array.isArray(response)) {
-        posts = response.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          slug: p.slug || "",
-          author: p.author || "Admin",
-          excerpt: p.leadParagraph || p.excerpt || "",
-          featuredImage: p.featuredImage || "",
-          readingTime: p.readingTime || 5,
-          status: p.status || "draft",
-          publishedAt: p.publishedAt,
-          viewCount: p.viewCount || 0,
-          createdAt: p.createdAt || new Date().toISOString(),
-        }));
-        return {
-          posts,
-          total: posts.length,
-          page: 1,
-          limit: posts.length,
-          totalPages: 1,
-        };
-      }
-
-      // Case 4: Response with articles array (alternative backend format)
-      if (response?.articles && Array.isArray(response.articles)) {
-        posts = response.articles.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          slug: p.slug || "",
-          author: p.author || "Admin",
-          excerpt: p.leadParagraph || p.excerpt || "",
-          featuredImage: p.featuredImage || "",
-          readingTime: p.readingTime || 5,
-          status: p.status || "draft",
-          publishedAt: p.publishedAt,
-          viewCount: p.viewCount || 0,
-          createdAt: p.createdAt || new Date().toISOString(),
-        }));
-        return {
-          posts,
-          total: response.total || posts.length,
-          page: response.page || 1,
-          limit: response.limit || 10,
-          totalPages: response.totalPages || 1,
-        };
-      }
-
-      console.warn("Unexpected response structure:", response);
       return {
-        posts: [],
-        total: 0,
-        page: 1,
-        limit: 10,
-        totalPages: 0,
+        posts,
+        total: pagination.total ?? posts.length,
+        page: pagination.page ?? 1,
+        limit: pagination.limit ?? 10,
+        totalPages: pagination.totalPages ?? 1,
       };
     } catch (error) {
       console.error("Error fetching blog posts:", error);
-      return {
-        posts: [],
-        total: 0,
-        page: 1,
-        limit: 10,
-        totalPages: 0,
-      };
+      return { posts: [], total: 0, page: 1, limit: 10, totalPages: 0 };
     }
   },
 
-  // GET /articles/blog/:id - Get blog post by ID
+  /** GET /articles/blog/:id */
   async fetchBlogPostById(id: string): Promise<BlogPostResponse | null> {
     const { core } = useApiClients();
     try {
-      const response = await core<
-        ApiResponse<BlogPostResponse> | BlogPostResponse | any
-      >(`/articles/blog/${id}`, {
+      const response: any = await core(`/articles/blog/${id}`, {
         method: "GET",
       });
       if (response && typeof response === "object") {
-        return (response as any).data || response;
+        return response.data ?? response;
       }
       return null;
     } catch {
@@ -319,28 +229,19 @@ export const contentService = {
     }
   },
 
-  // POST /articles/blog - Create blog post
+  /** POST /articles/blog – JSON body with optional FileUpload for featuredImage */
   async createBlogPost(
-    data: CreateBlogArticleData | FormData,
+    data: CreateBlogPostData,
   ): Promise<BlogPostResponse | null> {
     const { core } = useApiClients();
     try {
-      // Check if data is FormData
-      const isFormData = data instanceof FormData;
-      const body = isFormData ? data : JSON.stringify(data);
-      const headers = isFormData
-        ? undefined
-        : { "Content-Type": "application/json" };
-
-      const response = await core<
-        ApiResponse<BlogPostResponse> | BlogPostResponse | any
-      >("/articles/blog", {
+      const response: any = await core("/articles/blog", {
         method: "POST",
-        body,
-        headers,
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
       });
       if (response && typeof response === "object") {
-        return (response as any).data || response;
+        return response.data ?? response;
       }
       return null;
     } catch {
@@ -348,29 +249,20 @@ export const contentService = {
     }
   },
 
-  // PUT /articles/blog/:id - Update blog post
+  /** PUT /articles/blog/:id – JSON body with optional FileUpload for featuredImage */
   async updateBlogPost(
     id: string,
-    data: UpdateBlogPostData | FormData,
+    data: UpdateBlogPostData,
   ): Promise<BlogPostResponse | null> {
     const { core } = useApiClients();
     try {
-      // Check if data is FormData
-      const isFormData = data instanceof FormData;
-      const body = isFormData ? data : JSON.stringify(data);
-      const headers = isFormData
-        ? undefined
-        : { "Content-Type": "application/json" };
-
-      const response = await core<
-        ApiResponse<BlogPostResponse> | BlogPostResponse | any
-      >(`/articles/blog/${id}`, {
+      const response: any = await core(`/articles/blog/${id}`, {
         method: "PUT",
-        body,
-        headers,
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
       });
       if (response && typeof response === "object") {
-        return (response as any).data || response;
+        return response.data ?? response;
       }
       return null;
     } catch {
@@ -378,7 +270,7 @@ export const contentService = {
     }
   },
 
-  // DELETE /articles/blog/:id - Delete blog post
+  /** DELETE /articles/blog/:id */
   async deleteBlogPost(id: string): Promise<boolean> {
     const { core } = useApiClients();
     try {
@@ -390,19 +282,14 @@ export const contentService = {
   },
 
   // ==================== FAQ METHODS ====================
-  // Endpoint: /articles/faq
 
-  // GET /articles/faq - Get all FAQs
   async fetchFaqs(): Promise<Faq[]> {
     const { core } = useApiClients();
     try {
       const response = await core<ApiResponse<Faq[]> | Faq[]>("/articles/faq", {
         method: "GET",
       });
-      // Handle both wrapped and unwrapped responses
-      if (Array.isArray(response)) {
-        return response;
-      }
+      if (Array.isArray(response)) return response;
       if (response && Array.isArray((response as any).data)) {
         return (response as ApiResponse<Faq[]>).data;
       }
@@ -412,18 +299,14 @@ export const contentService = {
     }
   },
 
-  // GET /articles/faq/:id - Get FAQ by ID
   async fetchFaqById(id: string): Promise<Faq | null> {
     const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq> | Faq | any>(
-        `/articles/faq/${id}`,
-        {
-          method: "GET",
-        },
-      );
+      const response: any = await core(`/articles/faq/${id}`, {
+        method: "GET",
+      });
       if (response && typeof response === "object") {
-        return (response as any).data || response;
+        return response.data ?? response;
       }
       return null;
     } catch {
@@ -431,19 +314,15 @@ export const contentService = {
     }
   },
 
-  // POST /articles/faq - Create FAQ
   async createFaq(data: CreateFaqData): Promise<Faq | null> {
     const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq> | Faq | any>(
-        "/articles/faq",
-        {
-          method: "POST",
-          body: data,
-        },
-      );
+      const response: any = await core("/articles/faq", {
+        method: "POST",
+        body: data,
+      });
       if (response && typeof response === "object") {
-        return (response as any).data || response;
+        return response.data ?? response;
       }
       return null;
     } catch {
@@ -451,19 +330,15 @@ export const contentService = {
     }
   },
 
-  // PUT /articles/faq/:id - Update FAQ
   async updateFaq(id: string, data: UpdateFaqData): Promise<Faq | null> {
     const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq> | Faq | any>(
-        `/articles/faq/${id}`,
-        {
-          method: "PUT",
-          body: data,
-        },
-      );
+      const response: any = await core(`/articles/faq/${id}`, {
+        method: "PUT",
+        body: data,
+      });
       if (response && typeof response === "object") {
-        return (response as any).data || response;
+        return response.data ?? response;
       }
       return null;
     } catch {
@@ -471,7 +346,6 @@ export const contentService = {
     }
   },
 
-  // DELETE /articles/faq/:id - Delete FAQ
   async deleteFaq(id: string): Promise<boolean> {
     const { core } = useApiClients();
     try {
@@ -482,15 +356,12 @@ export const contentService = {
     }
   },
 
-  // POST /articles/faq/:id/reorder - Reorder FAQ
   async reorderFaq(id: string, orderNum: number): Promise<boolean> {
     const { core } = useApiClients();
     try {
       await core(`/articles/faq/${id}/reorder`, {
         method: "POST",
-        body: {
-          newOrder: orderNum,
-        },
+        body: { newOrder: orderNum },
       });
       return true;
     } catch {
@@ -498,9 +369,8 @@ export const contentService = {
     }
   },
 
-  // ==================== BLOG POST VIEW COUNT ====================
+  // ==================== VIEW COUNT ====================
 
-  // POST /articles/:id/view - Increment view count for blog post
   async incrementBlogPostViewCount(id: string): Promise<boolean> {
     const { core } = useApiClients();
     try {
