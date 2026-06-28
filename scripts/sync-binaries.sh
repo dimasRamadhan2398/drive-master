@@ -13,7 +13,7 @@ chmod 600 deploy_key
 # 1. Sync root configs
 echo "Syncing root configs..."
 rsync -avz -e "ssh -i deploy_key -o StrictHostKeyChecking=no" ./docker-compose-vps.yml "$SSH_TARGET":"$TARGET_PATH"/docker-compose.yml
-rsync -avz -e "ssh -i deploy_key -o StrictHostKeyChecking=no" ./package.json ./package-lock.json ./.env.production "$SSH_TARGET":"$TARGET_PATH"/
+rsync -avz -e "ssh -i deploy_key -o StrictHostKeyChecking=no" ./package.json ./package-lock.json ./.env.production ./ecosystem.config.js "$SSH_TARGET":"$TARGET_PATH"/
 
 # 2. Sync frontend build output (.output/)
 echo "Syncing frontend built output..."

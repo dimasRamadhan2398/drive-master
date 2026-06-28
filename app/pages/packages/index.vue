@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Package } from "~/stores/packages";
+
 const { t } = useI18n()
 
 useSeoMeta({
@@ -6,24 +8,7 @@ useSeoMeta({
   description: t('packages.subtitle'),
 });
 
-const selectedPlan = ref<
-  | "six_package"
-  | "six_package_night"
-  | "six_package_weekend"
-  | "six_package_weekend_night"
-  | "eight_package"
-  | "eight_package_night"
-  | "eight_package_weekend"
-  | "eight_package_weekend_night"
-  | "ten_package"
-  | "ten_package_night"
-  | "ten_package_weekend"
-  | "ten_package_weekend_night"
-  | "twelve_package"
-  | "twelve_package_night"
-  | "twelve_package_weekend"
-  | "twelve_package_weekend_night"
->("eight_package");
+const selectedPlan = ref<string>("");
 
 const now = ref(new Date());
 if (process.client) {
@@ -70,29 +55,45 @@ const timeLeft = computed(() => {
   return { hours, minutes, seconds };
 });
 
+const basePackages = computed(() => {
+  return packagePlans.value.filter(
+    (p) => !p.name.includes("+") && !p.name.toLowerCase().includes("night") && !p.name.toLowerCase().includes("weekend")
+  );
+});
+
 const comparisonFeatures = computed(() => [
-  { name: t('packages.comparison.freeTrial'), pkg6x: true, pkg8x: true, pkg10x: true, pkg12x: true },
-  { name: t('packages.comparison.sessions'), pkg6x: "6", pkg8x: "8", pkg10x: "10", pkg12x: "12" },
+  {
+    name: t('packages.comparison.freeTrial'),
+    value: (plan: Package) => true,
+  },
+  {
+    name: t('packages.comparison.sessions'),
+    value: (plan: Package) => String(plan.sessions),
+  },
   {
     name: t('packages.comparison.totalHours'),
-    pkg6x: `6 ${t('packages.comparison.hrs')}`,
-    pkg8x: `8 ${t('packages.comparison.hrs')}`,
-    pkg10x: `10 ${t('packages.comparison.hrs')}`,
-    pkg12x: `12 ${t('packages.comparison.hrs')}`,
+    value: (plan: Package) => `${plan.sessions} ${t('packages.comparison.hrs')}`,
   },
 ]);
 
-const addOns = computed(() => [
-  {
-    title: t('packages.extras.extraSession'),
-    price: "Rp 350.000",
-    description: t('packages.extras.extraSessionDesc'),
+const addOns = computed(() =>
+  packagesStore.addons.map((addon) => ({
+    title: addon.name,
+    price: `Rp ${addon.price.toLocaleString("id-ID")}`,
+    description: addon.description,
     icon: "i-lucide-plus-circle",
-  },
-]);
+  }))
+);
 
 onMounted(async () => {
-  packagesStore.fetchPackages();
+  await Promise.all([
+    packagesStore.fetchPackages(),
+    packagesStore.fetchAddons(),
+  ]);
+  const defaultPlan = packagePlans.value.find((p) => p.isPopular) || packagePlans.value[0];
+  if (defaultPlan) {
+    selectedPlan.value = defaultPlan.id;
+  }
 });
 </script>
 
@@ -108,12 +109,6 @@ onMounted(async () => {
           to: '/auth/register',
           color: 'warning',
           icon: 'i-lucide-user-plus',
-        },
-        {
-          label: t('packages.comparePackages'),
-          to: '#comparison',
-          color: 'neutral',
-          variant: 'outline',
         },
       ]"
     />
@@ -309,111 +304,13 @@ onMounted(async () => {
       </div>
     </UPageSection>
 
-    <!-- Comparison Table -->
-    <UPageSection
-      id="comparison"
-      :headline="t('packages.comparison.subtitle')"
-      :title="t('packages.comparison.title')"
-      :description="t('packages.comparison.description')"
-      :ui="{ headline: 'text-warning' }"
-      class="bg-muted/30"
-    >
-      <UCard class="overflow-x-auto">
-        <table class="w-full min-w-[600px]">
-          <thead>
-            <tr class="border-b border-default">
-              <th class="text-left py-4 px-4 font-semibold">{{ t('packages.comparison.feature') }}</th>
-              <th class="text-center py-4 px-4 font-semibold">6x</th>
-              <th class="text-center py-4 px-4 font-semibold">
-                <div class="flex items-center justify-center gap-2">
-                  8x
-                  <UBadge :label="t('packages.popular')" size="xs" color="warning" />
-                </div>
-              </th>
-              <th class="text-center py-4 px-4 font-semibold">10x</th>
-              <th class="text-center py-4 px-4 font-semibold">12x</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="feature in comparisonFeatures"
-              :key="feature.name"
-              class="border-b border-default last:border-0"
-            >
-              <td class="py-3 px-4 text-sm">{{ feature.name }}</td>
-              <td class="py-3 px-4 text-center">
-                <template v-if="typeof feature.pkg6x === 'boolean'">
-                  <UIcon
-                    :name="feature.pkg6x ? 'i-lucide-check' : 'i-lucide-minus'"
-                    :class="feature.pkg6x ? 'text-warning' : 'text-muted'"
-                    class="size-5"
-                  />
-                </template>
-                <template v-else>
-                  <span class="text-sm">{{ feature.pkg6x }}</span>
-                </template>
-              </td>
-              <td class="py-3 px-4 text-center bg-warning/5">
-                <template v-if="typeof feature.pkg8x === 'boolean'">
-                  <UIcon
-                    :name="feature.pkg8x ? 'i-lucide-check' : 'i-lucide-minus'"
-                    :class="feature.pkg8x ? 'text-warning' : 'text-muted'"
-                    class="size-5"
-                  />
-                </template>
-                <template v-else>
-                  <span class="text-sm font-medium">{{ feature.pkg8x }}</span>
-                </template>
-              </td>
-              <td class="py-3 px-4 text-center">
-                <template v-if="typeof feature.pkg10x === 'boolean'">
-                  <UIcon
-                    :name="feature.pkg10x ? 'i-lucide-check' : 'i-lucide-minus'"
-                    :class="feature.pkg10x ? 'text-warning' : 'text-muted'"
-                    class="size-5"
-                  />
-                </template>
-                <template v-else>
-                  <span class="text-sm">{{ feature.pkg10x }}</span>
-                </template>
-              </td>
-              <td class="py-3 px-4 text-center">
-                <template v-if="typeof feature.pkg12x === 'boolean'">
-                  <UIcon
-                    :name="feature.pkg12x ? 'i-lucide-check' : 'i-lucide-minus'"
-                    :class="feature.pkg12x ? 'text-warning' : 'text-muted'"
-                    class="size-5"
-                  />
-                </template>
-                <template v-else>
-                  <span class="text-sm">{{ feature.pkg12x }}</span>
-                </template>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="bg-muted/50">
-              <td class="py-4 px-4 font-semibold">{{ t('packages.comparison.price') }}</td>
-              <td
-                v-for="plan in packagePlans"
-                :key="plan.id"
-                class="py-4 px-4 text-center font-semibold"
-                :class="{ 'text-warning bg-warning/10': plan.isPopular }"
-              >
-                Rp {{ (plan.isDiscounted ? plan.discountPrice : plan.price).toLocaleString('id-ID') }}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </UCard>
-    </UPageSection>
-
     <!-- Add-ons -->
     <UPageSection
       :headline="t('packages.extras.subtitle')"
       :title="t('packages.extras.title')"
       :description="t('packages.extras.description')"
-      :ui="{ headline: 'text-warning' }"
+      class="bg-muted/30"
+      :ui="{ headline: 'text-warning',  }"
     >
       <div class="grid md:grid-cols-1 gap-6 max-w-4xl mx-auto">
         <UCard v-for="addon in addOns" :key="addon.title">

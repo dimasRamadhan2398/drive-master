@@ -83,7 +83,7 @@ export const packageService = {
       success: boolean;
       message: string;
       data: PackageApiResponse[];
-    }>("/packages/all", {
+    }>("/packages/all?limit=100", {
       method: "GET",
     });
 

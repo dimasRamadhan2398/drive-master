@@ -303,6 +303,20 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 			}
 		}
 
+		// Calculate extra sessions from the enrollment transaction
+		extraSessions := 0
+		if s.transactionSvc != nil {
+			tx, err := s.transactionSvc.GetTransactionByEnrollmentID(ctx, enrollment.ID)
+			if err == nil && tx != nil {
+				for _, item := range tx.Items {
+					if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222201") {
+						extraSessions += item.Sessions * item.Quantity
+					}
+				}
+			}
+		}
+		totalSessions += extraSessions
+
 		_ = s.eventPublisher.PublishEnrollmentPaid(ctx, enrollment.ID.String(), enrollment.UserID.String(), enrollment.PackageID, totalPrice, totalSessions, packageName)
 	}
 
@@ -333,13 +347,27 @@ func (s *EnrollmentService) createEntitlementsForEnrollment(ctx context.Context,
 		expiresAt = time.Now().AddDate(1, 0, 0) // Default 1 year if validity is invalid
 	}
 
+	// Calculate extra sessions from the enrollment transaction
+	extraSessions := 0
+	if s.transactionSvc != nil {
+		tx, err := s.transactionSvc.GetTransactionByEnrollmentID(ctx, enrollment.ID)
+		if err == nil && tx != nil {
+			for _, item := range tx.Items {
+				if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222201") {
+					extraSessions += item.Sessions * item.Quantity
+				}
+			}
+		}
+	}
+	totalSessions := pkg.Sessions + extraSessions
+
 	// Create entitlement for the package
 	_, err = s.entitlementSvc.CreateEntitlement(ctx, dto.CreateEntitlementRequest{
 		UserID:            enrollment.UserID,
 		SourceType:        "package",
 		SourceID:          enrollment.PackageID.String(),
-		TotalSessions:     pkg.Sessions,
-		SessionsRemaining: pkg.Sessions,
+		TotalSessions:     totalSessions,
+		SessionsRemaining: totalSessions,
 		ExpiresAt:         expiresAt,
 	})
 	if err != nil {

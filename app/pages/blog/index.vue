@@ -30,10 +30,11 @@ const filteredArticles = computed(() => {
 
 // Transform article to blog post format for template
 const blogPosts = computed(() =>
-  allArticles.value.map((a) => ({
+  filteredArticles.value.map((a) => ({
     id: a.id,
     title: a.title,
     slug: a.slug,
+    leadParagraph: a.excerpt || "",
     content: a.content || a.excerpt || "",
     author: a.author || "Admin Drive Master",
     date: (a.publishing as any)?.publishedAt || a.date || new Date().toLocaleDateString(),
@@ -258,10 +259,6 @@ onMounted(() => {
                 <span class="size-1 rounded-full bg-muted" />
                 <span>{{ featuredPost.date }}</span>
                 <span class="size-1 rounded-full bg-muted" />
-                <span class="flex items-center gap-1">
-                  <UIcon name="i-lucide-clock" class="size-3.5" />
-                  {{ getReadingTime(featuredPost.content) }}
-                </span>
               </div>
 
               <h2
@@ -271,7 +268,7 @@ onMounted(() => {
               </h2>
 
               <p class="text-muted leading-relaxed mb-6 line-clamp-3">
-                {{ getExcerpt(featuredPost.content, 250) }}
+                {{ getExcerpt(featuredPost.leadParagraph, 250) }}
               </p>
 
               <div class="flex items-center gap-6">
@@ -352,7 +349,7 @@ onMounted(() => {
 
                 <!-- Excerpt -->
                 <p class="text-sm text-muted leading-relaxed flex-1 line-clamp-3 mb-4">
-                  {{ getExcerpt(post.content) }}
+                  {{ getExcerpt(post.leadParagraph) }}
                 </p>
 
                 <!-- Footer -->

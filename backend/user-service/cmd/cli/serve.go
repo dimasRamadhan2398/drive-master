@@ -149,9 +149,10 @@ func runServe(cmd *cobra.Command, args []string) {
 	serviceRegistry := services.NewServiceRegistry(repoRegistry, eventPublisher, redisClient)
 
 	// Register session completed handler (consumes events such as "session.completed" or "course.completed")
+	certRepo := repoRegistry.GetCertification()
 	entRepo := repoRegistry.GetEntitlement()
 	certSvc := serviceRegistry.GetCertificationService()
-	entitlementListener := listeners.NewEntitlementCompletedListener(certSvc, eventPublisher)
+	entitlementListener := listeners.NewEntitlementCompletedListener(certSvc, certRepo, eventPublisher)
 	sessionHandler := listeners.NewSessionCompletedHandler(entRepo, entitlementListener)
 	if err := eventPublisher.RegisterHandler(sessionHandler); err != nil {
 		logger.Warn("Failed to register session.completed handler", logger.LogField("error", err))
@@ -256,6 +257,7 @@ func runMigrations(db *gorm.DB) {
 		&models.Certification{},
 		&models.Entitlement{},
 		&models.InstructorRecurringSchedule{},
+		&models.Testimonial{},
 	); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}

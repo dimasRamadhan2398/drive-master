@@ -67,6 +67,7 @@ export interface CreateEnrollmentData {
   discountPrice: number;
   startDate?: string;
   notes?: string;
+  addOns?: string[];
 }
 
 // Update enrollment data

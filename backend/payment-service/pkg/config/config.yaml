@@ -18,7 +18,7 @@ database:
 redis:
   host: redis
   port: 6379
-  password: "drivemaster123"
+  password: ""
   db: 0
 
 jwt:

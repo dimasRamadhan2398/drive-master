@@ -22,14 +22,41 @@ export default defineNuxtRouteMiddleware(async (to: any) => {
     }
   }
 
+  // Public routes that don't require authentication
+  const publicRoutes = [
+    "/",
+    "/auth/login",
+    "/auth/register",
+    "/auth/verify",
+    "/auth/forgot-password",
+    "/auth/onboarding",
+    "/auth/select-plan",
+    "/auth/payment",
+    "/auth/payment-status",
+    "/auth/payment-method",
+    "/packages",
+    "/instructors",
+    "/services",
+    "/about",
+    "/contact",
+    "/blog",
+  ];
+
+  // Check if current path is public
+  const isPublicRoute = publicRoutes.some(
+    (route) => to.path === route || to.path.startsWith(route + "/"),
+  );
+
   // Check if token is expired or invalid - redirect to appropriate login page
   if (authStore.accessToken) {
     const loginRedirect = tokenValidator.getLoginRedirectPath(to.path);
 
     if (tokenValidator.isTokenExpired(authStore.accessToken)) {
-      // Token is expired - clear auth and redirect
+      // Token is expired - clear auth and redirect only if on a protected route
       tokenValidator.handleInvalidToken(loginRedirect);
-      return navigateTo(loginRedirect);
+      if (!isPublicRoute) {
+        return navigateTo(loginRedirect);
+      }
     }
   }
 
@@ -58,31 +85,6 @@ export default defineNuxtRouteMiddleware(async (to: any) => {
 
     return;
   }
-
-  // Public routes that don't require authentication
-  const publicRoutes = [
-    "/",
-    "/auth/login",
-    "/auth/register",
-    "/auth/verify",
-    "/auth/forgot-password",
-    "/auth/onboarding",
-    "/auth/select-plan",
-    "/auth/payment",
-    "/auth/payment-status",
-    "/auth/payment-method",
-    "/packages",
-    "/instructors",
-    "/services",
-    "/about",
-    "/contact",
-    "/blog",
-  ];
-
-  // Check if current path is public
-  const isPublicRoute = publicRoutes.some(
-    (route) => to.path === route || to.path.startsWith(route + "/"),
-  );
 
   // If user is authenticated as admin and trying to access auth pages, redirect to admin
   if (

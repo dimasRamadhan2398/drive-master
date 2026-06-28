@@ -13,11 +13,15 @@ const authStore = useAuthStore();
 
 // Initialize selected plan type
 const selectedPlanId = ref<string | null>(null);
+const selectedAddons = ref<string[]>([]);
 
-// Fetch packages on mount
+// Fetch packages and addons on mount
 onMounted(async () => {
   if (packagesStore.packages.length === 0) {
     await packagesStore.fetchPackages();
+  }
+  if (packagesStore.addons.length === 0) {
+    await packagesStore.fetchAddons();
   }
   // Set default selected plan
   if (!selectedPlanId.value && packagesStore.activePackages.length > 0) {
@@ -26,6 +30,44 @@ onMounted(async () => {
     selectedPlanId.value = popular?.id || packagesStore.activePackages[0].id;
   }
 });
+
+const isExtraSession = (addon: any) => {
+  return addon.name.toLowerCase().includes("extra session") || addon.id === "22222222-2222-2222-2222-222222222201";
+};
+
+const getAddonCount = (id: string) => {
+  return selectedAddons.value.filter((x) => x === id).length;
+};
+
+const incrementAddon = (id: string) => {
+  selectedAddons.value.push(id);
+};
+
+const decrementAddon = (id: string) => {
+  const index = selectedAddons.value.indexOf(id);
+  if (index !== -1) {
+    selectedAddons.value.splice(index, 1);
+  }
+};
+
+function toggleAddon(addon: any) {
+  const id = addon.id;
+  if (isExtraSession(addon)) {
+    const count = getAddonCount(id);
+    if (count > 0) {
+      selectedAddons.value = selectedAddons.value.filter((x) => x !== id);
+    } else {
+      selectedAddons.value.push(id);
+    }
+  } else {
+    const index = selectedAddons.value.indexOf(id);
+    if (index === -1) {
+      selectedAddons.value.push(id);
+    } else {
+      selectedAddons.value.splice(index, 1);
+    }
+  }
+}
 
 // Map store packages to plan format with promo pricing
 const plans = computed(() => {
@@ -100,6 +142,32 @@ const discount = computed(() => {
   );
 });
 
+const groupedSelectedAddons = computed(() => {
+  const counts: Record<string, number> = {};
+  for (const id of selectedAddons.value) {
+    counts[id] = (counts[id] || 0) + 1;
+  }
+  return Object.entries(counts).map(([id, count]) => {
+    const addon = packagesStore.addons.find((a) => a.id === id);
+    return {
+      id,
+      count,
+      name: addon ? addon.name : "",
+      price: addon ? addon.price * count : 0,
+    };
+  }).filter((item) => item.name);
+});
+
+const totalPrice = computed(() => {
+  if (!currentPlan.value) return 0;
+  const basePrice = isPromoActive.value ? currentPlan.value.promoPrice : currentPlan.value.originalPrice;
+  const addonsPrice = selectedAddons.value.reduce((sum, id) => {
+    const addon = packagesStore.addons.find((a) => a.id === id);
+    return sum + (addon ? addon.price : 0);
+  }, 0);
+  return basePrice + addonsPrice;
+});
+
 async function selectPlan() {
   if (!currentPlan.value) return;
 
@@ -119,12 +187,13 @@ async function selectPlan() {
       return;
     }
 
-    // Create enrollment with userId and packageId
+    // Create enrollment with userId, packageId, and selected addons
     const enrollment = await enrollmentsStore.createEnrollment({
       userId: authStore.userId,
       packageId: currentPlan.value.id,
       price: selectedPackage.price,
       discountPrice: selectedPackage.discountPrice,
+      addOns: selectedAddons.value,
     });
 
     if (enrollment) {
@@ -402,6 +471,106 @@ const freeTrialInfo = computed(() => [
         </div>
       </div>
 
+      <!-- Add-ons Section -->
+      <div class="mb-12">
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold">{{ t("packages.extras.title") || "Add-ons & Extras" }}</h2>
+          <p class="text-muted mt-2">
+            Customize your learning experience with optional driving addons
+          </p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <!-- Loading State for Add-ons -->
+          <div v-if="packagesStore.isLoading" class="col-span-full flex justify-center py-12">
+            <UIcon name="i-lucide-loader-2" class="size-8 text-warning animate-spin" />
+          </div>
+          
+          <UCard
+            v-else
+            v-for="addon in packagesStore.addons"
+            :key="addon.id"
+            :class="[
+              'cursor-pointer border-2 transition-all',
+              selectedAddons.includes(addon.id)
+                ? 'border-warning bg-warning/5 shadow-md'
+                : 'border-transparent hover:border-warning/30 hover:shadow'
+            ]"
+            @click="toggleAddon(addon)"
+          >
+            <div class="flex items-start gap-4 h-full">
+              <UCheckbox
+                v-if="!isExtraSession(addon)"
+                :model-value="selectedAddons.includes(addon.id)"
+                color="warning"
+                class="pointer-events-none mt-1"
+              />
+              <UCheckbox
+                v-else
+                :model-value="getAddonCount(addon.id) > 0"
+                color="warning"
+                class="pointer-events-none mt-1"
+              />
+              <div class="flex-1 space-y-1">
+                <h3 class="font-semibold text-sm sm:text-base text-foreground">
+                  {{ addon.name }}
+                </h3>
+                <p class="text-warning font-bold text-xs sm:text-sm">
+                  Rp {{ addon.price.toLocaleString("id-ID") }}
+                </p>
+                <p class="text-xs text-muted leading-relaxed">
+                  {{ addon.description }}
+                </p>
+
+                <div class="pt-2 flex items-center justify-between gap-2 flex-wrap">
+                  <div v-if="addon.sessions && !isExtraSession(addon)" class="pt-1">
+                    <UBadge
+                      :label="`${addon.sessions} extra session(s)`"
+                      color="warning"
+                      variant="subtle"
+                      size="xs"
+                    />
+                  </div>
+
+                  <!-- If it's Extra Session, show the Badge AND the Increment/Decrement controls -->
+                  <template v-if="isExtraSession(addon)">
+                    <UBadge
+                      v-if="getAddonCount(addon.id) > 0"
+                      :label="`${getAddonCount(addon.id)} extra session(s)`"
+                      color="warning"
+                      variant="subtle"
+                      size="xs"
+                    />
+                    
+                    <!-- Counter Controls -->
+                    <div @click.stop class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
+                      <UButton
+                        icon="i-lucide-minus"
+                        size="xs"
+                        color="neutral"
+                        variant="ghost"
+                        :disabled="getAddonCount(addon.id) === 0"
+                        @click="decrementAddon(addon.id)"
+                      />
+                      <span class="px-2.5 text-xs font-semibold text-foreground min-w-[20px] text-center">
+                        {{ getAddonCount(addon.id) }}
+                      </span>
+                      <UButton
+                        icon="i-lucide-plus"
+                        size="xs"
+                        color="warning"
+                        variant="ghost"
+                        @click="incrementAddon(addon.id)"
+                      />
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </UCard>
+        </div>
+      </div>
+
       <!-- Free Trial Info Section -->
       <div class="mb-12">
         <div class="text-center mb-8">
@@ -433,18 +602,25 @@ const freeTrialInfo = computed(() => [
         <UCard class="bg-warning/5 border-warning/20">
           <div class="text-center space-y-4">
             <h3 class="text-xl font-bold">Ready to Get Started?</h3>
-            <p class="text-muted">
-              Selected package:
-              <span class="font-bold"
-                >{{ currentPlan?.name }} - Rp
-                {{
-                  (isPromoActive
-                    ? currentPlan?.promoPrice
-                    : currentPlan?.originalPrice
-                  )?.toLocaleString("id-ID")
-                }}</span
-              >
-            </p>
+            <div class="space-y-1 text-muted">
+              <p>
+                Selected package:
+                <span class="font-bold text-foreground">{{ currentPlan?.name }}</span>
+              </p>
+              <p v-if="selectedAddons.length > 0" class="text-xs">
+                Selected Add-ons:
+                <span class="font-semibold text-foreground">
+                  {{
+                    groupedSelectedAddons
+                      .map((item) => item.count > 1 ? `${item.name} (${item.count}x)` : item.name)
+                      .join(", ")
+                  }}
+                </span>
+              </p>
+              <p class="text-lg font-bold text-warning pt-1">
+                Total Price: Rp {{ totalPrice.toLocaleString("id-ID") }}
+              </p>
+            </div>
 
             <div class="flex gap-3 pt-2">
               <UButton

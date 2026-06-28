@@ -28,7 +28,7 @@ func RunAddonSeeder(db *gorm.DB) error {
 			Title:       "Night Session Add-on",
 			Description: "Add night driving session to your package. Learn to drive safely in low-light conditions.",
 			Price:       250000,
-			Sessions:    1,
+			Sessions:    0,
 			Status:      models.AddOnStatusActive,
 			ImageURL:    "",
 			SortOrder:   2,
@@ -40,7 +40,7 @@ func RunAddonSeeder(db *gorm.DB) error {
 			Title:       "Weekend Session Add-on",
 			Description: "Add weekend driving session to your package. Perfect for those with busy weekday schedules.",
 			Price:       200000,
-			Sessions:    1,
+			Sessions:    0,
 			Status:      models.AddOnStatusActive,
 			ImageURL:    "",
 			SortOrder:   3,
@@ -52,7 +52,7 @@ func RunAddonSeeder(db *gorm.DB) error {
 			Title:       "Extended Session (2 Hours)",
 			Description: "Upgrade your regular session to 2 hours for more practice time.",
 			Price:       500000,
-			Sessions:    1,
+			Sessions:    0,
 			Status:      models.AddOnStatusActive,
 			ImageURL:    "",
 			SortOrder:   4,
@@ -63,9 +63,22 @@ func RunAddonSeeder(db *gorm.DB) error {
 
 	// Create or update all addons
 	for _, a := range addons {
-		result := db.Where("id = ?", a.ID).FirstOrCreate(&a)
-		if result.Error != nil {
-			return result.Error
+		var existing models.AddOn
+		if err := db.Where("id = ?", a.ID).First(&existing).Error; err == nil {
+			existing.Title = a.Title
+			existing.Description = a.Description
+			existing.Price = a.Price
+			existing.Sessions = a.Sessions
+			existing.Status = a.Status
+			existing.SortOrder = a.SortOrder
+			existing.UpdatedAt = time.Now()
+			if err := db.Save(&existing).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := db.Create(&a).Error; err != nil {
+				return err
+			}
 		}
 	}
 

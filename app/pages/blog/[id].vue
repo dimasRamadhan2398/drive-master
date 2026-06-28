@@ -6,9 +6,14 @@ const { t } = useI18n();
 const route = useRoute();
 const contentStore = useContentStore();
 
-// Extract post ID from route param (format: "1-slug-title")
+// Extract post ID from route param (handles both UUID and numeric IDs)
 const postId = computed(() => {
   const param = (route.params.id as string) || "";
+  const uuidRegex = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+  const match = param.match(uuidRegex);
+  if (match) {
+    return match[1];
+  }
   return param.split("-")[0] || "";
 });
 
@@ -24,7 +29,7 @@ onMounted(async () => {
   }
 
   // Increment view count to backend (fire-and-forget, non-blocking)
-  contentStore.incrementBlogPostViewCount(postId.value);
+  contentStore.incrementBlogPostViewCount(postId.value!);
 });
 
 // Related posts (exclude current)
@@ -88,10 +93,30 @@ function getGradient(index: number) {
   return gradientColors[index % gradientColors.length];
 }
 
-// Format content paragraphs
-const contentParagraphs = computed(() => {
-  if (!post.value?.content) return [];
-  return post.value.content.split("\n").filter((p: string) => p.trim());
+const isHtml = (str: string) => /<\/?[a-z][\s\S]*>/i.test(str);
+
+// Render lead paragraph safely, handling potential HTML content
+const renderedLeadParagraph = computed(() => {
+  if (!post.value?.leadParagraph) return "";
+  const lead = post.value.leadParagraph;
+  if (isHtml(lead)) {
+    return lead;
+  }
+  return `<p>${lead}</p>`;
+});
+
+// Render content safely, converting plain text paragraphs to HTML blocks
+const renderedContent = computed(() => {
+  if (!post.value?.content) return "";
+  const content = post.value.content;
+  if (isHtml(content)) {
+    return content;
+  }
+  return content
+    .split("\n")
+    .filter((p: string) => p.trim())
+    .map((p: string) => `<p>${p}</p>`)
+    .join("");
 });
 
 // Featured image (single URL from backend)
@@ -216,16 +241,18 @@ if (!post.value && import.meta.server) {
           />
         </div>
 
+        <!-- Lead Paragraph -->
+        <div
+          v-if="post.leadParagraph"
+          class="prose prose-lg dark:prose-invert max-w-none text-xl sm:text-2xl font-medium text-foreground/90 leading-relaxed mb-8 border-l-4 border-warning pl-6 italic"
+          v-html="renderedLeadParagraph"
+        />
+
         <!-- Text Content -->
-        <div class="prose prose-lg dark:prose-invert max-w-none">
-          <p
-            v-for="(paragraph, idx) in contentParagraphs"
-            :key="idx"
-            class="text-base sm:text-lg leading-relaxed text-muted mb-6"
-          >
-            {{ paragraph }}
-          </p>
-        </div>
+        <div
+          class="prose prose-lg dark:prose-invert max-w-none text-base sm:text-lg leading-relaxed text-muted mb-6"
+          v-html="renderedContent"
+        />
 
         <!-- Media Gallery -->
         <div v-if="postImages.length > 1 || postVideos.length > 0" class="mt-12">
