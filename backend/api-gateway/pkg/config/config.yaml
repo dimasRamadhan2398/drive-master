@@ -20,4 +20,7 @@ rate_limiter:
 cors:
   allowed_origins:
     - "http://localhost:3000"
-    - "https://yourdomain.com"
+    - "https://drivemaster.id"
+    - "http://drivemaster.id"
+    - "http://203.194.114.20"
+    - "https://203.194.114.20"

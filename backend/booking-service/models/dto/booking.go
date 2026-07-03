@@ -65,16 +65,36 @@ type UpdateEnrollmentRequest struct {
 	Status    *string    `json:"status" binding:"omitempty"`
 }
 
+type EnrollmentPackageResponse struct {
+	ID            uuid.UUID `json:"id"`
+	Name          string    `json:"name"`
+	Description   string    `json:"description"`
+	Price         float64   `json:"price"`
+	DiscountPrice float64   `json:"discountPrice"`
+	Sessions      int       `json:"sessions"`
+	Duration      int       `json:"duration"`
+}
+
+type EnrollmentAddOnResponse struct {
+	ID          uuid.UUID `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Price       float64   `json:"price"`
+	Sessions    int       `json:"sessions"`
+}
+
 type EnrollmentResponse struct {
-	ID         uuid.UUID  `json:"id"`
-	UserID     uuid.UUID  `json:"userId"`
-	PackageID  uuid.UUID  `json:"packageId"`
-	Status     string     `json:"status"`
-	TotalPrice float64    `json:"totalPrice"`
-	PaidAt     *time.Time `json:"paidAt"`
-	ExpiresAt  time.Time  `json:"expiresAt"`
-	CreatedAt  time.Time  `json:"createdAt"`
-	UpdatedAt  time.Time  `json:"updatedAt"`
+	ID         uuid.UUID                  `json:"id"`
+	UserID     uuid.UUID                  `json:"userId"`
+	PackageID  uuid.UUID                  `json:"packageId"`
+	Status     string                     `json:"status"`
+	TotalPrice float64                    `json:"totalPrice"`
+	PaidAt     *time.Time                 `json:"paidAt"`
+	ExpiresAt  time.Time                  `json:"expiresAt"`
+	CreatedAt  time.Time                  `json:"createdAt"`
+	UpdatedAt  time.Time                  `json:"updatedAt"`
+	Package    *EnrollmentPackageResponse `json:"package,omitempty"`
+	AddOns     []EnrollmentAddOnResponse  `json:"addOns,omitempty"`
 }
 
 type EnrollmentListResponse = PagedData[EnrollmentResponse]

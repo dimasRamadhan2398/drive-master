@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -21,6 +22,7 @@ type ICoreClient interface {
 	IncrementPackageCount(ctx context.Context, packageID uint) error
 	GetPackageByID(ctx context.Context, packageID uuid.UUID) (*PackageResponse, error)
 	GetAddOnByID(ctx context.Context, addOnID uuid.UUID) (*AddOnResponse, error)
+	CreateSale(ctx context.Context, req CreateSaleRequest) error
 }
 
 // CoreClient implements ICoreClient
@@ -284,4 +286,54 @@ func (c *CoreClient) GetAddOnByID(ctx context.Context, addOnID uuid.UUID) (*AddO
 	}
 
 	return &addon, nil
+}
+
+// CreateSaleRequest is the payload for creating a sale in core-service
+type CreateSaleRequest struct {
+	UserID        string              `json:"userId"`
+	PackageID     string              `json:"packageId,omitempty"`
+	Items         []CreateSaleItem    `json:"items"`
+	PaymentMethod string              `json:"paymentMethod"`
+	Source        string              `json:"source"`
+	Notes         string              `json:"notes"`
+}
+
+// CreateSaleItem represents a single item in a sale
+type CreateSaleItem struct {
+	PackageID   string  `json:"packageId"`
+	PackageName string  `json:"packageName"`
+	Quantity    int     `json:"quantity"`
+	UnitPrice   float64 `json:"unitPrice"`
+	Discount    float64 `json:"discount"`
+}
+
+// CreateSale creates a sale record in core-service
+func (c *CoreClient) CreateSale(ctx context.Context, req CreateSaleRequest) error {
+	url := fmt.Sprintf("%s/api/v1/admin/sales", c.baseURL)
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal sale request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("failed to call core-service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("core-service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }

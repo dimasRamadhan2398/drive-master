@@ -620,7 +620,7 @@ onMounted(() => {
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-car" class="size-5 text-warning" />
-                <h2 class="font-semibold">{{ t("dashboard.vehicle") }}s</h2>
+                <h2 class="font-semibold">{{ t("dashboard.vehicle") }}</h2>
               </div>
               <UButton
                 :label="t('admin.addVehicle')"

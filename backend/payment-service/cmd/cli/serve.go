@@ -173,7 +173,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	apiGroup.Use(authMiddleware.Authenticate())
 
 	// Initialize service registry
-	serviceRegistry := services.NewServiceRegistry(repoRegistry, &loadedConfig.Midtrans)
+	serviceRegistry := services.NewServiceRegistry(repoRegistry, loadedConfig)
 
 	// Create public API router group for unauthenticated endpoints (like webhook callbacks)
 	publicApi := router.Group("/api/v1")
@@ -183,7 +183,7 @@ func runServe(cmd *cobra.Command, args []string) {
 		repoRegistry.GetTransaction(),
 		repoRegistry.GetPayment(),
 		repoRegistry.GetPaymentMethod(),
-		serviceRegistry.GetMidtrans(),
+		serviceRegistry.GetPaymentGateway(),
 		eventPublisher,
 	)
 	transactionRoute := routes.NewTransactionRoute(transactionController, apiGroup, publicApi, authMiddleware)

@@ -215,6 +215,7 @@ func (c *ScheduleController) ListSchedulesFiltered(ctx *gin.Context) {
 	params.InstructorID = ctx.Query("instructorId")
 	params.CarID = ctx.Query("carId")
 	params.Status = ctx.Query("status")
+	params.StudentID = ctx.Query("studentId")
 
 	resp, err := c.scheduleService.ListSchedulesFiltered(ctx.Request.Context(), params)
 	if err != nil {

@@ -11,6 +11,10 @@ useSeoMeta({
   description: t('footer.tagline')
 })
 
+const { waLink, fetchGeneralSettings } = useSettings()
+
+onMounted(() => { fetchGeneralSettings() })
+
 const safetyFeatures = [
   {
     title: t('about.safety.certifiedInstructors'),
@@ -81,8 +85,9 @@ const safetyFeatures = [
             {{ t('about.vision.description') }}
           </p>
         </div>
-        <div class="pt-8">
+        <div class="pt-8 flex flex-wrap justify-center gap-3">
           <UButton :label="t('about.startJourney')" to="/auth/register" color="warning" size="xl" icon="i-lucide-rocket" />
+          <UButton :label="t('contact.chatNow')" :to="waLink" target="_blank" color="neutral" size="xl" icon="i-simple-icons-whatsapp" variant="outline" external />
         </div>
       </div>
     </UPageSection>

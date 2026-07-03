@@ -691,11 +691,11 @@ func (h *EnrollmentPaidHandler) GetEventTypes() []EventType {
 
 // TransactionPaidHandler handles transaction.paid events to mark enrollment as paid
 type TransactionPaidHandler struct {
-	onPaid func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64) error
+	onPaid func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64, packageID, packageName, paymentMethod string) error
 }
 
 // NewTransactionPaidHandler creates a new transaction paid handler
-func NewTransactionPaidHandler(onPaid func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64) error) *TransactionPaidHandler {
+func NewTransactionPaidHandler(onPaid func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64, packageID, packageName, paymentMethod string) error) *TransactionPaidHandler {
 	return &TransactionPaidHandler{onPaid: onPaid}
 }
 
@@ -738,7 +738,12 @@ func (h *TransactionPaidHandler) HandleEvent(ctx context.Context, event *Event) 
 		return fmt.Errorf("invalid total_price type in transaction.paid event")
 	}
 
-	return h.onPaid(ctx, enrollmentID, totalPrice)
+	// Extract optional enrichment fields (added when metadata is stored at payment creation)
+	packageID, _ := event.Data["package_id"].(string)
+	packageName, _ := event.Data["package_name"].(string)
+	paymentMethod, _ := event.Data["payment_method"].(string)
+
+	return h.onPaid(ctx, enrollmentID, totalPrice, packageID, packageName, paymentMethod)
 }
 
 // GetEventTypes returns the event types this handler handles

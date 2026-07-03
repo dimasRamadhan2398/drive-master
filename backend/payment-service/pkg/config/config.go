@@ -8,14 +8,15 @@ import (
 )
 
 type Config struct {
-	Server        ServerConfig  `yaml:"server"`
+	Server        ServerConfig   `yaml:"server"`
 	Database      DatabaseConfig `yaml:"database"`
-	Redis         RedisConfig   `yaml:"redis"`
-	JWT           JWTConfig     `yaml:"jwt"`
-	Log           LogConfig     `yaml:"log"`
-	Kafka         KafkaConfig   `yaml:"kafka"`
-	Midtrans 	  MidtransConfig `yaml:"midtrans"`
-	App           AppConfig     `yaml:"app"`
+	Redis         RedisConfig    `yaml:"redis"`
+	JWT           JWTConfig      `yaml:"jwt"`
+	Log           LogConfig      `yaml:"log"`
+	Kafka         KafkaConfig    `yaml:"kafka"`
+	Midtrans      MidtransConfig `yaml:"midtrans"`
+	Doku          DokuConfig     `yaml:"doku"`
+	App           AppConfig      `yaml:"app"`
 }
 
 type ServerConfig struct {
@@ -68,20 +69,32 @@ type AppConfig struct {
 	SignatureKey   string `mapstructure:"signature_key" yaml:"signature_key"`
 	RateLimiterMax int    `mapstructure:"rate_limiter_max" yaml:"rate_limiter_max"`
 	RateLimiterTime int   `mapstructure:"rate_limiter_time" yaml:"rate_limiter_time"`
+	PaymentGateway string `mapstructure:"payment_gateway" yaml:"payment_gateway"`
 }
 
 
 type MidtransConfig struct {
 	GopayCallbackURL string `mapstructure:"gopay_callback_url" yaml:"gopay_callback_url"`
+	FrontendURL string `mapstructure:"frontend_url" yaml:"frontend_url"`
 	ServerKey   string `mapstructure:"server_key" yaml:"server_key"`
 	ClientKey   string `mapstructure:"client_key" yaml:"client_key"`
 	Environment string `mapstructure:"environment" yaml:"environment"`
 	MerchantID      string `mapstructure:"merchant_id"`
-    BaseURL         string `mapstructure:"base_url"`
-    SnapURL         string `mapstructure:"snap_url"`
-    Enabled         bool   `mapstructure:"enabled"`
-    TimeoutSeconds  int    `mapstructure:"timeout_seconds"`
-    NotificationURL string `mapstructure:"notification_url"`
+	BaseURL         string `mapstructure:"base_url"`
+	SnapURL         string `mapstructure:"snap_url"`
+	Enabled         bool   `mapstructure:"enabled"`
+	TimeoutSeconds  int    `mapstructure:"timeout_seconds"`
+	NotificationURL string `mapstructure:"notification_url"`
+}
+
+type DokuConfig struct {
+	ClientID        string `mapstructure:"client_id" yaml:"client_id"`
+	SecretKey       string `mapstructure:"secret_key" yaml:"secret_key"`
+	Environment     string `mapstructure:"environment" yaml:"environment"`
+	BaseURL         string `mapstructure:"base_url" yaml:"base_url"`
+	NotificationURL string `mapstructure:"notification_url" yaml:"notification_url"`
+	PaymentDueDate  int    `mapstructure:"payment_due_date" yaml:"payment_due_date"`
+	FrontendURL     string `mapstructure:"frontend_url" yaml:"frontend_url"`
 }
 
 var AppCfg *Config
@@ -130,8 +143,10 @@ func setDefaults() {
 	viper.SetDefault("app.signature_key", "")
 	viper.SetDefault("app.rate_limiter_max", 100)
 	viper.SetDefault("app.rate_limiter_time", 1)
+	viper.SetDefault("app.payment_gateway", "doku")
 
 	// Midtrans
+	viper.SetDefault("midtrans.frontend_url", "http://localhost:3000")
 	viper.SetDefault("midtrans.server_key", "")
 	viper.SetDefault("midtrans.client_key", "")
 	viper.SetDefault("midtrans.environment", "sandbox")
@@ -141,6 +156,15 @@ func setDefaults() {
 	viper.SetDefault("midtrans.enabled", true)
 	viper.SetDefault("midtrans.timeout_seconds", 30)
 	viper.SetDefault("midtrans.notification_url", "")
+
+	// Doku
+	viper.SetDefault("doku.client_id", "")
+	viper.SetDefault("doku.secret_key", "")
+	viper.SetDefault("doku.environment", "sandbox")
+	viper.SetDefault("doku.base_url", "https://api-sandbox.doku.com")
+	viper.SetDefault("doku.notification_url", "")
+	viper.SetDefault("doku.payment_due_date", 60)
+	viper.SetDefault("doku.frontend_url", "http://localhost:3001")
 }
 
 func Load(path string) (*Config, error) {
@@ -178,15 +202,25 @@ func Load(path string) (*Config, error) {
 
 	// App env overrides
 	_ = viper.BindEnv("app.app_env", "APP_ENV")
+	_ = viper.BindEnv("app.payment_gateway", "PAYMENT_GATEWAY")
 
 	_ = viper.BindEnv("midtrans.server_key", "MIDTRANS_SERVER_KEY")
-    _ = viper.BindEnv("midtrans.client_key", "MIDTRANS_CLIENT_KEY")
-    _ = viper.BindEnv("midtrans.environment", "MIDTRANS_ENVIRONMENT")
-    _ = viper.BindEnv("midtrans.merchant_id", "MIDTRANS_MERCHANT_ID")
-    _ = viper.BindEnv("midtrans.base_url", "MIDTRANS_BASE_URL")
-    _ = viper.BindEnv("midtrans.snap_url", "MIDTRANS_SNAP_URL")
-    _ = viper.BindEnv("midtrans.enabled", "MIDTRANS_ENABLED")
-    _ = viper.BindEnv("midtrans.notification_url", "MIDTRANS_NOTIFICATION_URL")
+	_ = viper.BindEnv("midtrans.client_key", "MIDTRANS_CLIENT_KEY")
+	_ = viper.BindEnv("midtrans.environment", "MIDTRANS_ENVIRONMENT")
+	_ = viper.BindEnv("midtrans.merchant_id", "MIDTRANS_MERCHANT_ID")
+	_ = viper.BindEnv("midtrans.base_url", "MIDTRANS_BASE_URL")
+	_ = viper.BindEnv("midtrans.snap_url", "MIDTRANS_SNAP_URL")
+	_ = viper.BindEnv("midtrans.enabled", "MIDTRANS_ENABLED")
+	_ = viper.BindEnv("midtrans.notification_url", "MIDTRANS_NOTIFICATION_URL")
+	_ = viper.BindEnv("midtrans.frontend_url", "MIDTRANS_FRONTEND_URL")
+
+	_ = viper.BindEnv("doku.client_id", "DOKU_CLIENT_ID")
+	_ = viper.BindEnv("doku.secret_key", "DOKU_SECRET_KEY")
+	_ = viper.BindEnv("doku.environment", "DOKU_ENVIRONMENT")
+	_ = viper.BindEnv("doku.base_url", "DOKU_BASE_URL")
+	_ = viper.BindEnv("doku.notification_url", "DOKU_NOTIFICATION_URL")
+	_ = viper.BindEnv("doku.payment_due_date", "DOKU_PAYMENT_DUE_DATE")
+	_ = viper.BindEnv("doku.frontend_url", "DOKU_FRONTEND_URL")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

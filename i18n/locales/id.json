@@ -77,6 +77,7 @@
     "fullNameKtp": "Nama Lengkap (Sesuai KTP)",
     "fullNamePlaceholder": "Masukkan nama lengkap Anda sesuai KTP",
     "ktpHint": "Masukkan 16 digit nomor KTP Anda untuk verifikasi sertifikat",
+    "ktpNumber": "Nomor KTP",
     "nameHint": "Nama ini akan digunakan pada sertifikat resmi Anda",
     "dataSecure": "Data Anda Aman",
     "dataSecureDesc": "Informasi pribadi Anda dienkripsi dan hanya digunakan untuk penerbitan sertifikat resmi. Kami mengikuti standar perlindungan data Indonesia.",
@@ -186,6 +187,13 @@
     "registerNow": "Daftar Sekarang",
     "comparePackages": "Bandingkan Paket",
     "popular": "Paling Populer",
+    "currentPlan": "Paket Saat Ini",
+    "addonsDesc": "Sesuaikan pengalaman belajar Anda dengan tambahan mengemudi opsional",
+    "extraSessionsCount": "{count} sesi tambahan",
+    "readyToGetStarted": "Siap untuk Memulai?",
+    "selectedPackage": "Paket terpilih:",
+    "selectedAddons": "Tambahan terpilih:",
+    "paymentSecuredNote": "Pembayaran diamankan oleh Midtrans. Anda dapat membatalkan kapan saja sebelum sesi pertama.",
     "sessions": "Sesi",
     "choosePlan": "Pilih Paket Ini",
     "perMonth": "per bulan",
@@ -328,6 +336,7 @@
     "readingTime": "{min} menit baca",
     "postNotFound": "Artikel Tidak Ditemukan",
     "postNotFoundDesc": "Artikel ini tidak ada atau belum diterbitkan.",
+    "noContent": "Halaman ini belum memiliki konten.",
     "author": "Penulis",
     "mediaGallery": "Galeri Media",
     "shareArticle": "Bagikan artikel ini:",
@@ -376,6 +385,9 @@
     "completed": "Selesai",
     "cancelled": "Dibatalkan",
     "confirmed": "Dikonfirmasi",
+    "noData": "Tidak ada data tersedia",
+    "processing": "Sedang Diproses",
+    "ready": "Siap",
     "hours": "jam",
     "minutes": "menit",
     "seconds": "detik",
@@ -411,7 +423,8 @@
     "sessionDetail": "Detail Sesi",
     "courseMaterial": "Materi Kursus",
     "pickupLocation": "Lokasi Penjemputan",
-    "close": "Tutup"
+    "close": "Tutup",
+    "noPackage": "Tidak ada Paket Aktif"
   },
   "schedule": {
     "title": "Jadwal Saya",
@@ -473,10 +486,32 @@
     "digitalVerification": "Verifikasi Digital",
     "digitalVerificationDesc": "Setiap sertifikat menyertakan ID unik untuk verifikasi online yang mudah.",
     "lifetimeValidity": "Validitas Seumur Hidup",
-    "lifetimeValidityDesc": "Sertifikat Anda tidak pernah kedaluwarsa dan tetap valid selamanya."
+    "lifetimeValidityDesc": "Sertifikat Anda tidak pernah kedaluwarsa dan tetap valid selamanya.",
+    "downloadStarted": "Unduhan Dimulai",
+    "downloadStartedDesc": "Sertifikat Anda sedang diunduh.",
+    "linkCopied": "Tautan Disalin",
+    "linkCopiedDesc": "Tautan verifikasi sertifikat disalin ke papan klip.",
+    "myDrivingCert": "Sertifikat Mengemudi Saya",
+    "shareText": "Saya menyelesaikan kursus mengemudi saya di Drive Master! Lihat sertifikat saya.",
+    "shareFailed": "Gagal Berbagi",
+    "shareFailedDesc": "Terjadi kesalahan saat mencoba berbagi.",
+    "shareNotSupported": "Berbagi Tidak Didukung",
+    "shareNotSupportedDesc": "Tautan verifikasi disalin ke papan klip.",
+    "preview": "Pratinjau",
+    "certifyThat": "Dengan ini menyatakan bahwa",
+    "successfullyCompleted": "telah berhasil menyelesaikan kursus mengemudi premium",
+    "downloadPdf": "Unduh PDF",
+    "details": "Detail Sertifikat",
+    "recipient": "Penerima",
+    "valid": "Valid",
+    "verification": "Verifikasi Sertifikat",
+    "verificationDesc": "Sertifikat ini ditandatangani secara digital dan dapat diverifikasi secara online. Siapa pun dapat memverifikasi sertifikat ini dengan memindai kode QR atau mengunjungi tautan verifikasi.",
+    "copyLink": "Salin Tautan",
+    "share": "Bagikan"
   },
   "billing": {
     "title": "Tagihan & Pembayaran",
+    "totalPrice": "Total Harga",
     "subtitle": "Kelola tagihan dan riwayat pembayaran Anda",
     "paymentDue": "Pembayaran Jatuh Tempo",
     "paymentDueDesc": "Pembayaran Anda sebesar {amount} jatuh tempo pada {date} ({days} hari tersisa).",
@@ -509,7 +544,8 @@
     "paid": "Lunas",
     "unpaid": "Belum Lunas",
     "pending": "Menunggu",
-    "status": "Status"
+    "status": "Status",
+    "amount": "Jumlah"
   },
   "profile": {
     "title": "Profil",
@@ -524,6 +560,9 @@
     "address": "Alamat",
     "birthDate": "Tanggal Lahir",
     "ktpNumber": "Nomor KTP",
+    "memberId": "ID Anggota",
+    "joinDate": "Tanggal Bergabung",
+    "validUntil": "Berlaku Hingga",
     "saveChanges": "Simpan Perubahan",
     "profileUpdated": "Profil Diperbarui",
     "profileUpdatedDesc": "Profil Anda telah berhasil diperbarui.",
@@ -546,6 +585,12 @@
     "title": "Sesi Percobaan Gratis",
     "heroTitle": "Sesi Percobaan Gratis Anda",
     "heroDesc": "Nikmati sesi mengemudi gratis selama 15 menit. Ini adalah penawaran satu kali yang tersedia untuk semua pengguna terdaftar.",
+    "subtitle": "Tersedia untuk pengguna terdaftar berbayar - penawaran satu kali",
+    "oncePerAccount": "Tersedia satu kali per akun untuk pengguna terdaftar baru",
+    "fifteenMinutes": "15 Menit",
+    "trialSessionDesc": "Sesi uji coba gratis 15 menit",
+    "fullExperience": "Pengalaman Penuh",
+    "experienceDesc": "Instruktur profesional dan kendaraan Premium yang sama",
     "duration": "Durasi",
     "cost": "Biaya",
     "free": "Gratis",
@@ -592,6 +637,7 @@
   },
   "admin": {
     "status": "Status",
+    "totalRevenue": "Total Pendapatan",
     "title": "Admin Panel",
     "overview": "Ringkasan",
     "students": "Murid",
@@ -776,6 +822,7 @@
       "namePriceRequired": "Nama paket dan harga yang valid wajib diisi."
     },
     "content": {
+      "slugHint": "Biarkan kosong untuk membuat otomatis dari judul",
       "label": "Konten",
       "createBlog": "Buat Artikel Blog",
       "editBlog": "Edit Artikel Blog",
@@ -877,8 +924,9 @@
       "and": "dan",
       "privacyPolicy": "Kebijakan Privasi",
       "termsTitle": "Syarat Layanan",
-      "privacyTitle": "Kebijakan Privasi",
-      "tosContent": {
+      "privacyTitle": "Kebijakan Privasi"
+    },
+    "tosContent": {
       "welcome": "Selamat datang di Drive Master Indonesia. Syarat Layanan ini (\"Syarat\") mengatur akses Anda ke dan penggunaan situs web {url} dan layanan sekolah mengemudi kami. Dengan mengakses atau menggunakan layanan kami, Anda setuju untuk terikat oleh Syarat ini.",
       "servicesTitle": "1. Layanan yang Disediakan",
       "servicesDesc": "Drive Master Indonesia menyediakan layanan instruksi mengemudi profesional, termasuk pelatihan teori dan sesi praktis di jalan. Kami berhak mengubah, menangguhkan, atau menghentikan bagian mana pun dari layanan kapan saja tanpa pemberitahuan sebelumnya.",
@@ -945,7 +993,6 @@
       "contactDesc": "Jika Anda memiliki pertanyaan tentang Kebijakan Privasi ini, silakan hubungi kami:",
       "contactEmail": "Melalui email: {email}",
       "contactPhone": "Melalui telepon: +62 812-3456-7890"
-    }
     },
     "letMeDecide": "Saya akan memutuskan nanti",
     "goToOnboarding": "Ke halaman Onboarding",

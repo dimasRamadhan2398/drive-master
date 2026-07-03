@@ -83,15 +83,13 @@ export const authService = {
     }
   },
 
-  async fetchCurrentUser(
-    accessToken?: string | null,
+  async fetchUserById(
+    userId: string,
   ): Promise<BackendUserResponse | null> {
-    if (!accessToken) return null;
-
     const { user, extractData } = useApiClients();
     try {
       const response = await user<ApiResponse<BackendUserResponse>>(
-        "/auth/me",
+        `/users/${userId}`,
         {
           method: "GET",
         },

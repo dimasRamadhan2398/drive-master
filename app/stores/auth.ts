@@ -208,16 +208,19 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async fetchCurrentUser() {
-      if (!this.accessToken) return null;
+      if (!this.user?.userId) return this.user;
 
       try {
-        const userData = await authService.fetchCurrentUser(this.accessToken);
+        const userData = await authService.fetchUserById(this.user.userId);
         if (userData) {
-          this.user = userData;
+          const newUser = { ...this.user, ...userData };
+          this.user = newUser;
+          this.setUserCookie(newUser);
         }
-        return userData;
-      } catch {
-        return null;
+        return this.user;
+      } catch (err) {
+        console.warn("[AUTH STORE] Failed to fetch current user, using cached login data:", err);
+        return this.user;
       }
     },
 
@@ -321,6 +324,35 @@ export const useAuthStore = defineStore("auth", {
         return null;
       } finally {
         this.isLoadingProfile = false;
+      }
+    },
+
+    /**
+     * Update current user basic details
+     */
+    async updateUser(data: {
+      firstName: string;
+      lastName: string;
+      phoneNumber?: string;
+      address?: string;
+      dateOfBirth?: string;
+    }) {
+      if (!this.user?.userId) return null;
+
+      this.isLoading = true;
+      try {
+        const updatedUser = await memberService.updateUser(this.user.userId, data);
+        if (updatedUser) {
+          const newUser = { ...this.user, ...updatedUser };
+          this.user = newUser;
+          this.setUserCookie(newUser);
+        }
+        return updatedUser;
+      } catch (error) {
+        console.error("[AUTH STORE] Failed to update user:", error);
+        return null;
+      } finally {
+        this.isLoading = false;
       }
     },
 

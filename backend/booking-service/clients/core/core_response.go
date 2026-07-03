@@ -31,6 +31,7 @@ type PackageResponse struct {
 	Name            string    `json:"name"`
 	Description     string    `json:"description"`
 	Price           float64   `json:"price"`
+	DiscountPrice   float64   `json:"discountPrice"`
 	Sessions        int       `json:"sessions"`        // Number of sessions included
 	Duration        int       `json:"duration"`        // Duration per session in minutes
 	ValidityDays    int       `json:"validityDays"`   // Validity period in days

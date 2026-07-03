@@ -1,24 +1,59 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 
 const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
-// Mock data
-const userData = {
-  name: 'John Doe',
-  package: '8x Sessions Package',
-  totalSessions: 10,
-  completedSessions: 4,
-  remainingSessions: 6,
-  progress: 40,
-  nextSession: {
-    date: 'Tomorrow',
-    time: '09:30 AM',
-    car: 'BYD Atto 1',
-    instructor: 'Mr. Ahmad'
-  }
-}
+const authStore = useAuthStore()
+
+// ── Fetch / refresh on mount ─────────────────────────────────────────────────
+onMounted(async () => {
+  await authStore.fetchMemberProfile()
+})
+
+// ── Derived profile data ──────────────────────────────────────────────────────
+const profile = computed(() => authStore.memberProfile)
+const isLoading = computed(() => authStore.isLoadingProfile)
+
+const firstName = computed(() =>
+  authStore.currentUser?.firstName || authStore.memberIdentityFullname?.split(' ')[0] || 'Student'
+)
+
+// Aggregate across all active entitlements
+const entitlements = computed(() => authStore.memberEntitlements ?? [])
+
+const totalSessions = computed(() =>
+  entitlements.value.reduce((sum, e) => sum + (e.totalSessions ?? 0), 0)
+)
+
+const completedSessions = computed(() =>
+  entitlements.value.reduce((sum, e) => sum + (e.usedSessions ?? 0), 0)
+)
+
+const remainingSessions = computed(() =>
+  entitlements.value.reduce((sum, e) => sum + (e.remaining ?? 0), 0)
+)
+
+const progressPercent = computed(() => {
+  const total = totalSessions.value
+  if (!total) return 0
+  return Math.round((completedSessions.value / total) * 100)
+})
+
+// Certificate: eligible when all sessions in at least one entitlement are used
+const certificateStatus = computed(() => {
+  if (!entitlements.value.length) return t('common.pending')
+  const hasCompleted = entitlements.value.some(e => e.status === 'completed')
+  if (hasCompleted) return t('common.ready')
+  if (progressPercent.value >= 100) return t('common.processing')
+  return t('common.pending')
+})
+
+// Active package name (most recent active entitlement)
+const packageName = computed(() => {
+  const active = entitlements.value.find(e => e.status === 'active')
+  return active?.packageName || t('dashboard.noPackage')
+})
 
 // FITUR BARU: Data detail instruktor dan state untuk modal
 const allInstructors = [
@@ -48,8 +83,16 @@ const allInstructors = [
   }
 ]
 
+// Next session still uses mock until schedule data is wired up
+const nextSession = {
+  date: 'Tomorrow',
+  time: '09:30 AM',
+  car: 'BYD Atto 1',
+  instructor: 'Mr. Ahmad'
+}
+
 const nextInstructorDetails = computed(() => {
-  return allInstructors.find(inst => inst.name === userData.nextSession.instructor)
+  return allInstructors.find(inst => inst.name === nextSession.instructor)
 })
 
 const showInstructorModal = ref(false)
@@ -63,7 +106,7 @@ const recentActivity = computed(() => [
   { 
     id: 1, 
     type: 'session', 
-    title: `${t('history.session')} #4`,
+    title: `${t('history.session')} #${completedSessions.value}`,
     description: 'Highway driving basics completed',
     date: 'Mar 25, 2026',
     status: 'completed'
@@ -71,7 +114,7 @@ const recentActivity = computed(() => [
   { 
     id: 2, 
     type: 'session', 
-    title: `${t('history.session')} #3`,
+    title: `${t('history.session')} #${Math.max(completedSessions.value - 1, 1)}`,
     description: 'Parking and maneuvering',
     date: 'Mar 22, 2026',
     status: 'completed'
@@ -80,7 +123,7 @@ const recentActivity = computed(() => [
     id: 3, 
     type: 'booking', 
     title: t('schedule.bookingSuccess'),
-    description: 'Training Session #5 scheduled',
+    description: `Training Session #${completedSessions.value + 1} scheduled`,
     date: 'Mar 20, 2026',
     status: 'info'
   }
@@ -110,8 +153,8 @@ const quickActions = computed(() => [
         <UCard class="bg-warning/5 border-warning/20">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 class="text-2xl font-bold">{{ t('dashboard.welcome', { name: userData.name.split(' ')[0] }) }}</h1>
-              <p class="text-muted mt-1">{{ t('dashboard.sessionsRemaining', { count: userData.remainingSessions, package: userData.package }) }}</p>
+              <h1 class="text-2xl font-bold">{{ t('dashboard.welcome', { name: firstName }) }}</h1>
+              <p class="text-muted mt-1">{{ t('dashboard.sessionsRemaining', { count: remainingSessions, package: packageName }) }}</p>
             </div>
             <NuxtLink to="/dashboard/schedule">
               <UButton :label="t('dashboard.bookNextSession')" icon="i-lucide-calendar-plus" color="warning" />
@@ -127,7 +170,10 @@ const quickActions = computed(() => [
                 <UIcon name="i-lucide-book-check" class="size-6 text-primary" />
               </div>
               <div>
-                <p class="text-2xl font-bold">{{ userData.completedSessions }}</p>
+                <p class="text-2xl font-bold">
+                  <USkeleton v-if="isLoading" class="h-8 w-10" />
+                  <span v-else>{{ completedSessions }}</span>
+                </p>
                 <p class="text-sm text-muted">{{ t('dashboard.sessionsCompleted') }}</p>
               </div>
             </div>
@@ -139,7 +185,10 @@ const quickActions = computed(() => [
                 <UIcon name="i-lucide-clock" class="size-6 text-amber-500" />
               </div>
               <div>
-                <p class="text-2xl font-bold">{{ userData.remainingSessions }}</p>
+                <p class="text-2xl font-bold">
+                  <USkeleton v-if="isLoading" class="h-8 w-10" />
+                  <span v-else>{{ remainingSessions }}</span>
+                </p>
                 <p class="text-sm text-muted">{{ t('dashboard.sessionsRemainingCount') }}</p>
               </div>
             </div>
@@ -151,7 +200,10 @@ const quickActions = computed(() => [
                 <UIcon name="i-lucide-target" class="size-6 text-info" />
               </div>
               <div>
-                <p class="text-2xl font-bold">{{ userData.progress }}%</p>
+                <p class="text-2xl font-bold">
+                  <USkeleton v-if="isLoading" class="h-8 w-12" />
+                  <span v-else>{{ progressPercent }}%</span>
+                </p>
                 <p class="text-sm text-muted">{{ t('dashboard.courseProgress') }}</p>
               </div>
             </div>
@@ -163,7 +215,10 @@ const quickActions = computed(() => [
                 <UIcon name="i-lucide-award" class="size-6 text-neutral" />
               </div>
               <div>
-                <p class="text-2xl font-bold">{{ t('common.pending') }}</p>
+                <p class="text-2xl font-bold">
+                  <USkeleton v-if="isLoading" class="h-8 w-20" />
+                  <span v-else>{{ certificateStatus }}</span>
+                </p>
                 <p class="text-sm text-muted">{{ t('dashboard.certificateStatus') }}</p>
               </div>
             </div>
@@ -188,7 +243,7 @@ const quickActions = computed(() => [
                   </div>
                   <div>
                     <p class="text-sm text-muted">{{ t('dashboard.date') }}</p>
-                    <p class="font-medium">{{ userData.nextSession.date }}</p>
+                    <p class="font-medium">{{ nextSession.date }}</p>
                   </div>
                 </div>
 
@@ -198,7 +253,7 @@ const quickActions = computed(() => [
                   </div>
                   <div>
                     <p class="text-sm text-muted">{{ t('dashboard.time') }}</p>
-                    <p class="font-medium">{{ userData.nextSession.time }}</p>
+                    <p class="font-medium">{{ nextSession.time }}</p>
                   </div>
                 </div>
               </div>
@@ -210,7 +265,7 @@ const quickActions = computed(() => [
                   </div>
                   <div>
                     <p class="text-sm text-muted">{{ t('dashboard.vehicle') }}</p>
-                    <p class="font-medium">{{ userData.nextSession.car }}</p>
+                    <p class="font-medium">{{ nextSession.car }}</p>
                   </div>
                 </div>
 
@@ -220,7 +275,7 @@ const quickActions = computed(() => [
                   </div>
                   <div class="flex-1">
                     <p class="text-sm text-muted">{{ t('dashboard.instructor') }}</p>
-                    <p class="font-medium">{{ userData.nextSession.instructor }}</p>
+                    <p class="font-medium">{{ nextSession.instructor }}</p>
                   </div>
                   
                   </div>
@@ -262,26 +317,26 @@ const quickActions = computed(() => [
                       fill="none"
                       class="text-primary"
                       :stroke-dasharray="352"
-                      :stroke-dashoffset="352 - (352 * userData.progress) / 100"
+                      :stroke-dashoffset="352 - (352 * progressPercent) / 100"
                       stroke-linecap="round"
                     />
                   </svg>
-                  <span class="absolute text-2xl font-bold">{{ userData.progress }}%</span>
+                  <span class="absolute text-2xl font-bold">{{ progressPercent }}%</span>
                 </div>
               </div>
 
               <div class="space-y-2">
                 <div class="flex justify-between text-sm">
                   <span class="text-muted">{{ t('common.completed') }}</span>
-                  <span class="font-medium">{{ userData.completedSessions }}/{{ userData.totalSessions }}</span>
+                  <span class="font-medium">{{ completedSessions }}/{{ totalSessions }}</span>
                 </div>
-                <UProgress :value="userData.progress" />
+                <UProgress :value="progressPercent" />
               </div>
             </div>
 
             <template #footer>
               <p class="text-sm text-muted text-center">
-                {{ t('dashboard.moreSessions', { count: userData.remainingSessions }) }}
+                {{ t('dashboard.moreSessions', { count: remainingSessions }) }}
               </p>
             </template>
           </UCard>
@@ -367,11 +422,11 @@ const quickActions = computed(() => [
               </div>
               <div>
                 <p class="text-xs font-bold text-muted uppercase mb-1">{{ t('dashboard.time') }}</p>
-                <p class="text-sm font-medium text-primary">{{ userData.nextSession.time }}</p>
+                <p class="text-sm font-medium text-primary">{{ nextSession.time }}</p>
               </div>
               <div>
                 <p class="text-xs font-bold text-muted uppercase mb-1">{{ t('dashboard.instructor') }}</p>
-                <p class="text-sm font-medium">{{ userData.nextSession.instructor }}</p>
+                <p class="text-sm font-medium">{{ nextSession.instructor }}</p>
               </div>
               <div class="col-span-2">
                 <p class="text-xs font-bold text-muted uppercase mb-1">{{ t('dashboard.pickupLocation') }}</p>

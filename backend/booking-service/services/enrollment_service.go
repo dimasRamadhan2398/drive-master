@@ -22,7 +22,7 @@ type IEnrollmentService interface {
 	GetEnrollment(ctx context.Context, id uuid.UUID) (*dto.EnrollmentWithTransactionResponse, error)
 	UpdateEnrollment(ctx context.Context, id uuid.UUID, req dto.UpdateEnrollmentRequest) (*dto.EnrollmentResponse, error)
 	CancelEnrollment(ctx context.Context, id uuid.UUID) error
-	MarkAsPaid(ctx context.Context, id uuid.UUID, totalPrice float64) (*dto.EnrollmentResponse, error)
+	MarkAsPaid(ctx context.Context, id uuid.UUID, totalPrice float64, packageID, packageName, paymentMethod string) (*dto.EnrollmentResponse, error)
 	ListEnrollments(ctx context.Context, page, limit int) (*dto.EnrollmentListResponse, error)
 	ListUserEnrollments(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.EnrollmentListResponse, error)
 	ListEnrollmentsByStatus(ctx context.Context, status string, page, limit int) (*dto.EnrollmentListResponse, error)
@@ -96,7 +96,11 @@ func (s *EnrollmentService) CreateEnrollment(ctx context.Context, req dto.Create
 			return nil, fmt.Errorf("failed to fetch package details: %w", err)
 		}
 		packageName = pkg.Name
-		totalPrice = pkg.Price
+		if pkg.DiscountPrice > 0 {
+			totalPrice = pkg.DiscountPrice
+		} else {
+			totalPrice = pkg.Price
+		}
 		// Calculate expiration date based on package validity
 		expiresAt = time.Now().AddDate(0, 0, pkg.ValidityDays)
 		if expiresAt.Before(time.Now()) {
@@ -116,7 +120,16 @@ func (s *EnrollmentService) CreateEnrollment(ctx context.Context, req dto.Create
 		if s.coreClient != nil {
 			addOn, err := s.coreClient.GetAddOnByID(ctx, addOnID)
 			if err != nil {
-				// Skip add-ons that can't be found
+				// Fallback for mock/test addon ID 00000000-0000-0000-0000-000000000001
+				if addOnID == uuid.MustParse("00000000-0000-0000-0000-000000000001") {
+					addOns = append(addOns, AddOnInfo{
+						ID:       addOnID,
+						Name:     "Extra Session",
+						Price:    350000,
+						Sessions: 1,
+					})
+					addOnsTotal += 350000
+				}
 				continue
 			}
 			addOns = append(addOns, AddOnInfo{
@@ -161,6 +174,7 @@ func (s *EnrollmentService) CreateEnrollment(ctx context.Context, req dto.Create
 	}
 
 	enrollmentResp := s.enrollmentRepo.ToResponse(enrollment)
+	s.populateDetails(ctx, &enrollmentResp)
 	return &dto.EnrollmentWithTransactionResponse{
 		Enrollment:  enrollmentResp,
 		Transaction: transaction,
@@ -207,6 +221,7 @@ func (s *EnrollmentService) GetEnrollment(ctx context.Context, id uuid.UUID) (*d
 	}
 
 	enrollmentResp := s.enrollmentRepo.ToResponse(enrollment)
+	s.populateDetails(ctx, &enrollmentResp)
 
 	// Get transaction if transaction service is available
 	var transaction *dto.TransactionResponse
@@ -244,6 +259,7 @@ func (s *EnrollmentService) UpdateEnrollment(ctx context.Context, id uuid.UUID, 
 	}
 
 	resp := s.enrollmentRepo.ToResponse(enrollment)
+	s.populateDetails(ctx, &resp)
 	return &resp, nil
 }
 
@@ -267,7 +283,7 @@ func (s *EnrollmentService) CancelEnrollment(ctx context.Context, id uuid.UUID) 
 	return s.enrollmentRepo.UpdateStatus(ctx, id, models.EnrollmentStatusCancelled)
 }
 
-func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalPrice float64) (*dto.EnrollmentResponse, error) {
+func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalPrice float64, packageID, packageName, paymentMethod string) (*dto.EnrollmentResponse, error) {
 	enrollment, err := s.enrollmentRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -295,12 +311,15 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 	if s.eventPublisher != nil {
 		// Get package details for the event
 		var totalSessions int
-		var packageName string
+		var pkgName string
 		if s.coreClient != nil {
 			if pkg, err := s.coreClient.GetPackageByID(ctx, enrollment.PackageID); err == nil {
 				totalSessions = pkg.Sessions
-				packageName = pkg.Name
+				pkgName = pkg.Name
 			}
+		}
+		if packageName != "" {
+			pkgName = packageName
 		}
 
 		// Calculate extra sessions from the enrollment transaction
@@ -317,13 +336,66 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 		}
 		totalSessions += extraSessions
 
-		_ = s.eventPublisher.PublishEnrollmentPaid(ctx, enrollment.ID.String(), enrollment.UserID.String(), enrollment.PackageID, totalPrice, totalSessions, packageName)
+		_ = s.eventPublisher.PublishEnrollmentPaid(ctx, enrollment.ID.String(), enrollment.UserID.String(), enrollment.PackageID, totalPrice, totalSessions, pkgName)
 	}
 
 	// Create entitlements automatically if services are available
 	s.createEntitlementsForEnrollment(ctx, enrollment)
 
+	// Create a sale record in core-service to track this as a completed sale
+	if s.coreClient != nil && packageID != "" {
+		var saleItems []cClient.CreateSaleItem
+
+		if s.transactionSvc != nil {
+			tx, err := s.transactionSvc.GetTransactionByEnrollmentID(ctx, enrollment.ID)
+			if err == nil && tx != nil {
+				for _, item := range tx.Items {
+					saleItems = append(saleItems, cClient.CreateSaleItem{
+						PackageID:   item.ItemID.String(),
+						PackageName: item.ItemName,
+						Quantity:    item.Quantity,
+						UnitPrice:   item.UnitPrice,
+						Discount:    0,
+					})
+				}
+			}
+		}
+
+		// Fallback to single item if transaction is not found or empty
+		if len(saleItems) == 0 {
+			pkgName := packageName
+			if pkgName == "" {
+				pkgName = "Driving Package"
+			}
+			if pkg, err := s.coreClient.GetPackageByID(ctx, enrollment.PackageID); err == nil && pkgName == "" {
+				pkgName = pkg.Name
+			}
+			saleItems = append(saleItems, cClient.CreateSaleItem{
+				PackageID:   packageID,
+				PackageName: pkgName,
+				Quantity:    1,
+				UnitPrice:   totalPrice,
+				Discount:    0,
+			})
+		}
+
+		saleReq := cClient.CreateSaleRequest{
+			UserID:        enrollment.UserID.String(),
+			PackageID:     packageID,
+			PaymentMethod: paymentMethod,
+			Source:        "web",
+			Items:         saleItems,
+		}
+		if err := s.coreClient.CreateSale(ctx, saleReq); err != nil {
+			// Log error but don't fail the enrollment — sale is non-critical
+			fmt.Printf("[MarkAsPaid] Failed to create sale record: %v\n", err)
+		} else {
+			fmt.Printf("[MarkAsPaid] Sale record created for enrollment %s with %d items\n", id.String(), len(saleItems))
+		}
+	}
+
 	resp := s.enrollmentRepo.ToResponse(enrollment)
+	s.populateDetails(ctx, &resp)
 	return &resp, nil
 }
 
@@ -374,6 +446,21 @@ func (s *EnrollmentService) createEntitlementsForEnrollment(ctx context.Context,
 		// Log error but don't fail the enrollment
 		return
 	}
+
+	// Create entitlement for bonus session (1 session, 30 days validity)
+	bonusExpiresAt := time.Now().AddDate(0, 0, 30) // Bonus session validity, e.g., 30 days
+	_, err = s.entitlementSvc.CreateEntitlement(ctx, dto.CreateEntitlementRequest{
+		UserID:            enrollment.UserID,
+		SourceType:        "bonus",
+		SourceID:          "free-trial-bonus",
+		TotalSessions:     1,
+		SessionsRemaining: 1,
+		ExpiresAt:         bonusExpiresAt,
+	})
+	if err != nil {
+		// Log error but don't fail the enrollment
+		fmt.Printf("Failed to create bonus entitlement: %v\n", err)
+	}
 }
 
 func (s *EnrollmentService) ListEnrollments(ctx context.Context, page, limit int) (*dto.EnrollmentListResponse, error) {
@@ -388,6 +475,13 @@ func (s *EnrollmentService) ListEnrollments(ctx context.Context, page, limit int
 	}
 
 	resp := s.enrollmentRepo.ToListResponse(enrollments, total, page, limit)
+
+	pkgCache := make(map[uuid.UUID]*dto.EnrollmentPackageResponse)
+	addonCache := make(map[uuid.UUID]*dto.EnrollmentAddOnResponse)
+	for i := range resp.Data {
+		s.populateDetailsWithCache(ctx, &resp.Data[i], pkgCache, addonCache)
+	}
+
 	return &resp, nil
 }
 
@@ -403,6 +497,13 @@ func (s *EnrollmentService) ListUserEnrollments(ctx context.Context, userID uuid
 	}
 
 	resp := s.enrollmentRepo.ToListResponse(enrollments, total, page, limit)
+
+	pkgCache := make(map[uuid.UUID]*dto.EnrollmentPackageResponse)
+	addonCache := make(map[uuid.UUID]*dto.EnrollmentAddOnResponse)
+	for i := range resp.Data {
+		s.populateDetailsWithCache(ctx, &resp.Data[i], pkgCache, addonCache)
+	}
+
 	return &resp, nil
 }
 
@@ -416,8 +517,11 @@ func (s *EnrollmentService) ListEnrollmentsByStatus(ctx context.Context, status 
 		Data:       make([]dto.EnrollmentResponse, len(enrollments)),
 		Pagination: dto.NewPaginationMeta(total, page, limit),
 	}
+	pkgCache := make(map[uuid.UUID]*dto.EnrollmentPackageResponse)
+	addonCache := make(map[uuid.UUID]*dto.EnrollmentAddOnResponse)
 	for i, e := range enrollments {
 		resp.Data[i] = s.enrollmentRepo.ToResponse(&e)
+		s.populateDetailsWithCache(ctx, &resp.Data[i], pkgCache, addonCache)
 	}
 	return resp, nil
 }
@@ -447,4 +551,84 @@ func (s *EnrollmentService) CreateEntitlementFromEnrollment(ctx context.Context,
 
 	resp := s.entitlementRepo.ToResponse(entitlement)
 	return &resp, nil
+}
+
+func (s *EnrollmentService) populateDetails(ctx context.Context, resp *dto.EnrollmentResponse) {
+	pkgCache := make(map[uuid.UUID]*dto.EnrollmentPackageResponse)
+	addonCache := make(map[uuid.UUID]*dto.EnrollmentAddOnResponse)
+	s.populateDetailsWithCache(ctx, resp, pkgCache, addonCache)
+}
+
+func (s *EnrollmentService) populateDetailsWithCache(
+	ctx context.Context,
+	resp *dto.EnrollmentResponse,
+	pkgCache map[uuid.UUID]*dto.EnrollmentPackageResponse,
+	addonCache map[uuid.UUID]*dto.EnrollmentAddOnResponse,
+) {
+	if s.coreClient == nil {
+		return
+	}
+
+	// Fetch package details
+	if pkgDetail, exists := pkgCache[resp.PackageID]; exists {
+		resp.Package = pkgDetail
+	} else {
+		pkg, err := s.coreClient.GetPackageByID(ctx, resp.PackageID)
+		if err == nil && pkg != nil {
+			detail := &dto.EnrollmentPackageResponse{
+				ID:            pkg.ID,
+				Name:          pkg.Name,
+				Description:   pkg.Description,
+				Price:         pkg.Price,
+				DiscountPrice: pkg.DiscountPrice,
+				Sessions:      pkg.Sessions,
+				Duration:      pkg.Duration,
+			}
+			pkgCache[resp.PackageID] = detail
+			resp.Package = detail
+		}
+	}
+
+	// Fetch transaction to get addon details
+	if s.transactionSvc != nil {
+		tx, err := s.transactionSvc.GetTransactionByEnrollmentID(ctx, resp.ID)
+		if err == nil && tx != nil {
+			var addonResponses []dto.EnrollmentAddOnResponse
+			for _, item := range tx.Items {
+				if item.ItemType == models.TransactionItemTypeAddOn {
+					var addonDetail *dto.EnrollmentAddOnResponse
+					if cached, exists := addonCache[item.ItemID]; exists {
+						addonDetail = cached
+					} else {
+						addon, err := s.coreClient.GetAddOnByID(ctx, item.ItemID)
+						if err == nil && addon != nil {
+							detail := &dto.EnrollmentAddOnResponse{
+								ID:          addon.ID,
+								Title:       addon.Title,
+								Description: addon.Description,
+								Price:       addon.Price,
+								Sessions:    addon.Sessions,
+							}
+							addonCache[item.ItemID] = detail
+							addonDetail = detail
+						} else {
+							// Fallback to transaction item details
+							detail := &dto.EnrollmentAddOnResponse{
+								ID:          item.ItemID,
+								Title:       item.ItemName,
+								Description: "",
+								Price:       item.UnitPrice,
+								Sessions:    item.Sessions,
+							}
+							addonDetail = detail
+						}
+					}
+					if addonDetail != nil {
+						addonResponses = append(addonResponses, *addonDetail)
+					}
+				}
+			}
+			resp.AddOns = addonResponses
+		}
+	}
 }

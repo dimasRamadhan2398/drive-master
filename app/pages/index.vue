@@ -453,7 +453,10 @@ const testimonialsList = computed(() => testimonialsStore.testimonials);
 const packagesStore = usePackagesStore();
 const packagesList = computed(() => packagesStore.packages);
 
+const { waLink, address, generalSettings, fetchGeneralSettings } = useSettings();
+
 onMounted(async () => {
+  fetchGeneralSettings();
   instructorsStore.fetchInstructors();
   testimonialsStore.fetchTestimonials();
   packagesStore.fetchPackages();
@@ -1020,7 +1023,7 @@ onMounted(async () => {
               <div>
                 <h3 class="font-semibold mb-1">{{ t('home.trainingCenter') }}</h3>
                 <p class="text-muted text-md">
-                  {{ t('home.address') }}
+                  {{ address ?? t('home.address') }}
                 </p>
               </div>
             </div>
@@ -1050,8 +1053,8 @@ onMounted(async () => {
               <div>
                 <h3 class="font-semibold mb-1">{{ t('home.contactUs') }}</h3>
                 <p class="text-muted text-md">
-                  {{ t('home.phone') }}: +62 812-3456-7890<br />
-                  {{ t('home.email') }}: info@evdriveacademy.id
+                  {{ t('home.phone') }}: {{ generalSettings?.phone || '+62 812-3456-7890' }}<br />
+                  {{ t('home.email') }}: {{ generalSettings?.email || 'info@evdriveacademy.id' }}
                 </p>
               </div>
             </div>
@@ -1059,7 +1062,7 @@ onMounted(async () => {
 
           <div class="flex gap-3">
             <NuxtLink
-              to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi"
+              :to="waLink"
               target="_blank"
               class="flex-1"
             >

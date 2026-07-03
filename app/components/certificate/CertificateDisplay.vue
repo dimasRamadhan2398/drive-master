@@ -119,9 +119,14 @@ defineExpose({
       >
         <div class="flex items-center gap-2 mb-4">
           <img
-            src="/drive-master-logo2.png"
+            src="/drive-master-logo-light.png"
             alt="Drive Master Logo"
-            class="h-16"
+            class="h-16 dark:hidden"
+          />
+          <img
+            src="/drive-master-logo-dark.jpg"
+            alt="Drive Master Logo"
+            class="h-16 hidden dark:block"
           />
         </div>
 

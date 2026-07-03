@@ -230,7 +230,8 @@ watch(
       <!-- Header -->
       <div class="text-center mb-8">
         <div class="flex items-center justify-center gap-2 mb-4">
-          <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
+          <img src="/drive-master-logo-light.png" alt="Drive Master Logo" class="h-16 dark:hidden" />
+          <img src="/drive-master-logo-dark.jpg" alt="Drive Master Logo" class="h-16 hidden dark:block" />
         </div>
         <h1 class="text-2xl font-bold">{{ t("register.title") }}</h1>
         <p class="text-muted mt-2">{{ t("register.subtitle") }}</p>

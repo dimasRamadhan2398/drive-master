@@ -131,6 +131,36 @@ export const memberService = {
   },
 
   /**
+   * Update user details
+   * PUT /users/{id}
+   */
+  async updateUser(
+    userId: string,
+    data: {
+      firstName: string;
+      lastName: string;
+      phoneNumber?: string;
+      address?: string;
+      dateOfBirth?: string;
+    },
+  ): Promise<any> {
+    const { user, extractData } = useApiClients();
+
+    try {
+      const response = await user<ApiResponse<any>>(
+        `/users/${userId}`,
+        {
+          method: "PUT",
+          body: data,
+        },
+      );
+      return extractData(response);
+    } catch {
+      return null;
+    }
+  },
+
+  /**
    * Get all members with pagination (admin)
    * GET /members
    */

@@ -108,6 +108,13 @@ export default defineNuxtRouteMiddleware(async (to: any) => {
 
   // Check if accessing dashboard routes - verify member has entitlements
   if (to.path.startsWith("/dashboard")) {
+    // Skip entitlement check if user just completed payment — entitlements
+    // may not yet be provisioned due to async Kafka processing.
+    const justPaid = to.query.just_paid === "true";
+    if (justPaid) {
+      return;
+    }
+
     // Fetch member profile if not already loaded
     if (!authStore.memberProfile) {
       await authStore.fetchMemberProfile();

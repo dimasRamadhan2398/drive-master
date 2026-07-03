@@ -169,14 +169,17 @@ func (c *EnrollmentController) MarkAsPaid(ctx *gin.Context) {
 	}
 
 	var req struct {
-		TotalPrice float64 `json:"totalPrice" binding:"required"`
+		TotalPrice    float64 `json:"totalPrice" binding:"required"`
+		PackageID     string  `json:"packageId"`
+		PackageName   string  `json:"packageName"`
+		PaymentMethod string  `json:"paymentMethod"`
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	resp, err := c.enrollmentService.MarkAsPaid(ctx.Request.Context(), id, req.TotalPrice)
+	resp, err := c.enrollmentService.MarkAsPaid(ctx.Request.Context(), id, req.TotalPrice, req.PackageID, req.PackageName, req.PaymentMethod)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

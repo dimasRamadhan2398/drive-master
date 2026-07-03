@@ -12,6 +12,18 @@ import (
 func RunAddonSeeder(db *gorm.DB) error {
 	addons := []models.AddOn{
 		{
+			ID:          uuid.MustParse("00000000-0000-0000-0000-000000000001"),
+			Title:       "Extra Session",
+			Description: "Additional training session",
+			Price:       350000,
+			Sessions:    1,
+			Status:      models.AddOnStatusActive,
+			ImageURL:    "",
+			SortOrder:   1,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		},
+		{
 			ID:          uuid.MustParse("22222222-2222-2222-2222-222222222201"),
 			Title:       "Extra Session",
 			Description: "Additional driving session to enhance your skills. Each purchase adds 1 extra session to your package.",

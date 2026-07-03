@@ -2,13 +2,14 @@
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 
 const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
 const toast = useToast()
 const loading = ref(false)
+const authStore = useAuthStore()
 
 const profileSchema = computed(() => z.object({
   fullName: z.string().min(3, t('validation.minLength', { min: 3 })),
@@ -26,12 +27,12 @@ const passwordSchema = computed(() => z.object({
   path: ['confirmPassword']
 }))
 
-// Mock user data
+// Live profile data bound to inputs
 const profileData = reactive({
-  fullName: 'John Doe',
-  email: 'john.doe@example.com',
-  phone: '081234567890',
-  address: 'Jl. Alam Sutera No. 123, Tangerang'
+  fullName: '',
+  email: '',
+  phone: '',
+  address: ''
 })
 
 const passwordData = reactive({
@@ -40,24 +41,88 @@ const passwordData = reactive({
   confirmPassword: ''
 })
 
-const memberInfo = {
-  memberId: 'EVDA-MEM-2026-0042',
-  package: '8x Session',
-  joinDate: 'March 10, 2026',
-  expiryDate: 'September 10, 2026'
-}
+const avatarText = computed(() => {
+  const names = profileData.fullName.trim().split(' ');
+  if (names.length >= 2) {
+    return (names[0][0] + names[1][0]).toUpperCase();
+  }
+  return names[0] ? names[0].substring(0, 2).toUpperCase() : 'JD';
+});
+
+const memberInfo = computed(() => {
+  const entitlement = authStore.memberProfile?.entitlements?.[0];
+  
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  return {
+    memberId: authStore.memberProfile?.id ? `MEM-${authStore.memberProfile.id.slice(0, 8).toUpperCase()}` : '-',
+    package: entitlement?.packageName || 'No active package',
+    joinDate: formatDate(entitlement?.startDate || authStore.user?.createdAt),
+    expiryDate: entitlement?.endDate ? formatDate(entitlement.endDate) : 'Lifetime / No Expiry'
+  };
+})
+
+onMounted(async () => {
+  loading.value = true
+  await Promise.all([
+    authStore.fetchCurrentUser(),
+    authStore.fetchMemberProfile()
+  ])
+  
+  if (authStore.user) {
+    profileData.fullName = authStore.memberProfile?.identityFullname || 
+                           ((authStore.user.firstName || '') + ' ' + (authStore.user.lastName || '')).trim() || 
+                           authStore.user.username;
+    profileData.email = authStore.user.email;
+    profileData.phone = authStore.user.phoneNumber || '';
+    profileData.address = authStore.user.address || '';
+  }
+  loading.value = false
+})
 
 async function updateProfile(event: FormSubmitEvent<any>) {
   loading.value = true
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  loading.value = false
   
-  toast.add({
-    title: t('profile.profileUpdated'),
-    description: t('profile.profileUpdatedDesc'),
-    icon: 'i-lucide-check-circle',
-    color: 'success'
-  })
+  const nameParts = profileData.fullName.trim().split(/\s+/);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || firstName;
+
+  try {
+    await Promise.all([
+      authStore.updateUser({
+        firstName,
+        lastName,
+        phoneNumber: profileData.phone,
+        address: profileData.address,
+      }),
+      authStore.updateMemberProfile({
+        identityFullname: profileData.fullName
+      })
+    ]);
+
+    toast.add({
+      title: t('profile.profileUpdated'),
+      description: t('profile.profileUpdatedDesc'),
+      icon: 'i-lucide-check-circle',
+      color: 'success'
+    })
+  } catch (error: any) {
+    toast.add({
+      title: 'Failed to update profile',
+      description: error?.message || 'Unknown error occurred',
+      icon: 'i-lucide-alert-circle',
+      color: 'error'
+    })
+  } finally {
+    loading.value = false
+  }
 }
 
 async function updatePassword(event: FormSubmitEvent<any>) {
@@ -93,7 +158,7 @@ async function updatePassword(event: FormSubmitEvent<any>) {
         <!-- Member Card -->
         <UCard class="bg-gradient-to-r from-warning/10 to-warning/5">
           <div class="flex flex-col md:flex-row items-center gap-6">
-            <UAvatar text="JD" size="3xl" class="ring-4 ring-warning/20" />
+            <UAvatar :src="authStore.user?.image" :text="avatarText" size="3xl" class="ring-4 ring-warning/20" />
             <div class="text-center md:text-left">
               <h2 class="text-2xl font-bold">{{ profileData.fullName }}</h2>
               <p class="text-muted">{{ profileData.email }}</p>

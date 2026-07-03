@@ -91,7 +91,8 @@ const userMenuItems = computed(() => [
     >
       <template #header="{ collapsed }">
         <NuxtLink v-if="!collapsed" to="/" class="flex items-center gap-2 px-2">
-          <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
+          <img src="/drive-master-logo-light.png" alt="Drive Master Logo" class="h-16 dark:hidden" />
+          <img src="/drive-master-logo-dark.jpg" alt="Drive Master Logo" class="h-16 hidden dark:block" />
         </NuxtLink>
         <UIcon v-else name="i-simple-icons-nuxtdotjs" class="size-5 text-primary mx-auto" />
         <UDashboardSidebarCollapse variant="subtle" />

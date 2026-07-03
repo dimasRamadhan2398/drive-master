@@ -96,6 +96,7 @@ type ScheduleFilterParams struct {
 	InstructorID string `form:"instructorId"`
 	CarID        string `form:"carId"`
 	Status       string `form:"status"`
+	StudentID    string `form:"studentId"`
 }
 
 type ScheduleStatsResponse struct {

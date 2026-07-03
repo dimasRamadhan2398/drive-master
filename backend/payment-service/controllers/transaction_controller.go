@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -22,7 +24,7 @@ type TransactionController struct {
 	transactionRepo   repositories.ITransactionRepository
 	paymentRepo       repositories.IPaymentRepository
 	paymentMethodRepo repositories.IPaymentMethodRepository
-	midtransSvc       services.IMidtransService
+	paymentGateway    services.IPaymentGatewayService
 	eventPublisher    kafka.IEventPublisher
 }
 
@@ -43,14 +45,14 @@ func NewTransactionController(
 	transactionRepo repositories.ITransactionRepository,
 	paymentRepo repositories.IPaymentRepository,
 	paymentMethodRepo repositories.IPaymentMethodRepository,
-	midtransSvc services.IMidtransService,
+	paymentGateway services.IPaymentGatewayService,
 	eventPublisher kafka.IEventPublisher,
 ) ITransactionController {
 	return &TransactionController{
 		transactionRepo:   transactionRepo,
 		paymentRepo:       paymentRepo,
 		paymentMethodRepo: paymentMethodRepo,
-		midtransSvc:       midtransSvc,
+		paymentGateway:    paymentGateway,
 		eventPublisher:    eventPublisher,
 	}
 }
@@ -314,11 +316,24 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 	}
 
 	orderID := fmt.Sprintf("ORD-%s-%d", time.Now().Format("20060102150405"), uuid.New().ID())
-	snapResp, err := t.midtransSvc.CreateSnapTransaction(orderID, enrollment.TotalPrice, packageName, customerName, customerEmail)
+	checkoutResp, err := t.paymentGateway.CreateCheckout(orderID, enrollment.TotalPrice, packageName, customerName, customerEmail)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to initiate Midtrans checkout: "+err.Error())
+		response.Error(c, http.StatusInternalServerError, "Failed to initiate payment checkout: "+err.Error())
 		return
 	}
+
+	// Build metadata containing package & payment info for downstream use (e.g. sale creation)
+	type paymentMeta struct {
+		PackageID   string `json:"package_id"`
+		PackageName string `json:"package_name"`
+		PaymentMethod string `json:"payment_method"`
+	}
+	metaBytes, _ := json.Marshal(paymentMeta{
+		PackageID:   enrollment.PackageID,
+		PackageName: packageName,
+		PaymentMethod: req.PaymentMethod,
+	})
+	metadataStr := string(metaBytes)
 
 	// Create payment
 	payment := &models.Payment{
@@ -330,10 +345,10 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 		Currency:          "IDR",
 		Status:            models.PaymentStatusPending,
 		PaymentMethodID:   &pm.ID,
-		Gateway:           "midtrans",
+		Gateway:           t.paymentGateway.GetName(),
 		GatewayOrderID:    orderID,
-		GatewayPaymentURL: snapResp.RedirectURL,
-		Metadata:          "{}",
+		GatewayPaymentURL: checkoutResp.RedirectURL,
+		Metadata:          metadataStr,
 		Description:       fmt.Sprintf("Pembelian %s", packageName),
 		ExpiryTime:        func() *time.Time { t := time.Now().Add(24 * time.Hour); return &t }(),
 		CreatedAt:         time.Now(),
@@ -352,8 +367,8 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 		Status:          models.TransactionStatusPending,
 		Amount:          enrollment.TotalPrice,
 		Currency:        "IDR",
-		Gateway:         "midtrans",
-		GatewayTxnID:    snapResp.Token,
+		Gateway:         t.paymentGateway.GetName(),
+		GatewayTxnID:    checkoutResp.Token,
 		GatewayResponse: "{}",
 		PaymentMethodID: &pm.ID,
 		CreatedAt:       time.Now(),
@@ -372,22 +387,30 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 		"amount":        payment.Amount,
 		"paymentMethod": req.PaymentMethod,
 		"status":        "pending",
-		"paymentUrl":    snapResp.RedirectURL,
+		"paymentUrl":    checkoutResp.RedirectURL,
 		"createdAt":     payment.CreatedAt.Format(time.RFC3339),
 		"updatedAt":     payment.UpdatedAt.Format(time.RFC3339),
 	})
 }
 
 func (t *TransactionController) Callback(c *gin.Context) {
-	var payload map[string]interface{}
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid payload: "+err.Error())
+	rawBody, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(rawBody))
 
-	notification, err := t.midtransSvc.ParseNotification(payload)
+	headers := make(map[string]string)
+	for k, v := range c.Request.Header {
+		if len(v) > 0 {
+			headers[k] = v[0]
+		}
+	}
+
+	notification, err := t.paymentGateway.VerifyNotification(headers, rawBody)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Failed to parse Midtrans notification: "+err.Error())
+		response.Error(c, http.StatusBadRequest, "Failed to verify notification: "+err.Error())
 		return
 	}
 
@@ -398,7 +421,7 @@ func (t *TransactionController) Callback(c *gin.Context) {
 		return
 	}
 
-	status := services.MapMidtransStatusToPaymentStatus(notification.TransactionStatus)
+	status := notification.TransactionStatus
 	payment.Status = status
 	if status == models.PaymentStatusSuccess {
 		now := time.Now()
@@ -422,15 +445,27 @@ func (t *TransactionController) Callback(c *gin.Context) {
 
 	// Publish Kafka event transaction.paid if payment is successful
 	if status == models.PaymentStatusSuccess {
+		// Parse metadata to extract package & payment method info stored at creation time
+		var meta struct {
+			PackageID   string `json:"package_id"`
+			PackageName string `json:"package_name"`
+			PaymentMethod string `json:"payment_method"`
+		}
+		if payment.Metadata != "" && payment.Metadata != "{}" {
+			_ = json.Unmarshal([]byte(payment.Metadata), &meta)
+		}
+
 		event := map[string]interface{}{
 			"id":        uuid.New().String(),
 			"type":      "transaction.paid",
 			"timestamp": time.Now().Format(time.RFC3339),
 			"user_id":   payment.UserID.String(),
 			"data": map[string]interface{}{
-				"enrollment_id":     payment.BookingID.String(),
-				"total_price":       payment.Amount,
-				"payment_method_id": payment.PaymentMethodID,
+				"enrollment_id":  payment.BookingID.String(),
+				"total_price":    payment.Amount,
+				"payment_method": meta.PaymentMethod,
+				"package_id":     meta.PackageID,
+				"package_name":   meta.PackageName,
 			},
 			"success": true,
 		}
@@ -475,7 +510,7 @@ func (t *TransactionController) GetPaymentByOrderID(c *gin.Context) {
 }
 
 func (t *TransactionController) GetPaymentDetail(c *gin.Context) {
-	orderID := c.Param("orderId")
+	orderID := c.Param("id")
 	payment, err := t.paymentRepo.GetByOrderID(orderID)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, "Payment not found")
@@ -494,11 +529,76 @@ func (t *TransactionController) GetPaymentDetail(c *gin.Context) {
 }
 
 func (t *TransactionController) GetPaymentStatus(c *gin.Context) {
-	orderID := c.Param("orderId")
+	orderID := c.Param("id")
 	payment, err := t.paymentRepo.GetByOrderID(orderID)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, "Payment not found")
 		return
+	}
+
+	// If the payment is still pending in our DB, check the gateway directly as a fallback
+	if payment.Status == models.PaymentStatusPending && t.paymentGateway != nil {
+		status, err := t.paymentGateway.GetTransactionStatus(orderID)
+		if err == nil {
+			if status != models.PaymentStatusPending {
+				// Status changed! Update payment record
+				payment.Status = status
+				if status == models.PaymentStatusSuccess {
+					now := time.Now()
+					payment.PaidAt = &now
+				}
+				payment.UpdatedAt = time.Now()
+				_ = t.paymentRepo.Update(payment)
+
+				// Update associated transactions
+				txs, err := t.transactionRepo.GetByPaymentID(payment.ID)
+				if err == nil && len(txs) > 0 {
+					for i := range txs {
+						txs[i].Status = models.TransactionStatus(status)
+						txs[i].GatewayTxnID = orderID // CheckTransaction doesn't return full ID here, but orderID is safe fallback
+						now := time.Now()
+						txs[i].ProcessedAt = &now
+						txs[i].UpdatedAt = now
+						_ = t.transactionRepo.Update(&txs[i])
+					}
+				}
+
+				// Publish Kafka event transaction.paid if payment is successful
+				if status == models.PaymentStatusSuccess {
+					// Parse metadata to extract package & payment method info stored at creation time
+					var meta struct {
+						PackageID   string `json:"package_id"`
+						PackageName string `json:"package_name"`
+						PaymentMethod string `json:"payment_method"`
+					}
+					if payment.Metadata != "" && payment.Metadata != "{}" {
+						_ = json.Unmarshal([]byte(payment.Metadata), &meta)
+					}
+
+					event := map[string]interface{}{
+						"id":        uuid.New().String(),
+						"type":      "transaction.paid",
+						"timestamp": time.Now().Format(time.RFC3339),
+						"user_id":   payment.UserID.String(),
+						"data": map[string]interface{}{
+							"enrollment_id":  payment.BookingID.String(),
+							"total_price":    payment.Amount,
+							"payment_method": meta.PaymentMethod,
+							"package_id":     meta.PackageID,
+							"package_name":   meta.PackageName,
+						},
+						"success": true,
+					}
+
+					err := t.eventPublisher.Publish(payment.ID.String(), event)
+					if err != nil {
+						fmt.Printf("[Status Check Fallback] Error publishing kafka event: %v\n", err)
+					} else {
+						fmt.Printf("[Status Check Fallback] Successfully published transaction.paid event for enrollment %s\n", payment.BookingID.String())
+					}
+				}
+			}
+		}
 	}
 
 	response.Success(c, http.StatusOK, "Payment status retrieved successfully", gin.H{

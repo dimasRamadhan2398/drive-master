@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useAuth } from '~/composables/useAuth';
 import { useLocale } from '~/composables/useLocale';
 
@@ -8,6 +8,11 @@ const { t, locale, locales, setLocale } = useI18n()
 const { pages } = useContent()
 const { user, isLoggedIn, logout } = useAuth()
 const { switchLocale } = useLocale()
+const { waLink, fetchGeneralSettings } = useSettings()
+
+onMounted(() => {
+  fetchGeneralSettings()
+})
 
 const navItems = computed<NavigationMenuItem[]>(() => {
   const baseItems = [
@@ -172,17 +177,18 @@ const currentLanguage = computed(() => {
     <UFooter class="border-t border-default">
       <template #left>
         <div class="flex items-center gap-2">
-          <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-12" />
+          <img src="/drive-master-logo-light.png" alt="Drive Master Logo" class="h-12 dark:hidden" />
+          <img src="/drive-master-logo-dark.jpg" alt="Drive Master Logo" class="h-12 hidden dark:block" />
         </div>
-        <p class="text-muted text-sm p-10">
+        <p class="text-muted text-sm pl-2">
           {{ t('footer.tagline') }}
         </p>
       </template>
       <template #right>
-        <div class="flex flex-col items-end gap-2">
-          <div class="flex gap-2">
+        <div class="flex flex-col lg:items-end gap-2 items-center">
+          <div class="flex items-center gap-2">
             <UButton icon="i-simple-icons-instagram" color="warning" variant="ghost" to="#" target="_blank" aria-label="Instagram" />
-            <UButton icon="i-simple-icons-whatsapp" color="warning" variant="ghost" to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi" target="_blank" aria-label="WhatsApp" />
+            <UButton icon="i-simple-icons-whatsapp" color="warning" variant="ghost" :to="waLink" target="_blank" aria-label="WhatsApp" />
             <UButton icon="i-simple-icons-youtube" color="warning" variant="ghost" to="#" target="_blank" aria-label="YouTube" />
           </div>
           <p class="text-muted text-sm">
@@ -194,14 +200,14 @@ const currentLanguage = computed(() => {
 
     <!-- WhatsApp Floating Button -->
     <NuxtLink 
-      to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi" 
+      :to="waLink" 
       target="_blank"
       class="fixed bottom-6 right-6 z-50"
     >
       <UButton 
         icon="i-simple-icons-whatsapp" 
         size="xl"
-        class="rounded-full size-14 !bg-[#25D366] hover:!bg-[#128C7E] text-white shadow-lg"
+        class="rounded-full size-14 !bg-[#25D366] hover:!bg-[#128C7E] text-white shadow-lg flex items-center justify-center"
         aria-label="Chat on WhatsApp"
       />
     </NuxtLink>

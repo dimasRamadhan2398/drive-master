@@ -19,7 +19,7 @@ if (process.client) {
 
 const packagesStore = usePackagesStore();
 
-const { promoEndDate } = useSettings();
+const { promoEndDate, waLink, fetchGeneralSettings } = useSettings();
 
 const packagePlans = computed(() => packagesStore.packages);
 
@@ -89,6 +89,7 @@ onMounted(async () => {
   await Promise.all([
     packagesStore.fetchPackages(),
     packagesStore.fetchAddons(),
+    fetchGeneralSettings(),
   ]);
   const defaultPlan = packagePlans.value.find((p) => p.isPopular) || packagePlans.value[0];
   if (defaultPlan) {
@@ -343,7 +344,7 @@ onMounted(async () => {
         },
         {
           label: t('packages.cta.contactUs'),
-          to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi',
+          to: waLink.value,
           color: 'primary',
           variant: 'outline',
           icon: 'i-simple-icons-whatsapp',

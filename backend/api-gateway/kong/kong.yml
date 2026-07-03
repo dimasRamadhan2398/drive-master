@@ -12,6 +12,10 @@ plugins:
       origins:
         - "http://localhost:3000"
         - "http://localhost:3001"
+        - "https://drivemaster.id"
+        - "http://drivemaster.id"
+        - "http://203.194.114.20"
+        - "https://203.194.114.20"
       methods:
         - GET
         - POST
@@ -256,7 +260,7 @@ services:
         paths:
           - /api/v1/general-settings
         protocols: [http, https]
-        methods: [GET, OPTIONS]
+        methods: [GET, PUT, OPTIONS]
 
       - name: core-analytics-sales-route
         strip_path: false

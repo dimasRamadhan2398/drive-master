@@ -11,10 +11,14 @@ useSeoMeta({
   description: 'Contact Drive Master in Alam Sutera. Reach out via WhatsApp, phone, email, or visit our training center.'
 })
 
+const { waLink, address, fetchGeneralSettings } = useSettings()
+
+onMounted(() => { fetchGeneralSettings() })
+
 const contactMethods = computed(() => [
   {
     title: t('contact.trainingCenter'),
-    description: t('home.address'),
+    description: address.value ?? t('home.address'),
     icon: 'i-lucide-map-pin',
     action: { label: t('contact.getDirections'), to: 'https://maps.app.goo.gl/RpSdkpjs4RZg2ZY77', target: '_blank' }
   },
@@ -22,7 +26,7 @@ const contactMethods = computed(() => [
     title: t('contact.whatsappSupport'),
     description: '+62 811-9124-848 (Available 08:00 - 18:00)',
     icon: 'i-simple-icons-whatsapp',
-    action: { label: t('contact.chatNow'), to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', target: '_blank' }
+    action: { label: t('contact.chatNow'), to: waLink.value, target: '_blank' }
   },
   {
     title: t('contact.emailAddress'),

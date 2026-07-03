@@ -235,17 +235,17 @@ const freeTrialInfo = computed(() => [
   {
     icon: "i-lucide-gift",
     title: t("freeTrial.heroTitle"),
-    description: "Available once per account for new registered users",
+    description: t("freeTrial.oncePerAccount"),
   },
   {
     icon: "i-lucide-clock",
-    title: "15 Minutes",
-    description: "Free 15 minutes trial session",
+    title: t("freeTrial.fifteenMinutes"),
+    description: t("freeTrial.trialSessionDesc"),
   },
   {
     icon: "i-lucide-zap",
-    title: "Full Experience",
-    description: "Same professional instructor and Premium vehicles",
+    title: t("freeTrial.fullExperience"),
+    description: t("freeTrial.experienceDesc"),
   },
 ]);
 </script>
@@ -353,7 +353,7 @@ const freeTrialInfo = computed(() => [
       </Transition>
 
       <!-- Plan Cards -->
-      <div class="grid md:grid-cols-4 gap-6 mb-12">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
         <!-- Loading State -->
         <div v-if="packagesStore.isLoading" class="col-span-full flex justify-center py-12">
           <UIcon name="i-lucide-loader-2" class="size-8 text-warning animate-spin" />
@@ -394,30 +394,30 @@ const freeTrialInfo = computed(() => [
 
               <template #header>
                 <div class="text-center">
-                  <h3 class="text-2xl font-bold">{{ plan.name }}</h3>
-                  <p class="text-muted text-sm mt-2">
+                  <h3 class="text-lg sm:text-2xl font-bold">{{ plan.name }}</h3>
+                  <p class="text-muted text-xs sm:text-sm mt-1 sm:mt-2">
                     {{ t("packages.duration") }} : {{ plan.duration }}
                   </p>
                   <div v-if="plan.id === currentActivePlan" class="mt-2">
-                    <UBadge label="Current Plan" color="neutral" variant="subtle" />
+                    <UBadge :label="t('packages.currentPlan')" color="neutral" variant="subtle" />
                   </div>
                 </div>
               </template>
 
-              <div class="flex-1 space-y-6">
+              <div class="flex-1 space-y-4 sm:space-y-6">
                 <!-- Pricing -->
                 <div class="text-center">
                   <div
                     v-if="isPromoActive && plan.promoPrice < plan.originalPrice"
-                    class="space-y-2"
+                    class="space-y-1.5 sm:space-y-2"
                   >
-                    <p class="text-sm text-muted line-through">
+                    <p class="text-xs sm:text-sm text-muted line-through">
                       Rp {{ plan.originalPrice.toLocaleString("id-ID") }}
                     </p>
-                    <p class="text-4xl font-bold text-warning">
+                    <p class="text-xl sm:text-3xl md:text-4xl font-bold text-warning">
                       Rp {{ plan.promoPrice.toLocaleString("id-ID") }}
                     </p>
-                    <p class="text-xs text-green-600 font-medium">
+                    <p class="text-[10px] sm:text-xs text-green-600 font-medium">
                       {{
                         t("home.saveAmount", {
                           amount: (plan.originalPrice - plan.promoPrice).toLocaleString(
@@ -428,7 +428,7 @@ const freeTrialInfo = computed(() => [
                     </p>
                   </div>
                   <div v-else>
-                    <p class="text-4xl font-bold">
+                    <p class="text-xl sm:text-3xl md:text-4xl font-bold">
                       Rp {{ plan.originalPrice.toLocaleString("id-ID") }}
                     </p>
                   </div>
@@ -444,17 +444,17 @@ const freeTrialInfo = computed(() => [
                 </div>
 
                 <!-- Features -->
-                <ul class="space-y-3">
+                <ul class="space-y-2 sm:space-y-3">
                   <li
                     v-for="feature in plan.features"
                     :key="feature"
-                    class="flex items-start gap-3"
+                    class="flex items-start gap-1.5 sm:gap-3"
                   >
                     <UIcon
                       name="i-lucide-check"
-                      class="size-5 text-warning shrink-0 mt-0.5"
+                      class="size-4 sm:size-5 text-warning shrink-0 mt-0.5"
                     />
-                    <span class="text-sm">{{ feature }}</span>
+                    <span class="text-xs sm:text-sm">{{ feature }}</span>
                   </li>
                 </ul>
               </div>
@@ -462,7 +462,7 @@ const freeTrialInfo = computed(() => [
               <!-- Selection Indicator -->
               <div v-if="selectedPlanId === plan.id" class="pt-4">
                 <div class="flex items-center justify-between">
-                  <span class="text-sm font-medium">{{ t("home.selected") }}</span>
+                  <span class="text-xs sm:text-sm font-medium">{{ t("home.selected") }}</span>
                   <UIcon name="i-lucide-check" class="size-4 text-warning" />
                 </div>
               </div>
@@ -474,15 +474,15 @@ const freeTrialInfo = computed(() => [
       <!-- Add-ons Section -->
       <div class="mb-12">
         <div class="text-center mb-8">
-          <h2 class="text-2xl font-bold">{{ t("packages.extras.title") || "Add-ons & Extras" }}</h2>
+          <h2 class="text-2xl font-bold">{{ t("packages.extras.title") }}</h2>
           <p class="text-muted mt-2">
-            Customize your learning experience with optional driving addons
+            {{ t("packages.addonsDesc") }}
           </p>
         </div>
 
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div class="flex flex-wrap justify-center gap-6 max-w-4xl mx-auto">
           <!-- Loading State for Add-ons -->
-          <div v-if="packagesStore.isLoading" class="col-span-full flex justify-center py-12">
+          <div v-if="packagesStore.isLoading" class="w-full flex justify-center items-center py-12">
             <UIcon name="i-lucide-loader-2" class="size-8 text-warning animate-spin" />
           </div>
           
@@ -491,7 +491,7 @@ const freeTrialInfo = computed(() => [
             v-for="addon in packagesStore.addons"
             :key="addon.id"
             :class="[
-              'cursor-pointer border-2 transition-all',
+              'cursor-pointer border-2 transition-all w-full sm:w-[280px]',
               selectedAddons.includes(addon.id)
                 ? 'border-warning bg-warning/5 shadow-md'
                 : 'border-transparent hover:border-warning/30 hover:shadow'
@@ -525,7 +525,7 @@ const freeTrialInfo = computed(() => [
                 <div class="pt-2 flex items-center justify-between gap-2 flex-wrap">
                   <div v-if="addon.sessions && !isExtraSession(addon)" class="pt-1">
                     <UBadge
-                      :label="`${addon.sessions} extra session(s)`"
+                      :label="t('packages.extraSessionsCount', { count: addon.sessions })"
                       color="warning"
                       variant="subtle"
                       size="xs"
@@ -536,7 +536,7 @@ const freeTrialInfo = computed(() => [
                   <template v-if="isExtraSession(addon)">
                     <UBadge
                       v-if="getAddonCount(addon.id) > 0"
-                      :label="`${getAddonCount(addon.id)} extra session(s)`"
+                      :label="t('packages.extraSessionsCount', { count: getAddonCount(addon.id) })"
                       color="warning"
                       variant="subtle"
                       size="xs"
@@ -576,7 +576,7 @@ const freeTrialInfo = computed(() => [
         <div class="text-center mb-8">
           <h2 class="text-2xl font-bold">{{ t("freeTrial.heroTitle") }}</h2>
           <p class="text-muted mt-2">
-            Available for paid registered users - one time offer
+            {{ t("freeTrial.subtitle") }}
           </p>
         </div>
 
@@ -601,14 +601,14 @@ const freeTrialInfo = computed(() => [
       <div class="max-w-2xl mx-auto">
         <UCard class="bg-warning/5 border-warning/20">
           <div class="text-center space-y-4">
-            <h3 class="text-xl font-bold">Ready to Get Started?</h3>
+            <h3 class="text-xl font-bold">{{ t("packages.readyToGetStarted") }}</h3>
             <div class="space-y-1 text-muted">
               <p>
-                Selected package:
+                {{ t("packages.selectedPackage") }}
                 <span class="font-bold text-foreground">{{ currentPlan?.name }}</span>
               </p>
               <p v-if="selectedAddons.length > 0" class="text-xs">
-                Selected Add-ons:
+                {{ t("packages.selectedAddons") }}
                 <span class="font-semibold text-foreground">
                   {{
                     groupedSelectedAddons
@@ -618,7 +618,7 @@ const freeTrialInfo = computed(() => [
                 </span>
               </p>
               <p class="text-lg font-bold text-warning pt-1">
-                Total Price: Rp {{ totalPrice.toLocaleString("id-ID") }}
+                {{ t("billing.totalPrice") }}: Rp {{ totalPrice.toLocaleString("id-ID") }}
               </p>
             </div>
 
@@ -634,7 +634,7 @@ const freeTrialInfo = computed(() => [
             </div>
 
             <p class="text-xs text-muted">
-              Payment secured by Midtrans. You can cancel anytime before first session.
+              {{ t("packages.paymentSecuredNote") }}
             </p>
           </div>
         </UCard>

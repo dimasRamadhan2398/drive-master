@@ -121,8 +121,8 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	// Register TransactionPaidHandler to update enrollment state when transaction is paid
 	if eventPublisher != nil {
-		transactionPaidHandler := kafka.NewTransactionPaidHandler(func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64) error {
-			_, err := enrollmentService.MarkAsPaid(ctx, enrollmentID, totalPrice)
+		transactionPaidHandler := kafka.NewTransactionPaidHandler(func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64, packageID, packageName, paymentMethod string) error {
+			_, err := enrollmentService.MarkAsPaid(ctx, enrollmentID, totalPrice, packageID, packageName, paymentMethod)
 			return err
 		})
 		eventPublisher.RegisterHandler(transactionPaidHandler)
@@ -161,6 +161,38 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Explicitly disable trailing slash redirect to prevent CORS issues on redirects
 	router.RedirectTrailingSlash = false
 	router.RedirectFixedPath = false
+
+	// Add custom CORS middleware to resolve drivemaster.id CORS error on VPS
+	router.Use(func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
+		allowedOrigins := map[string]bool{
+			"http://localhost:3000":    true,
+			"http://localhost:3001":    true,
+			"https://drivemaster.id":   true,
+			"http://drivemaster.id":    true,
+			"http://203.194.114.20":    true,
+			"https://203.194.114.20":   true,
+		}
+
+		if allowedOrigins[origin] {
+			c.Header("Access-Control-Allow-Origin", origin)
+		} else if origin == "" {
+			c.Header("Access-Control-Allow-Origin", "*")
+		} else {
+			c.Header("Access-Control-Allow-Origin", "https://drivemaster.id")
+		}
+
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Request-ID, X-Api-Key, X-Request-At, X-Service-Name")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Max-Age", "86400")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	})
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {

@@ -274,6 +274,12 @@ func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.
 			match = false
 		}
 
+		if params.StudentID != "" {
+			if sched.UserID == nil || sched.UserID.String() != params.StudentID {
+				match = false
+			}
+		}
+
 		if match {
 			schedules = append(schedules, sched)
 		}

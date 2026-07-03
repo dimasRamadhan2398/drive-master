@@ -167,7 +167,7 @@ function handleClose() {
 
             <!-- TEXT BLOCK FORM -->
             <div v-if="section.type === 'text'">
-              <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.content') }}</label>
+              <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.content.label') }}</label>
               <UTextarea v-model="section.data.content" placeholder="Write your paragraph here..." :rows="4" class="w-full" />
             </div>
 

@@ -98,7 +98,8 @@ onMounted(() => {
     <UDashboardSidebar collapsible resizable>
       <template #header="{ collapsed }">
         <NuxtLink to="/admin" class="flex items-center gap-4 py-8">
-          <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-10" />
+          <img src="/drive-master-logo-light.png" alt="Drive Master Logo" class="h-10 dark:hidden" />
+          <img src="/drive-master-logo-dark.jpg" alt="Drive Master Logo" class="h-10 hidden dark:block" />
           <span v-if="!collapsed" class="font-bold py-16">{{ t("admin.title") }}</span>
         </NuxtLink>
       </template>

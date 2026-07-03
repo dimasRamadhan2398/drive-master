@@ -10,7 +10,8 @@ import (
 )
 
 type IMemberService interface {
-	GetMemberProfile(ctx context.Context, userID uuid.UUID) (*models.MemberProfile, error)
+	GetMemberProfile(ctx context.Context, userID uuid.UUID) (*dto.MemberProfileResponse, error)
+	GetRawMemberProfile(ctx context.Context, userID uuid.UUID) (*models.MemberProfile, error)
 	CreateMemberProfile(ctx context.Context, userID uuid.UUID) (*models.MemberProfile, error)
 	UpdateMemberProfile(ctx context.Context, profile *models.MemberProfile) error
 	DeleteMemberProfile(ctx context.Context, userID uuid.UUID) error
@@ -31,8 +32,42 @@ func NewMemberService(repo repositories.IMemberRepository, roleRepo repositories
 	}
 }
 
-// GetMemberProfile retrieves a member profile by user ID
-func (s *MemberService) GetMemberProfile(ctx context.Context, userID uuid.UUID) (*models.MemberProfile, error) {
+// GetMemberProfile retrieves a member profile by user ID and enriches it with entitlements
+func (s *MemberService) GetMemberProfile(ctx context.Context, userID uuid.UUID) (*dto.MemberProfileResponse, error) {
+	profile, err := s.repo.FindByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch entitlements for this user
+	entitlementMap, err := s.entitlementSvc.FindSessionsStatsByMemberIDs(ctx, []uuid.UUID{userID})
+	var entitlements []models.Entitlement
+	if err == nil {
+		entitlements = entitlementMap[userID]
+	}
+	if entitlements == nil {
+		entitlements = []models.Entitlement{}
+	}
+
+	// Compute total remaining sessions across all entitlements
+	totalAvailable := 0
+	for _, e := range entitlements {
+		totalAvailable += e.Remaining
+	}
+
+	return &dto.MemberProfileResponse{
+		UserID:                 profile.UserID,
+		SessionsCompleted:      profile.SessionsCompleted,
+		TrainingTime:           profile.TrainingTime,
+		AverageRating:          profile.AverageRating,
+		TotalAvailableSessions: totalAvailable,
+		IdentityFullname:       profile.IdentityFullname,
+		Entitlements:           entitlements,
+	}, nil
+}
+
+// GetRawMemberProfile retrieves the raw model (used internally for updates)
+func (s *MemberService) GetRawMemberProfile(ctx context.Context, userID uuid.UUID) (*models.MemberProfile, error) {
 	return s.repo.FindByUserID(ctx, userID)
 }
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { usePaymentsStore } from '~/stores/payments'
 
 const { t } = useI18n()
 definePageMeta({
@@ -8,23 +9,67 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const paymentsStore = usePaymentsStore()
 
 const status = ref(route.query.status as string || 'pending')
 const email = ref(route.query.email as string || '')
 const plan = ref(route.query.plan as string || 'standard')
+const orderId = ref(route.query.orderId as string || '')
 
-// Simulate waiting for confirmation
+const isSuccess = computed(() => status.value === 'success' || status.value === 'paid')
+const isFailed = computed(() => status.value === 'failed')
+
+let pollInterval: any = null
+
+const pollStatus = async (oid: string) => {
+  let attempts = 0
+  const maxAttempts = 6 // Poll for 12 seconds max
+  
+  const check = async () => {
+    attempts++
+    const res = await paymentsStore.checkPaymentStatus(oid)
+    if (res === 'success' || res === 'paid') {
+      status.value = 'success'
+      if (pollInterval) clearInterval(pollInterval)
+      setTimeout(() => {
+        navigateTo('/dashboard?just_paid=true')
+      }, 3000)
+    } else if (res === 'failed' || res === 'expired' || res === 'cancelled') {
+      status.value = 'failed'
+      if (pollInterval) clearInterval(pollInterval)
+    } else if (attempts >= maxAttempts) {
+      if (pollInterval) clearInterval(pollInterval)
+    }
+  }
+
+  await check()
+  
+  if (status.value === 'pending') {
+    pollInterval = setInterval(check, 2000)
+  }
+}
+
 onMounted(() => {
-  // After 3 seconds, auto-redirect to dashboard
-  if (status.value === 'success') {
+  // Resolve orderId from sessionStorage fallback if not in query
+  if (!orderId.value && import.meta.client) {
+    orderId.value = sessionStorage.getItem("dm_order_id") || ''
+  }
+
+  // Trigger status check & polling if we have orderId
+  if (orderId.value) {
+    pollStatus(orderId.value)
+  } else if (status.value === 'success') {
     setTimeout(() => {
-      navigateTo('/dashboard')
+      navigateTo('/dashboard?just_paid=true')
     }, 5000)
   }
 })
 
-const isSuccess = computed(() => status.value === 'success')
-const isFailed = computed(() => status.value === 'failed')
+onUnmounted(() => {
+  if (pollInterval) {
+    clearInterval(pollInterval)
+  }
+})
 
 const packageNames = {
   starter: 'Starter Package (5 sessions)',
@@ -127,7 +172,7 @@ const nextSteps = computed(() => ({
 
         <!-- Action Buttons -->
         <div class="space-y-3 pt-4">
-          <NuxtLink to="/dashboard">
+          <NuxtLink to="/dashboard?just_paid=true">
             <UButton 
               :label="t('auth.goToDashboard')"
               icon="i-lucide-arrow-right"

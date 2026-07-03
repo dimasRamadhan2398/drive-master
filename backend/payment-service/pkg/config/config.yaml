@@ -44,6 +44,7 @@ app:
   rate_limiter_max: 100
   rate_limiter_time: 1
   base_path: /app
+  payment_gateway: ${PAYMENT_GATEWAY:-doku}
 
 midtrans:
   server_key: Mid-server-RzMK8evhW7EZiDp4xL0kIKYY
@@ -56,3 +57,13 @@ midtrans:
   notification_url: ${MIDTRANS_NOTIFICATION_URL:-http://localhost:8080/notifications}
   timeout_seconds: 30
   gopay_callback_url: "localhost:3000/payment/success"
+  frontend_url: "http://localhost:3000"
+
+doku:
+  client_id: ${DOKU_CLIENT_ID:-}
+  secret_key: ${DOKU_SECRET_KEY:-}
+  environment: ${DOKU_ENVIRONMENT:-sandbox}
+  base_url: ${DOKU_BASE_URL:-https://api-sandbox.doku.com}
+  notification_url: ${DOKU_NOTIFICATION_URL:-}
+  payment_due_date: 60
+  frontend_url: ${DOKU_FRONTEND_URL:-http://localhost:3001}

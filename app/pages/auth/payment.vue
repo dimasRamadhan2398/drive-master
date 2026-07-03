@@ -96,20 +96,27 @@ const pkg = computed(() =>
   packageInfo[selectedPlan as keyof typeof packageInfo] || packageInfo.eight_package
 )
 
-// Mock Midtrans initialization
-async function initiateMidtransPayment() {
+const paymentGateway = ref('doku') // Dynamic gateway selection: 'midtrans' or 'doku'
+const paymentUrl = ref('')
+
+// Initialize payment checkout from backend API
+async function initiatePayment() {
   loading.value = true
   
   try {
-    // In real implementation, this would call your backend to get Snap token
-    // For now, we'll simulate it
+    // In production, this would call your backend endpoint (e.g. POST /api/v1/payments/transactions)
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    // Mock snap token
-    snapToken.value = `mock_token_${Date.now()}`
-    paymentInitiated.value = true
+    // Set dynamic fields based on active gateway
+    if (paymentGateway.value === 'doku') {
+      paymentUrl.value = 'https://sandbox.doku.com/checkout/link/dummy_checkout_url'
+      console.log('Doku payment initialized with URL:', paymentUrl.value)
+    } else {
+      snapToken.value = `mock_token_${Date.now()}`
+      console.log('Midtrans payment initiated with token:', snapToken.value)
+    }
     
-    console.log('Midtrans payment initiated with token:', snapToken.value)
+    paymentInitiated.value = true
   } catch (error) {
     console.error('Payment initiation error:', error)
   } finally {
@@ -118,8 +125,20 @@ async function initiateMidtransPayment() {
 }
 
 async function completePayment() {
-  // Simulate payment success after 2 seconds
   loading.value = true
+  
+  // If Doku is active, trigger Jokul Checkout modal/redirect
+  if (paymentGateway.value === 'doku' && paymentUrl.value) {
+    loading.value = false
+    if (typeof (window as any).loadJokulCheckout === 'function') {
+      ;(window as any).loadJokulCheckout(paymentUrl.value)
+    } else {
+      window.location.href = paymentUrl.value
+    }
+    return
+  }
+
+  // Simulate payment success after 2 seconds for Midtrans/Mock
   await new Promise(resolve => setTimeout(resolve, 2000))
   loading.value = false
   
@@ -128,8 +147,22 @@ async function completePayment() {
 }
 
 onMounted(() => {
-  // Auto-initiate payment in real implementation
-  initiateMidtransPayment()
+  // Load gateway client scripts dynamically
+  if (paymentGateway.value === 'doku') {
+    const script = document.createElement('script')
+    script.src = 'https://sandbox.doku.com/jokul-checkout-js/v1/jokul-checkout-1.0.0.js'
+    script.async = true
+    document.head.appendChild(script)
+  } else {
+    // Load Midtrans Snap script
+    const script = document.createElement('script')
+    script.src = 'https://app.midtrans.com/snap/snap.js'
+    script.setAttribute('data-client-key', 'Mid-client-VRtikOzo00hMYblh')
+    script.async = true
+    document.head.appendChild(script)
+  }
+  
+  initiatePayment()
 })
 </script>
 

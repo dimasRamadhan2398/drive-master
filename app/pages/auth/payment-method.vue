@@ -137,7 +137,7 @@ onMounted(async () => {
           console.log("[PAYMENT] Set enrollment ID from parsed:", parsed.id);
         }
         // Use stored enrollment data for amount and package name
-        resolvedAmount.value = parsed.discountPrice || parsed.price || 0;
+        resolvedAmount.value = parsed.totalPrice || parsed.price || parsed.discountPrice || 0;
         resolvedPackageName.value = parsed.packageName || "Selected Package";
       } catch (e) {
         console.error("[PAYMENT] Failed to parse stored enrollment:", e);
@@ -158,14 +158,15 @@ onMounted(async () => {
       : response;
 
     if (enrollment) {
-      resolvedAmount.value = enrollment.discountPrice || enrollment.price || 0;
+      resolvedAmount.value = enrollment.totalPrice || enrollment.price || enrollment.discountPrice || 0;
       resolvedPackageName.value = enrollment.packageName || "Selected Package";
       // Also store it for reference
       resolvedEnrollment.value = {
         id: enrollment.id,
         packageId: enrollment.packageId,
         packageName: enrollment.packageName,
-        price: enrollment.price,
+        price: enrollment.price || enrollment.totalPrice,
+        totalPrice: enrollment.totalPrice,
         discountPrice: enrollment.discountPrice,
         userId: enrollment.userId,
         status: enrollment.status,

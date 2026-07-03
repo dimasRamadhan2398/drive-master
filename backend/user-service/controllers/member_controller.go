@@ -95,7 +95,7 @@ func (m *MemberController) UpdateMemberProfile(ctx *gin.Context) {
 		return
 	}
 
-	profile, err := m.memberService.GetMemberProfile(ctx, userID)
+	profile, err := m.memberService.GetRawMemberProfile(ctx, userID)
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return

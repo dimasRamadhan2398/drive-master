@@ -54,6 +54,8 @@ function saveEditedPackage() {
     discountPrice: selectedPackage.value.price,
     description: selectedPackage.value.description,
     features: selectedPackage.value.features,
+    durationMinutes: 60,
+    totalSessions: selectedPackage.value.sessions,
   });
 
   toast.add({
@@ -86,25 +88,14 @@ function saveEditedPackage() {
             color="warning"
           />
         </UFormField>
-        <div class="grid grid-cols-2 gap-4">
-          <UFormField :label="t('admin.package.sessions')" required>
-            <UInput
-              v-model="selectedPackage.sessions"
-              type="number"
-              class="w-full"
-              color="warning"
-            />
-          </UFormField>
-          <UFormField :label="t('admin.package.duration')" required>
-            <UInput
-              v-model="selectedPackage.duration"
-              type="number"
-              :step="15"
-              class="w-full"
-              color="warning"
-            />
-          </UFormField>
-        </div>
+        <UFormField :label="t('admin.package.sessions')" required>
+          <UInput
+            v-model="selectedPackage.sessions"
+            type="number"
+            class="w-full"
+            color="warning"
+          />
+        </UFormField>
         <UFormField :label="t('admin.package.description')">
           <UTextarea
             v-model="selectedPackage.description"

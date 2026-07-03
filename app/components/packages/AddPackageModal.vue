@@ -83,7 +83,7 @@ async function saveNewPackage(e: Event) {
     discountPrice: newPackage.value.isDiscountActive
       ? newPackage.value.discountPrice
       : undefined,
-    durationMinutes: newPackage.value.duration,
+    durationMinutes: 60,
     totalSessions: newPackage.value.sessions,
     benefits: featuresArray,
     highlight: newPackage.value.highlight,
@@ -165,25 +165,14 @@ async function saveNewPackage(e: Event) {
           class="w-full"
           color="warning"
         />
-        <div class="grid grid-cols-2 gap-4">
-          <UFormField :label="t('admin.package.sessions')" required>
-            <UInput
-              v-model="newPackage.sessions"
-              type="number"
-              class="w-full"
-              color="warning"
-            />
-          </UFormField>
-          <UFormField :label="t('admin.package.duration')" required>
-            <UInput
-              v-model="newPackage.duration"
-              type="number"
-              :step="15"
-              class="w-full"
-              color="warning"
-            />
-          </UFormField>
-        </div>
+        <UFormField :label="t('admin.package.sessions')" required>
+          <UInput
+            v-model="newPackage.sessions"
+            type="number"
+            class="w-full"
+            color="warning"
+          />
+        </UFormField>
         <UFormField :label="t('admin.package.description')">
           <UTextarea v-model="newPackage.description" class="w-full" color="warning" />
         </UFormField>
