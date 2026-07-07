@@ -33,11 +33,15 @@ type InstructorProfileResponse struct {
 }
 
 type UpdateInstructorProfileInput struct {
+	FirstName             *string `json:"firstName"         binding:"omitempty"`
+	LastName              *string `json:"lastName"          binding:"omitempty"`
+	PhoneNumber           *string `json:"phoneNumber"       binding:"omitempty"`
 	Description           *string `json:"description"       binding:"omitempty"`
 	LicenseNumber         *string `json:"licenseNumber"     binding:"omitempty,min=5"`
 	LicenseExpiry         *string `json:"licenseExpiry"     binding:"omitempty"`
 	BNSPCertificateNumber *string `json:"bnspCertificateNumber" binding:"omitempty,min=10"`
 	YearsOfExperience     *int    `json:"yearsOfExperience" binding:"omitempty,min=0"`
+	PhotoBase64           *string `json:"photoBase64"       binding:"omitempty"`
 }
 
 type InstructorListResponse = PagedData[UserWithProfileResponse]
@@ -193,6 +197,7 @@ type CreateInstructorWithUserRequest struct {
 	YearsOfExperience     *int    `json:"yearsOfExperience" binding:"omitempty,min=0"`
 	Specialization        *string `json:"specialization" binding:"omitempty,max=255"`
 	Description           *string `json:"description"`
+	PhotoBase64           *string `json:"photoBase64" binding:"omitempty"`
 }
 
 // CreateInstructorWithUserResponse returns the created user and instructor profile

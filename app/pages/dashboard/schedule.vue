@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useSchedules } from "../../composables/useSchedules";
+import { computed, ref, onMounted, watch } from "vue";
+import { useSchedulesStore } from "~/stores/schedules";
+import { useAuthStore } from "~/stores/auth";
+import { scheduleService } from "~/services/scheduleService";
+import type { SessionResponse } from "~/services/scheduleService";
 
 const { t } = useI18n();
 definePageMeta({ layout: "dashboard" });
@@ -8,8 +11,8 @@ definePageMeta({ layout: "dashboard" });
 const toast = useToast();
 
 // FITUR BARU: Logika Kalender Dinamis
-const currentDate = ref(new Date("2026-04-10T00:00:00")); // Default start di April 2026
-const selectedDate = ref(15);
+const currentDate = ref(new Date());
+const selectedDate = ref(new Date().getDate());
 const selectedSlot = ref<string | null>(null);
 const showBookingModal = ref(false);
 
@@ -27,7 +30,39 @@ const currentMonthShortStr = computed(() => {
   return currentDate.value.toLocaleDateString("en-US", { month: "short" });
 });
 
-const { slots: globalSlots, bookSlot, updateSlotStatus } = useSchedules();
+const schedulesStore = useSchedulesStore();
+const globalSlots = computed(() => schedulesStore.slots);
+
+const isLoadingCalendar = ref(false);
+
+const fetchSchedulesForCalendar = async () => {
+  const year = currentDate.value.getFullYear();
+  const month = currentDate.value.getMonth(); // 0-11
+  
+  // Start of month: YYYY-MM-01
+  const startDayStr = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+  
+  // End of month
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const endDayStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  
+  try {
+    isLoadingCalendar.value = true;
+    await schedulesStore.fetchSchedules({
+      startDate: startDayStr,
+      endDate: endDayStr,
+      limit: 200, // retrieve all slots for the month
+    });
+  } catch (err) {
+    console.error("Failed to fetch schedules for calendar:", err);
+  } finally {
+    isLoadingCalendar.value = false;
+  }
+};
+
+watch(currentDate, async () => {
+  await fetchSchedulesForCalendar();
+}, { immediate: true });
 
 // FITUR BARU: Kalender merender hari secara dinamis berdasarkan bulan yang sedang dipilih
 const calendarDays = computed(() => {
@@ -90,39 +125,105 @@ const availableSlots = computed(() => {
     }));
 });
 
-// Mock upcoming sessions
-const upcomingSessions = ref([
-  {
-    id: "1",
-    sessionNumber: 5,
-    date: "Mar 28, 2026",
-    time: "09:30 AM",
-    car: "BYD Atto 1",
-    instructor: "Pak Ahmad",
-    topic: "Highway Driving - Advanced",
-  },
-  {
-    id: "2",
-    sessionNumber: 6,
-    date: "Apr 2, 2026",
-    time: "11:00 AM",
-    car: "BYD Atto 1",
-    instructor: "Bu Sari",
-    topic: "Night Driving Introduction",
-  },
-]);
+
+
+const authStore = useAuthStore();
+
+const userSessionsList = ref<SessionResponse[]>([]);
+const isLoadingSessions = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = ref(4); // 4 sessions per page
+const totalSessions = ref(0);
+
+const activeEntitlement = computed(() => {
+  return authStore.memberEntitlements.find(e => e.status === "active") || authStore.memberEntitlements[0];
+});
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!year || !month || !day) return dateStr;
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const getInstructorName = (session: SessionResponse) => {
+  if (session.scheduleId) {
+    const slot = globalSlots.value.find((s) => s.id === String(session.scheduleId));
+    if (slot) return slot.instructor;
+  }
+  return "Instructor";
+};
+
+const getCarName = (session: SessionResponse) => {
+  if (session.scheduleId) {
+    const slot = globalSlots.value.find((s) => s.id === String(session.scheduleId));
+    if (slot) return slot.car;
+  }
+  return "BYD Atto 3";
+};
+
+const fetchSessions = async () => {
+  if (!authStore.userId) return;
+  try {
+    isLoadingSessions.value = true;
+    const response = await scheduleService.fetchSessions({
+      studentId: authStore.userId,
+      page: currentPage.value,
+      limit: itemsPerPage.value,
+    });
+    const sessions = response.data || [];
+    userSessionsList.value = sessions.slice().sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.time || '00:00'}:00`);
+      const dateB = new Date(`${b.date}T${b.time || '00:00'}:00`);
+      
+      const isAActive = a.status === 'booked' || a.status === 'in-progress' || a.status === 'in_progress' || a.status === 'scheduled';
+      const isBActive = b.status === 'booked' || b.status === 'in-progress' || b.status === 'in_progress' || b.status === 'scheduled';
+
+      if (isAActive && !isBActive) return -1;
+      if (!isAActive && isBActive) return 1;
+
+      if (isAActive && isBActive) {
+        // Upcoming active sessions: sort ascending (closest to today first)
+        return dateA.getTime() - dateB.getTime();
+      }
+
+      // Past inactive sessions: sort descending (most recent first)
+      return dateB.getTime() - dateA.getTime();
+    });
+    totalSessions.value = response.total || 0;
+  } catch (err) {
+    console.error("Failed to fetch sessions:", err);
+  } finally {
+    isLoadingSessions.value = false;
+  }
+};
+
+onMounted(async () => {
+  if (!authStore.hasMemberProfile) {
+    await authStore.fetchMemberProfile();
+  }
+  await fetchSessions();
+});
+
+watch(currentPage, async () => {
+  await fetchSessions();
+});
 
 const selectedSlotDetails = computed(() => {
   return globalSlots.value.find((s) => s.id === selectedSlot.value);
 });
 
-// FITUR BARU: Reschedule & Cancel State
 const showRescheduleModal = ref(false);
 const showCancelModal = ref(false);
 const sessionToReschedule = ref<any>(null);
 const sessionToCancel = ref<any>(null);
 
-const rescheduleDate = ref(15);
+const rescheduleDate = ref(new Date().getDate());
 const rescheduleSlot = ref<string | null>(null);
 
 // Computed untuk slot di modal reschedule
@@ -146,44 +247,62 @@ const rescheduleSlotDetails = computed(() => {
 
 function openRescheduleModal(session: any) {
   sessionToReschedule.value = session;
-  rescheduleDate.value = 15;
+  if (session && session.date) {
+    const parts = session.date.split('-').map(Number);
+    rescheduleDate.value = parts[2] || new Date().getDate();
+  } else {
+    rescheduleDate.value = new Date().getDate();
+  }
   rescheduleSlot.value = null;
   showRescheduleModal.value = true;
 }
 
-function confirmReschedule() {
+async function confirmReschedule() {
   const newSlot = rescheduleSlotDetails.value;
-  if (newSlot && sessionToReschedule.value) {
-    const oldSlotId = sessionToReschedule.value.id;
+  const session = sessionToReschedule.value;
+  if (newSlot && session) {
+    try {
+      // 1. Cancel the old slot if it has a scheduleId
+      if (session.scheduleId) {
+        await scheduleService.cancelBooking(String(session.scheduleId));
+      }
+      
+      // 2. Book the new slot
+      if (authStore.userId) {
+        const entitlement = activeEntitlement.value;
+        if (!entitlement) {
+          throw new Error("No active entitlement found");
+        }
+        await scheduleService.bookSlot(newSlot.id, {
+          userId: authStore.userId,
+          entitlementId: entitlement.id,
+          notes: session.notes || "Rescheduled driving session"
+        });
+      }
 
-    // 1. Make the old slot available again
-    updateSlotStatus(oldSlotId, "available");
+      // 3. Make the old slot available and the new slot booked in store
+      if (session.scheduleId) {
+        schedulesStore.updateSlotStatus(String(session.scheduleId), "available");
+      }
+      schedulesStore.updateSlotStatus(newSlot.id, "booked");
 
-    // 2. Book the new slot
-    bookSlot(newSlot.id, "John Doe");
-
-    // 3. Update the session in the upcoming list
-    const index = upcomingSessions.value.findIndex((s) => s.id === oldSlotId);
-    const session = upcomingSessions.value[index];
-
-    if (index !== -1 && session) {
-      upcomingSessions.value[index] = {
-        ...session,
-        id: newSlot.id, // Update the ID to the new slot's ID
-        date: `${currentMonthShortStr.value} ${
-          rescheduleDate.value
-        }, ${currentDate.value.getFullYear()}`,
-        time: newSlot.time,
-        car: newSlot.car,
-        instructor: newSlot.instructor,
-      };
+      // 4. Refresh sessions list
+      await fetchSessions();
+      
+      showRescheduleModal.value = false;
+      toast.add({
+        title: t("schedule.rescheduleSuccess"),
+        description: t("schedule.rescheduleSuccessDesc"),
+        color: "success",
+      });
+    } catch (err) {
+      console.error("Failed to reschedule session:", err);
+      toast.add({
+        title: "Error",
+        description: "Failed to reschedule session. Please try again.",
+        color: "error",
+      });
     }
-    showRescheduleModal.value = false;
-    toast.add({
-      title: t("schedule.rescheduleSuccess"),
-      description: t("schedule.rescheduleSuccessDesc"),
-      color: "success",
-    });
   }
 }
 
@@ -192,22 +311,37 @@ function openCancelModal(session: any) {
   showCancelModal.value = true;
 }
 
-function confirmCancel() {
-  if (sessionToCancel.value) {
-    const canceledSlotId = sessionToCancel.value.id;
-    // 1. Make the slot available again in the global state
-    updateSlotStatus(canceledSlotId, "available");
-    // 2. Remove the session from the upcoming list
-    upcomingSessions.value = upcomingSessions.value.filter(
-      (s) => s.id !== canceledSlotId
-    );
-    showCancelModal.value = false;
-    // PERUBAHAN: Pesan toast yang lebih informatif
-    toast.add({
-      title: t("schedule.cancelSuccess"),
-      description: t("schedule.cancelSuccessDesc"),
-      color: "neutral",
-    });
+async function confirmCancel() {
+  const session = sessionToCancel.value;
+  if (session) {
+    try {
+      // 1. Cancel the booking via API if scheduleId exists
+      if (session.scheduleId) {
+        await scheduleService.cancelBooking(String(session.scheduleId));
+      }
+
+      // 2. Update status in store (for fallback/sync)
+      if (session.scheduleId) {
+        schedulesStore.updateSlotStatus(String(session.scheduleId), "available");
+      }
+
+      // 3. Refresh sessions list
+      await fetchSessions();
+      
+      showCancelModal.value = false;
+      toast.add({
+        title: t("schedule.cancelSuccess"),
+        description: t("schedule.cancelSuccessDesc"),
+        color: "neutral",
+      });
+    } catch (err) {
+      console.error("Failed to cancel session:", err);
+      toast.add({
+        title: "Error",
+        description: "Failed to cancel session. Please try again.",
+        color: "error",
+      });
+    }
   }
 }
 
@@ -218,41 +352,63 @@ function selectSlot(slotId: string) {
   }
 }
 
-function confirmBooking() {
+async function confirmBooking() {
   if (selectedSlot.value && selectedSlotDetails.value) {
     const bookedSlotId = selectedSlot.value;
     const bookedSlotDetails = selectedSlotDetails.value;
 
-    // 1. Book the slot in the global state
-    bookSlot(bookedSlotId, "John Doe"); // Assuming 'John Doe' is the current user
+    if (!authStore.userId) {
+      toast.add({ title: "Error", description: "User not authenticated", color: "error" });
+      return;
+    }
 
-    // 2. Create a new session object to add to upcomingSessions
-    const newSession = {
-      id: bookedSlotId, // Use the slot ID as session ID
-      sessionNumber: upcomingSessions.value.length + 1, // Simple increment for demo
-      date: `${currentMonthShortStr.value} ${
-        selectedDate.value
-      }, ${currentDate.value.getFullYear()}`,
-      time: bookedSlotDetails.time,
-      car: bookedSlotDetails.car,
-      instructor: bookedSlotDetails.instructor,
-      topic: "General Driving Session", // Default topic for new bookings
-    };
+    const entitlement = activeEntitlement.value;
+    if (!entitlement) {
+      toast.add({ 
+        title: "Error", 
+        description: "No active package found to book this session. Please purchase a package first.", 
+        color: "error" 
+      });
+      return;
+    }
 
-    // 3. Add the new session to the upcomingSessions array
-    upcomingSessions.value.push(newSession);
+    try {
+      // 1. Call API to book the slot
+      const bookedSlot = await scheduleService.bookSlot(bookedSlotId, {
+        userId: authStore.userId,
+        entitlementId: entitlement.id,
+        notes: "Booked via dashboard schedule page"
+      });
 
-    showBookingModal.value = false;
-    toast.add({
-      title: t("schedule.bookingSuccess"),
-      description: t("schedule.bookingSuccessDesc", {
-        date: newSession.date,
-        time: newSession.time,
-      }),
-      icon: "i-lucide-check-circle",
-      color: "success",
-    });
-    selectedSlot.value = null;
+      if (!bookedSlot) {
+        throw new Error("API booking failed");
+      }
+
+      // 2. Update local slot status
+      schedulesStore.updateSlotStatus(bookedSlotId, "booked");
+
+      // 3. Refresh sessions list
+      await fetchSessions();
+
+      showBookingModal.value = false;
+      toast.add({
+        title: t("schedule.bookingSuccess"),
+        description: t("schedule.bookingSuccessDesc", {
+          date: formatDate(bookedSlotDetails.date),
+          time: bookedSlotDetails.time,
+        }),
+        icon: "i-lucide-check-circle",
+        color: "success",
+      });
+      selectedSlot.value = null;
+    } catch (err) {
+      console.error("Failed to book session:", err);
+      toast.add({
+        title: "Booking Failed",
+        description: "The time slot might have just been taken. Please choose another slot.",
+        color: "error",
+      });
+    }
   }
 }
 </script>
@@ -274,73 +430,112 @@ function confirmBooking() {
         <div>
           <h2 class="text-lg font-semibold mb-4">{{ t("schedule.upcomingSessions") }}</h2>
 
-          <div v-if="upcomingSessions.length > 0" class="grid md:grid-cols-2 gap-4">
-            <UCard v-for="session in upcomingSessions" :key="session.id">
+          <!-- Loading State -->
+          <div v-if="isLoadingSessions" class="grid md:grid-cols-2 gap-4">
+            <UCard v-for="n in 2" :key="n">
               <div class="flex items-start justify-between">
-                <div class="flex items-center gap-4">
-                  <div class="p-3 rounded-xl bg-warning/10">
-                    <UIcon name="i-lucide-car" class="size-6 text-warning" />
+                <div class="flex items-center gap-4 w-full">
+                  <USkeleton class="h-12 w-12 rounded-xl" />
+                  <div class="flex-1 space-y-2">
+                    <USkeleton class="h-5 w-[40%]" />
+                    <USkeleton class="h-4 w-[70%]" />
+                  </div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-default">
+                <div class="space-y-2">
+                  <USkeleton class="h-3 w-[50%]" />
+                  <USkeleton class="h-4 w-[80%]" />
+                </div>
+                <div class="space-y-2">
+                  <USkeleton class="h-3 w-[50%]" />
+                  <USkeleton class="h-4 w-[80%]" />
+                </div>
+              </div>
+            </UCard>
+          </div>
+
+          <!-- Sessions List -->
+          <div v-else-if="userSessionsList.length > 0" class="space-y-4">
+            <div class="grid md:grid-cols-2 gap-4">
+              <UCard v-for="(session, index) in userSessionsList" :key="session.id">
+                <div class="flex items-start justify-between">
+                  <div class="flex items-center gap-4">
+                    <div class="p-3 rounded-xl bg-warning/10">
+                      <UIcon name="i-lucide-car" class="size-6 text-warning" />
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h3 class="font-semibold">
+                          {{ t("history.session") }} #{{ (activeEntitlement?.usedSessions ?? 0) + 1 + index }}
+                        </h3>
+                        <UBadge
+                          :label="t('history.' + session.status) || session.status"
+                          :color="scheduleService.getStatusColor(session.status as any)"
+                          variant="subtle"
+                          size="md"
+                        />
+                      </div>
+                      <p class="text-md text-muted truncate max-w-[200px]">
+                        {{ session.notes || 'Training Session' }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-default">
+                  <div>
+                    <p class="text-md text-muted">
+                      {{ t("dashboard.date") }} & {{ t("dashboard.time") }}
+                    </p>
+                    <p class="text-md font-medium">{{ formatDate(session.date) }}</p>
+                    <p class="text-md">{{ session.time }}</p>
                   </div>
                   <div>
-                    <div class="flex items-center gap-2">
-                      <h3 class="font-semibold">
-                        {{ t("history.session") }} #{{ session.sessionNumber }}
-                      </h3>
-                      <UBadge
-                        :label="t('dashboard.confirmed')"
-                        color="success"
-                        variant="subtle"
-                        size="md"
-                      />
-                    </div>
-                    <p class="text-md text-muted">{{ session.topic }}</p>
+                    <p class="text-md text-muted">{{ t("dashboard.instructor") }}</p>
+                    <p class="text-md font-medium">{{ getInstructorName(session) }}</p>
+                    <p class="text-md text-muted">{{ getCarName(session) }}</p>
                   </div>
                 </div>
-              </div>
 
-              <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-default">
-                <div>
-                  <p class="text-md text-muted">
-                    {{ t("dashboard.date") }} & {{ t("dashboard.time") }}
-                  </p>
-                  <p class="text-md font-medium">{{ session.date }}</p>
-                  <p class="text-md">{{ session.time }}</p>
-                </div>
-                <div>
-                  <p class="text-md text-muted">{{ t("dashboard.instructor") }}</p>
-                  <p class="text-md font-medium">{{ session.instructor }}</p>
-                  <p class="text-md text-muted">{{ session.car }}</p>
-                </div>
-              </div>
+                <template #footer v-if="session.status === 'booked' || session.status === 'in-progress'">
+                  <div class="flex gap-2">
+                    <UButton
+                      :label="t('dashboard.reschedule')"
+                      variant="outline"
+                      color="warning"
+                      size="md"
+                      icon="i-lucide-calendar-days"
+                      @click="openRescheduleModal(session)"
+                    />
+                    <UButton
+                      :label="t('common.cancel')"
+                      variant="ghost"
+                      color="error"
+                      size="md"
+                      icon="i-lucide-x"
+                      @click="openCancelModal(session)"
+                    />
+                  </div>
+                </template>
+              </UCard>
+            </div>
 
-              <template #footer>
-                <div class="flex gap-2">
-                  <UButton
-                    :label="t('dashboard.reschedule')"
-                    variant="outline"
-                    color="warning"
-                    size="md"
-                    icon="i-lucide-calendar-days"
-                    @click="openRescheduleModal(session)"
-                  />
-                  <UButton
-                    :label="t('common.cancel')"
-                    variant="ghost"
-                    color="error"
-                    size="md"
-                    icon="i-lucide-x"
-                    @click="openCancelModal(session)"
-                  />
-                </div>
-              </template>
-            </UCard>
+            <!-- Pagination Control -->
+            <div class="flex justify-end pt-2">
+              <UPagination
+                v-model="currentPage"
+                :total="totalSessions"
+                :items-per-page="itemsPerPage"
+                active-color="warning"
+              />
+            </div>
           </div>
 
           <UEmpty
             v-else
             icon="i-lucide-calendar-x"
             :title="t('schedule.noUpcoming')"
-            :description="t('schedule.noUpcoming')"
           />
         </div>
 
@@ -375,7 +570,11 @@ function confirmBooking() {
               </div>
 
               <!-- Custom Calendar Grid -->
-              <div class="border border-default rounded-lg p-4">
+              <div class="border border-default rounded-lg p-4 relative">
+                <!-- Loading Overlay -->
+                <div v-if="isLoadingCalendar" class="absolute inset-0 bg-white/70 dark:bg-gray-950/70 z-10 flex items-center justify-center rounded-lg">
+                  <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-warning-500" />
+                </div>
                 <div class="grid grid-cols-7 gap-1 mb-2">
                   <div
                     v-for="day in weekDays"
@@ -386,9 +585,6 @@ function confirmBooking() {
                   </div>
                 </div>
                 <div class="grid grid-cols-7 gap-1">
-                  <!-- Empty cells for days before month starts (April 2026 starts on Wednesday) -->
-                  <div></div>
-                  <div></div>
                   <div
                     v-for="(item, idx) in calendarDays"
                     :key="idx"
@@ -396,16 +592,15 @@ function confirmBooking() {
                   >
                     <button
                       v-if="item.day !== null"
-                      :disabled="!item.available"
                       :class="[
-                        'w-full h-full rounded-lg text-sm font-medium transition-all',
+                        'w-full h-full rounded-lg text-sm font-medium transition-all cursor-pointer',
                         selectedDate === item.day
-                          ? 'bg-primary text-white'
+                          ? 'bg-primary text-white shadow-sm'
                           : item.available
-                          ? 'hover:bg-primary/10 cursor-pointer'
-                          : 'text-muted/50 cursor-not-allowed',
+                          ? 'hover:bg-primary/10 text-primary-600 dark:text-primary-400 font-semibold'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300',
                       ]"
-                      @click="item.available && (selectedDate = item.day)"
+                      @click="selectedDate = item.day"
                     >
                       {{ item.day }}
                     </button>
@@ -431,7 +626,7 @@ function confirmBooking() {
             <div>
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-md font-medium">{{ t("schedule.availableSlots") }}</h3>
-                <UBadge :label="`Apr ${selectedDate}`" color="primary" variant="subtle" />
+                <UBadge :label="`${currentMonthShortStr} ${selectedDate}`" color="primary" variant="subtle" />
               </div>
 
               <div class="space-y-3">
@@ -484,7 +679,7 @@ function confirmBooking() {
               <p v-if="selectedSlot" class="text-md text-muted">
                 {{
                   t("schedule.selectedInfo", {
-                    date: `Apr ${selectedDate}`,
+                    date: `${currentMonthShortStr} ${selectedDate}`,
                     time: selectedSlotDetails?.time,
                     instructor: selectedSlotDetails?.instructor,
                   })
@@ -515,8 +710,8 @@ function confirmBooking() {
                       <template #description>
                         <ul class="mt-2 space-y-1 text-md">
                           <li>
-                            <strong>{{ t("dashboard.date") }}:</strong> April
-                            {{ selectedDate }}, 2026
+                            <strong>{{ t("dashboard.date") }}:</strong>
+                            {{ selectedDate }} {{ currentMonthStr }}
                           </li>
                           <li>
                             <strong>{{ t("dashboard.time") }}:</strong>

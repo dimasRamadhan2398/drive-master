@@ -172,17 +172,27 @@ async function onSubmit(_event: FormSubmitEvent<any>) {
       if (formData.package && authStore.user?.userId) {
         const selectedPkg = selectedPackage.value;
         if (selectedPkg) {
-          await enrollmentsStore.createEnrollment({
+          const enrollment = await enrollmentsStore.createEnrollment({
             userId: authStore.user.userId,
             packageId: formData.package,
             price: selectedPkg.price,
             discountPrice: selectedPkg.discountPrice,
             startDate: formData.startDate || undefined,
           });
+
+          if (!enrollment) {
+            throw new Error(t("register.errors.enrollmentFailed") || "Failed to create enrollment. Please try again.");
+          }
+
           console.log(
             "[REGISTER PAGE] Enrollment created:",
-            enrollmentsStore.currentEnrollment
+            enrollment
           );
+
+          if (import.meta.client) {
+            sessionStorage.setItem("dm_enrollment_id", enrollment.id);
+            sessionStorage.setItem("dm_enrollment", JSON.stringify(enrollment));
+          }
         }
       }
 

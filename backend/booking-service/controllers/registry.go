@@ -14,12 +14,6 @@ func (r *Registry) GetSessionController() ISessionController {
 	)
 }
 
-func (r *Registry) GetEntitlementController() IEntitlementController {
-	return NewEntitlementController(
-		r.service.GetEntitlementService(),
-	)
-}
-
 func (r *Registry) GetEnrollmentController() IEnrollmentController {
 	return NewEnrollmentController(
 		r.service.GetEnrollmentService(),
@@ -48,7 +42,6 @@ func (r *Registry) GetPaymentController() IPaymentController {
 // IControllerRegistry defines methods for getting controllers
 type IControllerRegistry interface {
 	GetSessionController() ISessionController
-	GetEntitlementController() IEntitlementController
 	GetEnrollmentController() IEnrollmentController
 	GetScheduleController() IScheduleController
 	GetDashboardController() IDashboardController

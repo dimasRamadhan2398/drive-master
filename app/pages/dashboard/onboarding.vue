@@ -262,7 +262,7 @@ const quickActions = computed(() => [
                   <span class="text-muted">{{ t('common.completed') }}</span>
                   <span class="font-medium">{{ userData.completedSessions }}/{{ userData.totalSessions }}</span>
                 </div>
-                <UProgress :value="userData.progress" />
+                <UProgress :model-value="userData.progress" />
               </div>
             </div>
 

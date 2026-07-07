@@ -276,6 +276,7 @@ function openEditInstructor(instructor: any) {
   isEditingInstructor.value = true;
   instructorUserId.value = instructor.userId || "";
   instructorPhotoUrl.value = instructor.image || "";
+  instructorFile.value = null;
   const nameParts = instructor.name?.split(" ") || [];
   instructorForm.value = {
     firstName: nameParts[0] || "",
@@ -283,7 +284,7 @@ function openEditInstructor(instructor: any) {
     phoneNumber: instructor.phone || "",
     email: instructor.email || "",
     bnspCertificateNumber: instructor.certifications?.[0]?.replace("BNSP: ", "") || "",
-    licenseNumber: "",
+    licenseNumber: instructor.licenseNumber || "",
     yearsOfExperience: instructor.yearsOfExperience || 0,
     description: instructor.description || "",
     status: instructor.status || "active",
@@ -308,7 +309,11 @@ async function saveInstructor() {
   }
 
   if (isEditingInstructor.value) {
-    const result = await instructorsStore.updateInstructor(instructorUserId.value, data);
+    const result = await instructorsStore.updateInstructor(
+      instructorUserId.value,
+      data,
+      instructorFile.value || undefined
+    );
     if (result) {
       toast.add({
         title: "Instructor Updated",
@@ -756,51 +761,6 @@ onMounted(() => {
                 />
               </div>
             </div>
-          </div>
-        </UCard>
-
-        <!-- Notification Settings -->
-        <UCard>
-          <template #header>
-            <div class="flex items-center gap-2">
-              <UIcon name="i-lucide-bell" class="size-5 text-warning" />
-              <h2 class="font-semibold">{{ t("profile.notificationPrefs") }}</h2>
-            </div>
-          </template>
-
-          <div class="space-y-4">
-            <USwitch
-              v-model="notificationSettings.emailNotifications"
-              :label="t('profile.notifEmail').replace('mendatang', 'kepada murid')"
-            />
-            <USwitch
-              v-model="notificationSettings.whatsappNotifications"
-              :label="
-                t('profile.notifWa').replace('(24 jam sebelum sesi)', 'kepada murid')
-              "
-            />
-            <USwitch
-              v-model="notificationSettings.adminAlerts"
-              label="Send admin alerts for general events"
-            />
-            <USwitch
-              v-model="notificationSettings.newUserRegistration"
-              label="Notify when new user registers"
-            />
-            <USwitch
-              v-model="notificationSettings.newPackagePurchase"
-              label="Notify when user buys a package / becomes a member"
-            />
-
-            <UFormField label="Send reminders before session (hours)">
-              <UInput
-                v-model="notificationSettings.reminderHours"
-                type="number"
-                min="1"
-                max="72"
-                class="w-full"
-              />
-            </UFormField>
           </div>
         </UCard>
       </div>

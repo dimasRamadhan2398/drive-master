@@ -15,6 +15,7 @@ const status = ref(route.query.status as string || 'pending')
 const email = ref(route.query.email as string || '')
 const plan = ref(route.query.plan as string || 'standard')
 const orderId = ref(route.query.orderId as string || '')
+const enrollmentId = ref<string | null>(null)
 
 const isSuccess = computed(() => status.value === 'success' || status.value === 'paid')
 const isFailed = computed(() => status.value === 'failed')
@@ -50,6 +51,10 @@ const pollStatus = async (oid: string) => {
 }
 
 onMounted(() => {
+  if (import.meta.client) {
+    enrollmentId.value = sessionStorage.getItem("dm_enrollment_id") || null
+  }
+
   // Resolve orderId from sessionStorage fallback if not in query
   if (!orderId.value && import.meta.client) {
     orderId.value = sessionStorage.getItem("dm_order_id") || ''
@@ -57,6 +62,14 @@ onMounted(() => {
 
   // Trigger status check & polling if we have orderId
   if (orderId.value) {
+    paymentsStore.fetchPaymentByOrderId(orderId.value).then((payment) => {
+      if (payment && payment.enrollmentId) {
+        enrollmentId.value = payment.enrollmentId
+        if (import.meta.client) {
+          sessionStorage.setItem("dm_enrollment_id", payment.enrollmentId)
+        }
+      }
+    })
     pollStatus(orderId.value)
   } else if (status.value === 'success') {
     setTimeout(() => {
@@ -226,7 +239,7 @@ const nextSteps = computed(() => ({
 
         <!-- Action Buttons -->
         <div class="space-y-3 pt-4">
-          <NuxtLink :to="`/auth/payment-method?plan=${plan}`">
+          <NuxtLink :to="enrollmentId ? `/auth/payment-method?enrollment=${enrollmentId}` : '/auth/select-plan'">
             <UButton 
               :label="t('auth.tryAgain')"
               icon="i-lucide-rotate-cw"

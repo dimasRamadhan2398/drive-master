@@ -248,7 +248,7 @@ export const useSchedulesStore = defineStore("schedules", {
           ...params,
         };
 
-        const result = await scheduleService.fetchAll(queryParams);
+        const result = await scheduleService.fetchFiltered(queryParams);
 
         this.slots = result.schedules.map(mapScheduleToSlot);
         this.pagination = {
@@ -700,6 +700,24 @@ export const useSchedulesStore = defineStore("schedules", {
 
     async fetchUserEntitlements(userId: string) {
       return await scheduleService.fetchActiveEntitlements(userId);
+    },
+
+    async fetchUserSessions(userId: string) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const response = await scheduleService.fetchSessions({
+          studentId: userId,
+          limit: 100,
+        });
+        return response.data || [];
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : "Failed to fetch user sessions";
+        console.error("Error fetching user sessions:", err);
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
     },
 
     // ==================== FILTER OPERATIONS ====================

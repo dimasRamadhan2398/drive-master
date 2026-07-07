@@ -42,11 +42,13 @@ const passwordData = reactive({
 })
 
 const avatarText = computed(() => {
-  const names = profileData.fullName.trim().split(' ');
-  if (names.length >= 2) {
-    return (names[0][0] + names[1][0]).toUpperCase();
+  const names = profileData.fullName.trim().split(/\s+/);
+  const first = names[0];
+  const second = names[1];
+  if (first && second && first.length > 0 && second.length > 0) {
+    return (first.charAt(0) + second.charAt(0)).toUpperCase();
   }
-  return names[0] ? names[0].substring(0, 2).toUpperCase() : 'JD';
+  return first ? first.substring(0, 2).toUpperCase() : 'JD';
 });
 
 const memberInfo = computed(() => {
@@ -62,7 +64,7 @@ const memberInfo = computed(() => {
   };
 
   return {
-    memberId: authStore.memberProfile?.id ? `MEM-${authStore.memberProfile.id.slice(0, 8).toUpperCase()}` : '-',
+    memberId: authStore.memberProfile?.userId ? `MEM-${authStore.memberProfile.userId.slice(0, 8).toUpperCase()}` : '-',
     package: entitlement?.packageName || 'No active package',
     joinDate: formatDate(entitlement?.startDate || authStore.user?.createdAt),
     expiryDate: entitlement?.endDate ? formatDate(entitlement.endDate) : 'Lifetime / No Expiry'
@@ -255,7 +257,7 @@ async function updatePassword(event: FormSubmitEvent<any>) {
         </UCard>
 
         <!-- Notification Settings -->
-        <UCard>
+        <!-- <UCard>
           <template #header>
             <h2 class="font-semibold">{{ t('profile.notificationPrefs') }}</h2>
           </template>
@@ -268,7 +270,6 @@ async function updatePassword(event: FormSubmitEvent<any>) {
           </div>
         </UCard>
 
-        <!-- Danger Zone -->
         <UCard>
           <template #header>
             <div class="flex items-center gap-2 text-red-500">
@@ -285,6 +286,7 @@ async function updatePassword(event: FormSubmitEvent<any>) {
             <UButton :label="t('profile.deleteAccount')" color="error" variant="outline" icon="i-lucide-trash-2" />
           </div>
         </UCard>
+        -->
       </div>
     </template>
   </UDashboardPanel>

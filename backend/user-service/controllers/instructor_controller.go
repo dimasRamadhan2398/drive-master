@@ -194,7 +194,35 @@ func (c *InstructorController) GetInstructorProfile(ctx *gin.Context) {
 		return
 	}
 
-	responseRes.Success(ctx, http.StatusOK, "Instructor profile retrieved successfully", profile)
+	user, errUser := c.userService.GetUserByID(ctx.Request.Context(), userID)
+	if errUser != nil {
+		responseRes.ErrorFromGeneric(ctx, errUser)
+		return
+	}
+
+	userResponse := dto.GetUserResponse{
+		UserID:      user.ID,
+		Email:       user.EmailAddress,
+		Username:    user.Username,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		PhoneNumber: user.PhoneNumber,
+		Image:       user.Image,
+		DateOfBirth: user.DateOfBirth,
+		Address:     user.Address,
+		RoleID:      user.RoleID,
+		Role: dto.RoleResponse{
+			ID:   user.Role.ID,
+			Name: user.Role.Name,
+		},
+	}
+
+	responseObj := dto.UserWithProfileResponse{
+		GetUserResponse:   userResponse,
+		InstructorProfile: profile,
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Instructor profile retrieved successfully", responseObj)
 }
 
 // @Summary Update Instructor Profile
@@ -227,6 +255,30 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 		return
 	}
 
+	// Update User fields if provided
+	userUpdated := false
+	user, errUser := c.userService.GetUserByID(ctx.Request.Context(), userID)
+	if errUser == nil {
+		if input.FirstName != nil {
+			user.FirstName = *input.FirstName
+			userUpdated = true
+		}
+		if input.LastName != nil {
+			user.LastName = *input.LastName
+			userUpdated = true
+		}
+		if input.PhoneNumber != nil {
+			user.PhoneNumber = *input.PhoneNumber
+			userUpdated = true
+		}
+		if userUpdated {
+			if err := c.userService.UpdateUser(ctx.Request.Context(), user); err != nil {
+				responseRes.ErrorFromGeneric(ctx, err)
+				return
+			}
+		}
+	}
+
 	// Convert DTO to model for update
 	profileModel := &models.InstructorProfile{
 		UserID:                profile.UserID,
@@ -240,10 +292,12 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 		SessionsCompleted:     profile.SessionsCompleted,
 		AverageRating:         profile.AverageRating,
 		BNSPCertificateNumber: profile.BNSPCertificateNumber,
+		Description:           profile.Description,
 	}
 
 	if input.Description != nil {
 		profileModel.Bio = *input.Description
+		profileModel.Description = *input.Description
 	}
 	if input.LicenseNumber != nil {
 		profileModel.LicenseNumber = *input.LicenseNumber
@@ -252,11 +306,15 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 		profileModel.YearsOfExperience = *input.YearsOfExperience
 	}
 	if input.LicenseExpiry != nil {
-		// Parse the string date in DD/MM/YYYY format
+		// Try parsing as DD/MM/YYYY
 		parsedTime, err := time.Parse("02/01/2006", *input.LicenseExpiry)
 		if err != nil {
-			responseRes.Error(ctx, http.StatusBadRequest, http.StatusText(http.StatusBadRequest), "Invalid date format for license expiry. Use DD/MM/YYYY", "")
-			return
+			// Fallback to RFC3339 if frontend sends an ISO string
+			parsedTime, err = time.Parse(time.RFC3339, *input.LicenseExpiry)
+			if err != nil {
+				responseRes.Error(ctx, http.StatusBadRequest, http.StatusText(http.StatusBadRequest), "Invalid date format for license expiry. Use DD/MM/YYYY or ISO8601", "")
+				return
+			}
 		}
 		profileModel.LicenseExpiry = parsedTime
 	}
@@ -264,12 +322,46 @@ func (c *InstructorController) UpdateInstructorProfile(ctx *gin.Context) {
 		profileModel.BNSPCertificateNumber = *input.BNSPCertificateNumber
 	}
 
-	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel); err != nil {
+	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel, input.PhotoBase64); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}
 
-	responseRes.Success(ctx, http.StatusOK, "Instructor profile updated successfully", profile)
+	updatedProfile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	updatedUser, errGetUser := c.userService.GetUserByID(ctx.Request.Context(), userID)
+	if errGetUser != nil {
+		responseRes.ErrorFromGeneric(ctx, errGetUser)
+		return
+	}
+
+	userResponse := dto.GetUserResponse{
+		UserID:      updatedUser.ID,
+		Email:       updatedUser.EmailAddress,
+		Username:    updatedUser.Username,
+		FirstName:   updatedUser.FirstName,
+		LastName:    updatedUser.LastName,
+		PhoneNumber: updatedUser.PhoneNumber,
+		Image:       updatedUser.Image,
+		DateOfBirth: updatedUser.DateOfBirth,
+		Address:     updatedUser.Address,
+		RoleID:      updatedUser.RoleID,
+		Role: dto.RoleResponse{
+			ID:   updatedUser.Role.ID,
+			Name: updatedUser.Role.Name,
+		},
+	}
+
+	responseObj := dto.UserWithProfileResponse{
+		GetUserResponse:   userResponse,
+		InstructorProfile: updatedProfile,
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Instructor profile updated successfully", responseObj)
 }
 
 // @Summary Delete Instructor
@@ -467,7 +559,7 @@ func (c *InstructorController) DeleteProfilePic(ctx *gin.Context) {
 		BNSPCertificateNumber: profile.BNSPCertificateNumber,
 	}
 
-	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel); err != nil {
+	if err := c.instructorService.UpdateInstructorProfile(ctx.Request.Context(), profileModel, nil); err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return
 	}

@@ -4,7 +4,7 @@ server:
   read_timeout: 60
 
 database:
-  host: drive_master_postgres
+  host: 127.0.0.1
   port: 5432
   username: admin_drive
   password: drivemaster123
@@ -19,7 +19,7 @@ email:
   token: 13f6eb6d56f0d2c5aea7fadfbda452e9
 
 redis:
-  host: redis
+  host: 127.0.0.1
   port: 6379
   password: ""
   db: 0
@@ -42,7 +42,7 @@ log:
 kafka:
   enabled: true
   brokers:
-    - "kafka:9092"
+    - "127.0.0.1:9092"
   topic: "service-logs" # Default topic for producer (legacy)
   topics: # Topics to consume
     - "user-events"

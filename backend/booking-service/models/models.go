@@ -54,26 +54,9 @@ type Enrollment struct {
 	AnonymizedAt *time.Time    `json:"anonymizedAt" gorm:"index"`          // when user was deleted
 	CreatedAt  time.Time       `json:"createdAt"`
 	UpdatedAt  time.Time       `json:"updatedAt"`
-
-	// Local associations
-	Entitlements []UserEntitlement `json:"entitlements" gorm:"foreignKey:EnrollmentID"`
 }
 
-// UserEntitlement tracks how many sessions a user has remaining within an enrollment.
-// A user can have multiple entitlements if they purchased add-ons.
-type UserEntitlement struct {
-	ID            uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	EnrollmentID  uuid.UUID  `json:"enrollmentId" gorm:"type:uuid;not null;index"` // ref: Enrollment
-	UserID        uuid.UUID  `json:"userId" gorm:"type:uuid;not null;index"`       // ref: user-service
-	SourceType    string     `json:"sourceType" gorm:"size:50;not null"` // "package" | "addon" | "voucher"
-	SourceID      string     `json:"sourceId" gorm:"size:100;not null"` // ID in core-service
-	TotalSessions int        `json:"totalSessions"`
-	UsedSessions  int        `json:"usedSessions"`
-	ExpiresAt     time.Time  `json:"expiresAt"`
-	AnonymizedAt  *time.Time `json:"anonymizedAt" gorm:"index"`       // when user was deleted
-	CreatedAt     time.Time  `json:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt"`
-}
+
 
 // DrivingSession is the record of an actual driving lesson/session.
 // Created when a session is scheduled and attended.

@@ -1,6 +1,7 @@
 package services
 
 import (
+	uClient "booking-service/clients/user"
 	"context"
 	"errors"
 	"time"
@@ -30,21 +31,21 @@ type ISessionService interface {
 type SessionService struct {
 	sessionRepo     repositories.ISessionRepository
 	scheduleRepo    repositories.IScheduleRepository
-	entitlementRepo repositories.IEntitlementRepository
 	enrollmentRepo  repositories.IEnrollmentRepository
 	eventPublisher  kafka.IEventPublisher
+	userClient      uClient.IUserClient
 	db              *gorm.DB
 }
 
 func NewSessionService(
 	sessionRepo repositories.ISessionRepository,
 	scheduleRepo repositories.IScheduleRepository,
-	entitlementRepo repositories.IEntitlementRepository,
+	userClient uClient.IUserClient,
 ) ISessionService {
 	return &SessionService{
 		sessionRepo:     sessionRepo,
 		scheduleRepo:    scheduleRepo,
-		entitlementRepo: entitlementRepo,
+		userClient:      userClient,
 	}
 }
 
@@ -52,14 +53,14 @@ func NewSessionService(
 func NewSessionServiceWithEventPublisher(
 	sessionRepo repositories.ISessionRepository,
 	scheduleRepo repositories.IScheduleRepository,
-	entitlementRepo repositories.IEntitlementRepository,
 	eventPublisher kafka.IEventPublisher,
+	userClient uClient.IUserClient,
 ) ISessionService {
 	return &SessionService{
 		sessionRepo:     sessionRepo,
 		scheduleRepo:    scheduleRepo,
-		entitlementRepo: entitlementRepo,
 		eventPublisher:  eventPublisher,
+		userClient:      userClient,
 	}
 }
 
@@ -67,17 +68,17 @@ func NewSessionServiceWithEventPublisher(
 func NewSessionServiceWithAllDeps(
 	sessionRepo repositories.ISessionRepository,
 	scheduleRepo repositories.IScheduleRepository,
-	entitlementRepo repositories.IEntitlementRepository,
 	enrollmentRepo repositories.IEnrollmentRepository,
 	eventPublisher kafka.IEventPublisher,
+	userClient uClient.IUserClient,
 	db *gorm.DB,
 ) ISessionService {
 	return &SessionService{
 		sessionRepo:     sessionRepo,
 		scheduleRepo:    scheduleRepo,
-		entitlementRepo: entitlementRepo,
 		enrollmentRepo:  enrollmentRepo,
 		eventPublisher:  eventPublisher,
+		userClient:      userClient,
 		db:              db,
 	}
 }
@@ -231,6 +232,12 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 		}
 	}
 
+	var allEntitlements []uClient.EntitlementInfo
+	var getEntErr error
+	if session.EntitlementID != uuid.Nil {
+		allEntitlements, getEntErr = s.userClient.GetMemberEntitlements(ctx, session.UserID)
+	}
+
 	// If we have enrollment repo and db, use transaction for atomic updates
 	if s.enrollmentRepo != nil && s.db != nil {
 		err = s.db.Transaction(func(tx *gorm.DB) error {
@@ -240,50 +247,41 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 				return err
 			}
 
-			// Increment used sessions in entitlement
-			if session.EntitlementID != uuid.Nil {
-				entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
-				if err != nil || entitlement == nil {
-					return err
-				}
+			// Check if all sessions are used → update enrollment to completed
+			if session.EnrollmentID != uuid.Nil && getEntErr == nil && len(allEntitlements) > 0 {
+				enrollment, err := s.enrollmentRepo.FindByID(ctx, session.EnrollmentID)
+				if err == nil && enrollment != nil {
+					// Sum total sessions across all entitlements for this enrollment
+					totalEntSessionLimit := 0
+					hasEntitlementForEnrollment := false
+					for _, ent := range allEntitlements {
+						if ent.BookingID == session.EnrollmentID {
+							totalEntSessionLimit += ent.TotalSessions
+							hasEntitlementForEnrollment = true
+						}
+					}
 
-				newUsedSessions := entitlement.UsedSessions + 1
-				if newUsedSessions > entitlement.TotalSessions {
-					return errors.New("cannot complete session: used sessions would exceed total sessions")
-				}
-
-				if err := s.entitlementRepo.UpdateUsedSessionsTx(tx, entitlement.ID, newUsedSessions); err != nil {
-					return err
-				}
-
-				// Check if all sessions are used → update enrollment to completed
-				if session.EnrollmentID != uuid.Nil {
-					enrollment, err := s.enrollmentRepo.FindByID(ctx, session.EnrollmentID)
-					if err == nil && enrollment != nil {
-						// Check if all entitlements for this enrollment are exhausted
-						allEntitlements, err := s.entitlementRepo.FindByEnrollmentID(ctx, session.EnrollmentID)
-						if err == nil && len(allEntitlements) > 0 {
-							allExhausted := true
-							for _, ent := range allEntitlements {
-								// Since entitlement in memory has old value, we use updated count for this entitlement
-								usedVal := ent.UsedSessions
-								if ent.ID == entitlement.ID {
-									usedVal = newUsedSessions
-								}
-								if usedVal < ent.TotalSessions {
-									allExhausted = false
+					if hasEntitlementForEnrollment {
+						// Retrieve all sessions for this enrollment in booking-service
+						enrollmentSessions, err := s.sessionRepo.FindByEnrollmentID(ctx, session.EnrollmentID)
+						if err == nil {
+							completedCount := 0
+							for _, s := range enrollmentSessions {
+								// Include completed sessions and the current session we are completing
+								if s.Status == "completed" || s.ID == id {
+									completedCount++
 								}
 							}
 
-							// If this was the last entitlement to be exhausted, mark enrollment as completed
-							if allExhausted || (newUsedSessions >= entitlement.TotalSessions) {
+							// If all sessions are completed, mark enrollment as completed
+							if completedCount >= totalEntSessionLimit {
 								if enrollment.Status != models.EnrollmentStatusCompleted {
 									if err := s.enrollmentRepo.UpdateStatusTx(tx, enrollment.ID, models.EnrollmentStatusCompleted); err != nil {
 										return err
 									}
 								}
-							} else if enrollment.Status == models.EnrollmentStatusPendingPayment {
-								// If enrollment was pending, mark as in_progress when first session is completed
+							} else if enrollment.Status == models.EnrollmentStatusPendingPayment || enrollment.Status == models.EnrollmentStatusPaid {
+								// Mark as in_progress when session is completed if it wasn't already
 								if err := s.enrollmentRepo.UpdateStatusTx(tx, enrollment.ID, models.EnrollmentStatusInProgress); err != nil {
 									return err
 								}
@@ -305,37 +303,24 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 		if err := s.sessionRepo.CompleteSession(ctx, id, completedAt); err != nil {
 			return nil, err
 		}
-
-		// Increment used sessions in entitlement
-		if session.EntitlementID != uuid.Nil {
-			entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
-			if err == nil && entitlement != nil {
-				newUsedSessions := entitlement.UsedSessions + 1
-				if newUsedSessions <= entitlement.TotalSessions {
-					if err := s.entitlementRepo.UpdateUsedSessions(ctx, entitlement.ID, newUsedSessions); err != nil {
-						// Log error but continue
-					}
-				}
-			}
-		}
 	}
 
 	// Publish Kafka event for session completion (for external services like core-service)
 	if s.eventPublisher != nil {
 		var packageID uuid.UUID
 		if session.EnrollmentID != uuid.Nil {
-			enrollments, _ := s.entitlementRepo.FindByEnrollmentID(ctx, session.EnrollmentID)
-			if len(enrollments) > 0 {
-				packageID, _ = uuid.Parse(enrollments[0].SourceID)
+			enrollment, err := s.enrollmentRepo.FindByID(ctx, session.EnrollmentID)
+			if err == nil && enrollment != nil {
+				packageID = enrollment.PackageID
 			}
 		}
 
 		// Get updated entitlement for remaining sessions count
 		var sessionsRemaining int
 		if session.EntitlementID != uuid.Nil {
-			entitlement, err := s.entitlementRepo.FindByID(ctx, session.EntitlementID)
+			entitlement, err := s.userClient.GetEntitlement(ctx, session.UserID, session.EntitlementID)
 			if err == nil && entitlement != nil {
-				sessionsRemaining = entitlement.TotalSessions - entitlement.UsedSessions
+				sessionsRemaining = entitlement.RemainingSessions
 			}
 		}
 

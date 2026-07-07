@@ -96,7 +96,6 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	// Initialize repositories
 	sessionRepo := repositories.NewSessionRepository(db)
-	entitlementRepo := repositories.NewEntitlementRepository(db)
 	enrollmentRepo := repositories.NewEnrollmentRepository(db)
 	scheduleRepo := repositories.NewScheduleRepository(db)
 	paymentRepo := repositories.NewPaymentRepository(db)
@@ -108,16 +107,15 @@ func runServe(cmd *cobra.Command, args []string) {
 	availabilityService := services.NewAvailabilityService(userClient)
 
 	// Initialize user anonymization service for handling user.deleted events
-	userAnonymizationService := services.NewUserAnonymizationService(enrollmentRepo, sessionRepo, entitlementRepo)
+	userAnonymizationService := services.NewUserAnonymizationService(enrollmentRepo, sessionRepo)
 
 	// Initialize Kafka consumer for handling user.deleted events and enrollment.paid events
 	eventPublisher := initKafkaConsumer(userAnonymizationService, coreClient)
 
 	// Initialize services (after Kafka is initialized so we can pass the eventPublisher)
 	transactionService := services.NewTransactionService(transactionRepo)
-	sessionService := services.NewSessionServiceWithAllDeps(sessionRepo, scheduleRepo, entitlementRepo, enrollmentRepo, eventPublisher, db)
-	entitlementService := services.NewEntitlementService(entitlementRepo)
-	enrollmentService := services.NewEnrollmentServiceWithAllDeps(enrollmentRepo, entitlementRepo, transactionService, eventPublisher, entitlementService, coreClient)
+	sessionService := services.NewSessionServiceWithAllDeps(sessionRepo, scheduleRepo, enrollmentRepo, eventPublisher, userClient, db)
+	enrollmentService := services.NewEnrollmentServiceWithAllDeps(enrollmentRepo, transactionService, eventPublisher, coreClient)
 
 	// Register TransactionPaidHandler to update enrollment state when transaction is paid
 	if eventPublisher != nil {
@@ -128,18 +126,17 @@ func runServe(cmd *cobra.Command, args []string) {
 		eventPublisher.RegisterHandler(transactionPaidHandler)
 	}
 
-	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, sessionRepo, entitlementRepo, sessionService, availabilityService, userClient, coreClient)
+	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, sessionRepo, sessionService, availabilityService, userClient, coreClient)
 	paymentService := services.NewPaymentServiceWithTransaction(paymentRepo, enrollmentRepo, transactionRepo)
 	revenueService := services.NewRevenueService(coreClient)
 
 	// Create service registry
 	serviceRegistry := &serviceRegistryImpl{
-		sessionService:     sessionService,
-		entitlementService: entitlementService,
-		enrollmentService:  enrollmentService,
-		scheduleService:    scheduleService,
-		paymentService:     paymentService,
-		revenueService:     revenueService,
+		sessionService:    sessionService,
+		enrollmentService: enrollmentService,
+		scheduleService:   scheduleService,
+		paymentService:    paymentService,
+		revenueService:    revenueService,
 	}
 
 	// Initialize schedule generator for automatic schedule slot generation
@@ -243,7 +240,6 @@ func runMigrations(db *gorm.DB) {
 
 	if err := db.AutoMigrate(
 		&models.Enrollment{},
-		&models.UserEntitlement{},
 		&models.DrivingSession{},
 		&models.Schedule{},
 		&models.Payment{},
@@ -291,20 +287,15 @@ func fixEnrollmentColumnTypesPreserving(db *gorm.DB) error {
 
 // serviceRegistryImpl implements services.IServiceRegistry
 type serviceRegistryImpl struct {
-	sessionService     services.ISessionService
-	entitlementService services.IEntitlementService
-	enrollmentService  services.IEnrollmentService
-	scheduleService    services.IScheduleService
-	paymentService     services.IPaymentService
-	revenueService     services.IRevenueService
+	sessionService    services.ISessionService
+	enrollmentService services.IEnrollmentService
+	scheduleService   services.IScheduleService
+	paymentService    services.IPaymentService
+	revenueService    services.IRevenueService
 }
 
 func (s *serviceRegistryImpl) GetSessionService() services.ISessionService {
 	return s.sessionService
-}
-
-func (s *serviceRegistryImpl) GetEntitlementService() services.IEntitlementService {
-	return s.entitlementService
 }
 
 func (s *serviceRegistryImpl) GetEnrollmentService() services.IEnrollmentService {

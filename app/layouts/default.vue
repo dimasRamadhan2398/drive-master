@@ -63,7 +63,7 @@ const userMenuItems = computed(() => [
     {
       label: t('auth.logout'),
       icon: 'i-lucide-log-out',
-      click: () => logout()
+      onClick: () => logout()
     }
   ]
 ])

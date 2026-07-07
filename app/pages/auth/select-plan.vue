@@ -223,8 +223,12 @@ async function selectPlan() {
       navigateTo(`/auth/payment-method?enrollment=${enrollment.id}`);
     } else {
       console.error("[SELECT PLAN] Failed to create enrollment");
-      // Fallback: still redirect but without enrollment (payment page will handle error)
-      navigateTo(`/auth/payment-method?plan=${currentPlan.value.id}`);
+      const toast = useToast();
+      toast.add({
+        title: t("register.errors.enrollmentError") || "Enrollment Failed",
+        description: enrollmentsStore.error || t("register.errors.enrollmentFailed") || "Failed to create enrollment. Please try again.",
+        color: "error",
+      });
     }
   } finally {
     loading.value = false;

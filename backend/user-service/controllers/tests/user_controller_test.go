@@ -193,8 +193,8 @@ func (m *MockInstructorService) CreateInstructorProfile(ctx context.Context, use
 	return args.Get(0).(*dto.InstructorProfileResponse), args.Error(1)
 }
 
-func (m *MockInstructorService) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error {
-	args := m.Called(ctx, profile)
+func (m *MockInstructorService) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile, photoBase64 *string) error {
+	args := m.Called(ctx, profile, photoBase64)
 	return args.Error(0)
 }
 

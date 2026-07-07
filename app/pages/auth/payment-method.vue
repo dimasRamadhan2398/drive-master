@@ -149,56 +149,55 @@ onMounted(async () => {
   console.log("[PAYMENT] Resolved enrollment object:", resolvedEnrollment.value);
 
   // Fetch enrollment to get amount & package name (if not already resolved from session)
-  if (resolvedEnrollmentId.value && !resolvedEnrollment.value) {
-    console.log("[PAYMENT] Fetching enrollment by ID:", resolvedEnrollmentId.value);
-    const response = await enrollmentService.fetchById(resolvedEnrollmentId.value);
-    console.log("[PAYMENT] Fetched enrollment response:", response);
-    const enrollment = response && typeof response === "object" && "enrollment" in response
-      ? (response as any).enrollment
-      : response;
+  if (resolvedEnrollmentId.value) {
+    if (!resolvedEnrollment.value) {
+      console.log("[PAYMENT] Fetching enrollment by ID:", resolvedEnrollmentId.value);
+      const response = await enrollmentService.fetchById(resolvedEnrollmentId.value);
+      console.log("[PAYMENT] Fetched enrollment response:", response);
+      const enrollment = response && typeof response === "object" && "enrollment" in response
+        ? (response as any).enrollment
+        : response;
 
-    if (enrollment) {
-      resolvedAmount.value = enrollment.totalPrice || enrollment.price || enrollment.discountPrice || 0;
-      resolvedPackageName.value = enrollment.packageName || "Selected Package";
-      // Also store it for reference
-      resolvedEnrollment.value = {
-        id: enrollment.id,
-        packageId: enrollment.packageId,
-        packageName: enrollment.packageName,
-        price: enrollment.price || enrollment.totalPrice,
-        totalPrice: enrollment.totalPrice,
-        discountPrice: enrollment.discountPrice,
-        userId: enrollment.userId,
-        status: enrollment.status,
-        createdAt: enrollment.createdAt,
-      };
-      // Update sessionStorage with full enrollment
-      if (import.meta.client) {
-        sessionStorage.setItem("dm_enrollment", JSON.stringify(resolvedEnrollment.value));
+      if (enrollment) {
+        resolvedAmount.value = enrollment.totalPrice || enrollment.price || enrollment.discountPrice || 0;
+        resolvedPackageName.value = enrollment.packageName || "Selected Package";
+        // Also store it for reference
+        resolvedEnrollment.value = {
+          id: enrollment.id,
+          packageId: enrollment.packageId,
+          packageName: enrollment.packageName,
+          price: enrollment.price || enrollment.totalPrice,
+          totalPrice: enrollment.totalPrice,
+          discountPrice: enrollment.discountPrice,
+          userId: enrollment.userId,
+          status: enrollment.status,
+          createdAt: enrollment.createdAt,
+        };
+        // Update sessionStorage with full enrollment
+        if (import.meta.client) {
+          sessionStorage.setItem("dm_enrollment", JSON.stringify(resolvedEnrollment.value));
+        }
+      } else {
+        console.error("[PAYMENT] Failed to fetch enrollment by ID");
       }
     } else {
-      console.error("[PAYMENT] Failed to fetch enrollment by ID");
+      console.log("[PAYMENT] Skipping fetch - enrollment already resolved from session");
     }
-  } else if (resolvedEnrollmentId.value) {
-    console.log("[PAYMENT] Skipping fetch - enrollment already resolved from session");
   } else {
+    // If no enrollment ID was found anywhere, show error and redirect to select plan
     console.error("[PAYMENT] No enrollment ID found anywhere!");
+    const toast = useToast();
+    toast.add({
+      title: t("register.errors.enrollmentError") || "No Enrollment Found",
+      description: "Please select a plan to proceed to payment.",
+      color: "error",
+    });
+    navigateTo("/auth/select-plan");
+    isResolvingEnrollment.value = false;
+    return;
   }
 
   isResolvingEnrollment.value = false;
-
-  // Fallback: use packages store with plan UUID from query
-  const planId = route.query.plan as string | undefined;
-  if (planId) {
-    if (packagesStore.packages.length === 0) {
-      await packagesStore.fetchPackages();
-    }
-    const pkg = packagesStore.getPackageById(planId);
-    if (pkg) {
-      resolvedAmount.value = pkg.discountPrice || pkg.price;
-      resolvedPackageName.value = pkg.name;
-    }
-  }
 });
 
 const loading = ref(false);

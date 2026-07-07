@@ -21,7 +21,6 @@ type ScheduleService struct {
 	scheduleRepo        repositories.IScheduleRepository
 	enrollmentRepo      repositories.IEnrollmentRepository
 	sessionRepo         repositories.ISessionRepository
-	entitlementRepo     repositories.IEntitlementRepository
 	sessionService      ISessionService
 	availabilityService IAvailabilityService
 	userClient          uClient.IUserClient
@@ -47,7 +46,6 @@ func NewScheduleService(
 	scheduleRepo repositories.IScheduleRepository,
 	enrollmentRepo repositories.IEnrollmentRepository,
 	sessionRepo repositories.ISessionRepository,
-	entitlementRepo repositories.IEntitlementRepository,
 	sessionService ISessionService,
 	availabilityService IAvailabilityService,
 	userClient uClient.IUserClient,
@@ -57,7 +55,6 @@ func NewScheduleService(
 		scheduleRepo:        scheduleRepo,
 		enrollmentRepo:      enrollmentRepo,
 		sessionRepo:         sessionRepo,
-		entitlementRepo:     entitlementRepo,
 		sessionService:      sessionService,
 		availabilityService: availabilityService,
 		userClient:          userClient,
@@ -335,9 +332,9 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 	}
 
 	// Check if entitlement exists and is active
-	entitlement, err := s.entitlementRepo.FindByID(ctx, req.EntitlementID)
+	entitlement, err := s.userClient.GetEntitlement(ctx, req.UserID, req.EntitlementID)
 	if err != nil {
-		return nil, errors.New("entitlement not found")
+		return nil, fmt.Errorf("entitlement not found or invalid: %w", err)
 	}
 
 	// Count existing non-cancelled sessions for this entitlement to verify remaining count
@@ -357,20 +354,24 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 		return nil, errors.New("entitlement has no sessions remaining")
 	}
 
-	if entitlement.ExpiresAt.Before(time.Now()) {
+	expiresAt, err := time.Parse(time.RFC3339, entitlement.ExpiresAt)
+	if err != nil {
+		expiresAt, err = time.Parse("2006-01-02 15:04:05", entitlement.ExpiresAt)
+	}
+	if err == nil && expiresAt.Before(time.Now()) {
 		return nil, errors.New("entitlement has expired")
 	}
 
 	// Book the slot
-	if err := s.scheduleRepo.BookSlot(ctx, slotID, req.UserID, entitlement.EnrollmentID); err != nil {
+	if err := s.scheduleRepo.BookSlot(ctx, slotID, req.UserID, entitlement.BookingID); err != nil {
 		return nil, err
 	}
 
 	// Create a driving session record using SessionService
 	_, err = s.sessionService.CreateSession(ctx, dto.CreateSessionRequest{
-		EnrollmentID:  entitlement.EnrollmentID,
+		EnrollmentID:  entitlement.BookingID,
 		EntitlementID: entitlement.ID,
-		UserID:        entitlement.UserID,
+		UserID:        entitlement.MemberID,
 		InstructorID:  schedule.InstructorID,
 		CarID:         schedule.CarID,
 		ScheduleID:    &slotID,

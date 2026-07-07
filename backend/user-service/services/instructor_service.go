@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 	"user-service/models"
@@ -20,7 +21,7 @@ type IInstructorService interface {
 	GetInstructorProfile(ctx context.Context, userID uuid.UUID) (*dto.InstructorProfileResponse, error)
 	CreateInstructorProfile(ctx context.Context, userID uuid.UUID) (*dto.InstructorProfileResponse, error)
 	CreateInstructorProfileWithInput(ctx context.Context, userID uuid.UUID, req dto.InstructorProfileRequest) (*dto.InstructorProfileResponse, error)
-	UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error
+	UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile, photoBase64 *string) error
 	UpdateInstructorPhotoURL(ctx context.Context, userID uuid.UUID, photoURL string) error
 	DeleteInstructorProfile(ctx context.Context, userID uuid.UUID) error
 	CreateInstructorWithUser(ctx context.Context, req dto.CreateInstructorWithUserRequest) (*dto.CreateInstructorWithUserResponse, error)
@@ -33,6 +34,7 @@ type InstructorService struct {
 	roleRepo       repositories.IRoleRepository
 	emailService   IMailtrapEmailService
 	redisCli       *redis.Client
+	mediaService   IMediaService
 }
 
 func NewInstructorService(
@@ -41,6 +43,7 @@ func NewInstructorService(
 	roleRepo repositories.IRoleRepository,
 	emailService IMailtrapEmailService,
 	redisCli *redis.Client,
+	mediaService IMediaService,
 ) *InstructorService {
 	return &InstructorService{
 		instructorRepo: instructorRepo,
@@ -48,6 +51,7 @@ func NewInstructorService(
 		roleRepo:       roleRepo,
 		emailService:   emailService,
 		redisCli:       redisCli,
+		mediaService:   mediaService,
 	}
 }
 
@@ -78,6 +82,11 @@ func (s *InstructorService) GetInstructorProfile(ctx context.Context, userID uui
 
 // CreateInstructorProfileWithInput creates a new instructor profile with provided data
 func (s *InstructorService) CreateInstructorProfileWithInput(ctx context.Context, userID uuid.UUID, req dto.InstructorProfileRequest) (*dto.InstructorProfileResponse, error) {
+	var photoURL string
+	if user, err := s.userRepo.FindByID(ctx, userID); err == nil && user != nil {
+		photoURL = user.Image
+	}
+
 	profile := &models.InstructorProfile{
 		UserID:            userID,
 		IsActive:          true,
@@ -85,7 +94,7 @@ func (s *InstructorService) CreateInstructorProfileWithInput(ctx context.Context
 		YearsOfExperience: 0,
 		SessionsCompleted: 0,
 		AverageRating:     0,
-		PhotoURL:          "",
+		PhotoURL:          photoURL,
 		CreatedAt:         time.Now(),
 	}
 
@@ -130,6 +139,11 @@ func (s *InstructorService) CreateInstructorProfileWithInput(ctx context.Context
 
 // CreateInstructorProfile creates a new instructor profile with default empty values
 func (s *InstructorService) CreateInstructorProfile(ctx context.Context, userID uuid.UUID) (*dto.InstructorProfileResponse, error) {
+	var photoURL string
+	if user, err := s.userRepo.FindByID(ctx, userID); err == nil && user != nil {
+		photoURL = user.Image
+	}
+
 	profile := &models.InstructorProfile{
 		UserID:                userID,
 		LicenseNumber:         "",
@@ -141,7 +155,7 @@ func (s *InstructorService) CreateInstructorProfile(ctx context.Context, userID 
 		YearsOfExperience:     0,
 		SessionsCompleted:     0,
 		AverageRating:         0,
-		PhotoURL:              "",
+		PhotoURL:              photoURL,
 		CreatedAt:             time.Now(),
 	}
 
@@ -171,7 +185,20 @@ func (s *InstructorService) DeleteInstructorProfile(ctx context.Context, userID 
 }
 
 // UpdateInstructorProfile updates an instructor profile
-func (s *InstructorService) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error {
+func (s *InstructorService) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile, photoBase64 *string) error {
+	if photoBase64 != nil && *photoBase64 != "" {
+		fileName := fmt.Sprintf("%s_%d", profile.UserID.String(), time.Now().Unix())
+		resp, err := s.mediaService.UploadBase64Media(ctx, *photoBase64, fileName, "instructors/profiles")
+		if err == nil && resp != nil {
+			profile.PhotoURL = resp.URL
+			if user, err := s.userRepo.FindByID(ctx, profile.UserID); err == nil && user != nil {
+				user.Image = resp.URL
+				s.userRepo.Update(ctx, user)
+			}
+		} else {
+			log.Printf("Failed to upload instructor profile image: %v", err)
+		}
+	}
 	return s.instructorRepo.UpdateInstructorProfile(ctx, profile)
 }
 
@@ -208,6 +235,18 @@ func (s *InstructorService) CreateInstructorWithUser(ctx context.Context, req dt
 		return nil, err
 	}
 
+	// Upload photo if provided
+	var photoURL string
+	if req.PhotoBase64 != nil && *req.PhotoBase64 != "" {
+		fileName := fmt.Sprintf("%s_%d", req.Username, time.Now().Unix())
+		resp, err := s.mediaService.UploadBase64Media(ctx, *req.PhotoBase64, fileName, "instructors/profiles")
+		if err == nil && resp != nil {
+			photoURL = resp.URL
+		} else {
+			log.Printf("Failed to upload instructor profile image during creation: %v", err)
+		}
+	}
+
 	// Create user and instructor profile in transaction
 	db := s.userRepo.(*repositories.UserRepository).GetDB()
 
@@ -230,6 +269,7 @@ func (s *InstructorService) CreateInstructorWithUser(ctx context.Context, req dt
 			DateOfBirth:  t,
 			RoleID:       instructorRoleID,
 			IsActive:     true,
+			Image:        photoURL,
 		}
 
 		if err := tx.Create(&userModel).Error; err != nil {
@@ -246,7 +286,7 @@ func (s *InstructorService) CreateInstructorWithUser(ctx context.Context, req dt
 			YearsOfExperience: 0,
 			SessionsCompleted: 0,
 			AverageRating:     0,
-			PhotoURL:          "",
+			PhotoURL:          photoURL,
 			CreatedAt:         time.Now(),
 		}
 

@@ -480,4 +480,48 @@ export const scheduleService = {
     };
     return labelMap[status] || status;
   },
+
+  // GET /sessions - Fetch user sessions
+  async fetchSessions(params: { studentId?: string; userId?: string; page?: number; limit?: number }): Promise<SessionListResponse> {
+    const { booking } = useApiClients();
+    const queryParams = new URLSearchParams();
+    if (params.studentId) queryParams.set("studentId", params.studentId);
+    if (params.userId) queryParams.set("userId", params.userId);
+    if (params.page) queryParams.set("page", String(params.page));
+    if (params.limit) queryParams.set("limit", String(params.limit));
+
+    const queryString = queryParams.toString();
+    const url = `/sessions${queryString ? `?${queryString}` : ""}`;
+
+    return await booking<SessionListResponse>(url, { method: "GET" });
+  }
 };
+
+export interface SessionResponse {
+  id: number;
+  enrollmentId: string;
+  entitlementId: string;
+  userId: string;
+  instructorId: string;
+  carId: string;
+  scheduleId?: number;
+  date: string;
+  time: string;
+  duration: number;
+  status: string;
+  area?: string;
+  notes?: string;
+  startedAt?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SessionListResponse {
+  data: SessionResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+

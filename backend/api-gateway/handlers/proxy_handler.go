@@ -15,6 +15,7 @@ type ProxyHandler struct {
 	userServiceURL         *url.URL
 	coreServiceURL         *url.URL
 	bookingServiceURL      *url.URL
+	paymentServiceURL      *url.URL
 	catalogServiceURL      *url.URL
 	voucherServiceURL      *url.URL
 	notificationServiceURL *url.URL
@@ -30,17 +31,32 @@ func NewProxyHandler(cfg *config.Config) *ProxyHandler {
 		return u
 	}
 
+	// Payment service runs on port 8004 — not in config struct, use env or default
+	paymentURL := parse("http://127.0.0.1:8004")
+
 	return &ProxyHandler{
 		userServiceURL:    parse(cfg.Services.UserServiceURL),
 		coreServiceURL:    parse(cfg.Services.CoreServiceURL),
 		bookingServiceURL: parse(cfg.Services.BookingServiceURL),
+		paymentServiceURL: paymentURL,
 	}
 }
 
 func (h *ProxyHandler) ToUserService(c *gin.Context) { h.proxy(c, h.userServiceURL, "/api/v1/users") }
+func (h *ProxyHandler) ToUserServiceDirect(c *gin.Context) { h.proxy(c, h.userServiceURL, "") }
 func (h *ProxyHandler) ToCoreService(c *gin.Context) { h.proxy(c, h.coreServiceURL, "/api/v1/core") }
+
+// ToCoreServiceDirect proxies to core-service WITHOUT stripping any prefix.
+// Use this for routes registered directly under /api/v1 (e.g. /api/v1/general-settings).
+func (h *ProxyHandler) ToCoreServiceDirect(c *gin.Context) { h.proxy(c, h.coreServiceURL, "") }
 func (h *ProxyHandler) ToBookingService(c *gin.Context) {
 	h.proxy(c, h.bookingServiceURL, "/api/v1/bookings")
+}
+func (h *ProxyHandler) ToBookingServiceDirect(c *gin.Context) {
+	h.proxy(c, h.bookingServiceURL, "")
+}
+func (h *ProxyHandler) ToPaymentService(c *gin.Context) {
+	h.proxy(c, h.paymentServiceURL, "")
 }
 func (h *ProxyHandler) ToCatalogService(c *gin.Context) {
 	h.proxy(c, h.catalogServiceURL, "/api/v1/catalog")

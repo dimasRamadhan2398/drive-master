@@ -2,90 +2,93 @@
 const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
+const authStore = useAuthStore()
+const schedulesStore = useSchedulesStore()
+const instructorsStore = useInstructorsStore()
 
 const searchQuery = ref('')
 const statusFilter = ref('all')
+const trainingHistory = ref<any[]>([])
+const isLoading = ref(false)
 
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!year || !month || !day) return dateStr;
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
 
-// Mock training history
-const trainingHistory = ref([
- {
-   id: 1,
-   sessionNumber: 4,
-   date: 'Mar 25, 2026',
-   time: '09:30 AM - 10:30 AM',
-   duration: '60 min',
-   car: 'BYD Atto 1',
-   instructor: 'Mr. Ahmad',
-   topic: 'Highway Driving Basics',
-   status: 'completed',
-   notes: 'Good progress on lane changes. Need more practice with highway merging.',
-   rating: 4
- },
- {
-   id: 2,
-   sessionNumber: 3,
-   date: 'Mar 22, 2026',
-   time: '11:00 AM - 12:00 PM',
-   duration: '60 min',
-   car: 'BYD Atto 1',
-   instructor: 'Ms. Sari',
-   topic: 'Parking & Maneuvering',
-   status: 'completed',
-   notes: 'Excellent parallel parking skills. Reverse parking needs improvement.',
-   rating: 5
- },
- {
-   id: 3,
-   sessionNumber: 2,
-   date: 'Mar 18, 2026',
-   time: '14:30 PM - 15:30 PM',
-   duration: '60 min',
-   car: 'BYD Atto 1',
-   instructor: 'Mr. Budi',
-   topic: 'City Driving',
-   status: 'completed',
-   notes: 'Handled traffic lights and intersections well. Good awareness of pedestrians.',
-   rating: 4
- },
- {
-   id: 4,
-   sessionNumber: 1,
-   date: 'Mar 15, 2026',
-   time: '08:00 AM - 09:00 AM',
-   duration: '60 min',
-   car: 'BYD Atto 1',
-   instructor: 'Mr. Ahmad',
-   topic: 'Introduction & Basic Controls',
-   status: 'completed',
-   notes: 'Great first session! Quickly adapted to EV controls and one-pedal driving.',
-   rating: 5
- }
-])
+const fetchHistory = async () => {
+  if (!authStore.userId) return;
+  try {
+    isLoading.value = true;
+    const sessions = await schedulesStore.fetchUserSessions(authStore.userId);
+    
+    // Sort the sessions: most recent at the top (descending order)
+    const sortedSessions = sessions.slice().sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.time || '00:00'}:00`);
+      const dateB = new Date(`${b.date}T${b.time || '00:00'}:00`);
+      return dateB.getTime() - dateA.getTime();
+    });
 
+    // Map to template format
+    trainingHistory.value = sortedSessions.map((s, index, arr) => {
+      // Find instructor name
+      const instructor = instructorsStore.getInstructorByUserId(s.instructorId);
+      const instructorName = instructor ? instructor.name : "Instructor";
+      
+      return {
+        id: s.id,
+        sessionNumber: arr.length - index,
+        date: formatDate(s.date),
+        time: s.time,
+        duration: `${s.duration} min`,
+        car: "BYD Atto 3",
+        instructor: instructorName,
+        topic: s.notes || "Training Session",
+        status: s.status,
+        notes: s.notes || "",
+        rating: 5
+      };
+    });
+  } catch (err) {
+    console.error("Failed to fetch history:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(async () => {
+  if (instructorsStore.instructors.length === 0) {
+    await instructorsStore.fetchInstructors();
+  }
+  await fetchHistory();
+});
 
 const filteredHistory = computed(() => {
- return trainingHistory.value.filter(session => {
-   const matchesSearch = session.topic.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                        session.instructor.toLowerCase().includes(searchQuery.value.toLowerCase())
-   const matchesStatus = statusFilter.value === 'all' || session.status === statusFilter.value
-   return matchesSearch && matchesStatus
- })
+  return trainingHistory.value.filter(session => {
+    const matchesSearch = session.topic.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                         session.instructor.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchesStatus = statusFilter.value === 'all' || session.status === statusFilter.value
+    return matchesSearch && matchesStatus
+  })
 })
-
 
 const totalHours = computed(() => {
- return trainingHistory.value.filter(s => s.status === 'completed').length
+  return trainingHistory.value.filter(s => s.status === 'completed').length
 })
-
 
 const isModalOpen = ref(false)
 const selectedSession = ref<any>(null)
 
-
 const openDetails = (session: any) => {
- selectedSession.value = session
- isModalOpen.value = true
+  selectedSession.value = session
+  isModalOpen.value = true
 }
 </script>
 
@@ -189,12 +192,12 @@ const openDetails = (session: any) => {
                  <div>
                    <div class="flex items-center gap-2 flex-wrap">
                      <h3 class="font-semibold">{{ t('history.session') }} #{{ session.sessionNumber }}: {{ session.topic }}</h3>
-                     <UBadge
-                       :label="session.status === 'completed' ? t('history.completed') : t('history.cancelled')"
-                       :color="session.status === 'completed' ? 'success' : 'error'"
-                       variant="subtle"
-                       size="xs"
-                    />
+                      <UBadge
+                        :label="t('history.' + session.status) || session.status"
+                        :color="session.status === 'completed' ? 'success' : (session.status === 'cancelled' ? 'error' : (session.status === 'in-progress' || session.status === 'in_progress' ? 'warning' : 'primary'))"
+                        variant="subtle"
+                        size="xs"
+                      />
                    </div>
                    <p class="text-sm text-muted mt-1">{{ session.date }} | {{ session.time }}</p>
                    <div class="flex items-center gap-4 mt-2 text-sm text-muted">
@@ -278,11 +281,11 @@ const openDetails = (session: any) => {
              <div>
                <h4 class="text-xl font-bold">{{ selectedSession.topic }}</h4>
                <div class="flex items-center gap-2 mt-1">
-                 <UBadge
-                   :label="selectedSession.status === 'completed' ? t('history.completed') : t('history.cancelled')"
-                   :color="selectedSession.status === 'completed' ? 'success' : 'error'"
-                   variant="subtle"
-                />
+                  <UBadge
+                    :label="t('history.' + selectedSession.status) || selectedSession.status"
+                    :color="selectedSession.status === 'completed' ? 'success' : (selectedSession.status === 'cancelled' ? 'error' : (selectedSession.status === 'in-progress' || selectedSession.status === 'in_progress' ? 'warning' : 'primary'))"
+                    variant="subtle"
+                  />
                  <span class="text-sm text-muted">{{ selectedSession.date }}</span>
                </div>
              </div>

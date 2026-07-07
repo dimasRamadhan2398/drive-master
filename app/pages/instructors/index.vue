@@ -8,11 +8,14 @@ useSeoMeta({
 
 const instructorsStore = useInstructorsStore();
 
-const instructors = computed(() => instructorsStore.instructors);
+// Use useAsyncData so data is fetched during SSR and on SPA navigation
+const { pending, refresh } = await useAsyncData(
+  'instructors-page',
+  () => instructorsStore.fetchInstructors(),
+  { server: true }
+);
 
-onMounted(() => {
-  instructorsStore.fetchInstructors();
-});
+const instructors = computed(() => instructorsStore.instructors);
 </script>
 
 <template>
@@ -23,7 +26,33 @@ onMounted(() => {
       class="mb-12"
     />
 
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <!-- Loading skeleton -->
+    <div v-if="pending" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <UCard v-for="n in 6" :key="n" class="overflow-hidden animate-pulse">
+        <template #header>
+          <div class="h-64 -m-6 mb-0 bg-elevated rounded-t-lg" />
+        </template>
+        <div class="space-y-3 py-2">
+          <div class="h-5 bg-elevated rounded w-3/4" />
+          <div class="h-4 bg-elevated rounded w-1/2" />
+          <div class="h-3 bg-elevated rounded w-full" />
+          <div class="h-3 bg-elevated rounded w-5/6" />
+        </div>
+      </UCard>
+    </div>
+
+    <!-- Empty state -->
+    <div
+      v-else-if="!pending && instructors.length === 0"
+      class="flex flex-col items-center justify-center py-24 text-center"
+    >
+      <UIcon name="i-lucide-users" class="size-16 text-muted mb-4" />
+      <h3 class="text-xl font-semibold mb-2">{{ t('instructors.noInstructors') || 'No instructors found' }}</h3>
+      <p class="text-muted">{{ t('instructors.noInstructorsDesc') || 'Check back soon.' }}</p>
+    </div>
+
+    <!-- Instructor cards -->
+    <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
       <UCard
         v-for="instructor in instructors"
         :key="instructor.userId"
@@ -117,3 +146,4 @@ onMounted(() => {
     />
   </UContainer>
 </template>
+

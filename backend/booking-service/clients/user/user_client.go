@@ -20,6 +20,7 @@ type IUserClient interface {
 	GetAllInstructors(ctx context.Context) ([]InstructorWithSchedules, error)
 	GetUserByID(ctx context.Context, userID uuid.UUID) (*UserInfo, error)
 	GetEntitlement(ctx context.Context, memberID, entitlementID uuid.UUID) (*EntitlementInfo, error)
+	GetMemberEntitlements(ctx context.Context, memberID uuid.UUID) ([]EntitlementInfo, error)
 }
 
 // UserClient implements IUserClient
@@ -299,4 +300,53 @@ func (c *UserClient) GetEntitlement(ctx context.Context, memberID, entitlementID
 	}
 
 	return &entitlement, nil
+}
+
+// GetMemberEntitlements retrieves all entitlements of a member from user-service
+func (c *UserClient) GetMemberEntitlements(ctx context.Context, memberID uuid.UUID) ([]EntitlementInfo, error) {
+	url := fmt.Sprintf("%s/api/v1/entitlements/members/%s?limit=100", c.baseURL, memberID.String())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	// Add JWT token for service-to-service authentication
+	token, err := c.generateServiceToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate service token: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call user-service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("user-service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var apiResp APIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if !apiResp.Success {
+		return nil, fmt.Errorf("API error: %s", apiResp.Message)
+	}
+
+	var list struct {
+		Data []EntitlementInfo `json:"data"`
+	}
+	if err := json.Unmarshal(apiResp.Data, &list); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal entitlements list: %w", err)
+	}
+
+	return list.Data, nil
 }

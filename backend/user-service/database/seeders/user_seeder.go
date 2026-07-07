@@ -120,6 +120,7 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 		},
 		{
 			user: models.User{
+				ID:           uuid.MustParse("86f5e950-cedb-495b-9528-48a7dffa6919"),
 				Username:     "member1",
 				PasswordHash: string(hashedPassword),
 				EmailAddress: "member1@example.com",
@@ -130,7 +131,7 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Address:      "Jakarta, Indonesia",
 			},
 			memberProfile: &models.MemberProfile{
-				UserID:            uuid.Nil, // Will be set after user creation
+				UserID:            uuid.MustParse("86f5e950-cedb-495b-9528-48a7dffa6919"),
 				SessionsCompleted: 12,
 				TrainingTime:      600,
 				AverageRating:     4.5,
@@ -138,6 +139,7 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 		},
 		{
 			user: models.User{
+				ID:           uuid.MustParse("433c4e17-83cb-4133-a4ab-7abaef8a3afe"),
 				Username:     "member2",
 				PasswordHash: string(hashedPassword),
 				EmailAddress: "member2@example.com",
@@ -150,10 +152,31 @@ func (s *UserSeeder) Seed(roleMap map[string]uint) error {
 				Address:      "Bekasi, Indonesia",
 			},
 			memberProfile: &models.MemberProfile{
-				UserID:            uuid.Nil,
+				UserID:            uuid.MustParse("433c4e17-83cb-4133-a4ab-7abaef8a3afe"),
 				SessionsCompleted: 8,
 				TrainingTime:      400,
 				AverageRating:     4.2,
+			},
+		},
+		{
+			user: models.User{
+				ID:           uuid.MustParse("99999999-9999-9999-9999-999999999999"),
+				Username:     "goldmember",
+				PasswordHash: string(hashedPassword),
+				EmailAddress: "goldmember@example.com",
+				FirstName:    "Gold",
+				LastName:     "Member",
+				PhoneNumber:  "+6281234567899",
+				DateOfBirth:  time.Date(1995, 5, 5, 0, 0, 0, 0, time.UTC),
+				RoleID:       roleMap["member"],
+				Image:        "https://example.com/images/goldmember.jpg",
+				Address:      "Jakarta, Indonesia",
+			},
+			memberProfile: &models.MemberProfile{
+				UserID:            uuid.MustParse("99999999-9999-9999-9999-999999999999"),
+				SessionsCompleted: 9,
+				TrainingTime:      450,
+				AverageRating:     4.8,
 			},
 		},
 	}

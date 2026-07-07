@@ -26,41 +26,32 @@ type IEnrollmentService interface {
 	ListEnrollments(ctx context.Context, page, limit int) (*dto.EnrollmentListResponse, error)
 	ListUserEnrollments(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.EnrollmentListResponse, error)
 	ListEnrollmentsByStatus(ctx context.Context, status string, page, limit int) (*dto.EnrollmentListResponse, error)
-	CreateEntitlementFromEnrollment(ctx context.Context, enrollmentID uuid.UUID, sourceType, sourceID string, totalSessions int, expiresAt time.Time) (*dto.EntitlementResponse, error)
 }
 
 type EnrollmentService struct {
 	enrollmentRepo   repositories.IEnrollmentRepository
-	entitlementRepo repositories.IEntitlementRepository
 	transactionSvc   ITransactionService
 	eventPublisher  kafka.IEventPublisher
-	entitlementSvc  IEntitlementService
 	coreClient      cClient.ICoreClient
 }
 
 func NewEnrollmentService(
 	enrollmentRepo repositories.IEnrollmentRepository,
-	entitlementRepo repositories.IEntitlementRepository,
 ) IEnrollmentService {
 	return &EnrollmentService{
 		enrollmentRepo:  enrollmentRepo,
-		entitlementRepo: entitlementRepo,
 	}
 }
 
 // NewEnrollmentServiceWithDeps creates a new enrollment service with all dependencies
 func NewEnrollmentServiceWithDeps(
 	enrollmentRepo repositories.IEnrollmentRepository,
-	entitlementRepo repositories.IEntitlementRepository,
 	eventPublisher kafka.IEventPublisher,
-	entitlementSvc IEntitlementService,
 	coreClient cClient.ICoreClient,
 ) IEnrollmentService {
 	return &EnrollmentService{
 		enrollmentRepo:  enrollmentRepo,
-		entitlementRepo: entitlementRepo,
 		eventPublisher:  eventPublisher,
-		entitlementSvc:  entitlementSvc,
 		coreClient:      coreClient,
 	}
 }
@@ -68,18 +59,14 @@ func NewEnrollmentServiceWithDeps(
 // NewEnrollmentServiceWithAllDeps creates a new enrollment service with transaction service
 func NewEnrollmentServiceWithAllDeps(
 	enrollmentRepo repositories.IEnrollmentRepository,
-	entitlementRepo repositories.IEntitlementRepository,
 	transactionSvc ITransactionService,
 	eventPublisher kafka.IEventPublisher,
-	entitlementSvc IEntitlementService,
 	coreClient cClient.ICoreClient,
 ) IEnrollmentService {
 	return &EnrollmentService{
 		enrollmentRepo:   enrollmentRepo,
-		entitlementRepo:  entitlementRepo,
 		transactionSvc:    transactionSvc,
 		eventPublisher:   eventPublisher,
-		entitlementSvc:   entitlementSvc,
 		coreClient:       coreClient,
 	}
 }
@@ -339,8 +326,7 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 		_ = s.eventPublisher.PublishEnrollmentPaid(ctx, enrollment.ID.String(), enrollment.UserID.String(), enrollment.PackageID, totalPrice, totalSessions, pkgName)
 	}
 
-	// Create entitlements automatically if services are available
-	s.createEntitlementsForEnrollment(ctx, enrollment)
+
 
 	// Create a sale record in core-service to track this as a completed sale
 	if s.coreClient != nil && packageID != "" {
@@ -399,69 +385,7 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 	return &resp, nil
 }
 
-// createEntitlementsForEnrollment creates user entitlements based on the package
-func (s *EnrollmentService) createEntitlementsForEnrollment(ctx context.Context, enrollment *models.Enrollment) {
-	// Skip if we don't have the required services
-	if s.entitlementSvc == nil || s.coreClient == nil {
-		return
-	}
 
-	// Get package details from core-service
-	pkg, err := s.coreClient.GetPackageByID(ctx, enrollment.PackageID)
-	if err != nil {
-		// Log error but don't fail the enrollment
-		return
-	}
-
-	// Calculate expiration date based on package validity
-	expiresAt := enrollment.CreatedAt.AddDate(0, 0, pkg.ValidityDays)
-	if expiresAt.Before(time.Now()) {
-		expiresAt = time.Now().AddDate(1, 0, 0) // Default 1 year if validity is invalid
-	}
-
-	// Calculate extra sessions from the enrollment transaction
-	extraSessions := 0
-	if s.transactionSvc != nil {
-		tx, err := s.transactionSvc.GetTransactionByEnrollmentID(ctx, enrollment.ID)
-		if err == nil && tx != nil {
-			for _, item := range tx.Items {
-				if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222201") {
-					extraSessions += item.Sessions * item.Quantity
-				}
-			}
-		}
-	}
-	totalSessions := pkg.Sessions + extraSessions
-
-	// Create entitlement for the package
-	_, err = s.entitlementSvc.CreateEntitlement(ctx, dto.CreateEntitlementRequest{
-		UserID:            enrollment.UserID,
-		SourceType:        "package",
-		SourceID:          enrollment.PackageID.String(),
-		TotalSessions:     totalSessions,
-		SessionsRemaining: totalSessions,
-		ExpiresAt:         expiresAt,
-	})
-	if err != nil {
-		// Log error but don't fail the enrollment
-		return
-	}
-
-	// Create entitlement for bonus session (1 session, 30 days validity)
-	bonusExpiresAt := time.Now().AddDate(0, 0, 30) // Bonus session validity, e.g., 30 days
-	_, err = s.entitlementSvc.CreateEntitlement(ctx, dto.CreateEntitlementRequest{
-		UserID:            enrollment.UserID,
-		SourceType:        "bonus",
-		SourceID:          "free-trial-bonus",
-		TotalSessions:     1,
-		SessionsRemaining: 1,
-		ExpiresAt:         bonusExpiresAt,
-	})
-	if err != nil {
-		// Log error but don't fail the enrollment
-		fmt.Printf("Failed to create bonus entitlement: %v\n", err)
-	}
-}
 
 func (s *EnrollmentService) ListEnrollments(ctx context.Context, page, limit int) (*dto.EnrollmentListResponse, error) {
 	enrollments, err := s.enrollmentRepo.FindAllPaginated(ctx, page, limit)
@@ -526,32 +450,7 @@ func (s *EnrollmentService) ListEnrollmentsByStatus(ctx context.Context, status 
 	return resp, nil
 }
 
-func (s *EnrollmentService) CreateEntitlementFromEnrollment(ctx context.Context, enrollmentID uuid.UUID, sourceType, sourceID string, totalSessions int, expiresAt time.Time) (*dto.EntitlementResponse, error) {
-	enrollment, err := s.enrollmentRepo.FindByID(ctx, enrollmentID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("enrollment not found")
-		}
-		return nil, err
-	}
 
-	entitlement := &models.UserEntitlement{
-		EnrollmentID:  enrollment.ID,
-		UserID:        enrollment.UserID,
-		SourceType:    sourceType,
-		SourceID:      sourceID,
-		TotalSessions: totalSessions,
-		UsedSessions:  0,
-		ExpiresAt:     expiresAt,
-	}
-
-	if err := s.entitlementRepo.Create(ctx, entitlement); err != nil {
-		return nil, err
-	}
-
-	resp := s.entitlementRepo.ToResponse(entitlement)
-	return &resp, nil
-}
 
 func (s *EnrollmentService) populateDetails(ctx context.Context, resp *dto.EnrollmentResponse) {
 	pkgCache := make(map[uuid.UUID]*dto.EnrollmentPackageResponse)

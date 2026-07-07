@@ -51,11 +51,13 @@ type UserInfo struct {
 type EntitlementInfo struct {
 	ID                uuid.UUID `json:"id"`
 	MemberID          uuid.UUID `json:"memberId"`
+	BookingID         uuid.UUID `json:"bookingId"`
 	PackageID         string    `json:"packageId"`
 	PackageName       string    `json:"packageName"`
 	TotalSessions     int       `json:"totalSessions"`
-	RemainingSessions int       `json:"remainingSessions"`
+	RemainingSessions int       `json:"remaining"`
 	UsedSessions      int       `json:"usedSessions"`
 	ExpiresAt         string    `json:"expiresAt"`
+	Status            string    `json:"status"`
 	IsActive          bool      `json:"isActive"`
 }

@@ -69,6 +69,7 @@ func (r *Registry) GetInstructorService() IInstructorService {
 		r.repoRegistry.GetRole(),
 		r.GetEmailService(),
 		r.redisClient,
+		r.GetMediaService(),
 	)
 }
 

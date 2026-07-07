@@ -49,18 +49,18 @@ async function onSubmit(_event: FormSubmitEvent<any>) {
       console.log('[ONBOARDING] Member profile updated successfully:', result)
     }
 
-    let plan = null
+    let enrollmentId = null
     if (import.meta.client) {
-      plan = sessionStorage.getItem('dm_selected_plan')
+      enrollmentId = sessionStorage.getItem('dm_enrollment_id')
     }
 
-    if (plan) {
-      navigateTo(`/auth/payment-method?plan=${plan}`)
+    if (enrollmentId) {
+      navigateTo(`/auth/payment-method?enrollment=${enrollmentId}`)
     } else {
       navigateTo('/auth/select-plan')
     }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 

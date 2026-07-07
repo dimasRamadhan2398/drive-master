@@ -48,6 +48,12 @@ func (i *InstructorRepository) FindInstructorProfileByUserID(ctx context.Context
 
 // UpdateInstructorProfile implements [IInstructorRepository].
 func (i *InstructorRepository) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error {
+	if profile.ID == uuid.Nil && profile.UserID != uuid.Nil {
+		var existing models.InstructorProfile
+		if err := i.BaseRepository.FindOne(&existing, "user_id = ?", profile.UserID); err == nil {
+			profile.ID = existing.ID
+		}
+	}
 	return i.BaseRepository.Update(profile)
 }
 

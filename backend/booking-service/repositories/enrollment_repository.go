@@ -65,7 +65,7 @@ func (r *EnrollmentRepository) FindByID(ctx context.Context, id uuid.UUID) (*mod
 
 func (r *EnrollmentRepository) FindByIDWithPreload(ctx context.Context, id uuid.UUID) (*models.Enrollment, error) {
 	var enrollment models.Enrollment
-	opts := base.NewQueryOptions().WithPreloads("Entitlements")
+	opts := base.NewQueryOptions()
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollment, opts); err != nil {
 		return nil, err
 	}
@@ -87,7 +87,6 @@ func (r *EnrollmentRepository) Delete(ctx context.Context, enrollment *models.En
 func (r *EnrollmentRepository) FindAll(ctx context.Context) ([]models.Enrollment, error) {
 	var enrollments []models.Enrollment
 	opts := base.NewQueryOptions().
-		WithPreloads("Entitlements").
 		WithOrder("created_at DESC")
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
 		return nil, err
@@ -99,7 +98,6 @@ func (r *EnrollmentRepository) FindAllPaginated(ctx context.Context, page, limit
 	var enrollments []models.Enrollment
 	offset := (page - 1) * limit
 	opts := base.NewQueryOptions().
-		WithPreloads("Entitlements").
 		WithOrder("created_at DESC").
 		WithPagination(offset, limit)
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
@@ -112,7 +110,6 @@ func (r *EnrollmentRepository) FindByUserID(ctx context.Context, userID uuid.UUI
 	var enrollments []models.Enrollment
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"user_id": userID}).
-		WithPreloads("Entitlements").
 		WithOrder("created_at DESC")
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
 		return nil, err
@@ -125,7 +122,6 @@ func (r *EnrollmentRepository) FindByUserIDPaginated(ctx context.Context, userID
 	offset := (page - 1) * limit
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"user_id": userID}).
-		WithPreloads("Entitlements").
 		WithOrder("created_at DESC").
 		WithPagination(offset, limit)
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
@@ -138,7 +134,6 @@ func (r *EnrollmentRepository) FindByStatus(ctx context.Context, status models.E
 	var enrollments []models.Enrollment
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"status": status}).
-		WithPreloads("Entitlements").
 		WithOrder("created_at DESC")
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
 		return nil, 0, err
@@ -150,7 +145,6 @@ func (r *EnrollmentRepository) FindByPackageID(ctx context.Context, packageID uu
 	var enrollments []models.Enrollment
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"package_id": packageID}).
-		WithPreloads("Entitlements").
 		WithOrder("created_at DESC")
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
 		return nil, err

@@ -6,6 +6,15 @@ import type {
   CreateInstructorRequest,
 } from "~/services/instructorService";
 
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
+
 interface InstructorsState {
   instructors: Instructor[];
   currentInstructor: Instructor | null;
@@ -171,23 +180,49 @@ export const useInstructorsStore = defineStore("instructors", {
       this.fetchInstructors(page, false);
     },
 
-    async updateInstructor(userId: string, data: UpdateInstructorData) {
+    async updateInstructor(userId: string, data: UpdateInstructorData, imageFile?: File) {
       try {
-        const updatedInstructor = await instructorService.update(userId, data);
+        const payload = { ...data } as any;
+        if (imageFile) {
+          try {
+            payload.photoBase64 = await fileToBase64(imageFile);
+          } catch (err) {
+            console.error("Failed to convert image to base64:", err);
+          }
+        }
+
+        const updatedInstructor = await instructorService.update(userId, payload);
         if (updatedInstructor) {
           const index = this.instructors.findIndex((i) => i.userId === userId);
+          
+          // Construct clean merged updates to avoid overriding correct local fields with default fallbacks
+          const cleanUpdated: Partial<Instructor> = {};
+          for (const key in updatedInstructor) {
+            const val = (updatedInstructor as any)[key];
+            if (
+              val !== undefined &&
+              val !== null &&
+              val !== "" &&
+              val !== "undefined undefined" &&
+              val !== "Unnamed Instructor"
+            ) {
+              (cleanUpdated as any)[key] = val;
+            }
+          }
+
           if (index !== -1) {
             this.instructors[index] = {
               ...this.instructors[index],
-              ...updatedInstructor,
+              ...cleanUpdated,
             };
           }
           if (this.currentInstructor?.userId === userId) {
             this.currentInstructor = {
               ...this.currentInstructor,
-              ...updatedInstructor,
+              ...cleanUpdated,
             };
           }
+
           return updatedInstructor;
         }
         return null;
@@ -342,10 +377,20 @@ export const useInstructorsStore = defineStore("instructors", {
       console.log("[createInstructor] Step 2: Image file received:", imageFile);
 
       try {
+        const payload = { ...data } as any;
+        if (imageFile) {
+          try {
+            payload.photoBase64 = await fileToBase64(imageFile);
+            console.log("[createInstructor] Base64 image prepared successfully");
+          } catch (err) {
+            console.error("[createInstructor] Failed to convert image to base64:", err);
+          }
+        }
+
         console.log(
           "[createInstructor] Step 3: Calling instructorService.create...",
         );
-        const instructor = await instructorService.create(data);
+        const instructor = await instructorService.create(payload);
         console.log(
           "[createInstructor] Step 4: instructorService.create returned:",
           instructor,
@@ -361,42 +406,8 @@ export const useInstructorsStore = defineStore("instructors", {
             instructor.userId,
           );
 
-          if (instructor.userId && imageFile) {
-            console.log(
-              "[createInstructor] Step 7: Uploading profile picture...",
-            );
-            const uploadResult = await instructorService.uploadProfilePic(
-              instructor.userId,
-              imageFile,
-            );
-            console.log(
-              "[createInstructor] Step 8: Upload result:",
-              uploadResult,
-            );
-
-            if (uploadResult) {
-              const index = this.instructors.findIndex(
-                (i) => i.userId === instructor.userId,
-              );
-              if (index !== -1) {
-                this.instructors[index]!.image = uploadResult.url;
-                console.log(
-                  "[createInstructor] Step 9: Image URL updated in store",
-                );
-              }
-            } else {
-              console.log(
-                "[createInstructor] Step 9: Upload failed, skipping image update",
-              );
-            }
-          } else {
-            console.log(
-              "[createInstructor] Step 7: No image file or userId, skipping upload",
-            );
-          }
-
           console.log(
-            "[createInstructor] Step 10: Returning instructor:",
+            "[createInstructor] Step 7: Returning instructor:",
             instructor,
           );
           return instructor;

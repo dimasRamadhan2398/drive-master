@@ -27,14 +27,8 @@ func (r *Registry) GetSession() ISessionRepository {
 	return NewSessionRepository(r.db)
 }
 
-// GetEntitlement returns a new EntitlementRepository
-func (r *Registry) GetEntitlement() IEntitlementRepository {
-	return NewEntitlementRepository(r.db)
-}
-
 type IRepositoryRegistry interface {
 	GetSchedule() IScheduleRepository
 	GetEnrollment() IEnrollmentRepository
 	GetSession() ISessionRepository
-	GetEntitlement() IEntitlementRepository
 }

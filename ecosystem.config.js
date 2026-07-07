@@ -111,6 +111,22 @@ module.exports = {
       }
     },
     {
+      name: "api-gateway",
+      script: "./backend/api-gateway/bin/api-gateway",
+      cwd: "/var/www/drive",
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      env: {
+        SERVER_PORT: 8088,
+        SERVER_MODE: "release",
+        CONFIG_PATH: "./backend/api-gateway/pkg/config/config.yaml",
+        USER_SERVICE_URL: "http://127.0.0.1:8001",
+        CORE_SERVICE_URL: "http://127.0.0.1:8002",
+        BOOKING_SERVICE_URL: "http://127.0.0.1:8003"
+      }
+    },
+    {
       name: "drive-frontend",
       script: "./frontend/.output/server/index.mjs",
       cwd: "/var/www/drive",
@@ -120,7 +136,13 @@ module.exports = {
       env: {
         PORT: 3000,
         NUXT_PUBLIC_API_BASE: "https://drivemaster.id/api/v1",
-        NUXT_PUBLIC_MODE: "prod"
+        NUXT_PUBLIC_API_BASE_URL: "https://drivemaster.id/api/v1",
+        NUXT_PUBLIC_USER_API_BASE: "https://drivemaster.id/api/v1/users",
+        NUXT_PUBLIC_CORE_API_BASE: "https://drivemaster.id/api/v1/core",
+        NUXT_PUBLIC_BOOKING_API_BASE: "https://drivemaster.id/api/v1/bookings",
+        NUXT_PUBLIC_MODE: "prod",
+        NUXT_PUBLIC_GA_MEASUREMENT_ID: "G-07PS1N5DZ5",
+        NUXT_PUBLIC_GA_PROPERTY_ID: "G-539969879"
       }
     }
   ]
