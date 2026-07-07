@@ -135,6 +135,25 @@ module.exports = {
         CORE_SERVICE_URL: "http://127.0.0.1:9002",
         BOOKING_SERVICE_URL: "http://127.0.0.1:9003"
       }
+    },
+    {
+      name: "dev-drive-frontend",
+      script: "./frontend/.output/server/index.mjs",
+      cwd: "/var/www/drive",
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      env: {
+        PORT: 3001,
+        NUXT_PUBLIC_API_BASE: "https://api-dev.drivemaster.id/api/v1",
+        NUXT_PUBLIC_API_BASE_URL: "https://api-dev.drivemaster.id/api/v1",
+        NUXT_PUBLIC_USER_API_BASE: "https://api-dev.drivemaster.id/api/v1/users",
+        NUXT_PUBLIC_CORE_API_BASE: "https://api-dev.drivemaster.id/api/v1/core",
+        NUXT_PUBLIC_BOOKING_API_BASE: "https://api-dev.drivemaster.id/api/v1/bookings",
+        NUXT_PUBLIC_MODE: "dev",
+        NUXT_PUBLIC_GA_MEASUREMENT_ID: "G-07PS1N5DZ5",
+        NUXT_PUBLIC_GA_PROPERTY_ID: "G-539969879"
+      }
     }
   ]
 };

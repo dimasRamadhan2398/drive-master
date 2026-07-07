@@ -24,3 +24,7 @@ cors:
     - "http://drivemaster.id"
     - "http://203.194.114.20"
     - "https://203.194.114.20"
+    - "https://dev.drivemaster.id"
+    - "http://dev.drivemaster.id"
+    - "https://api-dev.drivemaster.id"
+    - "http://api-dev.drivemaster.id"

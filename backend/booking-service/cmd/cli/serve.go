@@ -180,12 +180,16 @@ func runServe(cmd *cobra.Command, args []string) {
 	router.Use(func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 		allowedOrigins := map[string]bool{
-			"http://localhost:3000":    true,
-			"http://localhost:3001":    true,
-			"https://drivemaster.id":   true,
-			"http://drivemaster.id":    true,
-			"http://203.194.114.20":    true,
-			"https://203.194.114.20":   true,
+			"http://localhost:3000":      true,
+			"http://localhost:3001":      true,
+			"https://drivemaster.id":     true,
+			"http://drivemaster.id":      true,
+			"http://203.194.114.20":      true,
+			"https://203.194.114.20":     true,
+			"https://dev.drivemaster.id":  true,
+			"http://dev.drivemaster.id":   true,
+			"https://api-dev.drivemaster.id": true,
+			"http://api-dev.drivemaster.id":  true,
 		}
 
 		if allowedOrigins[origin] {
