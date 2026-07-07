@@ -154,6 +154,16 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		})
 
 		// schedules — GET is public, write ops require auth
+		mixed.Any("/schedules", func(c *gin.Context) {
+			if c.Request.Method == http.MethodGet {
+				proxy.ToBookingServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			if !c.IsAborted() {
+				proxy.ToBookingServiceDirect(c)
+			}
+		})
 		mixed.Any("/schedules/*path", func(c *gin.Context) {
 			if c.Request.Method == http.MethodGet {
 				proxy.ToBookingServiceDirect(c)
@@ -179,7 +189,12 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		// notifications
 		protected.Any("/notifications/*path", proxy.ToNotificationService)
 
+		// enrollments
+		protected.Any("/enrollments", proxy.ToBookingServiceDirect)
+		protected.Any("/enrollments/*path", proxy.ToBookingServiceDirect)
+
 		// sessions
+		protected.Any("/sessions", proxy.ToBookingServiceDirect)
 		protected.Any("/sessions/*path", proxy.ToBookingServiceDirect)
 
 		// members

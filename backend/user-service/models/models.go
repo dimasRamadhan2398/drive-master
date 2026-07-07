@@ -155,7 +155,7 @@ const (
 // Certification represents a member's certification (e.g., package completion certificate)
 type Certification struct {
 	ID            uuid.UUID           `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	InstructorID  uuid.UUID           `json:"instructorId" gorm:"type:uuid;not null;index"`
+	InstructorID  *uuid.UUID          `json:"instructorId" gorm:"type:uuid;index"`
 	MemberID      uuid.UUID           `json:"memberId" gorm:"type:uuid;not null;index"`
 	// EntitlementID links the certificate to the specific entitlement that was completed.
 	// This is a nullable FK — older certs issued before this field existed will have NULL here.

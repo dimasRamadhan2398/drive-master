@@ -107,7 +107,13 @@ module.exports = {
         KAFKA_TOPIC: "payment.events",
         CONFIG_PATH: "./backend/payment-service/pkg/config/config.yaml",
         RUN_MIGRATIONS: "true",
-        RUN_SEEDERS: "true"
+        RUN_SEEDERS: "true",
+        PAYMENT_GATEWAY: "doku",
+        DOKU_CLIENT_ID: "BRN-0226-1782972609555",
+        DOKU_SECRET_KEY: "SK-OdJ7OYT6G5nGW2HLs0b6",
+        DOKU_BASE_URL: "https://api.doku.com",
+        DOKU_NOTIFICATION_URL: "https://drivemaster.id/api/v1/payments/doku/notification",
+        DOKU_FRONTEND_URL: "https://drivemaster.id"
       }
     },
     {

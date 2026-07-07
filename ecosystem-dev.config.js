@@ -111,7 +111,13 @@ module.exports = {
         KAFKA_TOPIC: "dev.payment.events",
         CONFIG_PATH: "./backend/payment-service/pkg/config/config.yaml",
         RUN_MIGRATIONS: "true",
-        RUN_SEEDERS: "true"
+        RUN_SEEDERS: "true",
+        PAYMENT_GATEWAY: "doku",
+        DOKU_CLIENT_ID: "BRN-0236-1782979927158",
+        DOKU_SECRET_KEY: "SK-FX43zADxdeDIOLEJ8dff",
+        DOKU_BASE_URL: "https://api-sandbox.doku.com",
+        DOKU_NOTIFICATION_URL: "http://localhost:8088/api/v1/payments/doku/notification",
+        DOKU_FRONTEND_URL: "http://localhost:3000"
       }
     },
     {

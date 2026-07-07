@@ -139,6 +139,23 @@ func runServe(cmd *cobra.Command, args []string) {
 		revenueService:    revenueService,
 	}
 
+	// Start background session monitor to complete ongoing sessions when they reach end time
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		ctx := context.Background()
+
+		log.Println("Session auto-completion monitor started (checking every 1 minute)")
+		for {
+			select {
+			case <-ticker.C:
+				if err := sessionService.AutoCompleteOngoingSessions(ctx); err != nil {
+					log.Printf("Session auto-completion monitor error: %v", err)
+				}
+			}
+		}
+	}()
+
 	// Initialize schedule generator for automatic schedule slot generation
 	_ = initScheduleGenerator(scheduleRepo, userClient)
 

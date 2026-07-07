@@ -4,6 +4,8 @@ import (
 	uClient "booking-service/clients/user"
 	"context"
 	"errors"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,6 +28,7 @@ type ISessionService interface {
 	CancelSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	ListUserSessions(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.SessionListResponse, error)
 	ListInstructorSessions(ctx context.Context, instructorID uuid.UUID, page, limit int) (*dto.SessionListResponse, error)
+	AutoCompleteOngoingSessions(ctx context.Context) error
 }
 
 type SessionService struct {
@@ -386,4 +389,39 @@ func (s *SessionService) CancelSession(ctx context.Context, id uint) (*dto.Sessi
 
 	resp := s.sessionRepo.ToResponse(session)
 	return &resp, nil
+}
+
+func (s *SessionService) AutoCompleteOngoingSessions(ctx context.Context) error {
+	// Find all sessions that are in progress
+	sessions, err := s.sessionRepo.FindByStatus(ctx, "in_progress")
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	for _, session := range sessions {
+		// Parse session start date and time
+		dateStr := fmt.Sprintf("%s %s", session.Date.Format("2006-01-02"), session.Time)
+		// Assume server/database time zone matches local time zone of lessons
+		startTime, err := time.ParseInLocation("2006-01-02 15:04", dateStr, time.Local)
+		if err != nil {
+			startTime, _ = time.Parse("2006-01-02 15:04", dateStr)
+		}
+
+		endTime := startTime.Add(time.Duration(session.Duration) * time.Minute)
+
+		// If session reaches end time, complete it
+		if now.After(endTime) {
+			log.Printf("[SessionMonitor] Session ID %d of user %s reached end time %s (duration %d mins). Completing session...",
+				session.ID, session.UserID, endTime.Format("15:04"), session.Duration)
+
+			_, err := s.CompleteSession(ctx, session.ID)
+			if err != nil {
+				log.Printf("[SessionMonitor] Failed to auto-complete session ID %d: %v", session.ID, err)
+			} else {
+				log.Printf("[SessionMonitor] Successfully completed session ID %d", session.ID)
+			}
+		}
+	}
+	return nil
 }
