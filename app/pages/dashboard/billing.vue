@@ -1,38 +1,92 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { paymentService } from '~/services/paymentService'
 
 const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
-// Billing data
-const userData = {
-  name: 'John Doe',
-  email: 'john.doe@example.com',
-  package: '10x Sessions Package',
-  totalSessions: 10,
-  completedSessions: 4,
-  remainingSessions: 6,
-  progress: 40,
-  nextSession: {
-    date: 'Tomorrow',
-    time: '09:30 AM',
-    car: 'BYD Atto 1',
-    instructor: 'Pak Ahmad'
+const authStore = useAuthStore()
+
+const paymentsList = ref<any[]>([])
+const isLoadingPayments = ref(false)
+const showBillingModal = ref(false)
+const selectedPaymentMethod = ref('va')
+
+const fetchPayments = async (userId: string) => {
+  try {
+    isLoadingPayments.value = true
+    const res = await paymentService.listUserPayments(userId)
+    paymentsList.value = res.payments || []
+  } catch (err) {
+    console.error('Failed to fetch payments:', err)
+  } finally {
+    isLoadingPayments.value = false
   }
 }
 
-const billingData = {
- status: 'payment-due',
- daysRemaining: 3,
- amount: 'Rp 2,250,000',
- dueDate: 'June 25, 2026',
- lastPaymentDate: 'Mar 25, 2026',
- package: '10x Session Package',
- nextRenewalDate: 'September 25, 2026'
-}
+onMounted(async () => {
+  await authStore.fetchMemberProfile()
+  if (authStore.userId) {
+    fetchPayments(authStore.userId)
+  }
+})
 
-const showBillingModal = ref(false)
-const selectedPaymentMethod = ref('va')
+const entitlements = computed(() => authStore.memberEntitlements ?? [])
+
+// Find active or completed entitlements to show as package
+const activeEntitlement = computed(() => {
+  return entitlements.value.find(e => e.status === 'active') || entitlements.value[0] || null
+})
+
+// Dynamic user data
+const userData = computed(() => {
+  const active = activeEntitlement.value
+  const total = entitlements.value.reduce((sum, e) => sum + (e.totalSessions ?? 0), 0)
+  const completed = entitlements.value.reduce((sum, e) => sum + (e.usedSessions ?? 0), 0)
+  const remaining = entitlements.value.reduce((sum, e) => sum + (e.remaining ?? 0), 0)
+  
+  return {
+    name: authStore.currentUser?.firstName + ' ' + (authStore.currentUser?.lastName || ''),
+    email: authStore.currentUser?.email || '',
+    package: active?.packageName || t('dashboard.noPackage'),
+    totalSessions: total,
+    completedSessions: completed,
+    remainingSessions: remaining,
+    progress: total ? Math.round((completed / total) * 100) : 0,
+  }
+})
+
+// Find any pending payment
+const pendingPayment = computed(() => {
+  return paymentsList.value.find(p => p.status === 'pending') || null
+})
+
+// Dynamic billing data
+const billingData = computed(() => {
+  const pending = pendingPayment.value
+  const active = activeEntitlement.value
+  
+  if (pending) {
+    return {
+      status: 'payment-due',
+      amount: formatCurrency(pending.amount),
+      dueDate: pending.expiresAt ? formatDate(pending.expiresAt) : t('common.pending'),
+      package: getPaymentPlanName(pending),
+      paymentUrl: pending.paymentUrl || '',
+      nextRenewalDate: pending.expiresAt ? formatDate(pending.expiresAt) : t('common.pending')
+    }
+  }
+  
+  // Default paid/active status
+  return {
+    status: active ? 'paid' : 'inactive',
+    amount: formatCurrency(2250000), // Default mock fallback amount
+    dueDate: active?.endDate ? formatDate(active.endDate) : t('common.pending'),
+    package: active?.packageName || t('dashboard.noPackage'),
+    paymentUrl: '',
+    nextRenewalDate: active?.endDate ? formatDate(active.endDate) : t('common.pending')
+  }
+})
 
 const paymentMethods = computed(() => [
   {
@@ -74,35 +128,77 @@ const pricingTabs = computed(() => [
 
 
 function getBillingStatusColor() {
- return billingData.status === 'payment-due' ? 'warning' : 'success'
+  return billingData.value.status === 'payment-due' ? 'warning' : 'success'
 }
 
 
 function getBillingStatusLabel() {
- if (billingData.status === 'payment-due') return t('billing.paymentDue')
- if (billingData.status === 'paid') return t('billing.paid')
- return t('billing.active')
+  if (billingData.value.status === 'payment-due') return t('billing.paymentDue')
+  if (billingData.value.status === 'paid') return t('billing.paid')
+  return t('billing.active')
 }
 
 const planMap: { [key: string]: string } = {
+  '6x Sessions': 'six_package',
+  '8x Sessions': 'eight_package',
+  '10x Sessions': 'ten_package',
+  '12x Sessions': 'twelve_package',
   '6x Session Package': 'six_package',
   '8x Session Package': 'eight_package',
   '10x Session Package': 'ten_package',
-  '12x Session Package': 'twelve_package'
+  '12x Session Package': 'twelve_package',
+  'Bronze Package': 'six_package',
+  'Silver Package': 'eight_package',
+  'Gold Package': 'ten_package',
+  'Platinum Package': 'twelve_package'
 }
 
 function makePayment() {
-  // Map the package name from billingData to the plan key used in payment.vue
-  const planKey = planMap[billingData.package] || 'ten_package';
+  if (billingData.value.status === 'payment-due' && billingData.value.paymentUrl) {
+    // Open payment URL directly
+    window.location.href = billingData.value.paymentUrl
+    return
+  }
+
+  const planKey = planMap[billingData.value.package] || 'ten_package'
 
   navigateTo({
     path: '/auth/payment',
     query: {
       method: selectedPaymentMethod.value,
       plan: planKey,
-      email: userData.email
+      email: userData.value.email
     }
   })
+}
+
+// Helper methods
+function formatCurrency(value: number) {
+  if (value === undefined || value === null) return 'Rp 0'
+  return `Rp ${value.toLocaleString('id-ID')}`
+}
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function getPaymentPlanName(payment: any) {
+  const entitlement = entitlements.value.find(e => e.bookingId === payment.enrollmentId)
+  if (entitlement) return entitlement.packageName
+  return t('billing.package') || 'Driving Package'
+}
+
+function getPaymentStatusColor(status: string) {
+  const map: Record<string, string> = {
+    pending: 'warning',
+    paid: 'success',
+    failed: 'error',
+    cancelled: 'neutral',
+    expired: 'neutral'
+  }
+  return map[status] || 'primary'
 }
 </script>
 
@@ -128,7 +224,7 @@ function makePayment() {
            <div class="flex-1">
              <h3 class="font-semibold text-foreground">{{ t('billing.paymentDue') }}</h3>
              <p class="text-sm text-muted mt-1">
-               {{ t('billing.paymentDueDesc', { amount: billingData.amount, date: billingData.dueDate, days: billingData.daysRemaining }) }}
+               {{ t('billing.paymentDueDesc', { amount: billingData.amount, date: billingData.dueDate }) }}
              </p>
              <p class="text-xs text-muted mt-2">{{ billingData.package }}</p>
              <div class="flex flex-wrap gap-3 mt-4">
@@ -140,30 +236,42 @@ function makePayment() {
        </div>
 
 
-       <!-- Billing Overview Card (Alternative: when payment is not due) -->
-       <div v-else class="p-4 rounded-lg border border-default bg-elevated hover:bg-muted/30 transition-colors">
-         <div class="flex items-center justify-between">
-           <div class="flex items-center gap-3">
-             <div class="p-3 rounded-lg bg-success/10">
-               <UIcon name="i-lucide-check-circle" class="size-6 text-success" />
-             </div>
-             <div>
-               <h3 class="font-semibold">{{ t('billing.subscriptionActive') }}</h3>
-               <p class="text-sm text-muted">{{ t('billing.nextRenewal', { date: billingData.nextRenewalDate }) }}</p>
-             </div>
-           </div>
-           <UButton :label="t('billing.manageBilling')" variant="outline" color="neutral" size="sm" @click="showBillingModal = true" />
-         </div>
-       </div>
+        <!-- Billing Overview Card (Alternative: when payment is not due) -->
+        <div v-else class="p-4 rounded-lg border border-default bg-elevated hover:bg-muted/30 transition-colors">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="p-3 rounded-lg bg-success/10">
+                <UIcon :name="userData.remainingSessions === 0 && userData.totalSessions > 0 ? 'i-lucide-award' : 'i-lucide-check-circle'" class="size-6 text-success" />
+              </div>
+              <div>
+                <h3 class="font-semibold">
+                  {{ userData.remainingSessions === 0 && userData.totalSessions > 0 ? t('billing.packageCompleted') : t('billing.subscriptionActive') }}
+                </h3>
+                <p class="text-sm text-muted">
+                  {{ userData.remainingSessions === 0 && userData.totalSessions > 0 ? t('billing.allSessionsUsed') : t('billing.nextRenewal', { date: billingData.nextRenewalDate }) }}
+                </p>
+              </div>
+            </div>
+            <NuxtLink v-if="userData.remainingSessions === 0 && userData.totalSessions > 0" to="/auth/select-plan">
+              <UButton :label="t('billing.buyNewPackage')" color="warning" size="sm" />
+            </NuxtLink>
+            <UButton v-else :label="t('billing.manageBilling')" variant="outline" color="neutral" size="sm" @click="showBillingModal = true" />
+          </div>
+        </div>
 
        <!-- Welcome Banner -->
        <UCard class="bg-primary/5 border-primary/20">
          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
            <div>
-             <h2 class="text-xl font-semibold">{{ t('billing.sessionsRemaining', { count: userData.remainingSessions }) }}</h2>
+             <h2 class="text-xl font-semibold">
+               {{ userData.remainingSessions === 0 && userData.totalSessions > 0 ? t('billing.packageCompleted') : t('billing.sessionsRemaining', { count: userData.remainingSessions }) }}
+             </h2>
              <p class="text-muted mt-1">{{ t('billing.inPackage', { package: userData.package }) }}</p>
            </div>
-           <NuxtLink to="/dashboard/schedule">
+           <NuxtLink v-if="userData.remainingSessions === 0 && userData.totalSessions > 0" to="/auth/select-plan">
+             <UButton :label="t('billing.buyNewPackage')" color="warning" icon="i-lucide-shopping-cart" />
+           </NuxtLink>
+           <NuxtLink v-else to="/dashboard/schedule">
             <UButton :label="t('dashboard.bookNextSession')" color="warning" icon="i-lucide-calendar-plus" />
            </NuxtLink>
          </div>
@@ -184,8 +292,11 @@ function makePayment() {
          <div class="p-4 border border-default rounded-lg bg-muted/30">
            <div class="flex items-center justify-between mb-4">
              <div class="flex items-center gap-3">
-               <UIcon name="i-lucide-check-circle" class="size-6 text-success" />
-               <h3 class="font-semibold">{{ billingData.package }} - {{ t('billing.active') }}</h3>
+               <UIcon :name="userData.remainingSessions === 0 && userData.totalSessions > 0 ? 'i-lucide-award' : 'i-lucide-check-circle'" class="size-6 text-success" />
+               <h3 class="font-semibold">
+                 {{ billingData.package }} - 
+                 {{ userData.remainingSessions === 0 && userData.totalSessions > 0 ? t('billing.packageCompleted') : t('billing.active') }}
+               </h3>
              </div>
              <div class="text-right">
                <p class="text-2xl font-bold text-primary">{{ billingData.amount }}</p>
@@ -196,7 +307,7 @@ function makePayment() {
            <div class="grid md:grid-cols-2 gap-4 mb-4">
              <div class="text-sm">
                <div class="text-muted">{{ t('billing.sessions') }}</div>
-               <div class="font-medium">10 {{ t('billing.sessions') }}</div>
+                <div class="font-medium">{{ userData.totalSessions || 10 }} {{ t('billing.sessions') }}</div>
              </div>
              <div class="text-sm">
                <div class="text-muted">{{ t('billing.totalCost') }}</div>
@@ -209,26 +320,42 @@ function makePayment() {
          </div>
        </UCard>
 
-       <!-- Last Payment -->
-       <UCard>
-         <template #header>
-           <h2 class="font-semibold">{{ t('billing.paymentHistory') }}</h2>
-         </template>
-           
-           <div class="space-y-3">
-             <div class="flex items-center justify-between pb-3">
-               <div>
-                 <p class="font-medium">{{ billingData.package }}</p>
-                 <p class="text-xs text-muted">{{ billingData.lastPaymentDate }}</p>
-               </div>
-               <div class="text-right">
-                 <p class="font-semibold">{{ billingData.amount }}</p>
-                 <UBadge :label="t('billing.paid')" color="success" variant="subtle" size="xs" />
-               </div>
-             </div>
-           
-         </div>
-       </UCard> 
+        <!-- Payment History -->
+        <UCard>
+          <template #header>
+            <h2 class="font-semibold">{{ t('billing.paymentHistory') }}</h2>
+          </template>
+          
+          <div v-if="isLoadingPayments" class="space-y-4">
+            <USkeleton class="h-10 w-full" />
+            <USkeleton class="h-10 w-full" />
+          </div>
+          <div v-else-if="paymentsList.length > 0" class="divide-y divide-default">
+            <div 
+              v-for="payment in paymentsList" 
+              :key="payment.id" 
+              class="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+            >
+              <div>
+                <p class="font-medium">{{ getPaymentPlanName(payment) }}</p>
+                <p class="text-xs text-muted">{{ formatDate(payment.createdAt) }}</p>
+                <p class="text-xs text-muted font-mono mt-0.5">{{ payment.orderId }}</p>
+              </div>
+              <div class="text-right">
+                <p class="font-semibold">{{ formatCurrency(payment.amount) }}</p>
+                <UBadge 
+                  :label="t(`payment.status.${payment.status}`) || payment.status" 
+                  :color="getPaymentStatusColor(payment.status)" 
+                  variant="subtle" 
+                  size="xs" 
+                />
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-center py-6 text-sm text-muted">
+            No payment history found.
+          </div>
+        </UCard> 
     </div>
 
    <!-- Billing Modal -->

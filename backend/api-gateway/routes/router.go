@@ -19,9 +19,11 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	public := r.Group("/api/v1")
 	{
 		// public content — articles (GET only from content service)
+		public.GET("/content/articles", proxy.ToContentService)
 		public.GET("/content/articles/*path", proxy.ToContentService)
 
 		// public catalog — browse cars and packages (GET only)
+		public.GET("/catalog", proxy.ToCatalogService)
 		public.GET("/catalog/*path", proxy.ToCatalogService)
 
 		// general settings (public — used by frontend on load)
@@ -29,6 +31,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		public.GET("/general-settings/*path", proxy.ToCoreServiceDirect)
 
 		// auth endpoints (login, register, forgot password, confirm reset, OTP, refresh)
+		public.Any("/auth", proxy.ToUserServiceDirect)
 		public.Any("/auth/*path", proxy.ToUserServiceDirect)
 
 		// regions (GET only, public)
@@ -39,28 +42,39 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	// ── MIXED routes — conditional JWT ───────────────────────
 	mixed := r.Group("/api/v1")
 	{
-		// users — auth routes skip JWT, everything else requires it
-		mixed.Any("/users/*path", func(c *gin.Context) {
-			path := c.Param("path")
-			if path == "/auth" || strings.HasPrefix(path, "/auth/") {
-				proxy.ToUserService(c)
-				return
-			}
+		// users — JWT required, proxies directly to user-service
+		mixed.Any("/users", func(c *gin.Context) {
 			auth.Authenticate()(c)
 			if !c.IsAborted() {
-				proxy.ToUserService(c)
+				proxy.ToUserServiceDirect(c)
+			}
+		})
+		mixed.Any("/users/*path", func(c *gin.Context) {
+			auth.Authenticate()(c)
+			if !c.IsAborted() {
+				proxy.ToUserServiceDirect(c)
 			}
 		})
 
 		// instructors — public for GET, auth for write
-		mixed.Any("/instructors/*path", func(c *gin.Context) {
+		mixed.Any("/instructors", func(c *gin.Context) {
 			if c.Request.Method == http.MethodGet {
-				proxy.ToUserService(c)
+				proxy.ToUserServiceDirect(c)
 				return
 			}
 			auth.Authenticate()(c)
 			if !c.IsAborted() {
-				proxy.ToUserService(c)
+				proxy.ToUserServiceDirect(c)
+			}
+		})
+		mixed.Any("/instructors/*path", func(c *gin.Context) {
+			if c.Request.Method == http.MethodGet {
+				proxy.ToUserServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			if !c.IsAborted() {
+				proxy.ToUserServiceDirect(c)
 			}
 		})
 
@@ -91,42 +105,78 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		})
 
 		// testimonials — GET is public, mutating methods require auth
-		mixed.Any("/testimonials/*path", func(c *gin.Context) {
+		mixed.Any("/testimonials", func(c *gin.Context) {
 			if c.Request.Method == http.MethodGet {
-				proxy.ToUserService(c)
+				proxy.ToUserServiceDirect(c)
 				return
 			}
 			auth.Authenticate()(c)
 			if !c.IsAborted() {
-				proxy.ToUserService(c)
+				proxy.ToUserServiceDirect(c)
+			}
+		})
+		mixed.Any("/testimonials/*path", func(c *gin.Context) {
+			if c.Request.Method == http.MethodGet {
+				proxy.ToUserServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			if !c.IsAborted() {
+				proxy.ToUserServiceDirect(c)
 			}
 		})
 
 		// articles — GET is public, mutating methods require auth
-		mixed.Any("/articles/*path", func(c *gin.Context) {
+		mixed.Any("/articles", func(c *gin.Context) {
 			if c.Request.Method == http.MethodGet {
-				proxy.ToCoreService(c)
+				proxy.ToCoreServiceDirect(c)
 				return
 			}
 			auth.Authenticate()(c)
 			if !c.IsAborted() {
-				proxy.ToCoreService(c)
+				proxy.ToCoreServiceDirect(c)
+			}
+		})
+		mixed.Any("/articles/*path", func(c *gin.Context) {
+			if c.Request.Method == http.MethodGet {
+				proxy.ToCoreServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			if !c.IsAborted() {
+				proxy.ToCoreServiceDirect(c)
 			}
 		})
 
 		// packages — GET is public, mutating methods require auth
-		mixed.Any("/packages/*path", func(c *gin.Context) {
+		mixed.Any("/packages", func(c *gin.Context) {
 			if c.Request.Method == http.MethodGet {
-				proxy.ToCoreService(c)
+				proxy.ToCoreServiceDirect(c)
 				return
 			}
 			auth.Authenticate()(c)
 			if !c.IsAborted() {
-				proxy.ToCoreService(c)
+				proxy.ToCoreServiceDirect(c)
+			}
+		})
+		mixed.Any("/packages/*path", func(c *gin.Context) {
+			if c.Request.Method == http.MethodGet {
+				proxy.ToCoreServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			if !c.IsAborted() {
+				proxy.ToCoreServiceDirect(c)
 			}
 		})
 
 		// payments — notification webhooks skip auth, everything else requires auth
+		mixed.Any("/payments", func(c *gin.Context) {
+			auth.Authenticate()(c)
+			if !c.IsAborted() {
+				proxy.ToPaymentService(c)
+			}
+		})
 		mixed.Any("/payments/*path", func(c *gin.Context) {
 			path := c.Param("path")
 			isWebhook := (path == "/notification" || path == "/doku/notification" ||
@@ -142,6 +192,16 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		})
 
 		// vehicles — GET is public (already registered), write ops require auth
+		mixed.Any("/vehicles", func(c *gin.Context) {
+			if c.Request.Method == http.MethodGet {
+				proxy.ToCoreServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			if !c.IsAborted() {
+				proxy.ToCoreServiceDirect(c)
+			}
+		})
 		mixed.Any("/vehicles/*path", func(c *gin.Context) {
 			if c.Request.Method == http.MethodGet {
 				proxy.ToCoreServiceDirect(c)
@@ -181,12 +241,15 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	protected.Use(auth.Authenticate())
 	{
 		// booking
+		protected.Any("/bookings", proxy.ToBookingService)
 		protected.Any("/bookings/*path", proxy.ToBookingService)
 
 		// vouchers
+		protected.Any("/vouchers", proxy.ToVoucherService)
 		protected.Any("/vouchers/*path", proxy.ToVoucherService)
 
 		// notifications
+		protected.Any("/notifications", proxy.ToNotificationService)
 		protected.Any("/notifications/*path", proxy.ToNotificationService)
 
 		// enrollments
@@ -219,12 +282,16 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	admin.Use(auth.Authenticate())
 	admin.Use(auth.RequireRole("admin"))
 	{
+		admin.Any("/content", proxy.ToContentService)
 		admin.Any("/content/*path", proxy.ToContentService)
+		admin.Any("/catalog", proxy.ToCatalogService)
 		admin.Any("/catalog/*path", proxy.ToCatalogService)
-		admin.Any("/users/*path", proxy.ToUserService)
-		admin.Any("/analytics/*path", proxy.ToCoreService)
-		admin.Any("/sales", proxy.ToCoreService)
-		admin.Any("/sales/*path", proxy.ToCoreService)
+		admin.Any("/users", proxy.ToUserServiceDirect)
+		admin.Any("/users/*path", proxy.ToUserServiceDirect)
+		admin.Any("/analytics", proxy.ToCoreServiceDirect)
+		admin.Any("/analytics/*path", proxy.ToCoreServiceDirect)
+		admin.Any("/sales", proxy.ToCoreServiceDirect)
+		admin.Any("/sales/*path", proxy.ToCoreServiceDirect)
 		admin.GET("/dashboard/stats", dashboard.GetDashboardStats)
 	}
 

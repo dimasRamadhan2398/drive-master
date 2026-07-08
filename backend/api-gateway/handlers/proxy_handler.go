@@ -76,6 +76,9 @@ func (h *ProxyHandler) proxy(c *gin.Context, target *url.URL, stripPrefix string
 
 	// strip the gateway prefix before forwarding
 	c.Request.URL.Path = strings.TrimPrefix(c.Request.URL.Path, stripPrefix)
+	if len(c.Request.URL.Path) > 1 && strings.HasSuffix(c.Request.URL.Path, "/") {
+		c.Request.URL.Path = strings.TrimSuffix(c.Request.URL.Path, "/")
+	}
 	if c.Request.URL.Path == "" {
 		c.Request.URL.Path = "/"
 	}

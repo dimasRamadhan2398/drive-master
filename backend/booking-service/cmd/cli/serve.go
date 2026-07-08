@@ -76,7 +76,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	}
 	time.Local = loc
 
-	log.Printf("Starting Booking Service on %s:%s", serveHost, servePort)
+	log.Printf("Starting Booking Service on %s:%d", serveHost, loadedConfig.Server.Port)
 
 	db, err := gorm.Open(postgres.Open(getDSN()), &gorm.Config{})
 	if err != nil {
@@ -221,7 +221,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	docs.SwaggerInfo.Title = "Booking Service API"
 	docs.SwaggerInfo.Description = "API for managing bookings, sessions, entitlements, and certifications"
 	docs.SwaggerInfo.Version = "1.0"
-	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%s", servePort)
+	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%d", loadedConfig.Server.Port)
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	target := `"securityDefinitions"`
     security := `"security":[{"BearerAuth":[], "XApiKey":[],"XRequestAt":[],"XServiceName":[]}],`
@@ -244,7 +244,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	routeRegistry := routes.NewRouteRegistry(controllerRegistry, group, authMiddleware)
 	routeRegistry.Serve()
 
-	addr := fmt.Sprintf("%s:%s", serveHost, servePort)
+	addr := fmt.Sprintf("%s:%d", serveHost, loadedConfig.Server.Port)
 	log.Printf("Booking Service listening on %s", addr)
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
@@ -403,12 +403,13 @@ func initKafkaConsumer(anonymizationService services.IUserAnonymizationService, 
 
 	// Start the consumer in a goroutine
 	ctx := context.Background()
-	if err := eventPublisher.StartConsumer(ctx); err != nil {
-		logger.Error("Failed to start Kafka consumer", zap.Error(err))
-		return nil
-	}
+	go func() {
+		if err := eventPublisher.StartConsumer(ctx); err != nil {
+			logger.Error("Failed to start Kafka consumer", zap.Error(err))
+		}
+	}()
 
-	logger.Info("Kafka consumer initialized and started for user.deleted events")
+	logger.Info("Kafka consumer initialization triggered in background")
 	return eventPublisher
 }
 

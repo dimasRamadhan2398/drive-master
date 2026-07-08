@@ -1,4 +1,5 @@
 import type { ApiResponse } from "~/composables/useApiClients";
+import { useAuthStore } from "~/stores/auth";
 
 export interface MemberCertificateResponse {
   id: string;
@@ -75,14 +76,14 @@ export const certificateService = {
   },
 
   async getCertificatePDFBlobUrl(certId: string): Promise<string> {
-    const { useAuthToken } = useAuth();
-    const token = useAuthToken();
+    const authStore = useAuthStore();
+    const token = authStore.accessToken;
     const baseURL = useRuntimeConfig().public.apiBase || "";
 
     const response = await fetch(`${baseURL}/certificates/${certId}/pdf`, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${token.value}`,
+        Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
@@ -95,14 +96,14 @@ export const certificateService = {
   },
 
   async downloadCertificatePDF(certId: string, certNumber: string): Promise<void> {
-    const { useAuthToken } = useAuth();
-    const token = useAuthToken();
+    const authStore = useAuthStore();
+    const token = authStore.accessToken;
     const baseURL = useRuntimeConfig().public.apiBase || "";
 
     const response = await fetch(`${baseURL}/certificates/${certId}/pdf`, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${token.value}`,
+        Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
@@ -122,14 +123,14 @@ export const certificateService = {
   },
 
   async downloadCertificate(userId: string, certId: string): Promise<void> {
-    const { useAuthToken } = useAuth();
-    const token = useAuthToken();
+    const authStore = useAuthStore();
+    const token = authStore.accessToken;
     const baseURL = useRuntimeConfig().public.apiBase || "";
 
     const response = await fetch(`${baseURL}/members/${userId}/certificates/${certId}/download`, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${token.value}`,
+        Authorization: token ? `Bearer ${token}` : "",
       },
     });
 

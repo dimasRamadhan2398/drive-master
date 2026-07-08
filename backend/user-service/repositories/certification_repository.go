@@ -129,7 +129,7 @@ func (r *CertificationRepository) FindByInstructorID(ctx context.Context, instru
 
 	if err := r.BaseRepository.FindWithOptions(&models.Certification{}, &certs, &base.QueryOptions{
 		Where: map[string]interface{}{
-			"instructorId": instructorID,
+			"instructor_id": instructorID,
 		},
 		Order:  "created_at DESC",
 		Limit:  limit,

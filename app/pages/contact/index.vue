@@ -11,32 +11,51 @@ useSeoMeta({
   description: 'Contact Drive Master in Alam Sutera. Reach out via WhatsApp, phone, email, or visit our training center.'
 })
 
-const { waLink, address, fetchGeneralSettings } = useSettings()
+const settingsStore = useSettingsStore()
 
-onMounted(() => { fetchGeneralSettings() })
+onMounted(() => {
+  settingsStore.fetchGeneralSettings()
+})
+
+const waLink = computed(() => {
+  const number = settingsStore.generalSettings?.whatsApp?.replace(/\D/g, '') ?? '628119124848'
+  const normalized = number.startsWith('0') ? `62${number.slice(1)}` : number
+  return `https://wa.me/${normalized}?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi`
+})
+
+const operatingHoursStr = computed(() => {
+  const s = settingsStore.generalSettings
+  if (!s) return `${t('home.hoursWeekday')} | ${t('home.hoursWeekend')} | ${t('home.hoursNight')}`
+  
+  const weekday = s.hoursMonFri ? `Mon-Fri: ${s.hoursMonFri}` : t('home.hoursWeekday')
+  const weekend = s.hoursSatSun ? `Sat-Sun: ${s.hoursSatSun}` : t('home.hoursWeekend')
+  const night = s.hoursNightShift ? `Night: ${s.hoursNightShift}` : t('home.hoursNight')
+  
+  return `${weekday} | ${weekend} | ${night}`
+})
 
 const contactMethods = computed(() => [
   {
     title: t('contact.trainingCenter'),
-    description: address.value ?? t('home.address'),
+    description: settingsStore.generalSettings?.address ?? t('home.address'),
     icon: 'i-lucide-map-pin',
     action: { label: t('contact.getDirections'), to: 'https://maps.app.goo.gl/RpSdkpjs4RZg2ZY77', target: '_blank' }
   },
   {
     title: t('contact.whatsappSupport'),
-    description: '+62 811-9124-848 (Available 08:00 - 18:00)',
+    description: `${settingsStore.generalSettings?.whatsApp ?? '+62 811-9124-848'} (Available 08:00 - 18:00)`,
     icon: 'i-simple-icons-whatsapp',
     action: { label: t('contact.chatNow'), to: waLink.value, target: '_blank' }
   },
   {
     title: t('contact.emailAddress'),
-    description: 'info@evdriveacademy.id',
+    description: settingsStore.generalSettings?.email ?? 'info@evdriveacademy.id',
     icon: 'i-lucide-mail',
-    action: { label: t('contact.sendEmail'), to: 'mailto:info@evdriveacademy.id' }
+    action: { label: t('contact.sendEmail'), to: `mailto:${settingsStore.generalSettings?.email ?? 'info@evdriveacademy.id'}` }
   },
   {
     title: t('contact.operatingHours'),
-    description: `${t('home.hoursWeekday')} | ${t('home.hoursWeekend')} | ${t('home.hoursNight')}`,
+    description: operatingHoursStr.value,
     icon: 'i-lucide-clock',
     action: { label: t('contact.viewFaq'), to: '/#faq' }
   }
