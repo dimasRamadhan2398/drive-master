@@ -159,7 +159,16 @@ func (s *UserService) GetInstructorsWithPagination(ctx context.Context, page, li
 	for i, user := range users {
 		profile, err := s.instructorSvc.GetInstructorProfile(ctx, user.ID)
 		if err != nil {
-			return nil, err
+			// Fallback to a default empty profile if missing, instead of crashing the API with 404
+			profile = &dto.InstructorProfileResponse{
+				UserID:            user.ID,
+				IsActive:          true,
+				NumberOfStudents:  0,
+				YearsOfExperience: 0,
+				SessionsCompleted: 0,
+				AverageRating:     0,
+				PhotoURL:          user.Image,
+			}
 		}
 		instructors[i] = *profile
 	}
