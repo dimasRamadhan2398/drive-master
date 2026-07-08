@@ -380,17 +380,20 @@ func (c *InstructorController) DeleteInstructor(ctx *gin.Context) {
 		return
 	}
 
-	// Get the instructor profile first to verify it exists
-	profile, err := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
-	if err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
-	}
-
-	// Delete the instructor profile
-	if err := c.instructorService.DeleteInstructorProfile(ctx.Request.Context(), userID); err != nil {
-		responseRes.ErrorFromGeneric(ctx, err)
-		return
+	// Try to get the instructor profile, but if it doesn't exist, we don't return early
+	_, errProfile := c.instructorService.GetInstructorProfile(ctx.Request.Context(), userID)
+	if errProfile != nil {
+		// Verify if the user exists first, so we don't run commands for non-existent users
+		if _, errUser := c.userService.GetUserByID(ctx.Request.Context(), userID); errUser != nil {
+			responseRes.ErrorFromGeneric(ctx, errUser)
+			return
+		}
+	} else {
+		// Delete the instructor profile
+		if err := c.instructorService.DeleteInstructorProfile(ctx.Request.Context(), userID); err != nil {
+			responseRes.ErrorFromGeneric(ctx, err)
+			return
+		}
 	}
 
 	// Get member role and update user role
@@ -407,7 +410,7 @@ func (c *InstructorController) DeleteInstructor(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Instructor deleted successfully", gin.H{
-		"userId":    profile.UserID,
+		"userId":    userID,
 		"newRole":   "member",
 		"deletedAt": time.Now(),
 	})
