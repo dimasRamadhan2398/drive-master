@@ -24,8 +24,23 @@
 # Prevent Apache from serving directory listings or index.php by default
 DirectoryIndex disabled
 
+# Allow all HTTP methods required by the REST API
+# This overrides cPanel's default LimitExcept restrictions
+<IfModule mod_allowmethods.c>
+    AllowMethods GET POST PUT PATCH DELETE OPTIONS HEAD
+</IfModule>
+
+# Ensure mod_proxy preserves the original request method and headers
+<IfModule mod_proxy.c>
+    ProxyPreserveHost On
+    ProxyRequests Off
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Pass through all HTTP methods (PUT, DELETE, PATCH, etc.)
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
     # 1. Exclude AutoSSL ACME challenge from proxying (keeps SSL auto-renew working)
     RewriteCond %{REQUEST_URI} ^/\.well-known/acme-challenge [NC]
@@ -36,13 +51,16 @@ DirectoryIndex disabled
     # User Service (port 8001)
     RewriteRule ^api/v1/(auth|users|members|instructors|testimonials|entitlements|certificates)(/.*)?$ http://127.0.0.1:8001/api/v1/$1$2 [P,L]
     RewriteRule ^api/v1/dashboard/certifications(/.*)?$ http://127.0.0.1:8001/api/v1/dashboard/certifications$1 [P,L]
+    RewriteRule ^api/v1/dashboard(/.*)?$ http://127.0.0.1:8001/api/v1/dashboard$1 [P,L]
+    RewriteRule ^api/v1/regions(/.*)?$ http://127.0.0.1:8001/api/v1/regions$1 [P,L]
 
     # Core Service (port 8002)
-    RewriteRule ^api/v1/(cars|packages|addons|articles|regions|general-settings)(/.*)?$ http://127.0.0.1:8002/api/v1/$1$2 [P,L]
-    RewriteRule ^api/v1/admin/(sales|analytics)(/.*)?$ http://127.0.0.1:8002/api/v1/admin/$1$2 [P,L]
+    RewriteRule ^api/v1/(cars|packages|addons|articles|general-settings)(/.*)?$ http://127.0.0.1:8002/api/v1/$1$2 [P,L]
+    RewriteRule ^api/v1/admin/(sales|analytics|content|settings)(/.*)?$ http://127.0.0.1:8002/api/v1/admin/$1$2 [P,L]
 
     # Booking Service (port 8003)
     RewriteRule ^api/v1/(bookings|certifications|schedules|sessions|enrollments)(/.*)?$ http://127.0.0.1:8003/api/v1/$1$2 [P,L]
+    RewriteRule ^api/v1/dashboard/(sessions|revenue)(/.*)?$ http://127.0.0.1:8003/api/v1/dashboard/$1$2 [P,L]
 
     # Payment Service (port 8004)
     RewriteRule ^api/v1/(transactions|payments)(/.*)?$ http://127.0.0.1:8004/api/v1/$1$2 [P,L]

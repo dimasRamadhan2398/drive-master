@@ -103,7 +103,7 @@ func (m *EmailServiceMock) SendEmail(ctx context.Context, input dto.SendEmailReq
 }
 
 // SendCertificationEmail implements IMailtrapEmailService.SendCertificationEmail
-func (m *EmailServiceMock) SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string) error {
+func (m *EmailServiceMock) SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string, pdfBytes []byte, pdfFilename string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

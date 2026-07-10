@@ -16,6 +16,8 @@ func NewServiceRegistry(repos *repositories.Registry, cfg *config.Config) *Regis
 	var gateway IPaymentGatewayService
 	if strings.ToLower(cfg.App.PaymentGateway) == "doku" {
 		gateway = NewDokuService(&cfg.Doku)
+	} else if strings.ToLower(cfg.App.PaymentGateway) == "pakasir" {
+		gateway = NewPakasirService(&cfg.Pakasir, repos.GetPayment())
 	} else {
 		gateway = NewMidtransService(&cfg.Midtrans)
 	}

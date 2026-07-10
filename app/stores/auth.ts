@@ -164,7 +164,8 @@ export const useAuthStore = defineStore("auth", {
         );
         this.error = authService.parseError(error);
         console.log("[AUTH STORE] Parsed error message:", this.error);
-        throw error;
+        const enhancedError = new Error(this.error || error.message);
+        throw enhancedError;
       } finally {
         console.log(
           "[AUTH STORE] register() completed, isLoading set to false",

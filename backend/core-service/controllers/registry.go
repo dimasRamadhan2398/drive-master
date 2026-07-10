@@ -21,6 +21,7 @@ type IControllerRegistry interface {
 	GetGeneralSettingsController() IGeneralSettingsController
 	GetFAQController() IFAQController
 	GetTransactionController() ITransactionController
+	GetPageController() IPageController
 }
 
 // NewControllerRegistry creates a new controller registry
@@ -99,6 +100,11 @@ func (r *Registry) GetTransactionController() ITransactionController {
 // GetTransactionController returns the transaction controller for RegistryWithPayment
 func (r *RegistryWithPayment) GetTransactionController() ITransactionController {
 	return NewTransactionController(r.paymentClient)
+}
+
+// GetPageController returns the Page controller
+func (r *Registry) GetPageController() IPageController {
+	return NewPageController(r.svcRegistry.GetPageService())
 }
 
 // GetRepositoryRegistry returns the repository registry (for dependency injection)

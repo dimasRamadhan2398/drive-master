@@ -108,7 +108,7 @@ module.exports = {
         CONFIG_PATH: "./backend/payment-service/pkg/config/config.yaml",
         RUN_MIGRATIONS: "true",
         RUN_SEEDERS: "true",
-        PAYMENT_GATEWAY: "doku",
+        PAYMENT_GATEWAY: "pakasir",
         DOKU_CLIENT_ID: "BRN-0226-1782972609555",
         DOKU_SECRET_KEY: "SK-OdJ7OYT6G5nGW2HLs0b6",
         DOKU_BASE_URL: "https://api.doku.com",
@@ -140,6 +140,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       env: {
+        NODE_OPTIONS: "--max-old-space-size=256",
         PORT: 3000,
         NUXT_PUBLIC_API_BASE: "https://drivemaster.id/api/v1",
         NUXT_PUBLIC_API_BASE_URL: "https://drivemaster.id/api/v1",

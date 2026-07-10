@@ -43,7 +43,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase:
-        process.env.NUXT_PUBLIC_API_BASE_URL || "https://api.drivemaster.id/api/v1",
+        process.env.NUXT_PUBLIC_API_BASE_URL || "https://drivemaster.id/api/v1",
       // userApiBase:
       //   process.env.NUXT_PUBLIC_USER_API_BASE ||
       //   (process.env.NUXT_PUBLIC_API_BASE_URL

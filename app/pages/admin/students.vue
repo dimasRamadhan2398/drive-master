@@ -196,13 +196,13 @@ function getStatusLabel(status: string) {
 
 function getPackageBadgeClass(pkg: string) {
   const pkgLower = pkg.toLowerCase();
-  if (pkgLower.includes("gold"))
+  if (pkgLower.includes("gold") || pkgLower.includes("10x"))
     return "bg-gradient-to-r from-yellow-400 to-amber-400 text-amber-950 shadow-[0_0_12px_rgba(250,205,78,0.6)] border border-yellow-300/50 dark:from-amber-400 dark:to-yellow-400 dark:text-amber-950 dark:shadow-[0_0_12px_rgba(250,205,78,0.5)]";
-  if (pkgLower.includes("platinum"))
+  if (pkgLower.includes("platinum") || pkgLower.includes("12x"))
     return "bg-gradient-to-r from-slate-300 to-slate-400 text-slate-800 shadow-[0_0_12px_rgba(148,163,184,0.4)] border border-slate-200/50 dark:from-slate-500 dark:to-slate-400 dark:text-slate-100 dark:shadow-[0_0_12px_rgba(148,163,184,0.3)]";
-  if (pkgLower.includes("silver"))
+  if (pkgLower.includes("silver") || pkgLower.includes("8x"))
     return "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-700 shadow-[0_0_8px_rgba(209,213,219,0.5)] border border-gray-300/50 dark:from-gray-600 dark:to-gray-500 dark:text-gray-100 dark:shadow-[0_0_8px_rgba(156,163,175,0.4)]";
-  if (pkgLower.includes("bronze"))
+  if (pkgLower.includes("bronze") || pkgLower.includes("6x"))
     return "bg-gradient-to-r from-orange-300 to-orange-400 text-orange-900 shadow-[0_0_12px_rgba(251,146,60,0.5)] border border-orange-200/50 dark:from-orange-600 dark:to-orange-500 dark:text-orange-100 dark:shadow-[0_0_12px_rgba(249,115,22,0.4)]";
   if (pkgLower.includes("basic"))
     return "bg-gradient-to-r from-green-300 to-green-400 text-green-900 shadow-[0_0_10px_rgba(134,239,172,0.5)] border border-green-200/50 dark:from-green-600 dark:to-green-500 dark:text-green-100 dark:shadow-[0_0_10px_rgba(74,222,128,0.4)]";

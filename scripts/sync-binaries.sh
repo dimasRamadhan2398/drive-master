@@ -10,7 +10,7 @@ TARGET_PATH="/var/www/drive"
 
 chmod 600 deploy_key
 
-SSH_OPTS="-i deploy_key -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=./ssh-control-%r@%h:%p -o ControlPersist=10m"
+SSH_OPTS="-i deploy_key -o StrictHostKeyChecking=no -o IPQoS=none -o ControlMaster=auto -o ControlPath=./ssh-control-%r@%h:%p -o ControlPersist=10m"
 
 # 1. Sync root configs
 echo "Syncing root configs..."

@@ -150,7 +150,7 @@ async function onSubmit(_event: FormSubmitEvent<any>) {
       console.log("[REGISTER PAGE] Registration failed:", error);
       toast.add({
         title: t("register.errors.registrationFailed"),
-        description: error?.message || t("register.errors.tryAgain"),
+        description: error?.message || authStore.error || t("register.errors.tryAgain"),
         color: "error",
       });
     } finally {

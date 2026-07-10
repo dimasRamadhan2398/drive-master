@@ -172,7 +172,7 @@ const subjects = computed(() => [
         <div class="space-y-6">
           <div class="aspect-square rounded-2xl overflow-hidden border border-default shadow-lg bg-elevated">
             <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.1806061048765!2d106.65588507475077!3d-6.2399118937483635!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69fbc070b4d71d%3A0x8b1a633faf5dbd46!2sALAM%20SUTERA!5e0!3m2!1sen!2sid!4v1776223155011!5m2!1sen!2sid" 
+              src="https://maps.google.com/maps?q=-6.22369663061115,106.66409468196608&z=17&output=embed" 
               width="100%" 
               height="100%" 
               style="border:0;" 

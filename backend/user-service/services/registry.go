@@ -141,5 +141,5 @@ func (r *Registry) GetRecurringScheduleService() IRecurringScheduleService {
 }
 
 func (r *Registry) GetDashboardService() IDashboardService {
-	return NewDashboardService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole())
+	return NewDashboardService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole(), r.repoRegistry.GetCertification())
 }

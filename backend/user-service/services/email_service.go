@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -23,7 +24,7 @@ type IMailtrapEmailService interface {
 	SendBookingConfirmationEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, lessonType string) error
 	SendLessonReminderEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, lessonType string) error
 	SendLessonCancellationEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, reason string) error
-	SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string) error
+	SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string, pdfBytes []byte, pdfFilename string) error
 }
 
 // MailtrapEmailService sends emails via Mailtrap Sending API
@@ -141,7 +142,7 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 }
 
 // SendCertificationEmail sends a certification issued email
-func (s *MailtrapEmailService) SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string) error {
+func (s *MailtrapEmailService) SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string, pdfBytes []byte, pdfFilename string) error {
 	subject := "Congratulations! Your Certification is Ready"
 
 	text := fmt.Sprintf(`Hello %s,
@@ -173,11 +174,22 @@ The Team`, name, packageName, certNumber)
 </body>
 </html>`, name, packageName, certNumber)
 
+	var attachments []dto.EmailAttachment
+	if len(pdfBytes) > 0 {
+		encoded := base64.StdEncoding.EncodeToString(pdfBytes)
+		attachments = append(attachments, dto.EmailAttachment{
+			Content:  encoded,
+			Filename: pdfFilename,
+			Type:     "application/pdf",
+		})
+	}
+
 	err := s.SendEmail(ctx, dto.SendEmailRequest{
-		To:      []dto.EmailAddress{{Email: toEmail}},
-		Subject: subject,
-		Text:    text,
-		HTML:    html,
+		To:          []dto.EmailAddress{{Email: toEmail}},
+		Subject:     subject,
+		Text:        text,
+		HTML:        html,
+		Attachments: attachments,
 	})
 
 	if err != nil {

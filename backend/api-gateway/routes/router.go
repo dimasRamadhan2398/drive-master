@@ -272,6 +272,12 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		protected.Any("/entitlements", proxy.ToUserServiceDirect)
 		protected.Any("/entitlements/*path", proxy.ToUserServiceDirect)
 
+		// dashboard
+		protected.Any("/dashboard/stats", proxy.ToUserServiceDirect)
+		protected.Any("/dashboard/certifications/stats", proxy.ToUserServiceDirect)
+		protected.Any("/dashboard/sessions/stats", proxy.ToBookingServiceDirect)
+		protected.Any("/dashboard/revenue/stats", proxy.ToBookingServiceDirect)
+
 		// transactions
 		protected.Any("/transactions", proxy.ToPaymentService)
 		protected.Any("/transactions/*path", proxy.ToPaymentService)

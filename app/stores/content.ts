@@ -19,7 +19,7 @@ export interface PageSection {
 }
 
 export interface Page {
-  id: number;
+  id: string | number;
   title: string;
   slug: string;
   lastUpdated: string;
@@ -128,7 +128,7 @@ export const useContentStore = defineStore("content", {
       state.blogPosts.filter((p) => p.status === "draft"),
     totalPages: (state) => state.pages.length,
     totalPosts: (state) => state.blogPosts.length,
-    getPageById: (state) => (id: number) => state.pages.find((p) => p.id === id),
+    getPageById: (state) => (id: string | number) => state.pages.find((p) => String(p.id) === String(id)),
     getPageBySlug: (state) => (slug: string) => state.pages.find((p) => p.slug === slug),
     getPostById: (state) => (id: string) => state.blogPosts.find((p) => p.id === id),
     // FAQ getters
@@ -140,48 +140,112 @@ export const useContentStore = defineStore("content", {
 
   actions: {
     // ----------------------------------------------------------
-    // Page actions
-    // ----------------------------------------------------------
-    addPage(data: { title: string; slug: string; status: "published" | "draft" }) {
-      const newId = Math.max(...this.pages.map((p) => p.id), 0) + 1;
-      const newPage: Page = {
-        ...data,
-        id: newId,
-        lastUpdated: this.formatDate(new Date()),
-        sections: [],
+    _mapResponseToPage(pageApi: any): Page {
+      let parsedSections: PageSection[] = [];
+      if (pageApi.sections) {
+        try {
+          if (typeof pageApi.sections === "string") {
+            parsedSections = JSON.parse(pageApi.sections);
+          } else if (Array.isArray(pageApi.sections)) {
+            parsedSections = pageApi.sections;
+          }
+        } catch (e) {
+          console.error("Failed to parse page sections:", e);
+        }
+      }
+      return {
+        id: pageApi.id,
+        title: pageApi.title,
+        slug: pageApi.slug,
+        status: pageApi.status,
+        lastUpdated: pageApi.lastUpdated || this.formatDate(new Date(pageApi.updatedAt || Date.now())),
+        sections: parsedSections,
       };
-      this.pages.push(newPage);
-      return newPage;
     },
 
-    updatePage(id: number, data: Partial<Page>) {
-      const index = this.pages.findIndex((p) => p.id === id);
-      if (index !== -1) {
-        const existing = this.pages[index];
-        if (!existing) return null;
-        this.pages[index] = {
-          id: existing.id,
-          title: data.title ?? existing.title,
-          slug: data.slug ?? existing.slug,
-          lastUpdated: this.formatDate(new Date()),
-          status: data.status ?? existing.status,
-          sections: data.sections ?? existing.sections,
-        };
-        return this.pages[index];
+    async fetchPages() {
+      this.isLoading = true;
+      try {
+        const rawPages = await contentService.fetchPages();
+        this.pages = rawPages.map((p) => this._mapResponseToPage(p));
+      } catch (e) {
+        console.error("Failed to fetch pages:", e);
+        this.error = "Failed to fetch pages";
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async addPage(data: { title: string; slug: string; status: "published" | "draft" }) {
+      this.isLoading = true;
+      try {
+        const created = await contentService.createPage(data);
+        if (created) {
+          const mapped = this._mapResponseToPage(created);
+          this.pages.push(mapped);
+          return mapped;
+        }
+      } catch (e) {
+        console.error("Failed to create page:", e);
+      } finally {
+        this.isLoading = false;
       }
       return null;
     },
 
-    deletePage(id: number) {
-      this.pages = this.pages.filter((p) => p.id !== id);
+    async updatePage(id: string | number, data: Partial<Page>) {
+      this.isLoading = true;
+      try {
+        const payload: any = {};
+        if (data.title !== undefined) payload.title = data.title;
+        if (data.slug !== undefined) payload.slug = data.slug;
+        if (data.status !== undefined) payload.status = data.status;
+        if (data.sections !== undefined) payload.sections = JSON.stringify(data.sections);
+
+        const updated = await contentService.updatePage(String(id), payload);
+        if (updated) {
+          const mapped = this._mapResponseToPage(updated);
+          const index = this.pages.findIndex((p) => String(p.id) === String(id));
+          if (index !== -1) {
+            this.pages[index] = mapped;
+          }
+          return mapped;
+        }
+      } catch (e) {
+        console.error("Failed to update page:", e);
+      } finally {
+        this.isLoading = false;
+      }
+      return null;
     },
 
-    togglePageStatus(id: number) {
-      const page = this.pages.find((p) => p.id === id);
+    async deletePage(id: string | number) {
+      this.isLoading = true;
+      try {
+        const ok = await contentService.deletePage(String(id));
+        if (ok) {
+          this.pages = this.pages.filter((p) => String(p.id) !== String(id));
+        }
+      } catch (e) {
+        console.error("Failed to delete page:", e);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async updatePageSections(slug: string, sections: PageSection[]) {
+      const page = this.pages.find((p) => p.slug === slug);
       if (page) {
-        page.status = page.status === "published" ? "draft" : "published";
-        page.lastUpdated = this.formatDate(new Date());
-        return page.status;
+        await this.updatePage(page.id, { sections });
+      }
+    },
+
+    async togglePageStatus(id: string | number) {
+      const page = this.pages.find((p) => String(p.id) === String(id));
+      if (page) {
+        const nextStatus = page.status === "published" ? "draft" : "published";
+        const updated = await this.updatePage(id, { status: nextStatus });
+        return updated ? updated.status : null;
       }
       return null;
     },

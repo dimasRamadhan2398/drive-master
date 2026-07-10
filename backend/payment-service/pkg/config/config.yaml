@@ -44,7 +44,7 @@ app:
   rate_limiter_max: 100
   rate_limiter_time: 1
   base_path: /app
-  payment_gateway: doku
+  payment_gateway: pakasir
 
 midtrans:
   server_key: Mid-server-RzMK8evhW7EZiDp4xL0kIKYY
@@ -67,3 +67,8 @@ doku:
   notification_url: https://drivemaster.id/api/v1/payments/doku/notification
   payment_due_date: 60
   frontend_url: https://drivemaster.id
+
+pakasir:
+  slug: "drivemaster"
+  api_key: "default_api_key"
+  base_url: "https://app.pakasir.com"

@@ -7,19 +7,24 @@ import type { Faq, BlogPost } from "~/stores/content";
 import PostBlogModal from "~/components/content/PostBlogModal.vue";
 import type { PostFormData, SavedPayload } from "~/components/content/PostBlogModal.vue";
 
+import PageEditor from "~/components/admin/PageEditor.vue";
+
 const { t } = useI18n();
 definePageMeta({ layout: "admin" });
 
 const contentStore = useContentStore();
 const toast = useToast();
 
+const { pages, addPage, updatePageSections, updatePageMeta, deletePage } = useContent();
+
 // ============================================================
 // Tabs
 // ============================================================
-const tabs = [
+const tabs = computed(() => [
   { value: "blog", label: "Blog", icon: "i-lucide-newspaper", slot: "blog" },
   { value: "faqs", label: "FAQs", icon: "i-lucide-help-circle", slot: "faqs" },
-];
+  { value: "pages", label: "Pages", icon: "i-lucide-layout", slot: "pages" },
+]);
 
 const activeTab = ref("blog");
 
@@ -292,6 +297,75 @@ async function deleteFAQ(id: string) {
   }
 }
 
+// ============================================================
+// Pages Section
+// ============================================================
+const activePageToEdit = ref<any | null>(null);
+const isPageModalOpen = ref(false);
+const pageForm = reactive({
+  title: "",
+  slug: "",
+  status: "draft" as "draft" | "published",
+});
+
+const pageColumns = [
+  { accessorKey: "title", header: "Title" },
+  { accessorKey: "slug", header: "Slug" },
+  { accessorKey: "lastUpdated", header: "Last Updated" },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }: any) => {
+      const status = row.original.status;
+      return h(resolveComponent("UBadge"), {
+        label: status.toUpperCase(),
+        color: status === "published" ? "success" : "warning",
+        variant: "subtle",
+      });
+    },
+  },
+  { id: "actions" },
+];
+
+function openNewPage() {
+  pageForm.title = "";
+  pageForm.slug = "";
+  pageForm.status = "draft";
+  isPageModalOpen.value = true;
+}
+
+async function savePage() {
+  if (!pageForm.title || !pageForm.slug) {
+    toast.add({ title: "Error", description: "Title and slug are required", color: "error" });
+    return;
+  }
+  const slug = pageForm.slug.startsWith('/') ? pageForm.slug : `/${pageForm.slug}`;
+  await addPage(pageForm.title, slug, pageForm.status);
+  isPageModalOpen.value = false;
+  toast.add({ title: "Page Created", color: "success" });
+}
+
+async function handlePageSave(updatedPage: any) {
+  await updatePageSections(updatedPage.slug, updatedPage.sections);
+  await updatePageMeta(updatedPage.id, {
+    title: updatedPage.title,
+    status: updatedPage.status,
+  });
+  activePageToEdit.value = null;
+  toast.add({
+    title: "Page Saved",
+    description: `Successfully saved sections for page: ${updatedPage.title}`,
+    color: "success"
+  });
+}
+
+async function deletePageItem(id: number | string) {
+  if (confirm("Are you sure you want to delete this page?")) {
+    await deletePage(id);
+    toast.add({ title: "Page Deleted", color: "error" });
+  }
+}
+
 onMounted(() => {
   contentStore.fetchBlogPosts();
   contentStore.fetchFaqs();
@@ -311,11 +385,18 @@ onMounted(() => {
             @click="openNewBlog"
           />
           <UButton
-            v-else
+            v-else-if="activeTab === 'faqs'"
             icon="i-lucide-plus"
             color="warning"
             :label="t('admin.content.addFaq')"
             @click="openNewFAQ"
+          />
+          <UButton
+            v-else-if="activeTab === 'pages'"
+            icon="i-lucide-plus"
+            color="warning"
+            label="Add Page"
+            @click="openNewPage"
           />
           <UColorModeButton />
         </template>
@@ -323,7 +404,14 @@ onMounted(() => {
     </template>
 
     <template #body>
-      <div class="p-6">
+      <div v-if="activePageToEdit" class="p-6 h-full overflow-y-auto">
+        <PageEditor
+          :page="activePageToEdit"
+          @close="activePageToEdit = null"
+          @save="handlePageSave"
+        />
+      </div>
+      <div v-else class="p-6">
         <UTabs v-model="activeTab" :items="tabs" class="w-full">
           <!-- Blog Tab -->
           <template #blog>
@@ -370,6 +458,31 @@ onMounted(() => {
                       variant="ghost"
                       color="error"
                       @click="deleteFAQ(row.original.id)"
+                    />
+                  </div>
+                </template>
+              </UTable>
+            </UCard>
+          </template>
+
+          <!-- Pages Tab -->
+          <template #pages>
+            <UCard class="mt-6">
+              <UTable :columns="pageColumns" :data="pages">
+                <template #actions-cell="{ row }">
+                  <div class="flex justify-end gap-2">
+                    <UButton
+                      icon="i-lucide-pencil"
+                      variant="ghost"
+                      color="neutral"
+                      @click="activePageToEdit = row.original"
+                    />
+                    <UButton
+                      v-if="row.original.slug !== '/'"
+                      icon="i-lucide-trash"
+                      variant="ghost"
+                      color="error"
+                      @click="deletePageItem(row.original.id)"
                     />
                   </div>
                 </template>
@@ -440,4 +553,47 @@ onMounted(() => {
     @saved="handleBlogSaved"
     @error="handleBlogError"
   />
+
+  <!-- New Page Modal -->
+  <UModal
+    v-model:open="isPageModalOpen"
+    title="Add New Page"
+  >
+    <template #body>
+      <div class="space-y-4">
+        <UFormField label="Page Title" required>
+          <UInput v-model="pageForm.title" color="warning" class="w-full" />
+        </UFormField>
+        <UFormField label="Page Slug" required>
+          <UInput v-model="pageForm.slug" color="warning" class="w-full" placeholder="/your-slug" />
+        </UFormField>
+        <UFormField label="Status">
+          <USelect
+            v-model="pageForm.status"
+            :items="[
+              { label: 'Draft', value: 'draft' },
+              { label: 'Published', value: 'published' },
+            ]"
+            color="warning"
+            class="w-full"
+          />
+        </UFormField>
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-3">
+        <UButton
+          label="Cancel"
+          variant="ghost"
+          color="neutral"
+          @click="isPageModalOpen = false"
+        />
+        <UButton
+          label="Create Page"
+          color="warning"
+          @click="savePage"
+        />
+      </div>
+    </template>
+  </UModal>
 </template>

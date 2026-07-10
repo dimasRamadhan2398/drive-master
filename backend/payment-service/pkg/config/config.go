@@ -16,6 +16,7 @@ type Config struct {
 	Kafka         KafkaConfig    `yaml:"kafka"`
 	Midtrans      MidtransConfig `yaml:"midtrans"`
 	Doku          DokuConfig     `yaml:"doku"`
+	Pakasir       PakasirConfig  `yaml:"pakasir"`
 	App           AppConfig      `yaml:"app"`
 }
 
@@ -97,6 +98,12 @@ type DokuConfig struct {
 	FrontendURL     string `mapstructure:"frontend_url" yaml:"frontend_url"`
 }
 
+type PakasirConfig struct {
+	Slug        string `mapstructure:"slug" yaml:"slug"`
+	APIKey      string `mapstructure:"api_key" yaml:"api_key"`
+	BaseURL     string `mapstructure:"base_url" yaml:"base_url"`
+}
+
 var AppCfg *Config
 
 func setDefaults() {
@@ -143,7 +150,7 @@ func setDefaults() {
 	viper.SetDefault("app.signature_key", "")
 	viper.SetDefault("app.rate_limiter_max", 100)
 	viper.SetDefault("app.rate_limiter_time", 1)
-	viper.SetDefault("app.payment_gateway", "doku")
+	viper.SetDefault("app.payment_gateway", "pakasir")
 
 	// Midtrans
 	viper.SetDefault("midtrans.frontend_url", "http://localhost:3000")
@@ -165,6 +172,11 @@ func setDefaults() {
 	viper.SetDefault("doku.notification_url", "")
 	viper.SetDefault("doku.payment_due_date", 60)
 	viper.SetDefault("doku.frontend_url", "http://localhost:3001")
+
+	// Pakasir
+	viper.SetDefault("pakasir.slug", "")
+	viper.SetDefault("pakasir.api_key", "")
+	viper.SetDefault("pakasir.base_url", "https://app.pakasir.com")
 }
 
 func Load(path string) (*Config, error) {
@@ -221,6 +233,10 @@ func Load(path string) (*Config, error) {
 	_ = viper.BindEnv("doku.notification_url", "DOKU_NOTIFICATION_URL")
 	_ = viper.BindEnv("doku.payment_due_date", "DOKU_PAYMENT_DUE_DATE")
 	_ = viper.BindEnv("doku.frontend_url", "DOKU_FRONTEND_URL")
+
+	_ = viper.BindEnv("pakasir.slug", "PAKASIR_SLUG")
+	_ = viper.BindEnv("pakasir.api_key", "PAKASIR_API_KEY")
+	_ = viper.BindEnv("pakasir.base_url", "PAKASIR_BASE_URL")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

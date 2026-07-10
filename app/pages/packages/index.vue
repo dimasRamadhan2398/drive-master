@@ -21,7 +21,7 @@ const packagesStore = usePackagesStore();
 
 const { promoEndDate, waLink, fetchGeneralSettings } = useSettings();
 
-const packagePlans = computed(() => packagesStore.packages);
+const packagePlans = computed(() => packagesStore.activePackages);
 
 const isPromoActive = computed(() => {
   const promoEnd = new Date(promoEndDate.value || "2026-05-31T23:59:59");
@@ -87,7 +87,7 @@ const addOns = computed(() =>
 
 onMounted(async () => {
   await Promise.all([
-    packagesStore.fetchPackages(),
+    packagesStore.fetchPackages({ status: "active" }),
     packagesStore.fetchAddons(),
     fetchGeneralSettings(),
   ]);

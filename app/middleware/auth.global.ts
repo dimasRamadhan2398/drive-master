@@ -86,12 +86,13 @@ export default defineNuxtRouteMiddleware(async (to: any) => {
     return;
   }
 
-  // If user is authenticated as admin and trying to access auth pages, redirect to admin
+  // If user is authenticated as admin and trying to access auth pages only, redirect to admin
+  // Admins CAN visit the public site (homepage, packages, etc.) via "View Website"
   if (
     authStore.isAuthenticated &&
     authStore.userRole?.toLowerCase().includes("admin")
   ) {
-    if (to.path.startsWith("/auth/") || to.path === "/") {
+    if (to.path.startsWith("/auth/")) {
       return navigateTo("/admin");
     }
   }

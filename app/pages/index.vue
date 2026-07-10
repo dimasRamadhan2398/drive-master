@@ -317,7 +317,8 @@ const testimonials = [
 ];
 
 // Dynamic content from admin
-const { faqs, pages } = useContent();
+const { pages } = useContent();
+const contentStore = useContentStore();
 
 const homePage = computed(() =>
   pages.value.find((p) => p.slug === "/" && p.status === "published"),
@@ -325,11 +326,14 @@ const homePage = computed(() =>
 
 // FAQ items
 const faqItems = computed(() => {
-  return faqs.value.map((faq, index) => ({
-    label: faq.question,
-    content: faq.answer,
-    defaultOpen: index === 0,
-  }));
+  return contentStore.faqs
+    .filter((faq) => faq.isActive)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((faq, index) => ({
+      label: faq.question,
+      content: faq.answer,
+      defaultOpen: index === 0,
+    }));
 });
 
 // Schedules - Use store to fetch from API
@@ -451,15 +455,19 @@ const testimonialsStore = useTestimonialsStore();
 const testimonialsList = computed(() => testimonialsStore.testimonials);
 
 const packagesStore = usePackagesStore();
-const packagesList = computed(() => packagesStore.packages);
+const packagesList = computed(() => packagesStore.activePackages);
 
 const { waLink, address, generalSettings, fetchGeneralSettings } = useSettings();
 
+const isMounted = ref(false);
+
 onMounted(async () => {
+  isMounted.value = true;
   fetchGeneralSettings();
   instructorsStore.fetchInstructors();
   testimonialsStore.fetchTestimonials();
-  packagesStore.fetchPackages();
+  packagesStore.fetchPackages({ status: "active" });
+  contentStore.fetchFaqs();
   // Fetch today's schedules from API
   await fetchSchedulesForDate(todayDate);
 });
@@ -468,13 +476,14 @@ onMounted(async () => {
 <template>
   <div>
     <!-- Dynamic Admin Sections for Home Page -->
-    <template v-if="homePage && homePage.sections.length > 0">
+    <template v-if="isMounted && homePage && homePage.sections.length > 0">
       <ContentSectionRenderer
         v-for="section in homePage.sections"
         :key="section.id"
-        :section="{ type: section.type, data: section }"
+        :section="section"
       />
     </template>
+    <template v-else>
 
     <!-- Hero Section -->
     <UPageHero
@@ -567,6 +576,7 @@ onMounted(async () => {
         </UPageCard>
       </UPageGrid>
     </UPageSection>
+  </template>
 
     <!-- Pricing Section -->
     <UPageSection
@@ -576,94 +586,7 @@ onMounted(async () => {
       :description="t('home.pricingDesc')"
       :ui="{ headline: 'text-warning' }"
     >
-      <!-- Premium Promo Banner with Real-time Countdown -->
-      <Transition
-        enter-active-class="transition duration-500 ease-out"
-        enter-from-class="opacity-0 translate-y-4"
-        enter-to-class="opacity-100 translate-y-0"
-      >
-        <div v-if="isPromoActive" class="mb-12 relative group">
-          <!-- Background Glow Effect -->
-          <div
-            class="absolute -inset-1 bg-gradient-to-r from-warning-500 to-orange-600 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"
-          ></div>
 
-          <div
-            class="relative bg-white dark:bg-gray-900 border border-warning-500/20 rounded-2xl overflow-hidden shadow-2xl"
-          >
-            <div class="flex flex-col lg:flex-row">
-              <!-- Left Side: Promo Info -->
-              <div class="flex-1 p-6 md:p-8 flex items-center gap-6">
-                <div class="relative">
-                  <div
-                    class="size-20 rounded-2xl bg-warning-500 flex items-center justify-center shadow-lg shadow-warning-500/30 animate-pulse"
-                  >
-                    <UIcon name="i-lucide-zap" class="size-10 text-white" />
-                  </div>
-                  <div
-                    class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter"
-                  >
-                    {{ t('home.hot') }}
-                  </div>
-                </div>
-
-                <div>
-                  <div
-                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-warning-500/10 text-warning-600 text-xs font-bold uppercase tracking-widest mb-3"
-                  >
-                    {{ t('home.flashSale') }}
-                  </div>
-                  <h2
-                    class="text-2xl md:text-3xl font-black tracking-tight mb-2"
-                  >
-                    {{ t('home.specialPrice') }}
-                    <span class="text-warning-500"
-                      >{{ translatedSaveAmount }}</span
-                    >
-                  </h2>
-                  <p class="text-muted text-sm md:text-base max-w-lg">
-                    {{ t('home.exclusiveDiscount') }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Right Side: Countdown Timer -->
-              <div
-                class="lg:w-[320px] bg-warning-50 dark:bg-warning-500/5 p-6 md:p-8 flex flex-col items-center justify-center border-t lg:border-t-0 lg:border-l border-warning-500/10"
-              >
-                <p
-                  class="text-xs font-bold text-warning-600 uppercase tracking-[0.2em] mb-4"
-                >
-                  {{ t('home.promoEndsIn') }}
-                </p>
-
-                <div class="flex gap-3">
-                  <div
-                    v-for="(val, unit) in {
-                      hours: timeLeft.hours,
-                      minutes: timeLeft.minutes,
-                      seconds: timeLeft.seconds,
-                    }"
-                    :key="unit"
-                    class="text-center"
-                  >
-                    <div
-                      class="size-14 md:size-16 bg-white dark:bg-gray-800 border border-warning-500/20 rounded-xl shadow-inner flex items-center justify-center mb-1"
-                    >
-                      <span class="text-2xl font-black text-foreground">{{
-                        String(val).padStart(2, "0")
-                      }}</span>
-                    </div>
-                    <span class="text-[10px] font-bold text-muted uppercase">{{
-                      t(`common.${unit}`)
-                    }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Transition>
 
       <!-- Plan Cards -->
       <div class="grid md:grid-cols-4 gap-6 mb-12">
@@ -1094,7 +1017,7 @@ onMounted(async () => {
           class="h-auto lg:h-full min-h-auto rounded-2xl overflow-hidden bg-elevated border border-default"
         >
           <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.1806061048765!2d106.65588507475077!3d-6.2399118937483635!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69fbc070b4d71d%3A0x8b1a633faf5dbd46!2sALAM%20SUTERA!5e0!3m2!1sen!2sid!4v1776223155011!5m2!1sen!2sid"
+            src="https://maps.google.com/maps?q=-6.22369663061115,106.66409468196608&z=17&output=embed"
             width="600"
             height="550"
             style="border: 0"

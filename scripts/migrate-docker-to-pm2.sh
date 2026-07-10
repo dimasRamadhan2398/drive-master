@@ -5,7 +5,7 @@ set -euo pipefail
 SSH_TARGET="root@203.194.114.20"
 
 echo "=== Starting Migration from Docker to PM2 on Remote Server ==="
-ssh -i deploy_key -o StrictHostKeyChecking=no "$SSH_TARGET" 'bash -s' << 'EOF'
+ssh -i deploy_key -o StrictHostKeyChecking=no -o IPQoS=none "$SSH_TARGET" 'bash -s' << 'EOF'
 set -euo pipefail
 
 echo "=== Step 1: Installing Java OpenJDK 17 ==="

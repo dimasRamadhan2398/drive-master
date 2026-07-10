@@ -43,8 +43,14 @@ func Migrate(db *gorm.DB) error {
 
 		// FAQ tables
 		&models.FAQ{},
+
+		// Page tables
+		&models.Page{},
 	)
 	if err != nil {
+		return err
+	}
+	if err := db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_pages_slug ON pages (slug) WHERE deleted_at IS NULL").Error; err != nil {
 		return err
 	}
 	return db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_slug ON articles (slug) WHERE deleted_at IS NULL").Error

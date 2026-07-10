@@ -161,8 +161,8 @@ services:
         strip_path: false
         preserve_host: false
         paths: 
-        - /api/v1/dashboard/certifications
-        - /api/v1/dashboard/
+        - /api/v1/dashboard/stats
+        - /api/v1/dashboard/certifications/stats
         protocols: [http, https]
         methods: [GET, OPTIONS]
 
@@ -235,6 +235,14 @@ services:
         preserve_host: false
         paths:
           - /api/v1/regions
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: core-pages-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/pages
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
@@ -338,7 +346,8 @@ services:
         strip_path: false
         preserve_host: false
         paths: 
-        - /api/v1/dashboard/
+        - /api/v1/dashboard/sessions/stats
+        - /api/v1/dashboard/revenue/stats
         protocols: [http, https]
         methods: [GET, OPTIONS]
 

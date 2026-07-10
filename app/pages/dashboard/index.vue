@@ -63,6 +63,10 @@ const remainingSessions = computed(() =>
   entitlements.value.reduce((sum, e) => sum + (e.remaining ?? 0), 0)
 )
 
+const isCourseCompleted = computed(() => {
+  return totalSessions.value > 0 && remainingSessions.value === 0
+})
+
 const progressPercent = computed(() => {
   const total = totalSessions.value
   if (!total) return 0
@@ -72,6 +76,7 @@ const progressPercent = computed(() => {
 // Certificate: eligible when all sessions in at least one entitlement are used
 const certificateStatus = computed(() => {
   if (!entitlements.value.length) return t('common.pending')
+  if (isCourseCompleted.value) return t('common.completed')
   const hasCompleted = entitlements.value.some(e => e.status === 'completed')
   if (hasCompleted) return t('common.ready')
   if (progressPercent.value >= 100) return t('common.processing')
@@ -203,11 +208,17 @@ const recentActivity = computed(() => {
     })
 })
 
-const quickActions = computed(() => [
-  { label: t('dashboard.bookSession'), icon: 'i-lucide-calendar-plus', to: '/dashboard/schedule', color: 'warning' as const },
-  { label: t('dashboard.viewHistory'), icon: 'i-lucide-history', to: '/dashboard/history', color: 'neutral' as const },
-  { label: t('dashboard.getSupport'), icon: 'i-simple-icons-whatsapp', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', external: true, color: 'primary' as const }
-])
+const quickActions = computed(() => {
+  const firstAction = isCourseCompleted.value
+    ? { label: t('dashboard.viewCertificate'), icon: 'i-lucide-award', to: '/dashboard/certificate', color: 'warning' as const }
+    : { label: t('dashboard.bookSession'), icon: 'i-lucide-calendar-plus', to: '/dashboard/schedule', color: 'warning' as const }
+
+  return [
+    firstAction,
+    { label: t('dashboard.viewHistory'), icon: 'i-lucide-history', to: '/dashboard/history', color: 'neutral' as const },
+    { label: t('dashboard.getSupport'), icon: 'i-simple-icons-whatsapp', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', external: true, color: 'primary' as const }
+  ]
+})
 </script>
 
 <template>
@@ -228,10 +239,11 @@ const quickActions = computed(() => [
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 class="text-2xl font-bold">{{ t('dashboard.welcome', { name: firstName }) }}</h1>
-              <p class="text-muted mt-1">{{ t('dashboard.sessionsRemaining', { count: remainingSessions, package: packageName }) }}</p>
+              <p v-if="isCourseCompleted" class="text-muted mt-1">{{ t('dashboard.courseCompleted') }}</p>
+              <p v-else class="text-muted mt-1">{{ t('dashboard.sessionsRemaining', { count: remainingSessions, package: packageName }) }}</p>
             </div>
-            <NuxtLink to="/dashboard/schedule">
-              <UButton :label="t('dashboard.bookNextSession')" icon="i-lucide-calendar-plus" color="warning" />
+            <NuxtLink :to="isCourseCompleted ? '/dashboard/certificate' : '/dashboard/schedule'">
+              <UButton :label="isCourseCompleted ? t('dashboard.viewCertificate') : t('dashboard.bookNextSession')" :icon="isCourseCompleted ? 'i-lucide-award' : 'i-lucide-calendar-plus'" color="warning" />
             </NuxtLink>
           </div>
         </UCard>
@@ -357,14 +369,18 @@ const quickActions = computed(() => [
 
             <div v-else class="flex flex-col items-center justify-center py-8 text-center space-y-3">
               <div class="p-4 rounded-full bg-muted">
-                <UIcon name="i-lucide-calendar-x" class="size-8 text-muted-foreground" />
+                <UIcon :name="isCourseCompleted ? 'i-lucide-award' : 'i-lucide-calendar-x'" :class="isCourseCompleted ? 'text-warning' : 'text-muted-foreground'" class="size-8" />
               </div>
-              <div>
+              <div v-if="isCourseCompleted">
+                <p class="font-semibold text-base">{{ t('dashboard.courseCompletedTitle') }}</p>
+                <p class="text-sm text-muted mt-1">{{ t('dashboard.courseCompletedDesc') }}</p>
+              </div>
+              <div v-else>
                 <p class="font-semibold text-base">{{ t('schedule.noUpcoming') || 'Tidak ada sesi kelas terdekat' }}</p>
                 <p class="text-sm text-muted mt-1">{{ t('schedule.noUpcomingDescription') || 'Silakan pilih tanggal dan pesan kelas mengemudi Anda berikutnya.' }}</p>
               </div>
-              <NuxtLink to="/dashboard/schedule">
-                <UButton :label="t('dashboard.bookNextSession')" icon="i-lucide-calendar-plus" color="warning" size="sm" class="mt-2" />
+              <NuxtLink :to="isCourseCompleted ? '/dashboard/certificate' : '/dashboard/schedule'">
+                <UButton :label="isCourseCompleted ? t('dashboard.viewCertificate') : t('dashboard.bookNextSession')" :icon="isCourseCompleted ? 'i-lucide-award' : 'i-lucide-calendar-plus'" color="warning" size="sm" class="mt-2" />
               </NuxtLink>
             </div>
 
@@ -423,7 +439,8 @@ const quickActions = computed(() => [
 
             <template #footer>
               <p class="text-sm text-muted text-center">
-                {{ t('dashboard.moreSessions', { count: remainingSessions }) }}
+                <span v-if="isCourseCompleted">{{ t('dashboard.courseFinishedFooter') }}</span>
+                <span v-else>{{ t('dashboard.moreSessions', { count: remainingSessions }) }}</span>
               </p>
             </template>
           </UCard>

@@ -15,7 +15,7 @@ chmod 600 deploy_key
 ./scripts/sync-binaries.sh
 
 echo "=== 2. Setting up dev environment on remote server ==="
-ssh -i deploy_key -o StrictHostKeyChecking=no "$SSH_TARGET" 'bash -s' << 'EOF'
+ssh -i deploy_key -o StrictHostKeyChecking=no -o IPQoS=none "$SSH_TARGET" 'bash -s' << 'EOF'
 set -euo pipefail
 
 echo ">>> Creating dev.api subdomain in cPanel if it doesn't exist..."
@@ -99,7 +99,7 @@ pm2 start ecosystem-dev.config.js
 EOF
 
 echo "=== 3. Uploading .htaccess for dev.api subdomain ==="
-rsync -avz -e "ssh -i deploy_key -o StrictHostKeyChecking=no" ./scripts/htaccess_dev "$SSH_TARGET":/home/drivemaster/public_html/dev.api/.htaccess
-ssh -i deploy_key -o StrictHostKeyChecking=no "$SSH_TARGET" "chown drivemaster:drivemaster /home/drivemaster/public_html/dev.api/.htaccess && chmod 644 /home/drivemaster/public_html/dev.api/.htaccess"
+rsync -avz -e "ssh -i deploy_key -o StrictHostKeyChecking=no -o IPQoS=none" ./scripts/htaccess_dev "$SSH_TARGET":/home/drivemaster/public_html/dev.api/.htaccess
+ssh -i deploy_key -o StrictHostKeyChecking=no -o IPQoS=none "$SSH_TARGET" "chown drivemaster:drivemaster /home/drivemaster/public_html/dev.api/.htaccess && chmod 644 /home/drivemaster/public_html/dev.api/.htaccess"
 
 echo "=== Setup Dev Env successfully executed! ==="

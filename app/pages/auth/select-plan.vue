@@ -18,7 +18,7 @@ const selectedAddons = ref<string[]>([]);
 // Fetch packages and addons on mount
 onMounted(async () => {
   if (packagesStore.packages.length === 0) {
-    await packagesStore.fetchPackages();
+    await packagesStore.fetchPackages({ status: "active" });
   }
   if (packagesStore.addons.length === 0) {
     await packagesStore.fetchAddons();

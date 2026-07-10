@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
 	"time"
 
@@ -13,6 +14,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jung-kurt/gofpdf"
 )
+
+//go:embed drive-master-logo-light.png
+var logoBytes []byte
 
 type ICertificationService interface {
 	// Admin operations
@@ -108,14 +112,21 @@ func (s *CertificationService) IssueCertificate(ctx context.Context, input dto.I
 		return nil, err
 	}
 
-	// Send email notification
+	// Send email notification with PDF attachment
 	go func() {
 		if s.emailService != nil {
 			name := user.FirstName
 			if name == "" {
 				name = user.Username
 			}
-			_ = s.emailService.SendCertificationEmail(context.Background(), user.EmailAddress, name, certNumber, input.PackageName)
+			// Generate PDF for the email attachment
+			pdfBytes, filename, err := s.DownloadCertificatePDF(context.Background(), cert.ID)
+			if err != nil {
+				// If PDF generation fails, fallback to sending the email without attachment
+				_ = s.emailService.SendCertificationEmail(context.Background(), user.EmailAddress, name, certNumber, input.PackageName, nil, "")
+				return
+			}
+			_ = s.emailService.SendCertificationEmail(context.Background(), user.EmailAddress, name, certNumber, input.PackageName, pdfBytes, filename)
 		}
 	}()
 
@@ -228,6 +239,7 @@ func (s *CertificationService) DownloadCertificatePDF(ctx context.Context, certI
 	}
 
 	pdf := gofpdf.New("L", "mm", "A4", "")
+	pdf.SetAutoPageBreak(false, 0)
 	pdf.AddPage()
 
 	// Set background color (light cream)
@@ -235,7 +247,7 @@ func (s *CertificationService) DownloadCertificatePDF(ctx context.Context, certI
 	pdf.Rect(0, 0, 297, 210, "F")
 
 	// Border
-	pdf.SetDrawColor(139, 69, 19)
+	pdf.SetDrawColor(209, 160, 29)
 	pdf.SetLineWidth(2)
 	pdf.Rect(10, 10, 277, 190, "D")
 
@@ -244,10 +256,13 @@ func (s *CertificationService) DownloadCertificatePDF(ctx context.Context, certI
 	pdf.Rect(15, 15, 267, 180, "D")
 
 	// Header - Logo area
-	pdf.SetFont("Helvetica", "B", 24)
-	pdf.SetTextColor(139, 69, 19)
-	pdf.SetXY(20, 25)
-	pdf.Cell(257, 15, "DRIVE MASTER")
+	if len(logoBytes) > 0 {
+		logoReader := bytes.NewReader(logoBytes)
+		pdf.RegisterImageReader("logo", "PNG", logoReader)
+		// Aspect ratio of 600x202 is ~2.97.
+		// If height is 12mm, width is ~35.6mm.
+		pdf.Image("logo", 20, 23, 0, 12, false, "", 0, "")
+	}
 
 	pdf.SetFont("Helvetica", "", 12)
 	pdf.SetTextColor(100, 100, 100)
@@ -267,7 +282,7 @@ func (s *CertificationService) DownloadCertificatePDF(ctx context.Context, certI
 
 	// Recipient Name
 	pdf.SetFont("Helvetica", "B", 22)
-	pdf.SetTextColor(139, 69, 19)
+	pdf.SetTextColor(209, 160, 29)
 	pdf.SetXY(20, 95)
 	pdf.Cell(257, 12, cert.MemberName)
 
@@ -310,16 +325,6 @@ func (s *CertificationService) DownloadCertificatePDF(ctx context.Context, certI
 	// Issued by
 	pdf.SetXY(192, 172)
 	pdf.Cell(80, 6, fmt.Sprintf("Issued By: %s", cert.IssuedBy))
-
-	// Footer signature line
-	pdf.Line(60, 185, 120, 185)
-	pdf.SetFont("Helvetica", "", 9)
-	pdf.SetXY(60, 186)
-	pdf.Cell(60, 5, "Authorized Signature")
-
-	pdf.Line(177, 185, 237, 185)
-	pdf.SetXY(177, 186)
-	pdf.Cell(60, 5, "Date")
 
 	// Generate PDF
 	var buf bytes.Buffer

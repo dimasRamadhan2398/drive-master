@@ -404,12 +404,12 @@ export const usePackagesStore = defineStore("packages", {
       });
     },
 
-    async fetchPackages() {
+    async fetchPackages(params?: { status?: string }) {
       this.isLoading = true;
       this.error = null;
 
       try {
-        const result = await packageService.fetchAll();
+        const result = await packageService.fetchAll(params);
 
         this.packages = this.sortPackagesBySessions(result.packages);
         this.pagination = result.pagination;

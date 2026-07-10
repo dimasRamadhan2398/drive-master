@@ -380,4 +380,76 @@ export const contentService = {
       return false;
     }
   },
+
+  // ==================== PAGE METHODS ====================
+
+  async fetchPages(): Promise<any[]> {
+    const { core } = useApiClients();
+    try {
+      const response = await core<any>("/pages", { method: "GET" });
+      if (Array.isArray(response)) return response;
+      if (response && Array.isArray((response as any).data)) {
+        return (response as any).data;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
+  async fetchPageBySlug(slug: string): Promise<any | null> {
+    const { core } = useApiClients();
+    const cleanSlug = slug.startsWith("/") ? slug.slice(1) : slug;
+    try {
+      const response: any = await core(`/pages/slug/${cleanSlug}`, { method: "GET" });
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
+  async createPage(data: { title: string; slug: string; status: string }): Promise<any | null> {
+    const { core } = useApiClients();
+    try {
+      const response: any = await core("/pages", {
+        method: "POST",
+        body: data,
+      });
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
+  async updatePage(id: string, data: { title?: string; slug?: string; status?: string; sections?: string }): Promise<any | null> {
+    const { core } = useApiClients();
+    try {
+      const response: any = await core(`/pages/${id}`, {
+        method: "PUT",
+        body: data,
+      });
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
+  async deletePage(id: string): Promise<boolean> {
+    const { core } = useApiClients();
+    try {
+      await core(`/pages/${id}`, { method: "DELETE" });
+      return true;
+    } catch {
+      return false;
+    }
+  },
 };

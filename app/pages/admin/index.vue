@@ -298,9 +298,9 @@ const quickActions = computed(() => [
               <div>
                 <p class="text-md text-muted">{{ stat.label }}</p>
                 <p class="text-2xl font-bold mt-1">{{ stat.value }}</p>
-                <p class="text-md text-green-500 mt-1">
+                <!-- <p class="text-md text-green-500 mt-1">
                   {{ stat.change }} {{ t("admin.fromLastMonth") }}
-                </p>
+                </p> -->
               </div>
               <div
                 class="p-3 rounded-xl"
