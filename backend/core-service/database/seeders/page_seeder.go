@@ -93,6 +93,82 @@ func RunPageSeeder(db *gorm.DB) error {
   }
 ]`
 
+	servicesSections := `[
+  {
+    "id": "hero-services",
+    "type": "hero",
+    "data": {
+      "heading": "Layanan Drive Master Academy",
+      "subheading": "Kursus mengemudi komprehensif yang dirancang untuk masa depan listrik. Dari pemula hingga pengemudi tingkat lanjut, kami memiliki program yang sempurna untuk Anda.",
+      "ctaText": "Lihat Paket",
+      "ctaLink": "/packages",
+      "secondaryCtaText": "Konsultasi WA",
+      "secondaryCtaLink": "https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi",
+      "bgImage": "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=800&auto=format&fit=crop&q=80",
+      "features": [
+        { "title": "100% Kendaraan Listrik", "icon": "i-lucide-battery-charging" },
+        { "title": "Instruktur Bersertifikat", "icon": "i-lucide-award" }
+      ]
+    }
+  },
+  {
+    "id": "material-services",
+    "type": "course_material",
+    "data": {
+      "headline": "Materi kursus yang akan Anda pelajari",
+      "title": "Materi Kursus Komprehensif",
+      "description": "Kurikulum pelatihan terstruktur kami mencakup dasar-dasar hingga manuver tingkat lanjut.",
+      "materials": [
+        {
+          "title": "Teori & Pengenalan",
+          "icon": "i-lucide-book-open",
+          "description": [
+            "Pengenalan instrumen & kontrol kendaraan",
+            "Posisi berkendara ergonomis & keselamatan dasar",
+            "Pemeriksaan keselamatan kendaraan (pre-drive checks)"
+          ]
+        },
+        {
+          "title": "Kontrol Kendaraan",
+          "icon": "i-lucide-shield-check",
+          "description": [
+            "Akselerasi & deselerasi halus",
+            "Pengereman presisi & darurat",
+            "Penggunaan gigi & transmisi matic"
+          ]
+        },
+        {
+          "title": "Manuver Jalan Raya",
+          "icon": "i-lucide-radar",
+          "description": [
+            "Teknik belok & persimpangan",
+            "Mengemudi di jalan tanjakan & turunan",
+            "Teknik mundur dengan cermin"
+          ]
+        },
+        {
+          "title": "Parkir & Tol",
+          "icon": "i-lucide-car",
+          "description": [
+            "Parkir mundur (slot parkir)",
+            "Parkir paralel di antara kendaraan",
+            "Navigasi jalan tol & pindah jalur aman"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "cta-services",
+    "type": "cta",
+    "data": {
+      "heading": "Siap untuk menguasai jalanan bersama kami?",
+      "buttonText": "Daftar Sekarang",
+      "buttonLink": "/auth/register"
+    }
+  }
+]`
+
 	pages := []models.Page{
 		{
 			ID:        uuid.MustParse("00000000-0000-0000-0000-000000000001"),
@@ -109,6 +185,15 @@ func RunPageSeeder(db *gorm.DB) error {
 			Slug:      "/about",
 			Status:    models.PageStatusDraft,
 			Sections:  "[]",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		{
+			ID:        uuid.MustParse("00000000-0000-0000-0000-000000000003"),
+			Title:     "Services",
+			Slug:      "/services",
+			Status:    models.PageStatusPublished,
+			Sections:  servicesSections,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
