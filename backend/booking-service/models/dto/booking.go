@@ -9,9 +9,55 @@ import (
 // Enrollment DTOs (represents package purchase/enrollment)
 
 type CreateEnrollmentRequest struct {
-	UserID    uint   `json:"userId" binding:"required"`
-	PackageID uint   `json:"packageId" binding:"required"` // ref: core-service (package)
-	AddOns    []uint `json:"addOns"`                      // optional add-ons (night driving, weekend, etc.)
+	UserID    uuid.UUID  `json:"userId" binding:"required"`
+	PackageID uuid.UUID  `json:"packageId" binding:"required"` // ref: core-service (package)
+	AddOns    []uuid.UUID `json:"addOns"`                     // optional add-ons (night driving, weekend, etc.)
+}
+
+// AddOnSelection represents a selected add-on with quantity
+type AddOnSelection struct {
+	AddOnID  uuid.UUID `json:"addOnId" binding:"required"`
+	Quantity int      `json:"quantity" binding:"required,min=1"`
+}
+
+// Transaction DTOs
+
+type TransactionItemResponse struct {
+	ID        uuid.UUID `json:"id"`
+	ItemType  string    `json:"itemType"` // "package" or "addon"
+	ItemID    uuid.UUID `json:"itemId"`
+	ItemName  string    `json:"itemName"`
+	Quantity  int       `json:"quantity"`
+	UnitPrice float64   `json:"unitPrice"`
+	Subtotal  float64   `json:"subtotal"`
+	Sessions  int       `json:"sessions"`
+}
+
+type TransactionResponse struct {
+	ID           uuid.UUID               `json:"id"`
+	EnrollmentID uuid.UUID               `json:"enrollmentId"`
+	UserID      uuid.UUID               `json:"userId"`
+	BasePrice   float64                `json:"basePrice"`
+	AddOnsTotal float64                `json:"addOnsTotal"`
+	TotalAmount float64                `json:"totalAmount"`
+	Status      string                  `json:"status"`
+	PaidAt      *time.Time             `json:"paidAt,omitempty"`
+	Items       []TransactionItemResponse `json:"items"`
+	CreatedAt   time.Time              `json:"createdAt"`
+	UpdatedAt   time.Time              `json:"updatedAt"`
+}
+
+type TransactionListResponse struct {
+	Data       []TransactionResponse `json:"data"`
+	Total      int64                `json:"total"`
+	Page       int                  `json:"page"`
+	Limit      int                  `json:"limit"`
+	TotalPages int                  `json:"totalPages"`
+}
+
+type EnrollmentWithTransactionResponse struct {
+	Enrollment  EnrollmentResponse  `json:"enrollment"`
+	Transaction *TransactionResponse `json:"transaction,omitempty"`
 }
 
 type UpdateEnrollmentRequest struct {
@@ -19,16 +65,36 @@ type UpdateEnrollmentRequest struct {
 	Status    *string    `json:"status" binding:"omitempty"`
 }
 
+type EnrollmentPackageResponse struct {
+	ID            uuid.UUID `json:"id"`
+	Name          string    `json:"name"`
+	Description   string    `json:"description"`
+	Price         float64   `json:"price"`
+	DiscountPrice float64   `json:"discountPrice"`
+	Sessions      int       `json:"sessions"`
+	Duration      int       `json:"duration"`
+}
+
+type EnrollmentAddOnResponse struct {
+	ID          uuid.UUID `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Price       float64   `json:"price"`
+	Sessions    int       `json:"sessions"`
+}
+
 type EnrollmentResponse struct {
-	ID         uuid.UUID `json:"id"`
-	UserID     uint      `json:"userId"`
-	PackageID  uint      `json:"packageId"`
-	Status     string    `json:"status"`
-	TotalPrice float64   `json:"totalPrice"`
-	PaidAt     *time.Time `json:"paidAt"`
-	ExpiresAt  time.Time `json:"expiresAt"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
+	ID         uuid.UUID                  `json:"id"`
+	UserID     uuid.UUID                  `json:"userId"`
+	PackageID  uuid.UUID                  `json:"packageId"`
+	Status     string                     `json:"status"`
+	TotalPrice float64                    `json:"totalPrice"`
+	PaidAt     *time.Time                 `json:"paidAt"`
+	ExpiresAt  time.Time                  `json:"expiresAt"`
+	CreatedAt  time.Time                  `json:"createdAt"`
+	UpdatedAt  time.Time                  `json:"updatedAt"`
+	Package    *EnrollmentPackageResponse `json:"package,omitempty"`
+	AddOns     []EnrollmentAddOnResponse  `json:"addOns,omitempty"`
 }
 
 type EnrollmentListResponse = PagedData[EnrollmentResponse]
@@ -84,11 +150,11 @@ type EnrollmentListResponse = PagedData[EnrollmentResponse]
 // DrivingSession DTOs
 
 type CreateDrivingSessionRequest struct {
-	EnrollmentID  uint      `json:"enrollmentId" binding:"required"`
-	EntitlementID uint      `json:"entitlementId" binding:"required"`
-	UserID        uint      `json:"userId" binding:"required"`
-	InstructorID  uint      `json:"instructorId" binding:"required"`
-	CarID         uint      `json:"carId" binding:"required"`
+	EnrollmentID  uuid.UUID `json:"enrollmentId" binding:"required"`
+	EntitlementID uuid.UUID `json:"entitlementId" binding:"required"`
+	UserID        uuid.UUID `json:"userId" binding:"required"`
+	InstructorID  uuid.UUID `json:"instructorId" binding:"required"`
+	CarID         uuid.UUID `json:"carId" binding:"required"`
 	ScheduleID    *uint     `json:"scheduleId"`
 	Date          time.Time `json:"date" binding:"required"`
 	Time          string    `json:"time" binding:"required"` // HH:MM format
@@ -99,11 +165,11 @@ type CreateDrivingSessionRequest struct {
 
 type DrivingSessionResponse struct {
 	ID            uint       `json:"id"`
-	EnrollmentID  uint       `json:"enrollmentId"`
-	EntitlementID uint       `json:"entitlementId"`
-	UserID        uint       `json:"userId"`
-	InstructorID  uint       `json:"instructorId"`
-	CarID         uint       `json:"carId"`
+	EnrollmentID  uuid.UUID  `json:"enrollmentId"`
+	EntitlementID uuid.UUID  `json:"entitlementId"`
+	UserID        uuid.UUID  `json:"userId"`
+	InstructorID  uuid.UUID  `json:"instructorId"`
+	CarID         uuid.UUID  `json:"carId"`
 	ScheduleID    *uint      `json:"scheduleId"`
 	Date          string     `json:"date"`  // YYYY-MM-DD format
 	Time          string     `json:"time"` // HH:MM format
@@ -134,7 +200,7 @@ type SessionListResponse = DrivingSessionListResponse
 // UserEntitlement DTOs
 
 type CreateEntitlementRequest struct {
-	UserID            uint      `json:"userId" binding:"required"`
+	UserID            uuid.UUID `json:"userId" binding:"required"`
 	SourceType        string    `json:"sourceType" binding:"required"`
 	SourceID          string    `json:"sourceId" binding:"required"`
 	TotalSessions     int       `json:"totalSessions" binding:"required"`
@@ -149,7 +215,7 @@ type UpdateEntitlementRequest struct {
 
 type EntitlementResponse struct {
 	ID                uuid.UUID `json:"id"`
-	UserID            uint      `json:"userId"`
+	UserID            uuid.UUID `json:"userId"`
 	SourceType        string    `json:"sourceType"`
 	SourceID          string    `json:"sourceId"`
 	TotalSessions     int       `json:"totalSessions"`
@@ -170,10 +236,10 @@ type EntitlementListResponse struct {
 // Certification DTOs
 
 type CreateCertificationRequest struct {
-	Type       string `json:"type" binding:"required"`
-	Recipient  string `json:"recipient" binding:"required"`
+	Type       string    `json:"type" binding:"required"`
+	Recipient  string    `json:"recipient" binding:"required"`
 	IssueDate  time.Time `json:"issueDate" binding:"required"`
-	PackageID  uint   `json:"packageId" binding:"required"`
+	PackageID  uuid.UUID `json:"packageId" binding:"required"`
 }
 
 type UpdateCertificationRequest struct {
@@ -181,14 +247,14 @@ type UpdateCertificationRequest struct {
 }
 
 type CertificationResponse struct {
-	ID         uuid.UUID `json:"id"`
-	Type       string    `json:"type"`
-	Recipient  string    `json:"recipient"`
-	IssueDate  time.Time `json:"issueDate"`
-	PackageID  uint      `json:"packageId"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
+	ID         uuid.UUID          `json:"id"`
+	Type       string             `json:"type"`
+	Recipient  string             `json:"recipient"`
+	IssueDate  time.Time          `json:"issueDate"`
+	PackageID  uuid.UUID          `json:"packageId"`
+	Status     string             `json:"status"`
+	CreatedAt  time.Time          `json:"createdAt"`
+	UpdatedAt  time.Time          `json:"updatedAt"`
 }
 
 type CertificationListResponse struct {

@@ -174,6 +174,9 @@ func (c *UserController) UpdateUser(cxt *gin.Context) {
 	}
 
 	// Update fields if provided
+	userModel.FirstName = input.FirstName
+	userModel.LastName = input.LastName
+
 	if input.Username != nil {
 		userModel.Username = *input.Username
 	}

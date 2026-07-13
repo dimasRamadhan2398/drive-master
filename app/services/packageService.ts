@@ -76,14 +76,19 @@ export const mapApiToPackage = (item: PackageApiResponse): Package => {
 
 export const packageService = {
   // Fetch all packages
-  async fetchAll(): Promise<PaginatedPackagesResult> {
+  async fetchAll(params?: { status?: string }): Promise<PaginatedPackagesResult> {
     const { core, extractData } = useApiClients();
+
+    let url = "/packages/all?limit=100";
+    if (params?.status) {
+      url += `&status=${params.status}`;
+    }
 
     const response = await core<{
       success: boolean;
       message: string;
       data: PackageApiResponse[];
-    }>("/packages/all", {
+    }>(url, {
       method: "GET",
     });
 
@@ -161,7 +166,7 @@ export const packageService = {
   async toggleStatus(id: string): Promise<boolean> {
     const { core } = useApiClients();
     try {
-      await core(`/packages/${id}/toggle-status`, { method: "PATCH" });
+      await core(`/packages/toggle-status/${id}`, { method: "PUT" });
       return true;
     } catch {
       return false;

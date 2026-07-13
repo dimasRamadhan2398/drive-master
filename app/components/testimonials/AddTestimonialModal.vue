@@ -19,6 +19,7 @@ const open = computed({
 
 const toast = useToast();
 const studentsStore = useStudentsStore();
+const { t } = useI18n()
 const testimonialStore = useTestimonialsStore();
 const authStore = useAuthStore();
 const isSubmitting = ref(false);
@@ -106,8 +107,8 @@ function onStudentSelected(opt: { label: string; value: string } | undefined) {
 async function handleSave() {
   if (!form.value.userName || !form.value.content) {
     toast.add({
-      title: "Error",
-      description: "Name and content are required.",
+      title: t('common.error'),
+      description: t('admin.testimonial.nameContentRequired'),
       color: "error",
     });
     return;
@@ -115,8 +116,8 @@ async function handleSave() {
 
   if (!form.value.userId) {
     toast.add({
-      title: "Error",
-      description: "Please select a student from the dropdown.",
+      title: t('common.error'),
+      description: t('admin.testimonial.selectStudent'),
       color: "error",
     });
     return;
@@ -142,15 +143,15 @@ async function handleSave() {
 
     if (testimonial) {
       toast.add({
-        title: "Success",
-        description: "Testimonial created successfully.",
+        title: t('common.success'),
+        description: t('admin.testimonial.created'),
         color: "success",
       });
       emit("saved", testimonial);
       emit("update:open", false);
     } else {
       toast.add({
-        title: "Error",
+        title: t('common.error'),
         description: "Failed to create testimonial. Please try again.",
         color: "error",
       });
@@ -158,7 +159,7 @@ async function handleSave() {
   } catch (error) {
     console.error("Error creating testimonial:", error);
     toast.add({
-      title: "Error",
+      title: t('common.error'),
       description: "An error occurred while creating the testimonial.",
       color: "error",
     });
@@ -187,14 +188,14 @@ function handleClose() {
 <template>
   <UModal
     v-model:open="open"
-    title="Add New Testimonial"
+    :title="t('admin.testimonial.add')"
     :dismissible="true"
     :scrollable="true"
     :ui="modalUi"
   >
     <template #body>
       <div class="space-y-4">
-        <UFormField label="Name" required>
+        <UFormField :label="t('admin.testimonial.name')" required>
           <UInputMenu
             v-model="selectedStudentOption"
             placeholder="Customer name"
@@ -210,7 +211,7 @@ function handleClose() {
             @update:model-value="onStudentSelected"
           />
         </UFormField>
-        <UFormField label="Role">
+        <UFormField :label="t('admin.testimonial.role')">
           <UInput
             v-model="form.userRole"
             placeholder="e.g. Student"
@@ -219,7 +220,7 @@ function handleClose() {
             disabled
           />
         </UFormField>
-        <UFormField label="Photo URL">
+        <UFormField :label="t('admin.testimonial.photoUrl')">
           <UInput
             v-model="form.userImage"
             placeholder="https://..."
@@ -227,7 +228,7 @@ function handleClose() {
             color="warning"
           />
         </UFormField>
-        <UFormField label="Content" required>
+        <UFormField :label="t('admin.testimonial.content')" required>
           <UTextarea
             v-model="form.content"
             placeholder="Testimonial content..."
@@ -235,7 +236,7 @@ function handleClose() {
             color="warning"
           />
         </UFormField>
-        <UFormField label="Rating">
+        <UFormField :label="t('admin.testimonial.rating')">
           <USelect
             v-model="form.rating"
             :items="ratingOptions()"
@@ -243,7 +244,7 @@ function handleClose() {
             :ui="selectUi"
           />
         </UFormField>
-        <UFormField label="Tags">
+        <UFormField :label="t('admin.testimonial.tags')">
           <UInput
             v-model="form.tags"
             placeholder="e.g. SIM A,Professional (comma separated)"
@@ -251,7 +252,7 @@ function handleClose() {
             color="warning"
           />
         </UFormField>
-        <UFormField label="Status">
+        <UFormField :label="t('admin.testimonial.status')">
           <USelect
             v-model="form.status"
             :items="[
@@ -269,13 +270,13 @@ function handleClose() {
     <template #footer>
       <div class="flex justify-end gap-3">
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           variant="ghost"
           color="neutral"
           @click="handleClose"
         />
         <UButton
-          label="Create Testimonial"
+          :label="t('admin.testimonial.add')"
           icon="i-lucide-plus"
           color="warning"
           :loading="isSubmitting"

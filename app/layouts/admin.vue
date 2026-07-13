@@ -1,72 +1,70 @@
 <script setup lang="ts">
-import type { NavigationMenuItem } from "@nuxt/ui";
-import { computed } from "vue";
+import { useAuthStore } from "~/stores/auth";
 
-definePageMeta({ layout: "dashboard" });
-
+const { t } = useI18n();
 const authStore = useAuthStore();
-const navItems = computed<NavigationMenuItem[]>(() => [
+const navItems = computed(() => [
   {
-    label: "Overview",
+    label: t("admin.overview"),
     icon: "i-lucide-layout-dashboard",
     to: "/admin",
   },
   {
-    label: "Students",
+    label: t("admin.students"),
     icon: "i-lucide-users",
     to: "/admin/students",
   },
   {
-    label: "Schedules",
+    label: t("admin.schedules"),
     icon: "i-lucide-calendar",
     to: "/admin/schedules",
   },
   {
-    label: "Packages",
+    label: t("admin.packages"),
     icon: "i-lucide-package",
     to: "/admin/packages",
   },
   {
-    label: "Sales",
+    label: t("admin.sales"),
     icon: "i-lucide-package",
     to: "/admin/sales",
   },
   {
-    label: "Certificates",
+    label: t("admin.certificates"),
     icon: "i-lucide-award",
     to: "/admin/certificates",
   },
   {
-    label: "Content",
+    label: t("admin.contents"),
     icon: "i-lucide-file-text",
     to: "/admin/content",
   },
   {
-    label: "Testimonials",
+    label: t("admin.testimonials"),
     icon: "i-lucide-message-square",
     to: "/admin/testimonials",
   },
   {
-    label: "Analytics",
+    label: t("admin.analytics"),
     icon: "i-lucide-bar-chart-3",
     to: "/admin/analytics",
   },
   {
-    label: "Settings",
+    label: t("admin.settings"),
     icon: "i-lucide-settings",
     to: "/admin/settings",
   },
 ]);
 
-const adminMenuItems = [
+const adminMenuItems = computed(() => [
   [
     {
-      label: "Admin Settings",
+      label: t("admin.settings"),
       icon: "i-lucide-settings",
       to: "/admin/settings",
     },
     {
-      label: "View Website",
+      label: t("admin.viewWebsite"),
       icon: "i-lucide-external-link",
       to: "/",
       external: true,
@@ -74,13 +72,13 @@ const adminMenuItems = [
   ],
   [
     {
-      label: "Sign Out",
+      label: t("admin.signOut"),
       icon: "i-lucide-log-out",
       to: "/admin/login",
       onClick: () => authStore.logout(),
     },
   ],
-];
+]);
 
 const admin = {
   name: "Admin User",
@@ -100,12 +98,9 @@ onMounted(() => {
     <UDashboardSidebar collapsible resizable>
       <template #header="{ collapsed }">
         <NuxtLink to="/admin" class="flex items-center gap-4 py-8">
-          <img
-            src="/drive-master-logo2.png"
-            alt="Drive Master Logo"
-            class="h-10"
-          />
-          <span v-if="!collapsed" class="font-bold py-16">Admin Panel</span>
+          <img src="/drive-master-logo-light.png" alt="Drive Master Logo" class="h-10 dark:hidden" />
+          <img src="/drive-master-logo-dark.jpg" alt="Drive Master Logo" class="h-10 hidden dark:block" />
+          <span v-if="!collapsed" class="font-bold py-16">{{ t("admin.title") }}</span>
         </NuxtLink>
       </template>
 
@@ -126,20 +121,13 @@ onMounted(() => {
             class="w-full"
             :class="collapsed ? 'justify-center px-0' : ''"
           >
-            <UAvatar
-              text="AD"
-              size="sm"
-              class="bg-warning text-warning-foreground"
-            />
+            <UAvatar text="AD" size="sm" class="bg-warning text-warning-foreground" />
             <template v-if="!collapsed">
               <div class="flex-1 text-left ml-2">
                 <p class="text-sm font-medium truncate">{{ admin.name }}</p>
                 <p class="text-xs text-muted truncate">{{ admin.role }}</p>
               </div>
-              <UIcon
-                name="i-lucide-chevrons-up-down"
-                class="size-4 text-muted"
-              />
+              <UIcon name="i-lucide-chevrons-up-down" class="size-4 text-muted" />
             </template>
           </UButton>
         </UDropdownMenu>

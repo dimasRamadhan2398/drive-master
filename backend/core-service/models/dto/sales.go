@@ -162,3 +162,38 @@ type UpdateSaleStatusRequest struct {
 	Status models.SaleStatus `json:"status" binding:"required"`
 	Notes  string            `json:"notes"`
 }
+
+// SalesByPackageResponse is the response DTO for sales by package (individual package performance)
+type SalesByPackageResponse struct {
+	PackageID       *uuid.UUID `json:"packageId"`
+	PackageName     string     `json:"packageName"`
+	TotalSales      int64      `json:"totalSales"`
+	TotalQuantity   int64      `json:"totalQuantity"`
+	TotalRevenue    float64    `json:"totalRevenue"`
+	AvgUnitPrice    float64    `json:"avgUnitPrice"`
+	Percentage      float64    `json:"percentage"`
+}
+
+// RecentTransactionResponse is the response DTO for recent transactions from payment service
+type RecentTransactionResponse struct {
+	ID             uuid.UUID `json:"id"`
+	PaymentID      uuid.UUID `json:"paymentId"`
+	Type           string    `json:"type"`
+	Status         string    `json:"status"`
+	Amount         float64   `json:"amount"`
+	Currency       string    `json:"currency"`
+	Gateway        string    `json:"gateway"`
+	GatewayTxnID   string    `json:"gatewayTxnId"`
+	ErrorCode      string    `json:"errorCode,omitempty"`
+	ErrorMessage   string    `json:"errorMessage,omitempty"`
+	ProcessedAt    *time.Time `json:"processedAt,omitempty"`
+	CreatedAt      time.Time `json:"createdAt"`
+}
+
+// RecentTransactionsResponse is the response DTO for listing recent transactions
+type RecentTransactionsResponse struct {
+	Data       []RecentTransactionResponse `json:"data"`
+	Total      int64                      `json:"total"`
+	Page       int                        `json:"page"`
+	Limit      int                        `json:"limit"`
+}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
 const freeTrial = ref({
@@ -97,7 +98,7 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Free Trial Session">
+      <UDashboardNavbar :title="t('freeTrial.title')">
         <template #right>
           <UColorModeButton />
         </template>
@@ -113,9 +114,9 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
               <UIcon name="i-lucide-gift" class="size-6 text-amber-600" />
             </div>
             <div class="flex-1">
-              <h1 class="text-2xl font-bold">Your Free Trial Session</h1>
+              <h1 class="text-2xl font-bold">{{ t('freeTrial.heroTitle') }}</h1>
               <p class="text-muted mt-1">
-                Enjoy a complimentary 15-minute driving session. This is a one-time offer available to all registered users.
+                {{ t('freeTrial.heroDesc') }}
               </p>
             </div>
           </div>
@@ -129,8 +130,8 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                 <UIcon name="i-lucide-clock" class="size-5 text-primary" />
               </div>
               <div>
-                <p class="text-xs text-muted uppercase tracking-wide">Duration</p>
-                <p class="font-bold">15 minutes</p>
+                <p class="text-xs text-muted uppercase tracking-wide">{{ t('freeTrial.duration') }}</p>
+                <p class="font-bold">15 {{ t('common.minutes') }}</p>
               </div>
             </div>
           </UCard>
@@ -141,8 +142,8 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                 <UIcon name="i-lucide-check" class="size-5 text-green-600" />
               </div>
               <div>
-                <p class="text-xs text-muted uppercase tracking-wide">Cost</p>
-                <p class="font-bold">Free</p>
+                <p class="text-xs text-muted uppercase tracking-wide">{{ t('freeTrial.cost') }}</p>
+                <p class="font-bold">{{ t('freeTrial.free') }}</p>
               </div>
             </div>
           </UCard>
@@ -161,10 +162,10 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
               </div>
               <div>
                 <p class="text-xs text-muted uppercase tracking-wide">
-                  {{ isExpired ? 'Status' : 'Expires In' }}
+                  {{ isExpired ? t('freeTrial.status') : t('freeTrial.expiresIn') }}
                 </p>
-                <p v-if="isExpired" class="font-bold text-red-600">Expired</p>
-                <p v-else class="font-bold">{{ daysUntilExpiry }} days</p>
+                <p v-if="isExpired" class="font-bold text-red-600">{{ t('freeTrial.expired') }}</p>
+                <p v-else class="font-bold">{{ daysUntilExpiry }} {{ t('freeTrial.days') }}</p>
               </div>
             </div>
           </UCard>
@@ -174,25 +175,25 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
         <div class="flex items-center gap-2">
           <UBadge 
             v-if="freeTrial.status === 'available' && !isExpired"
-            label="Ready to Schedule"
+            :label="t('freeTrial.readyToSchedule')"
             color="success"
             variant="subtle"
           />
           <UBadge 
             v-else-if="freeTrial.status === 'scheduled'"
-            label="Scheduled"
+            :label="t('freeTrial.scheduled')"
             color="primary"
             variant="subtle"
           />
           <UBadge 
             v-else-if="freeTrial.status === 'completed'"
-            label="Completed"
+            :label="t('freeTrial.completed')"
             color="success"
             variant="subtle"
           />
           <UBadge 
             v-else
-            label="Expired"
+            :label="t('freeTrial.expired')"
             color="error"
             variant="subtle"
           />
@@ -204,13 +205,13 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
           <div class="lg:col-span-2">
             <UCard v-if="freeTrial.status === 'available'">
               <template #header>
-                <h2 class="font-semibold">Schedule Your Trial Session</h2>
+                <h2 class="font-semibold">{{ t('freeTrial.scheduleTitle') }}</h2>
               </template>
 
               <div class="space-y-6">
                 <!-- Date Selection -->
                 <div>
-                  <label class="block text-sm font-medium mb-3">Select Date</label>
+                  <label class="block text-sm font-medium mb-3">{{ t('freeTrial.selectDate') }}</label>
                   <UInput 
                     v-model="selectedDate"
                     type="date"
@@ -219,12 +220,12 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                     size="lg"
                     icon="i-lucide-calendar"
                   />
-                  <p class="text-xs text-muted mt-2">Available from tomorrow up to 30 days</p>
+                  <p class="text-xs text-muted mt-2">{{ t('freeTrial.availableFrom') }}</p>
                 </div>
 
                 <!-- Time Selection -->
                 <div v-if="selectedDate">
-                  <label class="block text-sm font-medium mb-3">Select Time</label>
+                  <label class="block text-sm font-medium mb-3">{{ t('freeTrial.selectTime') }}</label>
                   <div class="grid grid-cols-3 gap-2">
                     <button
                       v-for="time in timeSlots"
@@ -242,25 +243,25 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
 
                 <!-- Session Details Preview -->
                 <div v-if="selectedDate && selectedTime" class="p-4 bg-muted/30 rounded-lg space-y-3">
-                  <h3 class="font-medium">Session Details</h3>
+                  <h3 class="font-medium">{{ t('freeTrial.sessionDetails') }}</h3>
                   <div class="grid sm:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p class="text-muted">Date & Time</p>
+                      <p class="text-muted">{{ t('dashboard.date') }} & {{ t('dashboard.time') }}</p>
                       <p class="font-medium">
                         {{ new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}
                         at {{ selectedTime }}
                       </p>
                     </div>
                     <div>
-                      <p class="text-muted">Duration</p>
-                      <p class="font-medium">15 minutes</p>
+                      <p class="text-muted">{{ t('freeTrial.duration') }}</p>
+                      <p class="font-medium">15 {{ t('common.minutes') }}</p>
                     </div>
                     <div>
-                      <p class="text-muted">Vehicle</p>
+                      <p class="text-muted">{{ t('dashboard.vehicle') }}</p>
                       <p class="font-medium">BYD Atto 1</p>
                     </div>
                     <div>
-                      <p class="text-muted">Instructor</p>
+                      <p class="text-muted">{{ t('dashboard.instructor') }}</p>
                       <p class="font-medium">Mr. Ahmad</p>
                     </div>
                   </div>
@@ -269,7 +270,7 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                 <!-- Action Button -->
                 <div class="pt-4 border-t">
                   <UButton 
-                    label="Confirm Trial Booking"
+                    :label="t('freeTrial.confirmBooking')"
                     icon="i-lucide-check"
                     :loading="loading"
                     :disabled="!selectedDate || !selectedTime || loading"
@@ -284,8 +285,8 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
             <UCard v-else-if="freeTrial.status === 'scheduled'">
               <template #header>
                 <div class="flex items-center justify-between">
-                  <h2 class="font-semibold">Your Trial Session is Scheduled</h2>
-                  <UBadge label="Confirmed" color="success" />
+                  <h2 class="font-semibold">{{ t('freeTrial.sessionScheduled') }}</h2>
+                  <UBadge :label="t('freeTrial.confirmed')" color="success" />
                 </div>
               </template>
 
@@ -295,8 +296,8 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                   <div class="flex items-center gap-4 p-4 bg-primary/5 rounded-lg">
                     <UIcon name="i-lucide-check-circle-2" class="size-6 text-primary shrink-0" />
                     <div>
-                      <p class="font-medium">Session Confirmed</p>
-                      <p class="text-sm text-muted">Confirmation sent to your email and WhatsApp</p>
+                      <p class="font-medium">{{ t('freeTrial.sessionConfirmed') }}</p>
+                      <p class="text-sm text-muted">{{ t('freeTrial.confirmationSent') }}</p>
                     </div>
                   </div>
 
@@ -304,7 +305,7 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                     <div class="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
                       <UIcon name="i-lucide-calendar" class="size-5 text-primary" />
                       <div class="flex-1">
-                        <p class="text-sm text-muted">Date & Time</p>
+                        <p class="text-sm text-muted">{{ t('dashboard.date') }} & {{ t('dashboard.time') }}</p>
                         <p class="font-medium">
                           {{ new Date(trialSession.date || '').toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}
                           at {{ trialSession.time }}
@@ -315,15 +316,15 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                     <div class="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
                       <UIcon name="i-lucide-clock" class="size-5 text-primary" />
                       <div class="flex-1">
-                        <p class="text-sm text-muted">Duration</p>
-                        <p class="font-medium">{{ trialSession.duration }} minutes</p>
+                        <p class="text-sm text-muted">{{ t('freeTrial.duration') }}</p>
+                        <p class="font-medium">{{ trialSession.duration }} {{ t('common.minutes') }}</p>
                       </div>
                     </div>
 
                     <div class="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
                       <UIcon name="i-lucide-car" class="size-5 text-primary" />
                       <div class="flex-1">
-                        <p class="text-sm text-muted">Vehicle</p>
+                        <p class="text-sm text-muted">{{ t('dashboard.vehicle') }}</p>
                         <p class="font-medium">{{ trialSession.vehicle }}</p>
                       </div>
                     </div>
@@ -331,7 +332,7 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                     <div class="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
                       <UIcon name="i-lucide-user" class="size-5 text-primary" />
                       <div class="flex-1">
-                        <p class="text-sm text-muted">Instructor</p>
+                        <p class="text-sm text-muted">{{ t('dashboard.instructor') }}</p>
                         <p class="font-medium">{{ trialSession.instructor }}</p>
                       </div>
                     </div>
@@ -339,7 +340,7 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                     <div class="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
                       <UIcon name="i-lucide-map-pin" class="size-5 text-primary" />
                       <div class="flex-1">
-                        <p class="text-sm text-muted">Location</p>
+                        <p class="text-sm text-muted">{{ t('dashboard.pickupLocation') }}</p>
                         <p class="font-medium">{{ trialSession.location }}</p>
                       </div>
                     </div>
@@ -348,23 +349,23 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
 
                 <!-- What to Expect -->
                 <div class="pt-4 border-t space-y-3">
-                  <h3 class="font-medium">What to Expect</h3>
+                  <h3 class="font-medium">{{ t('freeTrial.whatToExpect') }}</h3>
                   <ul class="space-y-2 text-sm">
                     <li class="flex gap-2">
                       <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
-                      <span>Meet your instructor 10 minutes before session</span>
+                      <span>{{ t('freeTrial.meetInstructor') }}</span>
                     </li>
                     <li class="flex gap-2">
                       <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
-                      <span>Basic safety briefing and vehicle orientation</span>
+                      <span>{{ t('freeTrial.safetyBriefing') }}</span>
                     </li>
                     <li class="flex gap-2">
                       <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
-                      <span>15 minutes of actual driving experience</span>
+                      <span>{{ t('freeTrial.drivingExperience') }}</span>
                     </li>
                     <li class="flex gap-2">
                       <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
-                      <span>Discussion of your package options after session</span>
+                      <span>{{ t('freeTrial.discussion') }}</span>
                     </li>
                   </ul>
                 </div>
@@ -372,7 +373,7 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
                 <!-- Reschedule -->
                 <div class="pt-4 border-t flex gap-3">
                   <UButton 
-                    label="Cancel Booking"
+                    :label="t('freeTrial.cancelBooking')"
                     icon="i-lucide-trash"
                     color="error"
                     variant="outline"
@@ -390,25 +391,25 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
             <!-- Requirements -->
             <UCard>
               <template #header>
-                <h3 class="font-semibold">Requirements</h3>
+                <h3 class="font-semibold">{{ t('freeTrial.requirements') }}</h3>
               </template>
 
               <ul class="space-y-3 text-sm">
                 <li class="flex gap-2">
                   <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0" />
-                  <span>Valid driver's license</span>
+                  <span>{{ t('freeTrial.validLicense') }}</span>
                 </li>
                 <li class="flex gap-2">
                   <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0" />
-                  <span>At least 18 years old</span>
+                  <span>{{ t('freeTrial.atLeast18') }}</span>
                 </li>
                 <li class="flex gap-2">
                   <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0" />
-                  <span>Closed-toe shoes</span>
+                  <span>{{ t('freeTrial.closedShoes') }}</span>
                 </li>
                 <li class="flex gap-2">
                   <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0" />
-                  <span>Be 10 minutes early</span>
+                  <span>{{ t('freeTrial.beEarly') }}</span>
                 </li>
               </ul>
             </UCard>
@@ -416,30 +417,30 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
             <!-- After Trial -->
             <UCard>
               <template #header>
-                <h3 class="font-semibold">After Your Trial</h3>
+                <h3 class="font-semibold">{{ t('freeTrial.afterTrial') }}</h3>
               </template>
 
               <p class="text-sm text-muted mb-4">
-                After experiencing our trial session, you can:
+                {{ t('freeTrial.afterTrialDesc') }}
               </p>
 
               <ul class="space-y-2 text-sm">
                 <li class="flex gap-2">
                   <UIcon name="i-lucide-arrow-right" class="size-4 text-primary shrink-0" />
-                  <span>Book paid sessions</span>
+                  <span>{{ t('freeTrial.bookPaid') }}</span>
                 </li>
                 <li class="flex gap-2">
                   <UIcon name="i-lucide-arrow-right" class="size-4 text-primary shrink-0" />
-                  <span>Choose your package</span>
+                  <span>{{ t('freeTrial.choosePkg') }}</span>
                 </li>
                 <li class="flex gap-2">
                   <UIcon name="i-lucide-arrow-right" class="size-4 text-primary shrink-0" />
-                  <span>Get your certificate</span>
+                  <span>{{ t('freeTrial.getCert') }}</span>
                 </li>
               </ul>
 
               <UButton 
-                label="View Packages"
+                :label="t('freeTrial.viewPackages')"
                 to="/packages"
                 variant="outline"
                 block
@@ -451,17 +452,17 @@ const userStatus = ref<'free' | 'paid'>('paid') // Would come from actual user d
 
         <!-- Expired State -->
         <UAlert v-if="isExpired" icon="i-lucide-alert-circle" color="error">
-          <template #title>Trial Period Expired</template>
+          <template #title>{{ t('freeTrial.periodExpired') }}</template>
           <template #description>
-            Unfortunately, your free trial offer has expired. Please purchase a package to continue your training.
+            {{ t('freeTrial.periodExpiredDesc') }}
           </template>
         </UAlert>
 
         <!-- Completed State -->
         <UAlert v-if="freeTrial.status === 'completed'" icon="i-lucide-check-circle-2" color="success">
-          <template #title>Trial Session Completed</template>
+          <template #title>{{ t('freeTrial.trialCompleted') }}</template>
           <template #description>
-            Thank you for experiencing our service! Ready to continue your training? Check out our packages.
+            {{ t('freeTrial.trialCompletedDesc') }}
           </template>
         </UAlert>
       </div>

@@ -3,6 +3,7 @@ import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
 import { usePackagesStore } from "~/stores/packages";
 import type { Package } from "~/stores/packages";
 
+const { t } = useI18n()
 const props = defineProps<{
   open: boolean;
   package: Package | null;
@@ -53,6 +54,8 @@ function saveEditedPackage() {
     discountPrice: selectedPackage.value.price,
     description: selectedPackage.value.description,
     features: selectedPackage.value.features,
+    durationMinutes: 60,
+    totalSessions: selectedPackage.value.sessions,
   });
 
   toast.add({
@@ -66,17 +69,17 @@ function saveEditedPackage() {
 </script>
 
 <template>
-  <UModal :open="open" title="Edit Package" @update:open="(val) => emit('update:open', val)">
+  <UModal :open="open" :title="t('admin.package.edit')" @update:open="(val) => emit('update:open', val)">
     <template #body>
       <div v-if="selectedPackage" class="space-y-4">
-        <UFormField label="Package Name" required>
+        <UFormField :label="t('admin.package.name')" required>
           <UInput
             v-model="selectedPackage.name"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Price (IDR)" required>
+        <UFormField :label="t('admin.package.price')" required>
           <UInput
             v-model="selectedPackage.price"
             type="number"
@@ -85,35 +88,24 @@ function saveEditedPackage() {
             color="warning"
           />
         </UFormField>
-        <div class="grid grid-cols-2 gap-4">
-          <UFormField label="Sessions" required>
-            <UInput
-              v-model="selectedPackage.sessions"
-              type="number"
-              class="w-full"
-              color="warning"
-            />
-          </UFormField>
-          <UFormField label="Duration (min)" required>
-            <UInput
-              v-model="selectedPackage.duration"
-              type="number"
-              :step="15"
-              class="w-full"
-              color="warning"
-            />
-          </UFormField>
-        </div>
-        <UFormField label="Description">
+        <UFormField :label="t('admin.package.sessions')" required>
+          <UInput
+            v-model="selectedPackage.sessions"
+            type="number"
+            class="w-full"
+            color="warning"
+          />
+        </UFormField>
+        <UFormField :label="t('admin.package.description')">
           <UTextarea
             v-model="selectedPackage.description"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Features">
+        <UFormField :label="t('admin.package.features')">
           <template #hint>
-            <span>Masukkan satu fitur per baris.</span>
+            <span>{{ t('admin.package.featuresHint') }}</span>
           </template>
           <UTextarea
             v-model="formattedPackages"
@@ -124,7 +116,7 @@ function saveEditedPackage() {
         </UFormField>
         <USwitch
           v-model="selectedPackage.isPopular"
-          label="Mark as Popular"
+          :label="t('admin.package.markPopular')"
           class="w-full"
           color="warning"
         />
@@ -133,13 +125,13 @@ function saveEditedPackage() {
     <template #footer>
       <div class="flex justify-end gap-3">
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           variant="ghost"
           color="neutral"
           @click="handleClose"
         />
         <UButton
-          label="Save Changes"
+          :label="t('admin.saveChanges')"
           icon="i-lucide-save"
           color="warning"
           @click="saveEditedPackage"

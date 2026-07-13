@@ -10,6 +10,7 @@ const emit = defineEmits<{
   (e: "update:open", value: boolean): void;
 }>();
 
+const { t } = useI18n()
 const toast = useToast();
 const packagesStore = usePackagesStore();
 
@@ -17,44 +18,67 @@ const newAddon = ref({
   name: "",
   price: 0,
   description: "",
+  sessions: 1,
 });
+
+const isSubmitting = ref(false);
 
 function handleClose() {
   emit("update:open", false);
-  newAddon.value = { name: "", price: 0, description: "" };
+  newAddon.value = { name: "", price: 0, description: "", sessions: 1 };
 }
 
-function saveNewAddon() {
+async function saveNewAddon() {
   if (!newAddon.value.name || newAddon.value.price <= 0) {
     toast.add({
-      title: "Error",
-      description: "Nama dan harga add-on wajib diisi.",
+      title: t('common.error'),
+      description: t('admin.addon.namePriceRequired'),
       color: "error",
     });
     return;
   }
 
-  packagesStore.addAddon({
-    name: newAddon.value.name,
-    price: newAddon.value.price,
-    description: newAddon.value.description,
-  });
+  isSubmitting.value = true;
+  try {
+    const result = await packagesStore.addAddon({
+      name: newAddon.value.name,
+      price: newAddon.value.price,
+      description: newAddon.value.description,
+      sessions: newAddon.value.sessions,
+    });
 
-  toast.add({
-    title: "Add-on Ditambahkan",
-    description: `"${newAddon.value.name}" telah dibuat.`,
-    color: "success",
-  });
-
-  handleClose();
+    if (result) {
+      toast.add({
+        title: t('admin.addon.added'),
+        description: `"${newAddon.value.name}" telah dibuat.`,
+        color: "success",
+      });
+      handleClose();
+    } else {
+      toast.add({
+        title: t('common.error'),
+        description: "Gagal membuat add-on. Silakan coba lagi.",
+        color: "error",
+      });
+    }
+  } catch (error) {
+    console.error("Error creating addon:", error);
+    toast.add({
+      title: t('common.error'),
+      description: "Gagal membuat add-on. Silakan coba lagi.",
+      color: "error",
+    });
+  } finally {
+    isSubmitting.value = false;
+  }
 }
 </script>
 
 <template>
-  <UModal :open="open" title="Add New Add-on" @update:open="(val) => emit('update:open', val)">
+  <UModal :open="open" :title="t('admin.addon.add')" @update:open="(val) => emit('update:open', val)">
     <template #body>
       <div class="space-y-4">
-        <UFormField label="Add-on Name" required>
+        <UFormField :label="t('admin.addon.name')" required>
           <UInput
             v-model="newAddon.name"
             placeholder="e.g. SIM A Assistance"
@@ -62,7 +86,7 @@ function saveNewAddon() {
             color="warning"
           />
         </UFormField>
-        <UFormField label="Price (IDR)" required>
+        <UFormField :label="t('admin.package.price')" required>
           <UInput
             v-model="newAddon.price"
             type="number"
@@ -71,10 +95,19 @@ function saveNewAddon() {
             color="warning"
           />
         </UFormField>
-        <UFormField label="Description">
+        <UFormField :label="t('admin.package.description')">
           <UTextarea
             v-model="newAddon.description"
             placeholder="Briefly describe what this add-on includes."
+            class="w-full"
+            color="warning"
+          />
+        </UFormField>
+        <UFormField :label="t('admin.package.sessions')">
+          <UInput
+            v-model="newAddon.sessions"
+            type="number"
+            :min="1"
             class="w-full"
             color="warning"
           />
@@ -84,15 +117,17 @@ function saveNewAddon() {
     <template #footer>
       <div class="flex justify-end gap-3">
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           variant="ghost"
           color="neutral"
+          :disabled="isSubmitting"
           @click="handleClose"
         />
         <UButton
-          label="Create Add-on"
+          :label="t('admin.addon.add')"
           icon="i-lucide-plus"
           color="warning"
+          :loading="isSubmitting"
           @click="saveNewAddon"
         />
       </div>

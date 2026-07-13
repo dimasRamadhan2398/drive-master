@@ -9,7 +9,8 @@ import (
 
 // Migrate runs all database migrations
 func Migrate(db *gorm.DB) error {
-	return db.AutoMigrate(
+	db.Exec("DROP INDEX IF EXISTS idx_articles_slug")
+	err := db.AutoMigrate(
 		// Region tables
 		&models.Province{},
 		&models.Regency{},
@@ -22,6 +23,8 @@ func Migrate(db *gorm.DB) error {
 		&models.Package{},
 		&models.PackageBenefit{},
 
+		// AddOn tables
+		&models.AddOn{},
 
 		// Sales tables
 		&models.Sale{},
@@ -40,7 +43,17 @@ func Migrate(db *gorm.DB) error {
 
 		// FAQ tables
 		&models.FAQ{},
+
+		// Page tables
+		&models.Page{},
 	)
+	if err != nil {
+		return err
+	}
+	if err := db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_pages_slug ON pages (slug) WHERE deleted_at IS NULL").Error; err != nil {
+		return err
+	}
+	return db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_slug ON articles (slug) WHERE deleted_at IS NULL").Error
 }
 
 // MigrateRegions runs region-specific migrations
@@ -65,10 +78,22 @@ func MigratePackages(db *gorm.DB) error {
 	)
 }
 
-func MigrateArticles(db *gorm.DB) error {
+// MigrateAddOns runs add-on specific migrations
+func MigrateAddOns(db *gorm.DB) error {
 	return db.AutoMigrate(
+		&models.AddOn{},
+	)
+}
+
+func MigrateArticles(db *gorm.DB) error {
+	db.Exec("DROP INDEX IF EXISTS idx_articles_slug")
+	err := db.AutoMigrate(
 		&models.Article{},
 	)
+	if err != nil {
+		return err
+	}
+	return db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_slug ON articles (slug) WHERE deleted_at IS NULL").Error
 }
 
 
@@ -101,6 +126,8 @@ func RunMigration(db *gorm.DB, name string) error {
 		return MigrateCars(db)
 	case "packages":
 		return MigratePackages(db)
+	case "addons":
+		return MigrateAddOns(db)
 	case "articles":
 		return MigrateArticles(db)
 	case "sales":
@@ -125,6 +152,7 @@ func GetMigrationStatus(db *gorm.DB) ([]models.TableStatus, error) {
 		"cars",
 		"packages",
 		"package_benefits",
+		"add_ons",
 		"articles",
 		"categories",
 		"tags",

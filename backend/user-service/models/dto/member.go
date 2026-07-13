@@ -13,6 +13,12 @@ type MemberProfileResponse struct {
 	AverageRating          float64              `json:"averageRating"`
 	TotalAvailableSessions int                  `json:"totalAvailableSessions"`
 	Entitlements           []models.Entitlement `json:"entitlements"`
+	IdentityFullname		string 				`json:"identityFullname"`
 }
 
 type MemberListResponse = PagedData[UserWithProfileResponse]
+
+// UpdateMemberProfileRequest represents the request body for updating member profile
+type UpdateMemberProfileRequest struct {
+	IdentityFullname string `json:"identityFullname"`
+}

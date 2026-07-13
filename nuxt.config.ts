@@ -1,5 +1,4 @@
 import { defineNuxtConfig } from "nuxt/config";
-import react from "@vitejs/plugin-react";
 
 export default defineNuxtConfig({
   devtools: { enabled: true },
@@ -87,7 +86,6 @@ export default defineNuxtConfig({
     },
   },
   vite: {
-    plugins: [react()],
     server: {
       watch: {
         usePolling: true,

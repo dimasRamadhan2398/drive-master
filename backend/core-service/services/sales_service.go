@@ -7,10 +7,58 @@ import (
 	"core-service/pkg/base"
 	"core-service/repositories"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// parseDateString parses a date string that can be:
+// - "YYYY-MM-DD" format
+// - "today" - current date
+// - "XdaysAgo" - X days before today (e.g., "30daysAgo")
+// Returns date in "YYYY-MM-DD" format
+func parseDateString(dateStr string) string {
+	if dateStr == "" {
+		return time.Now().Format("2006-01-02")
+	}
+
+	// Handle special keywords
+	switch strings.ToLower(dateStr) {
+	case "today":
+		return time.Now().Format("2006-01-02")
+	case "yesterday":
+		return time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	}
+
+	// Handle "XdaysAgo" format
+	if strings.HasSuffix(strings.ToLower(dateStr), "daysago") {
+		parts := strings.Split(strings.ToLower(dateStr), "daysago")
+		if len(parts) == 2 {
+			days, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+			if err == nil {
+				return time.Now().AddDate(0, 0, -days).Format("2006-01-02")
+			}
+		}
+	}
+
+	// Try parsing as standard date format
+	if _, err := time.Parse("2006-01-02", dateStr); err == nil {
+		return dateStr
+	}
+
+	// Try other common formats
+	formats := []string{"2006/01/02", "01-02-2006", "02-01-2006", "2006.01.02"}
+	for _, format := range formats {
+		if t, err := time.Parse(format, dateStr); err == nil {
+			return t.Format("2006-01-02")
+		}
+	}
+
+	// Default to today if nothing works
+	return time.Now().Format("2006-01-02")
+}
 
 type ISalesService interface {
 	// CRUD operations
@@ -28,6 +76,7 @@ type ISalesService interface {
 	GetSalesTrend(ctx context.Context, startDate, endDate string) (*dto.SalesTrendResponse, error)
 	GetSalesBySource(ctx context.Context, startDate, endDate string) ([]dto.SalesBySourceResponse, error)
 	GetSalesByPackageType(ctx context.Context, startDate, endDate string) ([]dto.SalesByPackageTypeResponse, error)
+	GetSalesByPackage(ctx context.Context, startDate, endDate string) ([]dto.SalesByPackageResponse, error)
 
 	// Helpers
 	GenerateOrderNumber() string
@@ -204,13 +253,17 @@ func (s *SalesService) DeleteSale(ctx context.Context, id uuid.UUID) error {
 
 // GetOverview retrieves sales overview statistics
 func (s *SalesService) GetOverview(ctx context.Context, startDate, endDate string) (*dto.SalesOverviewResponse, error) {
-	stats, err := s.salesRepo.GetOverviewStats(ctx, startDate, endDate)
+	// Parse date strings to handle relative dates
+	parsedStartDate := parseDateString(startDate)
+	parsedEndDate := parseDateString(endDate)
+
+	stats, err := s.salesRepo.GetOverviewStats(ctx, parsedStartDate, parsedEndDate)
 	if err != nil {
 		return nil, err
 	}
 
 	// Calculate growth rate (compare with previous period)
-	growthRate := s.calculateGrowthRate(ctx, startDate, endDate)
+	growthRate := s.calculateGrowthRate(ctx, parsedStartDate, parsedEndDate)
 
 	return &dto.SalesOverviewResponse{
 		TotalRevenue:   stats.TotalRevenue,
@@ -287,7 +340,11 @@ func (s *SalesService) GetYearlySales(ctx context.Context, year int) ([]dto.Mont
 
 // GetSalesTrend retrieves daily sales data for trend analysis
 func (s *SalesService) GetSalesTrend(ctx context.Context, startDate, endDate string) (*dto.SalesTrendResponse, error) {
-	daily, err := s.salesRepo.GetSalesTrend(ctx, startDate, endDate)
+	// Parse date strings to handle relative dates
+	parsedStartDate := parseDateString(startDate)
+	parsedEndDate := parseDateString(endDate)
+
+	daily, err := s.salesRepo.GetSalesTrend(ctx, parsedStartDate, parsedEndDate)
 	if err != nil {
 		return nil, err
 	}
@@ -309,14 +366,18 @@ func (s *SalesService) GetSalesTrend(ctx context.Context, startDate, endDate str
 	return &dto.SalesTrendResponse{
 		Period:    "daily",
 		Data:      data,
-		StartDate: startDate,
-		EndDate:   endDate,
+		StartDate: parsedStartDate,
+		EndDate:   parsedEndDate,
 	}, nil
 }
 
 // GetSalesBySource retrieves sales breakdown by source
 func (s *SalesService) GetSalesBySource(ctx context.Context, startDate, endDate string) ([]dto.SalesBySourceResponse, error) {
-	data, err := s.salesRepo.GetSalesBySource(ctx, startDate, endDate)
+	// Parse date strings to handle relative dates
+	parsedStartDate := parseDateString(startDate)
+	parsedEndDate := parseDateString(endDate)
+
+	data, err := s.salesRepo.GetSalesBySource(ctx, parsedStartDate, parsedEndDate)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +408,11 @@ func (s *SalesService) GetSalesBySource(ctx context.Context, startDate, endDate 
 
 // GetSalesByPackageType retrieves sales breakdown by package type
 func (s *SalesService) GetSalesByPackageType(ctx context.Context, startDate, endDate string) ([]dto.SalesByPackageTypeResponse, error) {
-	data, err := s.salesRepo.GetSalesByPackageType(ctx, startDate, endDate)
+	// Parse date strings to handle relative dates
+	parsedStartDate := parseDateString(startDate)
+	parsedEndDate := parseDateString(endDate)
+
+	data, err := s.salesRepo.GetSalesByPackageType(ctx, parsedStartDate, parsedEndDate)
 	if err != nil {
 		return nil, err
 	}
@@ -370,6 +435,44 @@ func (s *SalesService) GetSalesByPackageType(ctx context.Context, startDate, end
 			TotalSales:   item.TotalSales,
 			TotalRevenue: item.TotalRevenue,
 			Percentage:   percentage,
+		}
+	}
+
+	return results, nil
+}
+
+// GetSalesByPackage retrieves sales breakdown by individual package (performance by package)
+func (s *SalesService) GetSalesByPackage(ctx context.Context, startDate, endDate string) ([]dto.SalesByPackageResponse, error) {
+	// Parse date strings to handle relative dates
+	parsedStartDate := parseDateString(startDate)
+	parsedEndDate := parseDateString(endDate)
+
+	data, err := s.salesRepo.GetSalesByPackage(ctx, parsedStartDate, parsedEndDate)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate total for percentage calculation
+	var totalRevenue float64
+	for _, item := range data {
+		totalRevenue += item.TotalRevenue
+	}
+
+	results := make([]dto.SalesByPackageResponse, len(data))
+	for i, item := range data {
+		percentage := 0.0
+		if totalRevenue > 0 {
+			percentage = (item.TotalRevenue / totalRevenue) * 100
+		}
+
+		results[i] = dto.SalesByPackageResponse{
+			PackageID:     item.PackageID,
+			PackageName:   item.PackageName,
+			TotalSales:    item.TotalSales,
+			TotalQuantity: item.TotalQuantity,
+			TotalRevenue:  item.TotalRevenue,
+			AvgUnitPrice:  item.AvgUnitPrice,
+			Percentage:    percentage,
 		}
 	}
 

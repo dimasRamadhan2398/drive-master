@@ -1,6 +1,6 @@
 server:
   host: "0.0.0.0"
-  port: 8080
+  port: 8088
   mode: release
   read_timeout: 30
   write_timeout: 30
@@ -9,9 +9,9 @@ jwt:
   secret: fec20f8c86f9c2657ef2423d6859c9b1355472e995d512753a710575fd4c3cd5
 
 services:
-  user_service_url: "http://user-service:8001"
-  core_service_url: "http://core-service:8002"
-  booking_service_url: "http://booking-service:8003"
+  user_service_url: "http://127.0.0.1:8001"
+  core_service_url: "http://127.0.0.1:8002"
+  booking_service_url: "http://127.0.0.1:8003"
 
 rate_limiter:
   max: 100
@@ -20,4 +20,11 @@ rate_limiter:
 cors:
   allowed_origins:
     - "http://localhost:3000"
-    - "https://yourdomain.com"
+    - "https://drivemaster.id"
+    - "http://drivemaster.id"
+    - "http://203.194.114.20"
+    - "https://203.194.114.20"
+    - "https://dev.drivemaster.id"
+    - "http://dev.drivemaster.id"
+    - "https://api-dev.drivemaster.id"
+    - "http://api-dev.drivemaster.id"

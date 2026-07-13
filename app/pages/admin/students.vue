@@ -4,6 +4,7 @@ import { computed, ref } from "vue";
 import { useStudentsStore } from "~/stores/students";
 import type { Student } from "~/stores/students";
 
+const { t } = useI18n()
 definePageMeta({ layout: "admin" });
 
 const toast = useToast();
@@ -24,7 +25,7 @@ const newStudent = ref({
   status: "pending" as "active" | "pending",
 });
 
-// Use store's state instead of local refs for server-side pagination
+// Use store's state for server-side pagination
 const searchQuery = computed({
   get: () => studentsStore.searchQuery,
   set: (value) => studentsStore.setSearchQuery(value),
@@ -42,6 +43,38 @@ const pagination = computed(() => studentsStore.pagination);
 // For display purposes - students list is now directly from store
 const studentsList = computed(() => studentsStore.students);
 
+const studentsWithProgress = computed(() => {
+  return studentsList.value.map((student) => ({
+    ...student,
+    _progress: getActiveEntitlementProgress(student),
+    _sessions: getActiveEntitlementSessions(student),
+  }));
+});
+
+function getActiveEntitlementProgress(student: Student) {
+  if (!student || !student.entitlements) return 0;
+  const active = student.entitlements.find((e) => e.status === "active");
+  if (!active || !active.totalSessions) return 0;
+
+  const remaining = Number(active.remaining ?? 0);
+  const total = Number(active.totalSessions);
+
+  if (total <= 0 || isNaN(remaining) || isNaN(total)) return 0;
+
+  const progress = Math.round((remaining / total) * 100);
+  return isNaN(progress) || !isFinite(progress) ? 0 : Math.min(100, Math.max(0, progress));
+}
+
+function getActiveEntitlementSessions(student: Student) {
+  if (!student || !student.entitlements) return { remaining: 0, total: 0 };
+  const active = student.entitlements.find((e) => e.status === "active");
+  if (!active) return { remaining: 0, total: 0 };
+  return { 
+    remaining: active.remaining ?? 0, 
+    total: active.totalSessions ?? 0 
+  };
+}
+
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -58,8 +91,8 @@ function bookSessionPage(student: Student) {
 function issueCertificatePage(student: Student) {
   if (student.status !== "completed") {
     toast.add({
-      title: "Not Eligible for Certificate",
-      description: `${student.name} has not completed the package yet.`,
+      title: t('admin.notEligibleCert'),
+      description: t('admin.notEligibleCertDesc', { name: student.name }),
       color: "warning",
       icon: "i-lucide-info",
     });
@@ -82,8 +115,8 @@ function openEditModal(student: Student) {
 async function deleteStudent(id: string) {
   await studentsStore.deleteStudent(id);
   toast.add({
-    title: "Student Removed",
-    description: "The student has been removed from the system.",
+    title: t('admin.studentRemoved'),
+    description: t('admin.studentRemovedDesc'),
     icon: "i-lucide-trash",
     color: "error",
   });
@@ -92,8 +125,8 @@ async function deleteStudent(id: string) {
 function addStudent() {
   if (!newStudent.value.email || !newStudent.value.firstName) {
     toast.add({
-      title: "Error",
-      description: "Nama dan email wajib diisi.",
+      title: t('common.error'),
+      description: t('admin.nameEmailRequired'),
       color: "error",
     });
     return;
@@ -108,8 +141,8 @@ function addStudent() {
   });
 
   toast.add({
-    title: "Student Added",
-    description: `${newStudent.value.firstName} telah ditambahkan.`,
+    title: t('admin.studentAdded'),
+    description: t('admin.studentAddedDesc', { name: newStudent.value.firstName }),
     icon: "i-lucide-check-circle",
     color: "success",
   });
@@ -139,8 +172,8 @@ function saveEditedStudent() {
   studentsStore.updateStudent(editingStudent.value.id, updateData);
 
   toast.add({
-    title: "Student Updated",
-    description: `${editingStudent.value.name}'s data has been updated.`,
+    title: t('admin.studentUpdated'),
+    description: t('admin.studentUpdatedDesc', { name: editingStudent.value.name }),
     icon: "i-lucide-check-circle",
     color: "success",
   });
@@ -156,17 +189,24 @@ function getStatusColor(status: string) {
 }
 
 function getStatusLabel(status: string) {
-  if (status === "active") return "Active";
-  if (status === "completed") return "Completed";
-  return "Pending";
+  if (status === "active") return t('billing.active');
+  if (status === "completed") return t('common.completed');
+  return t('common.pending');
 }
 
-function getPackageColor(pkg: string) {
-  if (pkg.toLowerCase().includes("gold")) return "warning";
-  if (pkg.toLowerCase().includes("platinum")) return "primary";
-  if (pkg.toLowerCase().includes("silver")) return "secondary";
-  if (pkg.toLowerCase().includes("bronze")) return "";
-  return "neutral";
+function getPackageBadgeClass(pkg: string) {
+  const pkgLower = pkg.toLowerCase();
+  if (pkgLower.includes("gold") || pkgLower.includes("10x"))
+    return "bg-gradient-to-r from-yellow-400 to-amber-400 text-amber-950 shadow-[0_0_12px_rgba(250,205,78,0.6)] border border-yellow-300/50 dark:from-amber-400 dark:to-yellow-400 dark:text-amber-950 dark:shadow-[0_0_12px_rgba(250,205,78,0.5)]";
+  if (pkgLower.includes("platinum") || pkgLower.includes("12x"))
+    return "bg-gradient-to-r from-slate-300 to-slate-400 text-slate-800 shadow-[0_0_12px_rgba(148,163,184,0.4)] border border-slate-200/50 dark:from-slate-500 dark:to-slate-400 dark:text-slate-100 dark:shadow-[0_0_12px_rgba(148,163,184,0.3)]";
+  if (pkgLower.includes("silver") || pkgLower.includes("8x"))
+    return "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-700 shadow-[0_0_8px_rgba(209,213,219,0.5)] border border-gray-300/50 dark:from-gray-600 dark:to-gray-500 dark:text-gray-100 dark:shadow-[0_0_8px_rgba(156,163,175,0.4)]";
+  if (pkgLower.includes("bronze") || pkgLower.includes("6x"))
+    return "bg-gradient-to-r from-orange-300 to-orange-400 text-orange-900 shadow-[0_0_12px_rgba(251,146,60,0.5)] border border-orange-200/50 dark:from-orange-600 dark:to-orange-500 dark:text-orange-100 dark:shadow-[0_0_12px_rgba(249,115,22,0.4)]";
+  if (pkgLower.includes("basic"))
+    return "bg-gradient-to-r from-green-300 to-green-400 text-green-900 shadow-[0_0_10px_rgba(134,239,172,0.5)] border border-green-200/50 dark:from-green-600 dark:to-green-500 dark:text-green-100 dark:shadow-[0_0_10px_rgba(74,222,128,0.4)]";
+  return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600";
 }
 
 onMounted(() => {
@@ -177,32 +217,32 @@ onMounted(() => {
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Student Management">
+      <UDashboardNavbar :title="t('admin.manageStudents')">
         <template #right>
           <UButton
             icon="i-lucide-user-plus"
             color="warning"
-            label="Add Student"
+            :label="t('admin.addNew')"
             @click="showAddModal = true"
           />
           <!-- Add Student Modal -->
-          <UModal v-model:open="showAddModal" title="Add New Student">
+          <UModal v-model:open="showAddModal" :title="t('admin.addNew')">
             <template #body>
               <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
-                  <UFormField label="First Name" required>
+                  <UFormField :label="t('register.form.firstName')" required>
                     <UInput
                       v-model="newStudent.firstName"
-                      placeholder="First name"
+                      :placeholder="t('register.form.firstName')"
                       color="warning"
                       class="w-full"
                       icon="i-lucide-user"
                     />
                   </UFormField>
-                  <UFormField label="Last Name">
+                  <UFormField :label="t('register.form.lastName')">
                     <UInput
                       v-model="newStudent.lastName"
-                      placeholder="Last name"
+                      :placeholder="t('register.form.lastName')"
                       color="warning"
                       class="w-full"
                     />
@@ -218,7 +258,7 @@ onMounted(() => {
                     icon="i-lucide-mail"
                   />
                 </UFormField>
-                <UFormField label="Phone Number" required>
+                <UFormField :label="t('profile.phone')" required>
                   <UInput
                     v-model="newStudent.phoneNumber"
                     placeholder="+6281234567890"
@@ -232,13 +272,13 @@ onMounted(() => {
             <template #footer>
               <div class="flex justify-end gap-3">
                 <UButton
-                  label="Cancel"
+                  :label="t('common.cancel')"
                   variant="ghost"
                   color="neutral"
                   @click="showAddModal = false"
                 />
                 <UButton
-                  label="Create Student"
+                  :label="t('admin.createStudent')"
                   color="warning"
                   @click="addStudent"
                 />
@@ -246,13 +286,13 @@ onMounted(() => {
             </template>
           </UModal>
           <!-- Edit Student Modal -->
-          <UModal v-model:open="showEditModal" title="Edit Student">
+          <UModal v-model:open="showEditModal" :title="t('common.edit')">
             <template #body>
               <div v-if="editingStudent" class="space-y-4">
-                <UFormField label="Full Name" required>
+                <UFormField :label="t('profile.fullName')" required>
                   <UInput
                     v-model="editingStudent.name"
-                    placeholder="Enter student name"
+                    :placeholder="t('admin.enterStudentName')"
                     color="warning"
                     class="w-full"
                     icon="i-lucide-user"
@@ -268,7 +308,7 @@ onMounted(() => {
                     icon="i-lucide-mail"
                   />
                 </UFormField>
-                <UFormField label="Phone Number" required>
+                <UFormField :label="t('profile.phone')" required>
                   <UInput
                     v-model="editingStudent.phone"
                     placeholder="081234567890"
@@ -278,16 +318,15 @@ onMounted(() => {
                   />
                 </UFormField>
                 <div class="grid grid-cols-2 gap-4">
-                  <UFormField label="Package" required>
-                    <UInput
-                      :model-value="editingStudent.package"
-                      disabled
-                      placeholder="Package from entitlements"
-                      class="w-full"
-                      color="warning"
-                    />
+                  <UFormField :label="t('billing.package')" required>
+                    <span
+                      :class="getPackageBadgeClass(editingStudent.package)"
+                      class="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-medium"
+                    >
+                      {{ editingStudent.package }}
+                    </span>
                   </UFormField>
-                  <UFormField label="Status" required>
+                  <UFormField :label="t('billing.status')" required>
                     <USelect
                       v-model="editingStudent.status"
                       :items="
@@ -306,13 +345,13 @@ onMounted(() => {
             <template #footer>
               <div class="flex justify-end gap-3">
                 <UButton
-                  label="Cancel"
+                  :label="t('common.cancel')"
                   variant="ghost"
                   color="neutral"
                   @click="showEditModal = false"
                 />
                 <UButton
-                  label="Save Changes"
+                  :label="t('admin.saveChanges')"
                   color="warning"
                   @click="saveEditedStudent"
                 />
@@ -327,7 +366,7 @@ onMounted(() => {
         <template #left>
           <UInput
             v-model="searchQuery"
-            placeholder="Search students..."
+            :placeholder="t('common.search') + '...'"
             color="warning"
             icon="i-lucide-search"
             class="w-64"
@@ -337,10 +376,10 @@ onMounted(() => {
           <USelect
             v-model="statusFilter"
             :items="[
-              { label: 'All Status', value: 'all' },
-              { label: 'Active', value: 'active' },
-              { label: 'Pending', value: 'pending' },
-              { label: 'Completed', value: 'completed' },
+              { label: t('admin.allStatus'), value: 'all' },
+              { label: t('billing.active'), value: 'active' },
+              { label: t('common.pending'), value: 'pending' },
+              { label: t('common.completed'), value: 'completed' },
             ]"
             class="w-40"
             color="warning"
@@ -360,38 +399,38 @@ onMounted(() => {
                   <th
                     class="text-left py-3 px-4 font-medium text-muted text-md"
                   >
-                    Student
+                    {{ t('admin.students') }}
                   </th>
                   <th
                     class="text-left py-3 px-4 font-medium text-muted text-md"
                   >
-                    Package
+                    {{ t('billing.package') }}
                   </th>
                   <th
                     class="text-left py-3 px-4 font-medium text-muted text-md"
                   >
-                    Progress
+                    {{ t('common.progress') }}
                   </th>
                   <th
                     class="text-left py-3 px-4 font-medium text-muted text-md"
                   >
-                    Join Date
+                    {{ t('admin.joinDate') }}
                   </th>
                   <th
                     class="text-left py-3 px-4 font-medium text-muted text-md"
                   >
-                    Status
+                    {{ t('billing.status') }}
                   </th>
                   <th
                     class="text-right py-3 px-4 font-medium text-muted text-md"
                   >
-                    Actions
+                    {{ t('admin.actions') }}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  v-for="student in studentsList"
+                 <tr
+                  v-for="student in studentsWithProgress"
                   :key="student.id"
                   class="border-b border-default hover:bg-muted/30 transition-colors"
                 >
@@ -405,23 +444,29 @@ onMounted(() => {
                     </div>
                   </td>
                   <td class="py-3 px-4">
-                    <UBadge
-                      :label="student.package"
-                      :color="getPackageColor(student.package)"
-                      variant="subtle"
-                    />
+                    <span
+                      :class="getPackageBadgeClass(student.package)"
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    >
+                      {{ student.package }}
+                    </span>
                   </td>
                   <td class="py-3 px-4">
                     <div class="w-32">
                       <div class="flex justify-between text-md mb-1">
                         <span
-                          >{{ student.completedSessions }}/{{
-                            student.totalSessions
+                          >{{ student._sessions.remaining }}/{{
+                            student._sessions.total
                           }}</span
                         >
-                        <span>{{ student.progress }}%</span>
+                        <span>{{ student._progress }}%</span>
                       </div>
-                      <UProgress :value="student.progress" size="md" />
+                      <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div 
+                          class="bg-primary h-full rounded-full transition-all duration-300"
+                          :style="{ width: `${student._progress}%` }"
+                        ></div>
+                      </div>
                     </div>
                   </td>
                   <td class="py-3 px-4 text-md">{{ student.joinDate }}</td>
@@ -437,31 +482,31 @@ onMounted(() => {
                       :items="[
                         [
                           {
-                            label: 'View Details',
+                            label: t('dashboard.viewDetails'),
                             icon: 'i-lucide-eye',
                             onSelect: () => viewStudent(student),
                           },
                           {
-                            label: 'Edit',
+                            label: t('common.edit'),
                             icon: 'i-lucide-pencil',
                             onSelect: () => openEditModal(student),
                           },
                           {
-                            label: 'Book Session',
+                            label: t('dashboard.bookSession'),
                             icon: 'i-lucide-calendar-plus',
                             onSelect: () => bookSessionPage(student),
                           },
                         ],
                         [
                           {
-                            label: 'Issue Certificate',
+                            label: t('admin.certificates'),
                             icon: 'i-lucide-award',
                             onSelect: () => issueCertificatePage(student),
                           },
                         ],
                         [
                           {
-                            label: 'Delete',
+                            label: t('common.delete'),
                             icon: 'i-lucide-trash',
                             color: 'error',
                             onSelect: () => deleteStudent(student.id),
@@ -481,7 +526,7 @@ onMounted(() => {
             </table>
           </div>
           <!-- Student Detail Modal -->
-          <UModal v-model:open="showDetailModal" title="Student Details">
+          <UModal v-model:open="showDetailModal" :title="t('dashboard.sessionDetail')">
             <template #body>
               <div v-if="selectedStudent" class="space-y-4">
                 <div class="flex items-center gap-4">
@@ -494,25 +539,26 @@ onMounted(() => {
                       {{ selectedStudent.name }}
                     </h3>
                     <p class="text-muted">{{ selectedStudent.email }}</p>
-                    <UBadge
-                      :label="selectedStudent.package + ' Package'"
-                      color="warning"
-                      class="mt-1"
-                    />
+                    <span
+                      :class="getPackageBadgeClass(selectedStudent.package)"
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1"
+                    >
+                      {{ selectedStudent.package }} {{ t('billing.package') }}
+                    </span>
                   </div>
                 </div>
                 <USeparator />
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <p class="text-md text-muted">Phone</p>
+                    <p class="text-md text-muted">{{ t('profile.phone') }}</p>
                     <p class="font-medium">{{ selectedStudent.phone }}</p>
                   </div>
                   <div>
-                    <p class="text-md text-muted">Join Date</p>
+                    <p class="text-md text-muted">{{ t('admin.joinDate') }}</p>
                     <p class="font-medium">{{ selectedStudent.joinDate }}</p>
                   </div>
                   <div>
-                    <p class="text-md text-muted">Sessions</p>
+                    <p class="text-md text-muted">{{ t('billing.sessions') }}</p>
                     <p class="font-medium">
                       {{ selectedStudent.completedSessions }}/{{
                         selectedStudent.totalSessions
@@ -520,7 +566,7 @@ onMounted(() => {
                     </p>
                   </div>
                   <div>
-                    <p class="text-md text-muted">Status</p>
+                    <p class="text-md text-muted">{{ t('billing.status') }}</p>
                     <UBadge
                       :label="getStatusLabel(selectedStudent.status)"
                       :color="getStatusColor(selectedStudent.status)"
@@ -528,10 +574,15 @@ onMounted(() => {
                   </div>
                 </div>
                 <div>
-                  <p class="text-md text-muted mb-2">Progress</p>
-                  <UProgress :value="selectedStudent.progress" />
+                  <p class="text-md text-muted mb-2">{{ t('common.progress') }}</p>
+                  <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <div 
+                      class="bg-primary h-full rounded-full transition-all duration-300"
+                      :style="{ width: `${selectedStudent.progress}%` }"
+                    ></div>
+                  </div>
                   <p class="text-md text-right mt-1">
-                    {{ selectedStudent.progress }}% complete
+                    {{ selectedStudent.progress }}% {{ t('common.completed').toLowerCase() }}
                   </p>
                 </div>
               </div>
@@ -539,13 +590,13 @@ onMounted(() => {
             <template #footer>
               <div class="flex justify-end gap-3">
                 <UButton
-                  label="Close"
+                  :label="t('dashboard.close')"
                   variant="ghost"
                   color="neutral"
                   @click="showDetailModal = false"
                 />
                 <UButton
-                  label="Edit Student"
+                  :label="t('common.edit') + ' ' + t('admin.students')"
                   color="warning"
                   icon="i-lucide-pencil"
                   @click="openEditModal(selectedStudent!)"
@@ -556,7 +607,7 @@ onMounted(() => {
           <template #footer>
             <div class="flex items-center justify-between">
               <p class="text-md text-muted">
-                Showing {{ students.length }} of {{ pagination.total }} students
+                {{ t('admin.showing', { count: students.length, total: pagination.total }) }}
               </p>
               <UPagination
                 v-model="studentsStore.pagination.page"

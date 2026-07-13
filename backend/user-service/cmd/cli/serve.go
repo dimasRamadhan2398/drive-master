@@ -116,7 +116,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	kafkaConsumer, err := pkgKafka.NewConsumer(pkgKafka.ConsumerConfig{
 		Brokers:  loadedConfig.Kafka.Brokers,
 		GroupID:  "user-service-consumer",
-		Topics:   []string{loadedConfig.Kafka.Topic},
+		Topics:   []string{loadedConfig.Kafka.Topic, "booking.events"},
 		Enabled:  loadedConfig.Kafka.Enabled,
 		Version:  "3.6.0",
 		Assignor: "roundrobin",
@@ -149,9 +149,10 @@ func runServe(cmd *cobra.Command, args []string) {
 	serviceRegistry := services.NewServiceRegistry(repoRegistry, eventPublisher, redisClient)
 
 	// Register session completed handler (consumes events such as "session.completed" or "course.completed")
+	certRepo := repoRegistry.GetCertification()
 	entRepo := repoRegistry.GetEntitlement()
 	certSvc := serviceRegistry.GetCertificationService()
-	entitlementListener := listeners.NewEntitlementCompletedListener(certSvc, eventPublisher)
+	entitlementListener := listeners.NewEntitlementCompletedListener(certSvc, certRepo, eventPublisher)
 	sessionHandler := listeners.NewSessionCompletedHandler(entRepo, entitlementListener)
 	if err := eventPublisher.RegisterHandler(sessionHandler); err != nil {
 		logger.Warn("Failed to register session.completed handler", logger.LogField("error", err))
@@ -162,6 +163,13 @@ func runServe(cmd *cobra.Command, args []string) {
 	profileListener := listeners.NewProfileUpdateListener(memberRepo, entRepo)
 	if err := eventPublisher.RegisterHandler(profileListener); err != nil {
 		logger.Warn("Failed to register profile.update listener", logger.LogField("error", err))
+	}
+
+	// Register enrollment paid handler to create entitlements when payment is confirmed
+	entitlementService := serviceRegistry.GetEntitlementService()
+	enrollmentPaidHandler := listeners.NewEnrollmentPaidHandler(entitlementService)
+	if err := eventPublisher.RegisterHandler(enrollmentPaidHandler); err != nil {
+		logger.Warn("Failed to register enrollment.paid handler", logger.LogField("error", err))
 	}
 
 	// Start consumer in background so it can deliver events to registered handlers
@@ -249,6 +257,7 @@ func runMigrations(db *gorm.DB) {
 		&models.Certification{},
 		&models.Entitlement{},
 		&models.InstructorRecurringSchedule{},
+		&models.Testimonial{},
 	); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}

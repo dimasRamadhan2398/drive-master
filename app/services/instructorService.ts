@@ -46,12 +46,14 @@ export interface Instructor {
   phone: string;
   image?: string;
   bio?: string;
+  description?: string;
   status: "active" | "inactive" | "pending";
   joinedDate: string;
   totalStudents: number;
   rating: number;
   certifications: string[];
   yearsOfExperience: number;
+  licenseNumber?: string;
 }
 
 export interface MediaMetadata {
@@ -69,6 +71,11 @@ export interface UpdateInstructorData {
   address?: string;
   dateOfBirth?: string;
   bio?: string;
+  description?: string;
+  yearsOfExperience?: number;
+  bnspCertificateNumber?: string;
+  licenseNumber?: string;
+  photoBase64?: string;
 }
 
 // Request data for creating a new instructor (combined user + profile)
@@ -90,6 +97,7 @@ export interface CreateInstructorRequest {
   yearsOfExperience?: number;
   specialization?: string;
   description?: string;
+  photoBase64?: string;
 }
 
 // Legacy interfaces for backwards compatibility
@@ -125,14 +133,30 @@ export interface PaginatedInstructorsResult {
 // Map API response to Instructor model
 export const mapApiToInstructor = (item: InstructorApiResponse): Instructor => {
   const profile = item.instructorProfile;
+  
+  // Robust name mapping to prevent "undefined undefined" or empty strings
+  const firstName = item.firstName !== undefined && item.firstName !== null ? String(item.firstName).trim() : "";
+  const lastName = item.lastName !== undefined && item.lastName !== null ? String(item.lastName).trim() : "";
+  const fullName = `${firstName} ${lastName}`.trim();
+  const displayName = fullName || "Unnamed Instructor";
+
+  // Robust status mapping to prevent setting to inactive if status is undefined in response
+  let status: "active" | "inactive" | "pending" = "active";
+  if (profile && typeof profile.isActive === "boolean") {
+    status = profile.isActive ? "active" : "inactive";
+  } else if (item.status) {
+    status = item.status;
+  }
+
   return {
-    userId: item.userId,
-    name: `${item.firstName} ${item.lastName}`.trim(),
-    email: item.email,
+    userId: item.userId || "",
+    name: displayName,
+    email: item.email || "",
     phone: item.phoneNumber || "",
-    image: profile?.photoURL || item.image,
+    image: profile?.photoURL || item.image || "",
     bio: profile?.bio || "",
-    status: profile?.isActive ? "active" : "inactive",
+    description: profile?.description || profile?.bio || "",
+    status: status,
     joinedDate: profile?.yearsOfExperience
       ? `${profile.yearsOfExperience} years`
       : new Date().toLocaleDateString("en-US", {
@@ -146,6 +170,7 @@ export const mapApiToInstructor = (item: InstructorApiResponse): Instructor => {
       ? [`BNSP: ${profile.bnspCertificateNumber}`]
       : [],
     yearsOfExperience: profile?.yearsOfExperience || 0,
+    licenseNumber: profile?.licenseNumber || "",
   };
 };
 
@@ -276,6 +301,17 @@ export const instructorService = {
     const { user } = useApiClients();
     try {
       await user(`/instructors/${userId}/media`, { method: "DELETE" });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  // DELETE /instructors/:id - Delete instructor fully (user + profile)
+  async delete(userId: string): Promise<boolean> {
+    const { user } = useApiClients();
+    try {
+      await user(`/instructors/${userId}`, { method: "DELETE" });
       return true;
     } catch {
       return false;

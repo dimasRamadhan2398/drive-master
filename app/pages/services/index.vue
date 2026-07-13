@@ -1,193 +1,124 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 useSeoMeta({
   title: 'Services | Drive Master Academy',
   description: 'Comprehensive driving courses designed for the electric future. From beginners to advanced drivers, we have the perfect program for you.',
 })
 
-const services = [
+const specifications = computed(() => [
   {
-    title: '6x Sessions',
-    description: 'Foundation course for complete beginners. Learn the fundamentals of driving in our premium electric vehicles.',
-    icon: 'i-lucide-car',
-    features: [
-      'Free Trial',
-      '6x Sessions',
-      '60 minutes per session',
-      'Night driving session',
-      'Weekend driving session',
-      'Matic transmission',
-      'Free shuttle (Alam Sutra, BSD, Gading Serpong)',
-      'Driving license administration',
-      'Theory materials included',
-      'Certificate of completion',
-    ]
-  },
-  {
-    title: '8x Sessions',
-    description: 'Take your skills to the next level with advanced techniques and real-world scenarios.',
-    icon: 'i-lucide-car',
-    features: [
-      'Free Trial',
-      '8x Sessions',
-      '60 minutes per session',
-      'Night driving session',
-      'Weekend driving session',
-      'Matic transmission',
-      'Free shuttle (Alam Sutra, BSD, Gading Serpong)',
-      'Driving license administration',
-      'Theory materials included',
-      'Certificate of completion',
-    ]
-  },
-  {
-    title: '10x Sessions',
-    description: 'Comprehensive Session focused on electric vehicle specific features and best practices.',
-    icon: 'i-lucide-car',
-    features: [
-      'Free Trial',
-      '10x Sessions',
-      '60 minutes per session',
-      'Night driving session',
-      'Weekend driving session',
-      'Matic transmission',
-      'Free shuttle (Alam Sutra, BSD, Gading Serpong)',
-      'Driving license administration',
-      'Theory materials included',
-      'Certificate of completion',
-    ]
-  },
-  {
-    title: '12x Sessions',
-    description: 'Perfect for licensed drivers who want to brush up their skills or transition to EV driving.',
-    icon: 'i-lucide-car',
-    features: [
-      'Free Trial',
-      '12x Sessions',
-      '60 minutes per session',
-      'Night driving session',
-      'Weekend driving session',
-      'Matic transmission',
-      'Free shuttle (Alam Sutra, BSD, Gading Serpong)',
-      'Driving license administration',
-      'Theory materials included',
-      'Certificate of completion',
-    ]
-  }
-]
-
-const specifications = [
-  {
-    title: 'Special Services',
-    subtitle: 'The Advantage of choosing Us',
+    title: t('services.specifications.specialServices'),
+    subtitle: t('services.specifications.specialServicesSub'),
     description: [
-      'SIM',
-      'Free shuttle (Alam Sutra, BSD, Gading Serpong)',
-      'Theory materials included',
-      'Certificate of completion',
+      t('services.specifications.sim'),
+      t('services.specifications.shuttle'),
+      t('services.specifications.theory'),
+      t('services.specifications.certificate'),
     ],
     icon: 'i-lucide-star'
   },
   {
-    title: 'Session Time',
-    subtitle: 'Our original session time',
+    title: t('services.specifications.sessionTime'),
+    subtitle: t('services.specifications.sessionTimeSub'),
     description: [
-      'Session in weekdays(days) open from 08:00 to 17:00',
-      '60 minutes per session',
-      'Night driving session',
-      'Weekend driving session',
+      t('services.specifications.weekdayHours'),
+      t('services.specifications.sessionDuration'),
+      t('home.hoursNight'),
+      t('home.hoursWeekend'),
     ],
     icon: 'i-lucide-car'
   },
   {
-    title: 'Car Transmission',
-    subtitle: 'Our car using matic transmission',
+    title: t('services.specifications.carTransmission'),
+    subtitle: t('services.specifications.carTransmissionSub'),
     description: [
-      'Matic Transmission',
+      t('services.specifications.matic'),
     ],
     icon: 'i-lucide-car'
   },
   {
-    title: 'Night Session',
-    subtitle: 'Additional price for night session',
+    title: t('services.specifications.nightSession'),
+    subtitle: t('services.specifications.nightSessionSub'),
     description: [
-      'Session at night open from 18:00 to 20:00',
-      'Base price 6x sessions + Rp.100,000 for night session',
-      'Base price 8x sessions + Rp.150,000 for night session',
-      'Base price 10x sessions + Rp.200,000 for night session',
-      'Base price 12x sessions + Rp.250,000 for night session',
+      t('services.specifications.nightHours'),
+      t('services.specifications.nightPrice', { sessions: '6x' }),
+      t('services.specifications.nightPrice', { sessions: '8x' }),
+      t('services.specifications.nightPrice', { sessions: '10x' }),
+      t('services.specifications.nightPrice', { sessions: '12x' }),
     ],
     icon: 'i-lucide-moon'
   },
   {
-    title: 'Weekend Session',
-    subtitle: 'Additional price for weekend session',
+    title: t('services.specifications.weekendSession'),
+    subtitle: t('services.specifications.weekendSessionSub'),
     description: [
-      'Session in weekend(days) open from 08:00 to 17:00',
-      'Base price 6x sessions + Rp.100,000 for session in weekend',
-      'Base price 8x sessions + Rp.150,000 for session in weekend',
-      'Base price 10x sessions + Rp.200,000 for session in weekend',
-      'Base price 12x sessions + Rp.250,000 for session in weekend',
+      t('services.specifications.weekendHours'),
+      t('services.specifications.weekendPrice', { sessions: '6x' }),
+      t('services.specifications.weekendPrice', { sessions: '8x' }),
+      t('services.specifications.weekendPrice', { sessions: '10x' }),
+      t('services.specifications.weekendPrice', { sessions: '12x' }),
     ],
     icon: 'i-lucide-clock'
   }
-]
+])
 
 // Course Material
-const courseMaterial = [
+const courseMaterial = computed(() => [
   {
-    title: 'Material Theory',
+    title: t('home.material.materialTheory'),
     description: [
-      'Vehicle Introduction and Basic Controls',
-      'Cockpit training (ergonomic seating position, center and side mirror adjustment, and seat belt use)',
-      'Introduction to instruments (gas pedal, brake, transmission lever, handbrake, indicator lights in the dashboard)',
-      'Safety check (check the condition of tires, oil and radiator water before driving)'
+      t('home.material.materialTheoryDesc'),
+      t('home.material.materialTheoryDesc2'),
+      t('home.material.materialTheoryDesc3'),
+      t('home.material.materialTheoryDesc4'),
     ],
     icon:'i-lucide-book-open'
   },
   {
-    title: 'Initial Control',
+    title: t('home.material.initialControl'),
     description: [
-      'Starting & stopping the engine (standard procedure for starting the engine safely)',
-      'Accelerator pedal technique safely (balanced and smooth)',
-      'Braking and stopping techniques (smooth braking and how to stop at a certain point precisely)',
+      t('home.material.initialControlDesc'),
+      t('home.material.initialControlDesc2'),
+      t('home.material.initialControlDesc3'),
     ],
     icon: 'i-lucide-shield-check'
   },
   {
-    title: 'Basic Maneuvering Techniques',
+    title: t('home.material.basicManeuvering'),
     description: [
-      'Steering control (steering wheel turning technique when turning quickly)',
-      'Reverse (controlling the car to reverse using only the rearview mirror)',
-      'Turning at an intersection (technique for taking the correct turning angle to the left or right)',
+      t('home.material.basicManeuveringDesc'),
+      t('home.material.basicManeuveringDesc2'),
+      t('home.material.basicManeuveringDesc3'),
     ],
     icon: 'i-lucide-radar'
   },
   {
-    title: 'Driving Techniques on Uphill & Downhill Roads',
+    title: t('home.material.uphillDownhill'),
     description: [
-      'Start-stop technique on an incline',
-      'Start-stop technique on a downhill',
+      t('home.material.uphillDownhillDesc'),
+      t('home.material.uphillDownhillDesc2'),
     ],
     icon: 'i-lucide-car'
   },
   {
-    title: 'Parking Technic',
+    title: t('home.material.parking'),
     description: [
-      'Reverse parking at an angle or straight (enter the parking slot with the car in reverse)',
-      'Parallel parking (a technique of inserting a car between two other vehicles parallel to each other)',
+      t('home.material.parkingDesc'),
+      t('home.material.parkingDesc2'),
     ],
     icon: 'i-lucide-car'
   },
   {
-    title: 'Driving on the Highway',
+    title: t('home.material.highway'),
     description: [
-      'Road signs and markings (obey traffic signs, no parking signs and road markings)',
-      'Driving ethics (using turn signals, maintaining a safe distance, and how to overtake other vehicles correctly)',
-      'Blind spot (a technique for checking areas that are not visible in the rearview mirror before changing lanes)',
+      t('home.material.highwayDesc'),
+      t('home.material.highwayDesc2'),
+      t('home.material.highwayDesc3'),
     ],
     icon: 'i-lucide-car'
   }
-]
+])
 
 const serviceAreas = [
   'Alam Sutera & surrounding areas',
@@ -203,11 +134,11 @@ const serviceAreas = [
   <div>
     <!-- Hero -->
     <UPageHero
-      title="Our Services"
-      description="Comprehensive driving courses designed for the electric future. From beginners to advanced drivers, we have the perfect program for you."
+      :title="t('services.heroTitle')"
+      :description="t('services.heroDesc')"
       :links="[
-        { label: 'View Packages', to: '/packages', color: 'warning', icon: 'i-lucide-package' },
-        { label: 'Book Consultation', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
+        { label: t('services.viewPackages'), to: '/packages', color: 'warning', icon: 'i-lucide-package' },
+        { label: t('services.bookConsultation'), to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
       ]"
     />
 
@@ -243,9 +174,9 @@ const serviceAreas = [
     <!-- Course Material -->
     <UPageSection
       id="material"
-      headline="Course material you will study"
-      title="Course Material"
-      description="Course material that you learn will make you more confident in driving."
+      :headline="t('home.courseMaterialHeadline')"
+      :title="t('home.courseMaterial')"
+      :description="t('home.courseMaterialDesc')"
       :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
@@ -271,9 +202,9 @@ const serviceAreas = [
 
     <!-- Service Areas -->
     <UPageSection
-      headline="Coverage"
-      title="Service Areas"
-      description="Our training routes cover major areas around Alam Sutera and Tangerang."
+      :headline="t('services.coverage.title')"
+      :title="t('services.coverage.headline')"
+      :description="t('services.coverage.description')"
       :ui="{ headline: 'text-warning' }"
       class="bg-muted/30"
     >
@@ -288,18 +219,18 @@ const serviceAreas = [
         </UCard>
         
         <p class="text-center text-muted mt-6">
-          Sessions depart from our Alam Sutera center. Contact us for specific route availability.
+          {{ t('services.coverage.footer') }}
         </p>
       </div>
     </UPageSection>
 
     <!-- CTA -->
     <UPageCTA
-      title="Ready to Start?"
-      description="Book a free consultation or view our package options to begin your EV driving journey."
+      :title="t('services.cta.title')"
+      :description="t('services.cta.description')"
       :links="[
-        { label: 'View Packages', to: '/packages', color: 'warning', icon: 'i-lucide-package' },
-        { label: 'WhatsApp Consultation', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
+        { label: t('services.viewPackages'), to: '/packages', color: 'warning', icon: 'i-lucide-package' },
+        { label: t('services.cta.whatsapp'), to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
       ]"
     />
   </div>

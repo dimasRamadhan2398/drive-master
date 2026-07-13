@@ -65,6 +65,7 @@ type RegisterResponse struct {
 	AccessToken  string             `json:"accessToken"`
 	RefreshToken string             `json:"refreshToken"`
 	ExpiresIn    int64              `json:"expiresIn"`
+	OTPSent      bool               `json:"otpSent"`
 }
 
 // RefreshTokenInput is used for POST /auth/refresh

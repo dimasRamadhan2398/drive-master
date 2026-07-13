@@ -1,0 +1,45 @@
+# --- DriveMaster Dev API Subdomain Reverse Proxy Configuration ---
+
+# Prevent Apache from serving directory listings or index.php by default
+DirectoryIndex disabled
+
+# Allow all HTTP methods required by the REST API
+<IfModule mod_allowmethods.c>
+    AllowMethods GET POST PUT PATCH DELETE OPTIONS HEAD
+</IfModule>
+
+<IfModule mod_proxy.c>
+    ProxyPreserveHost On
+    ProxyRequests Off
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Pass through all HTTP methods (PUT, DELETE, PATCH, etc.)
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # 1. Exclude AutoSSL ACME challenge from proxying (keeps SSL auto-renew working)
+    RewriteCond %{REQUEST_URI} ^/\.well-known/acme-challenge [NC]
+    RewriteRule .* - [L]
+
+    # 2. Proxy API requests to appropriate dev microservices
+
+    # Dev User Service (port 9001)
+    RewriteRule ^api/v1/(auth|users|members|instructors|testimonials|entitlements|certificates)(/.*)?$ http://127.0.0.1:9001/api/v1/$1$2 [P,L]
+    RewriteRule ^api/v1/dashboard/certifications(/.*)?$ http://127.0.0.1:9001/api/v1/dashboard/certifications$1 [P,L]
+    RewriteRule ^api/v1/dashboard(/.*)?$ http://127.0.0.1:9001/api/v1/dashboard$1 [P,L]
+    RewriteRule ^api/v1/regions(/.*)?$ http://127.0.0.1:9001/api/v1/regions$1 [P,L]
+
+    # Dev Core Service (port 9002)
+    RewriteRule ^api/v1/(cars|packages|addons|articles|general-settings)(/.*)?$ http://127.0.0.1:9002/api/v1/$1$2 [P,L]
+    RewriteRule ^api/v1/admin/(sales|analytics|content|settings)(/.*)?$ http://127.0.0.1:9002/api/v1/admin/$1$2 [P,L]
+
+    # Dev Booking Service (port 9003)
+    RewriteRule ^api/v1/(bookings|certifications|schedules|sessions|enrollments)(/.*)?$ http://127.0.0.1:9003/api/v1/$1$2 [P,L]
+    RewriteRule ^api/v1/dashboard/(sessions|revenue)(/.*)?$ http://127.0.0.1:9003/api/v1/dashboard/$1$2 [P,L]
+
+    # Dev Payment Service (port 9004)
+    RewriteRule ^api/v1/(transactions|payments)(/.*)?$ http://127.0.0.1:9004/api/v1/$1$2 [P,L]
+    RewriteRule ^notifications(/.*)?$ http://127.0.0.1:9004/notifications$1 [P,L]
+</IfModule>

@@ -3,14 +3,25 @@ import { ref, computed, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useSalesStore } from '~/stores/sales'
 import { usePackagesStore } from '~/stores/packages'
+import { useStudentsStore } from '~/stores/students'
 
+const { t } = useI18n()
 definePageMeta({ layout: 'admin' })
 
 const route = useRoute()
 const salesStore = useSalesStore()
 const packagesStore = usePackagesStore()
+const studentsStore = useStudentsStore()
 
-const packageId = computed(() => route.query.packageId ? Number(route.query.packageId) : null)
+onMounted(async () => {
+  await Promise.all([
+    packagesStore.fetchPackages(),
+    studentsStore.fetchStudentsNoPagination()
+  ])
+  await salesStore.fetchTransactions()
+})
+
+const packageId = computed(() => route.query.packageId ? String(route.query.packageId) : null)
 
 // Get packages from store
 const packages = computed(() => packagesStore.packages)
@@ -71,18 +82,18 @@ function formatDate(dateString: string) {
 const columns = computed<TableColumn<any>[]>(() => {
   const base: TableColumn<any>[] = [
     { accessorKey: 'id', header: 'ID' },
-    { accessorKey: 'studentName', header: 'Student Name' },
+    { accessorKey: 'studentName', header: t('admin.students').replace('Murid', 'Nama Murid') },
   ]
 
   if (!packageId.value) {
-    base.push({ accessorKey: 'packageName', header: 'Package' })
+    base.push({ accessorKey: 'packageName', header: t('billing.package') })
   }
 
   return [
     ...base,
-    { accessorKey: 'purchaseDateFormatted', header: 'Date' },
-    { accessorKey: 'amountFormatted', header: 'Amount' },
-    { accessorKey: 'status', header: 'Status' }
+    { accessorKey: 'purchaseDateFormatted', header: t('dashboard.date') },
+    { accessorKey: 'amountFormatted', header: t('billing.amount') },
+    { accessorKey: 'status', header: t('billing.status') }
   ]
 })
 
@@ -113,15 +124,15 @@ function clearFilter() {
           <div v-if="packageId" class="flex items-center gap-4">
             <UButton to="/admin/packages" icon="i-lucide-arrow-left" color="neutral" variant="ghost" aria-label="Back to packages" />
             <div>
-              <p class="text-sm text-muted">Sales Report</p>
-              <h1 v-if="selectedPackage" class="text-xl font-bold">{{ selectedPackage.name }} Package</h1>
-              <h1 v-else class="text-xl font-bold">Loading...</h1>
+              <p class="text-sm text-muted">{{ t('admin.salesReport') }}</p>
+              <h1 v-if="selectedPackage" class="text-xl font-bold">{{ selectedPackage.name }} {{ t('billing.package') }}</h1>
+              <h1 v-else class="text-xl font-bold">{{ t('common.loading') }}</h1>
             </div>
           </div>
           <!-- Header Tampilan Dasbor Umum -->
           <div v-else>
-            <h1 class="text-xl font-bold">Sales Dashboard</h1>
-            <p class="text-sm text-muted">Comprehensive overview of all package sales</p>
+            <h1 class="text-xl font-bold">{{ t('admin.salesDashboard') }}</h1>
+            <p class="text-sm text-muted">{{ t('admin.salesDashboardDesc') }}</p>
           </div>
         </template>
         <template #right>
@@ -133,13 +144,13 @@ function clearFilter() {
     <template #body>
       <!-- Filter Tanggal (Visible in both views) -->
       <div class="px-6 pt-6 flex items-end gap-4 pb-2">
-        <UFormGroup label="Start Date">
+        <UFormField :label="t('admin.startDate')">
           <UInput type="date" v-model="startDate" />
-        </UFormGroup>
-        <UFormGroup label="End Date">
+        </UFormField>
+        <UFormField :label="t('admin.endDate')">
           <UInput type="date" v-model="endDate" />
-        </UFormGroup>
-        <UButton v-if="startDate || endDate" label="Clear Filter" color="neutral" variant="soft" @click="clearFilter" />
+        </UFormField>
+        <UButton v-if="startDate || endDate" :label="t('admin.clearFilter')" color="neutral" variant="soft" @click="clearFilter" />
       </div>
 
       <!-- Tampilan Body Paket Spesifik -->
@@ -154,7 +165,7 @@ function clearFilter() {
                 </div>
                 <div>
                   <p class="text-2xl font-bold">{{ packageTotalSales }}</p>
-                  <p class="text-md text-muted">Total Sales</p>
+                  <p class="text-md text-muted">{{ t('admin.unitsSold') }}</p>
                 </div>
               </div>
             </UCard>
@@ -173,7 +184,7 @@ function clearFilter() {
           <!-- Transactions Table -->
           <UCard>
             <template #header>
-              <h2 class="font-semibold">Transaction History for {{ selectedPackage.name }}</h2>
+              <h2 class="font-semibold">{{ t('admin.transactionHistoryFor', { name: selectedPackage.name }) }}</h2>
             </template>
             <UTable :data="tableData" :columns="columns" />
           </UCard>
@@ -195,7 +206,7 @@ function clearFilter() {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ packages.length }}</p>
-                <p class="text-md text-muted">Active Packages</p>
+                <p class="text-md text-muted">{{ t('billing.active') }} {{ t('admin.packages') }}</p>
               </div>
             </div>
           </UCard>
@@ -206,7 +217,7 @@ function clearFilter() {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ overallTotalSales }}</p>
-                <p class="text-md text-muted">Total Units Sold</p>
+                <p class="text-md text-muted">{{ t('admin.unitsSold') }}</p>
               </div>
             </div>
           </UCard>
@@ -217,7 +228,7 @@ function clearFilter() {
               </div>
               <div>
                 <p class="text-2xl font-bold">{{ formatPrice(overallTotalRevenue) }}</p>
-                <p class="text-md text-muted">Lifetime Revenue</p>
+                <p class="text-md text-muted">{{ t('admin.lifetimeRevenue') }}</p>
               </div>
             </div>
           </UCard>
@@ -228,8 +239,8 @@ function clearFilter() {
         <!-- Sales by Package Dashboard -->
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <h2 class="text-lg font-bold">Performance by Package</h2>
-            <p class="text-sm text-muted">Click a package to view details</p>
+            <h2 class="text-lg font-bold">{{ t('admin.performanceByPackage') }}</h2>
+            <p class="text-sm text-muted">{{ t('admin.clickPackageDetails') }}</p>
           </div>
           <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <NuxtLink 
@@ -262,7 +273,7 @@ function clearFilter() {
         <UCard>
           <template #header>
             <div class="flex items-center justify-between">
-              <h2 class="font-semibold">Recent Transactions</h2>
+              <h2 class="font-semibold">{{ t('admin.recentTransactions') }}</h2>
             </div>
           </template>
           <UTable :data="tableData" :columns="columns" />

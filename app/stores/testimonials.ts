@@ -256,14 +256,22 @@ export const useTestimonialsStore = defineStore("testimonials", {
       }
     },
 
-    changeStatus(id: string, status: TestimonialStatus) {
-      const testimonial = this.testimonials.find((t) => t.id === id);
-      if (testimonial) {
-        testimonial.status = status;
-        testimonial.updatedAt = new Date().toISOString();
-        return testimonial.status;
+    async changeStatus(id: string, status: TestimonialStatus) {
+      try {
+        const success = await testimonialService.updateStatus(id, status);
+        if (success) {
+          const testimonial = this.testimonials.find((t) => t.id === id);
+          if (testimonial) {
+            testimonial.status = status;
+            testimonial.updatedAt = new Date().toISOString();
+            return testimonial.status;
+          }
+        }
+        return null;
+      } catch (err) {
+        console.error("Error changing status:", err);
+        return null;
       }
-      return null;
     },
 
     publishTestimonial(id: string) {

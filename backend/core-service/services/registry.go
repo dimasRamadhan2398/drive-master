@@ -38,9 +38,14 @@ func (r *Registry) GetPackageService() IPackageService {
 	return NewPackageService(r.repoRegistry.GetPackage(), r.eventPublisher)
 }
 
+// GetAddOnService implements [IServiceRegistry].
+func (r *Registry) GetAddOnService() IAddOnService {
+	return NewAddOnService(r.repoRegistry.GetAddOn())
+}
+
 // GetArticleService implements [IServiceRegistry].
 func (r *Registry) GetArticleService() IArticleService {
-	return NewArticleService(r.repoRegistry.GetArticle(), r.repoRegistry.GetFAQ(), r.eventPublisher)
+	return NewArticleService(r.repoRegistry.GetArticle(), r.repoRegistry.GetFAQ(), r.eventPublisher, r.GetMediaService())
 }
 
 // GetAnalyticsService implements [IServiceRegistry].
@@ -75,6 +80,7 @@ type IServiceRegistry interface {
 	GetRegionService() IRegionService
 	GetCarService() ICarService
 	GetPackageService() IPackageService
+	GetAddOnService() IAddOnService
 	GetArticleService() IArticleService
 	GetAnalyticsService() IAnalyticsService
 	GetCacheService() ICacheService
@@ -82,6 +88,7 @@ type IServiceRegistry interface {
 	GetGeneralSettingsService() IGeneralSettingsService
 	GetFAQService() IFAQService
 	GetMediaService() IMediaService
+	GetPageService() IPageService
 }
 
 func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPublisher *kafka.EventPublisher) IServiceRegistry {
@@ -91,4 +98,9 @@ func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPubl
 		analyticsSvc:   NewAnalyticsService(),
 		cacheSvc:       NewCacheService(repoRegistry.GetCache()),
 	}
+}
+
+// GetPageService returns the Page service
+func (r *Registry) GetPageService() IPageService {
+	return NewPageService(r.repoRegistry.GetPage(), r.GetMediaService())
 }

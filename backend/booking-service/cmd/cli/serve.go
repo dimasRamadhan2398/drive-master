@@ -13,7 +13,9 @@ import (
 	"booking-service/controllers"
 	"booking-service/docs"
 	"booking-service/models"
+	"booking-service/pkg/config"
 	"booking-service/pkg/kafka"
+	"booking-service/pkg/logger"
 	"booking-service/pkg/middlewares"
 	"booking-service/pkg/scheduler"
 	"booking-service/repositories"
@@ -21,6 +23,7 @@ import (
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
 	swaggerFiles "github.com/swaggo/files"
@@ -54,13 +57,26 @@ func init() {
 }
 
 func runServe(cmd *cobra.Command, args []string) {
+	// Load config using environment variable or default path
+	configPath := getEnv("CONFIG_PATH", "pkg/config/config.yaml")
+	loadedConfig, err := config.Load(configPath)
+	if err != nil {
+		log.Fatalf("Failed to load config from %s: %v", configPath, err)
+	}
+	config.Set(loadedConfig)
+
+	// Initialize logger after config is loaded
+	if err := logger.Init(&loadedConfig.Log); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+
 	loc, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
 		panic(err)
 	}
 	time.Local = loc
 
-	log.Printf("Starting Booking Service on %s:%s", serveHost, servePort)
+	log.Printf("Starting Booking Service on %s:%d", serveHost, loadedConfig.Server.Port)
 
 	db, err := gorm.Open(postgres.Open(getDSN()), &gorm.Config{})
 	if err != nil {
@@ -80,44 +96,65 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	// Initialize repositories
 	sessionRepo := repositories.NewSessionRepository(db)
-	entitlementRepo := repositories.NewEntitlementRepository(db)
-	certificationRepo := repositories.NewCertificationRepository(db)
-	userCertRepo := repositories.NewUserCertificationRepository(db)
 	enrollmentRepo := repositories.NewEnrollmentRepository(db)
 	scheduleRepo := repositories.NewScheduleRepository(db)
 	paymentRepo := repositories.NewPaymentRepository(db)
+	transactionRepo := repositories.NewTransactionRepository(db)
 
 	// Initialize user-service client and availability service
-	userClient := user.NewUserClient(getEnv("USER_SERVICE_URL", "http://localhost:8001"))
+	userClient := user.NewUserClient(getEnv("USER_SERVICE_URL", "http://localhost:8001"), loadedConfig.JWT.Secret)
 	coreClient := core.NewCoreClient(getEnv("CORE_SERVICE_URL", "http://localhost:8002"))
 	availabilityService := services.NewAvailabilityService(userClient)
 
 	// Initialize user anonymization service for handling user.deleted events
-	userAnonymizationService := services.NewUserAnonymizationService(enrollmentRepo, sessionRepo, entitlementRepo)
+	userAnonymizationService := services.NewUserAnonymizationService(enrollmentRepo, sessionRepo)
 
-	// Initialize Kafka consumer for handling user.deleted events
-	eventPublisher := initKafkaConsumer(userAnonymizationService)
+	// Initialize Kafka consumer for handling user.deleted events and enrollment.paid events
+	eventPublisher := initKafkaConsumer(userAnonymizationService, coreClient)
 
 	// Initialize services (after Kafka is initialized so we can pass the eventPublisher)
-	sessionService := services.NewSessionService(sessionRepo)
-	entitlementService := services.NewEntitlementService(entitlementRepo)
-	certificationService := services.NewCertificationService(certificationRepo, userCertRepo, userClient, eventPublisher)
-	enrollmentService := services.NewEnrollmentService(enrollmentRepo, entitlementRepo)
+	transactionService := services.NewTransactionService(transactionRepo)
+	sessionService := services.NewSessionServiceWithAllDeps(sessionRepo, scheduleRepo, enrollmentRepo, eventPublisher, userClient, db)
+	enrollmentService := services.NewEnrollmentServiceWithAllDeps(enrollmentRepo, transactionService, eventPublisher, coreClient)
 
-	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, availabilityService, userClient, coreClient)
-	paymentService := services.NewPaymentService(paymentRepo, enrollmentRepo)
+	// Register TransactionPaidHandler to update enrollment state when transaction is paid
+	if eventPublisher != nil {
+		transactionPaidHandler := kafka.NewTransactionPaidHandler(func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64, packageID, packageName, paymentMethod string) error {
+			_, err := enrollmentService.MarkAsPaid(ctx, enrollmentID, totalPrice, packageID, packageName, paymentMethod)
+			return err
+		})
+		eventPublisher.RegisterHandler(transactionPaidHandler)
+	}
+
+	scheduleService := services.NewScheduleService(scheduleRepo, enrollmentRepo, sessionRepo, sessionService, availabilityService, userClient, coreClient)
+	paymentService := services.NewPaymentServiceWithTransaction(paymentRepo, enrollmentRepo, transactionRepo)
 	revenueService := services.NewRevenueService(coreClient)
 
 	// Create service registry
 	serviceRegistry := &serviceRegistryImpl{
-		sessionService:        sessionService,
-		entitlementService:    entitlementService,
-		certificationService:  certificationService,
-		enrollmentService:     enrollmentService,
-		scheduleService:       scheduleService,
-		paymentService:        paymentService,
-		revenueService:        revenueService,
+		sessionService:    sessionService,
+		enrollmentService: enrollmentService,
+		scheduleService:   scheduleService,
+		paymentService:    paymentService,
+		revenueService:    revenueService,
 	}
+
+	// Start background session monitor to complete ongoing sessions when they reach end time
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		ctx := context.Background()
+
+		log.Println("Session auto-completion monitor started (checking every 1 minute)")
+		for {
+			select {
+			case <-ticker.C:
+				if err := sessionService.AutoCompleteOngoingSessions(ctx); err != nil {
+					log.Printf("Session auto-completion monitor error: %v", err)
+				}
+			}
+		}
+	}()
 
 	// Initialize schedule generator for automatic schedule slot generation
 	_ = initScheduleGenerator(scheduleRepo, userClient)
@@ -126,7 +163,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
 
 	// Initialize auth middleware
-	authMiddleware := middlewares.NewAuthMiddleware(getEnv("JWT_SECRET", "your_jwt_secret_here"))
+	authMiddleware := middlewares.NewAuthMiddleware(loadedConfig.JWT.Secret)
 
 	// Setup Gin router
 	router := gin.New()
@@ -139,6 +176,42 @@ func runServe(cmd *cobra.Command, args []string) {
 	router.RedirectTrailingSlash = false
 	router.RedirectFixedPath = false
 
+	// Add custom CORS middleware to resolve drivemaster.id CORS error on VPS
+	router.Use(func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
+		allowedOrigins := map[string]bool{
+			"http://localhost:3000":      true,
+			"http://localhost:3001":      true,
+			"https://drivemaster.id":     true,
+			"http://drivemaster.id":      true,
+			"http://203.194.114.20":      true,
+			"https://203.194.114.20":     true,
+			"https://dev.drivemaster.id":  true,
+			"http://dev.drivemaster.id":   true,
+			"https://api-dev.drivemaster.id": true,
+			"http://api-dev.drivemaster.id":  true,
+		}
+
+		if allowedOrigins[origin] {
+			c.Header("Access-Control-Allow-Origin", origin)
+		} else if origin == "" {
+			c.Header("Access-Control-Allow-Origin", "*")
+		} else {
+			c.Header("Access-Control-Allow-Origin", "https://drivemaster.id")
+		}
+
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Request-ID, X-Api-Key, X-Request-At, X-Service-Name")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Max-Age", "86400")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	})
+
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "booking-service"})
@@ -148,7 +221,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	docs.SwaggerInfo.Title = "Booking Service API"
 	docs.SwaggerInfo.Description = "API for managing bookings, sessions, entitlements, and certifications"
 	docs.SwaggerInfo.Version = "1.0"
-	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%s", servePort)
+	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%d", loadedConfig.Server.Port)
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	target := `"securityDefinitions"`
     security := `"security":[{"BearerAuth":[], "XApiKey":[],"XRequestAt":[],"XServiceName":[]}],`
@@ -171,7 +244,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	routeRegistry := routes.NewRouteRegistry(controllerRegistry, group, authMiddleware)
 	routeRegistry.Serve()
 
-	addr := fmt.Sprintf("%s:%s", serveHost, servePort)
+	addr := fmt.Sprintf("%s:%d", serveHost, loadedConfig.Server.Port)
 	log.Printf("Booking Service listening on %s", addr)
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
@@ -182,18 +255,17 @@ func runMigrations(db *gorm.DB) {
 	log.Println("Running database migrations...")
 
 	// Fix column type mismatch before AutoMigrate
-	// The user_entitlements.enrollment_id column might be bigint from old schema
+	// The enrollments table might have bigint IDs or user_ids from old schema
 	// but the model expects uuid
-	fixEnrollmentIDColumnType(db)
+	fixEnrollmentColumnTypesPreserving(db)
 
 	if err := db.AutoMigrate(
 		&models.Enrollment{},
-		&models.UserEntitlement{},
 		&models.DrivingSession{},
-		&models.Certification{},
-		&models.UserCertification{},
 		&models.Schedule{},
 		&models.Payment{},
+		&models.Transaction{},
+		&models.TransactionItem{},
 	); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}
@@ -201,62 +273,50 @@ func runMigrations(db *gorm.DB) {
 	log.Println("Database migrations completed successfully")
 }
 
-// fixEnrollmentIDColumnType checks and alters the enrollment_id column type in user_entitlements table
-// This handles schema drift where the enrollment tables might have bigint IDs but should be uuid
-func fixEnrollmentIDColumnType(db *gorm.DB) {
-	// Check if enrollments.id is bigint (old schema) and needs to be converted
-	var enrollmentIDType string
-	err := db.Raw(`
-		SELECT data_type
-		FROM information_schema.columns
-		WHERE table_name = 'enrollments'
-		AND column_name = 'id'
-	`).Scan(&enrollmentIDType).Error
-
-	if err != nil {
-		log.Printf("Could not check enrollments.id column type: %v", err)
-		return
-	}
-
-	// If enrollments.id is still bigint, we have a schema mismatch - drop and recreate both tables
-	if enrollmentIDType == "bigint" {
-		log.Println("Found schema mismatch: enrollments.id is bigint but should be uuid. Dropping tables for recreation...")
-		
-		// Drop dependent tables first (due to foreign keys)
-		tables := []string{"user_entitlements", "driving_sessions", "payments", "enrollments"}
-		for _, table := range tables {
-			err = db.Exec(`DROP TABLE IF EXISTS "` + table + `" CASCADE`).Error
-			if err != nil {
-				log.Printf("Warning: could not drop %s table: %v", table, err)
-			} else {
-				log.Printf("Successfully dropped %s table", table)
-			}
+func fixEnrollmentColumnTypesPreserving(db *gorm.DB) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		// 1. Add new uuid columns alongside the old bigint ones
+		if err := tx.Exec(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS id_new uuid DEFAULT gen_random_uuid()`).Error; err != nil {
+			return err
 		}
-	}
+		if err := tx.Exec(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS user_id_new uuid`).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS package_id_new uuid`).Error; err != nil {
+			return err
+		}
+
+		// 2. Backfill user_id_new / package_id_new from a mapping (see note below)
+		//    e.g.: tx.Exec(`UPDATE enrollments e SET user_id_new = m.new_id FROM id_mapping m WHERE m.old_id = e.user_id`)
+
+		// 3. Update dependent tables' FK columns the same way before swapping enrollments.id
+		//    (user_entitlements, driving_sessions, payments — anything with enrollment_id bigint)
+
+		// 4. Swap: drop old, rename new, re-add constraints/indexes
+		if err := tx.Exec(`ALTER TABLE enrollments DROP COLUMN id, user_id, package_id`).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(`ALTER TABLE enrollments RENAME COLUMN id_new TO id`).Error; err != nil {
+			return err
+		}
+		// ... rename user_id_new -> user_id, package_id_new -> package_id
+		// ... re-add PRIMARY KEY, NOT NULL, indexes, FK constraints
+
+		return nil
+	})
 }
 
 // serviceRegistryImpl implements services.IServiceRegistry
 type serviceRegistryImpl struct {
-	sessionService        services.ISessionService
-	entitlementService    services.IEntitlementService
-	certificationService services.ICertificationService
-	enrollmentService     services.IEnrollmentService
-	scheduleService       services.IScheduleService
-	paymentService        services.IPaymentService
-	revenueService        services.IRevenueService
+	sessionService    services.ISessionService
+	enrollmentService services.IEnrollmentService
+	scheduleService   services.IScheduleService
+	paymentService    services.IPaymentService
+	revenueService    services.IRevenueService
 }
-
 
 func (s *serviceRegistryImpl) GetSessionService() services.ISessionService {
 	return s.sessionService
-}
-
-func (s *serviceRegistryImpl) GetEntitlementService() services.IEntitlementService {
-	return s.entitlementService
-}
-
-func (s *serviceRegistryImpl) GetCertificationService() services.ICertificationService {
-	return s.certificationService
 }
 
 func (s *serviceRegistryImpl) GetEnrollmentService() services.IEnrollmentService {
@@ -277,7 +337,7 @@ func (s *serviceRegistryImpl) GetRevenueService() services.IRevenueService {
 
 // initKafkaConsumer initializes the Kafka consumer for handling user.deleted events
 // Returns the event publisher for use in other services
-func initKafkaConsumer(anonymizationService services.IUserAnonymizationService) kafka.IEventPublisher {
+func initKafkaConsumer(anonymizationService services.IUserAnonymizationService, coreClient core.ICoreClient) kafka.IEventPublisher {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
@@ -291,6 +351,19 @@ func initKafkaConsumer(anonymizationService services.IUserAnonymizationService) 
 	kafkaBrokers := strings.Split(getEnv("KAFKA_BROKERS", "localhost:9092"), ",")
 	kafkaTopic := getEnv("KAFKA_TOPIC", "user-events")
 	kafkaGroupID := getEnv("KAFKA_GROUP_ID", "booking-service")
+
+	// Create Kafka producer for publishing events
+	producer, err := kafka.NewProducer(kafka.Config{
+		Brokers:     kafkaBrokers,
+		Topic:       kafkaTopic,
+		ServiceName: "booking-service",
+		Enabled:     true,
+		UseAsync:    true,
+	}, logger)
+	if err != nil {
+		logger.Error("Failed to create Kafka producer", zap.Error(err))
+		return nil
+	}
 
 	// Create Kafka consumer
 	consumer, err := kafka.NewConsumer(kafka.ConsumerConfig{
@@ -306,8 +379,9 @@ func initKafkaConsumer(anonymizationService services.IUserAnonymizationService) 
 		return nil
 	}
 
-	// Create event publisher with the consumer
+	// Create event publisher with both producer and consumer
 	eventPublisher := kafka.NewEventPublisher(kafka.EventPublisherConfig{
+		Producer: producer,
 		Consumer: consumer,
 		Topic:    kafkaTopic,
 		Enabled:  true,
@@ -319,14 +393,23 @@ func initKafkaConsumer(anonymizationService services.IUserAnonymizationService) 
 	})
 	eventPublisher.RegisterHandler(userDeletedHandler)
 
-	// Start the consumer in a goroutine
-	ctx := context.Background()
-	if err := eventPublisher.StartConsumer(ctx); err != nil {
-		logger.Error("Failed to start Kafka consumer", zap.Error(err))
-		return nil
+	// Create and register the enrollment paid handler
+	if coreClient != nil {
+		enrollmentPaidHandler := kafka.NewEnrollmentPaidHandler(func(ctx context.Context, packageID uint) error {
+			return coreClient.IncrementPackageCount(ctx, packageID)
+		})
+		eventPublisher.RegisterHandler(enrollmentPaidHandler)
 	}
 
-	logger.Info("Kafka consumer initialized and started for user.deleted events")
+	// Start the consumer in a goroutine
+	ctx := context.Background()
+	go func() {
+		if err := eventPublisher.StartConsumer(ctx); err != nil {
+			logger.Error("Failed to start Kafka consumer", zap.Error(err))
+		}
+	}()
+
+	logger.Info("Kafka consumer initialization triggered in background")
 	return eventPublisher
 }
 

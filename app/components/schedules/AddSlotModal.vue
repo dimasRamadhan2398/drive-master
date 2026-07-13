@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
+import { useI18n } from "#imports";
 
 const props = defineProps<{
   open: boolean;
   date: string;
   instructors: Array<{ label: string; value: string }>;
-  vehicles: string[];
+  vehicles: Array<{ label: string; value: string }>;
   operatingHours: {
     start: string;
     end: string;
@@ -25,26 +26,27 @@ const emit = defineEmits<{
       date: string;
       time: string;
       duration: string;
-      car: string;
-      instructor: string;
+      carId: string;
+      instructorId: string;
     }
   ): void;
 }>();
 
+const { t } = useI18n();
 const toast = useToast();
 
 const form = ref({
   time: "08:00",
   duration: "60",
-  car: "",
-  instructor: "",
+  carId: "",
+  instructorId: "",
 });
 
 watch(
   () => props.open,
   (open) => {
     if (!open) {
-      form.value = { time: "08:00", duration: "60", car: "", instructor: "" };
+      form.value = { time: "08:00", duration: "60", carId: "", instructorId: "" };
     }
   }
 );
@@ -54,7 +56,7 @@ function handleClose() {
 }
 
 function handleSave() {
-  if (!form.value.time || !form.value.car || !form.value.instructor) {
+  if (!form.value.time || !form.value.carId || !form.value.instructorId) {
     toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
     return;
   }
@@ -98,8 +100,8 @@ function handleSave() {
     date: props.date,
     time: form.value.time,
     duration: form.value.duration,
-    car: form.value.car,
-    instructor: form.value.instructor,
+    carId: form.value.carId,
+    instructorId: form.value.instructorId,
   });
 }
 </script>
@@ -112,7 +114,7 @@ function handleSave() {
   >
     <template #body>
       <div class="space-y-5">
-        <UFormField label="Date" required>
+        <UFormField :label="t('dashboard.date')" required>
           <UInput type="date" :model-value="date" disabled class="w-full" />
         </UFormField>
         <div class="grid grid-cols-2 gap-4">
@@ -137,7 +139,17 @@ function handleSave() {
               class="w-full"
             />
           </UFormField>
-          <UFormField label="Duration">
+          <UFormField :label="t('admin.package.duration')">
+            <template #hint>
+              <div class="text-[10px] flex flex-col items-end text-transparent">
+                <span>Day: {{ operatingHours.start }}-{{ operatingHours.end }}</span>
+                <span v-if="operatingHours.nightEnabled"
+                  >Night: {{ operatingHours.nightStart }}-{{
+                    operatingHours.nightEnd
+                  }}</span
+                >
+              </div>
+            </template>
             <USelect
               :items="[{ label: '60 minutes', value: '60' }]"
               v-model="form.duration"
@@ -148,16 +160,16 @@ function handleSave() {
         </div>
         <UFormField label="Vehicle" required>
           <USelect
+            v-model="form.carId"
             :items="vehicles"
-            v-model="form.car"
             placeholder="Select vehicle"
             class="w-full"
           />
         </UFormField>
-        <UFormField label="Instructor" required>
+        <UFormField :label="t('dashboard.instructor')" required>
           <USelect
             :items="instructors"
-            v-model="form.instructor"
+            v-model="form.instructorId"
             placeholder="Select instructor"
             class="w-full"
           />
@@ -166,7 +178,12 @@ function handleSave() {
     </template>
     <template #footer>
       <div class="flex justify-end gap-3">
-        <UButton label="Cancel" variant="ghost" color="neutral" @click="handleClose" />
+        <UButton
+          :label="t('common.cancel')"
+          variant="ghost"
+          color="neutral"
+          @click="handleClose"
+        />
         <UButton
           label="Create Slot"
           icon="i-lucide-plus"

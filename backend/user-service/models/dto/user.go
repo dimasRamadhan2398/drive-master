@@ -96,8 +96,14 @@ type RegistrationFilters struct {
 }
 
 type DashboardStatsResponse struct {
-	TotalUsers          int64 `json:"totalUsers"`
-	TotalMembers        int64 `json:"totalMembers"`
-	TotalInstructors    int64 `json:"totalInstructors"`
-	RecentRegistrations int64 `json:"recentRegistrations"`
+	TotalUsers          int64   `json:"totalUsers"`
+	TotalMembers        int64   `json:"totalMembers"`
+	TotalInstructors    int64   `json:"totalInstructors"`
+	RecentRegistrations int64   `json:"recentRegistrations"`
+	ActiveSessions      int64   `json:"activeSessions"`
+	TotalSessions       int64   `json:"totalSessions"`
+	RevenueMTD          int64   `json:"revenueMTD"`
+	RevenueCurrency     string  `json:"revenueCurrency"`
+	CertificatesIssued  int64   `json:"certificatesIssued"`
+	TotalCertifications int64   `json:"totalCertifications"`
 }

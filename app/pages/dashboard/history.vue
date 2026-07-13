@@ -1,90 +1,94 @@
 <script setup lang="ts">
+const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
+const authStore = useAuthStore()
+const schedulesStore = useSchedulesStore()
+const instructorsStore = useInstructorsStore()
 
 const searchQuery = ref('')
 const statusFilter = ref('all')
+const trainingHistory = ref<any[]>([])
+const isLoading = ref(false)
 
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!year || !month || !day) return dateStr;
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
 
-// Mock training history
-const trainingHistory = ref([
- {
-   id: 1,
-   sessionNumber: 4,
-   date: 'Mar 25, 2026',
-   time: '09:30 AM - 10:30 AM',
-   duration: '60 min',
-   car: 'BYD Atto 1',
-   instructor: 'Mr. Ahmad',
-   topic: 'Highway Driving Basics',
-   status: 'completed',
-   notes: 'Good progress on lane changes. Need more practice with highway merging.',
-   rating: 4
- },
- {
-   id: 2,
-   sessionNumber: 3,
-   date: 'Mar 22, 2026',
-   time: '11:00 AM - 12:00 PM',
-   duration: '60 min',
-   car: 'BYD Atto 1',
-   instructor: 'Ms. Sari',
-   topic: 'Parking & Maneuvering',
-   status: 'completed',
-   notes: 'Excellent parallel parking skills. Reverse parking needs improvement.',
-   rating: 5
- },
- {
-   id: 3,
-   sessionNumber: 2,
-   date: 'Mar 18, 2026',
-   time: '14:30 PM - 15:30 PM',
-   duration: '60 min',
-   car: 'BYD Atto 1',
-   instructor: 'Mr. Budi',
-   topic: 'City Driving',
-   status: 'completed',
-   notes: 'Handled traffic lights and intersections well. Good awareness of pedestrians.',
-   rating: 4
- },
- {
-   id: 4,
-   sessionNumber: 1,
-   date: 'Mar 15, 2026',
-   time: '08:00 AM - 09:00 AM',
-   duration: '60 min',
-   car: 'BYD Atto 1',
-   instructor: 'Mr. Ahmad',
-   topic: 'Introduction & Basic Controls',
-   status: 'completed',
-   notes: 'Great first session! Quickly adapted to EV controls and one-pedal driving.',
-   rating: 5
- }
-])
+const fetchHistory = async () => {
+  if (!authStore.userId) return;
+  try {
+    isLoading.value = true;
+    const sessions = await schedulesStore.fetchUserSessions(authStore.userId);
+    
+    // Sort the sessions: most recent at the top (descending order)
+    const sortedSessions = sessions.slice().sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.time || '00:00'}:00`);
+      const dateB = new Date(`${b.date}T${b.time || '00:00'}:00`);
+      return dateB.getTime() - dateA.getTime();
+    });
 
+    // Map to template format
+    trainingHistory.value = sortedSessions.map((s, index, arr) => {
+      // Find instructor name
+      const instructor = instructorsStore.getInstructorByUserId(s.instructorId);
+      const instructorName = instructor ? instructor.name : "Instructor";
+      
+      return {
+        id: s.id,
+        sessionNumber: arr.length - index,
+        date: formatDate(s.date),
+        time: s.time,
+        duration: `${s.duration} min`,
+        car: "BYD Atto 3",
+        instructor: instructorName,
+        topic: s.notes || "Training Session",
+        status: s.status,
+        notes: s.notes || "",
+        rating: 5
+      };
+    });
+  } catch (err) {
+    console.error("Failed to fetch history:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(async () => {
+  if (instructorsStore.instructors.length === 0) {
+    await instructorsStore.fetchInstructors();
+  }
+  await fetchHistory();
+});
 
 const filteredHistory = computed(() => {
- return trainingHistory.value.filter(session => {
-   const matchesSearch = session.topic.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                        session.instructor.toLowerCase().includes(searchQuery.value.toLowerCase())
-   const matchesStatus = statusFilter.value === 'all' || session.status === statusFilter.value
-   return matchesSearch && matchesStatus
- })
+  return trainingHistory.value.filter(session => {
+    const matchesSearch = session.topic.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                         session.instructor.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchesStatus = statusFilter.value === 'all' || session.status === statusFilter.value
+    return matchesSearch && matchesStatus
+  })
 })
-
 
 const totalHours = computed(() => {
- return trainingHistory.value.filter(s => s.status === 'completed').length
+  return trainingHistory.value.filter(s => s.status === 'completed').length
 })
-
 
 const isModalOpen = ref(false)
 const selectedSession = ref<any>(null)
 
-
 const openDetails = (session: any) => {
- selectedSession.value = session
- isModalOpen.value = true
+  selectedSession.value = session
+  isModalOpen.value = true
 }
 </script>
 
@@ -92,7 +96,7 @@ const openDetails = (session: any) => {
 <template>
  <UDashboardPanel>
    <template #header>
-     <UDashboardNavbar title="Training History">
+     <UDashboardNavbar :title="t('history.title')">
        <template #right>
          <UColorModeButton />
        </template>
@@ -103,7 +107,7 @@ const openDetails = (session: any) => {
        <template #left>
          <UInput
            v-model="searchQuery"
-           placeholder="Search sessions..."
+           :placeholder="t('history.searchPlaceholder')"
            icon="i-lucide-search"
            class="w-64"
         />
@@ -112,9 +116,9 @@ const openDetails = (session: any) => {
          <USelect
            v-model="statusFilter"
            :items="[
-             { label: 'All Sessions', value: 'all' },
-             { label: 'Completed', value: 'completed' },
-             { label: 'Cancelled', value: 'cancelled' }
+             { label: t('history.allSessions'), value: 'all' },
+             { label: t('history.completed'), value: 'completed' },
+             { label: t('history.cancelled'), value: 'cancelled' }
            ]"
            class="w-40"
         />
@@ -134,7 +138,7 @@ const openDetails = (session: any) => {
              </div>
              <div>
                <p class="text-2xl font-bold">{{ trainingHistory.filter(s => s.status === 'completed').length }}</p>
-               <p class="text-sm text-muted">Sessions Completed</p>
+               <p class="text-sm text-muted">{{ t('dashboard.sessionsCompleted') }}</p>
              </div>
            </div>
          </UCard>
@@ -146,8 +150,8 @@ const openDetails = (session: any) => {
                <UIcon name="i-lucide-clock" class="size-6 text-blue-500" />
              </div>
              <div>
-               <p class="text-2xl font-bold">{{ totalHours }} hrs</p>
-               <p class="text-sm text-muted">Total Training Time</p>
+               <p class="text-2xl font-bold">{{ totalHours }} {{ t('common.hours') }}</p>
+               <p class="text-sm text-muted">{{ t('history.totalTrainingTime') }}</p>
              </div>
            </div>
          </UCard>
@@ -160,7 +164,7 @@ const openDetails = (session: any) => {
              </div>
              <div>
                <p class="text-2xl font-bold">4.5</p>
-               <p class="text-sm text-muted">Average Rating</p>
+               <p class="text-sm text-muted">{{ t('history.averageRating') }}</p>
              </div>
            </div>
          </UCard>
@@ -170,7 +174,7 @@ const openDetails = (session: any) => {
        <!-- History List -->
        <UCard>
          <template #header>
-           <h2 class="font-semibold">Session History</h2>
+           <h2 class="font-semibold">{{ t('history.sessionHistory') }}</h2>
          </template>
 
 
@@ -187,13 +191,13 @@ const openDetails = (session: any) => {
                  </div>
                  <div>
                    <div class="flex items-center gap-2 flex-wrap">
-                     <h3 class="font-semibold">Session #{{ session.sessionNumber }}: {{ session.topic }}</h3>
-                     <UBadge
-                       :label="session.status === 'completed' ? 'Completed' : 'Cancelled'"
-                       :color="session.status === 'completed' ? 'success' : 'error'"
-                       variant="subtle"
-                       size="xs"
-                    />
+                     <h3 class="font-semibold">{{ t('history.session') }} #{{ session.sessionNumber }}: {{ session.topic }}</h3>
+                      <UBadge
+                        :label="t('history.' + session.status) || session.status"
+                        :color="session.status === 'completed' ? 'success' : (session.status === 'cancelled' ? 'error' : (session.status === 'in-progress' || session.status === 'in_progress' ? 'warning' : 'primary'))"
+                        variant="subtle"
+                        size="xs"
+                      />
                    </div>
                    <p class="text-sm text-muted mt-1">{{ session.date }} | {{ session.time }}</p>
                    <div class="flex items-center gap-4 mt-2 text-sm text-muted">
@@ -225,7 +229,7 @@ const openDetails = (session: any) => {
                   />
                  </div>
                  <UButton
-                   label="View Details"
+                   :label="t('history.viewDetails')"
                    variant="ghost"
                    size="xs"
                    icon="i-lucide-eye"
@@ -236,7 +240,7 @@ const openDetails = (session: any) => {
 
 
              <div v-if="session.notes" class="mt-4 p-3 rounded-lg bg-muted/50">
-               <p class="text-xs text-muted mb-1">Instructor Notes:</p>
+               <p class="text-xs text-muted mb-1">{{ t('history.instructorNotes') }}</p>
                <p class="text-sm">{{ session.notes }}</p>
              </div>
            </div>
@@ -245,8 +249,8 @@ const openDetails = (session: any) => {
            <UEmpty
              v-if="filteredHistory.length === 0"
              icon="i-lucide-search-x"
-             title="No Sessions Found"
-             description="Try adjusting your search or filter criteria."
+             :title="t('history.noSessionsFound')"
+             :description="t('history.adjustSearch')"
           />
          </div>
        </UCard>
@@ -262,7 +266,7 @@ const openDetails = (session: any) => {
          <template #header>
            <div class="flex items-center justify-between">
              <h3 class="text-base font-semibold leading-6">
-               Session Details #{{ selectedSession.sessionNumber }}
+               {{ t('history.session') }} Details #{{ selectedSession.sessionNumber }}
              </h3>
              <UButton color="neutral" variant="ghost" icon="i-lucide-x" @click="isModalOpen = false" />
            </div>
@@ -277,11 +281,11 @@ const openDetails = (session: any) => {
              <div>
                <h4 class="text-xl font-bold">{{ selectedSession.topic }}</h4>
                <div class="flex items-center gap-2 mt-1">
-                 <UBadge
-                   :label="selectedSession.status === 'completed' ? 'Completed' : 'Cancelled'"
-                   :color="selectedSession.status === 'completed' ? 'success' : 'error'"
-                   variant="subtle"
-                />
+                  <UBadge
+                    :label="t('history.' + selectedSession.status) || selectedSession.status"
+                    :color="selectedSession.status === 'completed' ? 'success' : (selectedSession.status === 'cancelled' ? 'error' : (selectedSession.status === 'in-progress' || selectedSession.status === 'in_progress' ? 'warning' : 'primary'))"
+                    variant="subtle"
+                  />
                  <span class="text-sm text-muted">{{ selectedSession.date }}</span>
                </div>
              </div>
@@ -290,28 +294,28 @@ const openDetails = (session: any) => {
 
            <div class="grid grid-cols-2 gap-6">
              <div class="space-y-1">
-               <p class="text-xs text-muted uppercase font-bold tracking-wider">Instructor</p>
+               <p class="text-xs text-muted uppercase font-bold tracking-wider">{{ t('dashboard.instructor') }}</p>
                <p class="font-medium flex items-center gap-2">
                  <UIcon name="i-lucide-user" class="size-4 text-primary" />
                  {{ selectedSession.instructor }}
                </p>
              </div>
              <div class="space-y-1">
-               <p class="text-xs text-muted uppercase font-bold tracking-wider">Vehicle</p>
+               <p class="text-xs text-muted uppercase font-bold tracking-wider">{{ t('dashboard.vehicle') }}</p>
                <p class="font-medium flex items-center gap-2">
                  <UIcon name="i-lucide-car" class="size-4 text-primary" />
                  {{ selectedSession.car }}
                </p>
              </div>
              <div class="space-y-1">
-               <p class="text-xs text-muted uppercase font-bold tracking-wider">Time & Duration</p>
+               <p class="text-xs text-muted uppercase font-bold tracking-wider">{{ t('dashboard.time') }} & {{ t('packages.duration') }}</p>
                <p class="font-medium flex items-center gap-2">
                  <UIcon name="i-lucide-clock" class="size-4 text-primary" />
                  {{ selectedSession.time }} ({{ selectedSession.duration }})
                </p>
              </div>
              <div class="space-y-1">
-               <p class="text-xs text-muted uppercase font-bold tracking-wider">Rating</p>
+               <p class="text-xs text-muted uppercase font-bold tracking-wider">{{ t('instructors.rating') }}</p>
                <div class="flex gap-1 mt-1">
                  <UIcon
                    v-for="i in 5"
@@ -326,7 +330,7 @@ const openDetails = (session: any) => {
 
 
            <div v-if="selectedSession.notes" class="p-4 rounded-xl bg-muted/30 border border-default">
-             <p class="text-xs text-muted uppercase font-bold tracking-wider mb-2">Instructor Notes</p>
+             <p class="text-xs text-muted uppercase font-bold tracking-wider mb-2">{{ t('history.instructorNotes') }}</p>
              <p class="text-sm leading-relaxed">{{ selectedSession.notes }}</p>
            </div>
          </div>
@@ -336,6 +340,3 @@ const openDetails = (session: any) => {
    </UModal>
  </ClientOnly>
 </template>
-
-
-

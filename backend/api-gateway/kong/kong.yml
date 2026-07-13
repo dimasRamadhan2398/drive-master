@@ -12,6 +12,10 @@ plugins:
       origins:
         - "http://localhost:3000"
         - "http://localhost:3001"
+        - "https://drivemaster.id"
+        - "http://drivemaster.id"
+        - "http://203.194.114.20"
+        - "https://203.194.114.20"
       methods:
         - GET
         - POST
@@ -32,6 +36,8 @@ plugins:
         - X-Request-ID
         - Content-Length
         - Authorization
+        - Content-Disposition
+        - Content-Type
       credentials: true
       max_age: 3600
       preflight_continue: false
@@ -135,13 +141,13 @@ services:
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
-      # - name: user-entitlements-route
-      #   strip_path: false
-      #   preserve_host: false
-      #   paths:
-      #     - /api/v1/entitlements
-      #   protocols: [http, https]
-      #   methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+      - name: user-certificates-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/certificates
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
       - name: user-testimonials-all-route
         strip_path: false
@@ -155,8 +161,8 @@ services:
         strip_path: false
         preserve_host: false
         paths: 
-        - /api/v1/dashboard/certifications
-        - /api/v1/dashboard/
+        - /api/v1/dashboard/stats
+        - /api/v1/dashboard/certifications/stats
         protocols: [http, https]
         methods: [GET, OPTIONS]
 
@@ -192,6 +198,14 @@ services:
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
+      - name: core-addons-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/addons
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
       - name: core-faq-route
         strip_path: false
         preserve_host: false
@@ -224,6 +238,14 @@ services:
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
+      - name: core-pages-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/pages
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
       - name: core-sales-route
         strip_path: false
         preserve_host: false
@@ -245,6 +267,14 @@ services:
         preserve_host: false
         paths:
           - /api/v1/general-settings
+        protocols: [http, https]
+        methods: [GET, PUT, OPTIONS]
+
+      - name: core-analytics-sales-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/admin/sales
         protocols: [http, https]
         methods: [GET, OPTIONS]
 
@@ -303,12 +333,21 @@ services:
           - /api/v1/sessions
         protocols: [http, https]
         methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: booking-enrollments-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/enrollments
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
       
       - name: booking-dashboard-route
         strip_path: false
         preserve_host: false
         paths: 
-        - /api/v1/dashboard/
+        - /api/v1/dashboard/sessions/stats
+        - /api/v1/dashboard/revenue/stats
         protocols: [http, https]
         methods: [GET, OPTIONS]
 
@@ -328,14 +367,6 @@ services:
   - name: payment-service
     url: http://payment-service-upstream
     routes:
-      - name: payment-route
-        strip_path: false
-        preserve_host: false
-        paths:
-          - /api/v1/payments
-        protocols: [http, https]
-        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
-
       - name: payment-transactions-route
         strip_path: false
         preserve_host: false
@@ -350,6 +381,14 @@ services:
         paths:
           - /notifications
         protocols: [http, https]
+
+      - name: payment-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/payments
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
   - name: payment-service-docs-service
     url: http://payment-service-upstream

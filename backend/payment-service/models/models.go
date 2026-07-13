@@ -48,7 +48,7 @@ type Payment struct {
 	Status            PaymentStatus  `json:"status" gorm:"type:varchar(20);default:'pending';index"`
 	PaymentMethodID   *uint          `json:"paymentMethodId" gorm:"index"`
 	PaymentMethod     *PaymentMethod `json:"paymentMethod,omitempty" gorm:"foreignKey:PaymentMethodID"`
-	Gateway           string         `json:"gateway" gorm:"type:varchar(50)"` // midtrans, xendit, etc.
+	Gateway           string         `json:"gateway" gorm:"type:varchar(50)"` // midtrans, doku, pakasir, etc.
 	GatewayOrderID    string         `json:"gatewayOrderId" gorm:"type:varchar(100)"`
 	GatewayPaymentURL string         `json:"gatewayPaymentUrl" gorm:"type:varchar(500)"`
 	VaNumber          string         `json:"vaNumber" gorm:"type:varchar(100)"`
@@ -73,11 +73,13 @@ type Transaction struct {
 	Status          TransactionStatus `json:"status" gorm:"type:varchar(20);default:'pending';index"`
 	Amount          float64          `json:"amount" gorm:"type:decimal(12,2);not null"`
 	Currency        string           `json:"currency" gorm:"type:varchar(3);default:'IDR'"`
-	Gateway         string           `json:"gateway" gorm:"type:varchar(50)"`
+	Gateway         string           `json:"gateway" gorm:"type:varchar(50)"` // midtrans, doku, pakasir
 	GatewayTxnID    string           `json:"gatewayTxnId" gorm:"type:varchar(100)"`
 	GatewayResponse string           `json:"gatewayResponse" gorm:"type:jsonb"`
 	ErrorCode       string           `json:"errorCode" gorm:"type:varchar(50)"`
 	ErrorMessage    string           `json:"errorMessage" gorm:"type:text"`
+	PaymentMethodID *uint            `json:"paymentMethodId" gorm:"index"`
+	PaymentMethod   *PaymentMethod   `json:"paymentMethod,omitempty" gorm:"foreignKey:PaymentMethodID"`
 	ProcessedAt     *time.Time       `json:"processedAt"`
 	CreatedAt       time.Time        `json:"createdAt"`
 	UpdatedAt       time.Time        `json:"updatedAt"`

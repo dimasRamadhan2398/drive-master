@@ -15,11 +15,11 @@ export type ScheduleStatus =
 export interface Schedule {
   id: string;
   date: string;
-  startTime: string;
+  time: string;
   endTime: string;
   duration: number; // in minutes
-  vehicleId: string;
-  vehicleName: string;
+  carId: string;
+  carName: string;
   instructorId: string;
   instructorName: string;
   studentId?: string;
@@ -31,18 +31,56 @@ export interface Schedule {
   updatedAt: string;
 }
 
-// Brief response for lists
+// Brief response for lists (API response format)
 export interface ScheduleBrief {
   id: string;
   date: string;
-  startTime: string;
+  time: string;
   endTime: string;
   duration: number;
-  vehicleName: string;
+  carId: string;
+  carName: string;
+  instructorId: string;
   instructorName: string;
   studentName?: string;
   status: ScheduleStatus;
 }
+
+// Raw API response format (from backend)
+export interface ScheduleApiResponse {
+  id: string;
+  date: string;
+  time: string;
+  duration: number;
+  instructorId?: string;
+  instructorName?: string;
+  carId?: number;
+  carName?: string; // API uses "carName" instead of "vehicleName"
+  userId?: string;
+  userName?: string; // API uses "userName" instead of "studentName"
+  bookingId?: string;
+  status: ScheduleStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Map API response to ScheduleBrief format
+export const mapApiToScheduleBrief = (item: ScheduleApiResponse): ScheduleBrief => {
+  return {
+    id: item.id,
+    date: item.date,
+    time: item.time,
+    endTime: "", // Not provided in API response
+    duration: item.duration,
+    carId: item.carId?.toString() || "",
+    carName: item.carName || "",
+    instructorId: item.instructorId || "",
+    instructorName: item.instructorName || "",
+    studentName: item.userName || undefined, // Map "userName" to "studentName"
+    status: item.status,
+  };
+};
 
 export interface ScheduleListResponse {
   schedules: ScheduleBrief[];
@@ -55,26 +93,45 @@ export interface ScheduleListResponse {
 // Request DTOs (matching backend)
 export interface CreateScheduleData {
   date: string;
-  startTime: string;
+  time: string;
   duration: number;
-  vehicleId: string;
+  carId: string;
   instructorId: string;
   notes?: string;
 }
 
 export interface UpdateScheduleData {
   date?: string;
-  startTime?: string;
+  time?: string;
   duration?: number;
-  vehicleId?: string;
+  carId?: string;
   instructorId?: string;
   status?: ScheduleStatus;
   notes?: string;
 }
 
 export interface BookSlotData {
-  studentId: string;
+  userId: string;
+  entitlementId: string;
   notes?: string;
+}
+
+export interface Entitlement {
+  id: string;
+  memberId: string;
+  bookingId: string;
+  packageId: string;
+  packageName: string;
+  isNightSession: boolean;
+  isWeekendSession: boolean;
+  totalSessions: number;
+  remaining: number;
+  usedSessions: number;
+  startDate: string;
+  endDate: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Filter params
@@ -85,10 +142,10 @@ export interface ScheduleFilterParams {
   startDate?: string;
   endDate?: string;
   instructorId?: string;
-  vehicleId?: string;
+  carId?: string;
   status?: ScheduleStatus;
   studentId?: string;
-  sortBy?: "date" | "startTime" | "createdAt";
+  sortBy?: "date" | "time" | "createdAt";
   sortOrder?: "asc" | "desc";
 }
 
@@ -97,7 +154,7 @@ export interface AvailableScheduleParams {
   startDate?: string;
   endDate?: string;
   instructorId?: string;
-  vehicleId?: string;
+  carId?: string;
   duration?: number;
 }
 
@@ -116,7 +173,7 @@ export const scheduleService = {
   async fetchAll(
     params: ScheduleFilterParams = {},
   ): Promise<ScheduleListResponse> {
-    const { user, extractPaginatedData } = useApiClients();
+    const { core, extractPaginatedData } = useApiClients();
 
     const queryParams = new URLSearchParams();
     if (params.page) queryParams.set("page", String(params.page));
@@ -126,7 +183,7 @@ export const scheduleService = {
     if (params.endDate) queryParams.set("endDate", params.endDate);
     if (params.instructorId)
       queryParams.set("instructorId", params.instructorId);
-    if (params.vehicleId) queryParams.set("vehicleId", params.vehicleId);
+    if (params.carId) queryParams.set("carId", params.carId);
     if (params.status) queryParams.set("status", params.status);
     if (params.studentId) queryParams.set("studentId", params.studentId);
     if (params.sortBy) queryParams.set("sortBy", params.sortBy);
@@ -135,24 +192,14 @@ export const scheduleService = {
     const queryString = queryParams.toString();
     const url = `/schedules/all${queryString ? `?${queryString}` : ""}`;
 
-    const response = await user<PaginatedResponse<Schedule>>(url, {
+    const response = await core<PaginatedResponse<ScheduleApiResponse>>(url, {
       method: "GET",
     });
 
     const { data, pagination } = extractPaginatedData(response);
     return {
       schedules: Array.isArray(data)
-        ? data.map<ScheduleBrief>((s: Schedule) => ({
-            id: s.id,
-            date: s.date,
-            startTime: s.startTime,
-            endTime: s.endTime,
-            duration: s.duration,
-            vehicleName: s.vehicleName,
-            instructorName: s.instructorName,
-            studentName: s.studentName,
-            status: s.status,
-          }))
+        ? data.map<ScheduleBrief>((s: ScheduleApiResponse) => mapApiToScheduleBrief(s))
         : [],
       ...pagination,
     };
@@ -172,11 +219,54 @@ export const scheduleService = {
     }
   },
 
+  // POST /schedules/:id/start - Start session
+  async startSession(id: string): Promise<Schedule | null> {
+    const { user, extractData } = useApiClients();
+    try {
+      const response = await user<ApiResponse<Schedule>>(`/schedules/${id}/start`, {
+        method: "POST",
+      });
+      return extractData(response);
+    } catch {
+      return null;
+    }
+  },
+
+  // POST /schedules/:id/complete - Complete session
+  async completeSession(id: string): Promise<Schedule | null> {
+    const { user, extractData } = useApiClients();
+    try {
+      const response = await user<ApiResponse<Schedule>>(
+        `/schedules/${id}/complete`,
+        {
+          method: "POST",
+        },
+      );
+      return extractData(response);
+    } catch {
+      return null;
+    }
+  },
+
+  // GET /entitlements/user/:userId/active - Get active entitlements
+  async fetchActiveEntitlements(userId: string): Promise<Entitlement[]> {
+    const { user, extractData } = useApiClients();
+    try {
+      const response = await user<ApiResponse<Entitlement[]>>(
+        `/entitlements/user/${userId}/active`,
+        { method: "GET" },
+      );
+      return extractData(response) || [];
+    } catch {
+      return [];
+    }
+  },
+
   // GET /schedules/filter - Get filtered schedules
   async fetchFiltered(
     params: ScheduleFilterParams = {},
   ): Promise<ScheduleListResponse> {
-    const { user, extractPaginatedData } = useApiClients();
+    const { core, extractPaginatedData } = useApiClients();
 
     const queryParams = new URLSearchParams();
     if (params.page) queryParams.set("page", String(params.page));
@@ -186,7 +276,7 @@ export const scheduleService = {
     if (params.endDate) queryParams.set("endDate", params.endDate);
     if (params.instructorId)
       queryParams.set("instructorId", params.instructorId);
-    if (params.vehicleId) queryParams.set("vehicleId", params.vehicleId);
+    if (params.carId) queryParams.set("carId", params.carId);
     if (params.status) queryParams.set("status", params.status);
     if (params.studentId) queryParams.set("studentId", params.studentId);
     if (params.sortBy) queryParams.set("sortBy", params.sortBy);
@@ -195,24 +285,14 @@ export const scheduleService = {
     const queryString = queryParams.toString();
     const url = `/schedules/filter${queryString ? `?${queryString}` : ""}`;
 
-    const response = await user<PaginatedResponse<Schedule>>(url, {
+    const response = await core<PaginatedResponse<ScheduleApiResponse>>(url, {
       method: "GET",
     });
 
     const { data, pagination } = extractPaginatedData(response);
     return {
       schedules: Array.isArray(data)
-        ? data.map<ScheduleBrief>((s: Schedule) => ({
-            id: s.id,
-            date: s.date,
-            startTime: s.startTime,
-            endTime: s.endTime,
-            duration: s.duration,
-            vehicleName: s.vehicleName,
-            instructorName: s.instructorName,
-            studentName: s.studentName,
-            status: s.status,
-          }))
+        ? data.map<ScheduleBrief>((s: ScheduleApiResponse) => mapApiToScheduleBrief(s))
         : [],
       ...pagination,
     };
@@ -220,27 +300,38 @@ export const scheduleService = {
 
   // GET /schedules/filter?date=YYYY-MM-DD - Fetch schedules by date (defaults to today)
   async fetchByDate(date?: string): Promise<ScheduleBrief[]> {
-    const { user, extractData } = useApiClients();
+    const { core, extractData } = useApiClients();
 
     // Default to today if no date provided
     const targetDate = date || formatDateString(new Date());
 
     try {
-      const response = await user<ApiResponse<ScheduleBrief[]>>(
+      const response = await core<PaginatedResponse<ScheduleApiResponse[]>>(
         `/schedules/filter?date=${targetDate}`,
         { method: "GET" },
       );
-      return extractData(response);
-    } catch {
+      // Handle paginated response format: { data: [...], pagination: {...} }
+      const schedulesData = "data" in response && Array.isArray(response.data)
+        ? response.data
+        : extractData(response);
+      // Map API response to ScheduleBrief format
+      return Array.isArray(schedulesData) ? schedulesData.map(mapApiToScheduleBrief) : [];
+    } catch (err) {
+      console.error("Error fetching schedules by date:", err);
       return [];
     }
+  },
+
+  // GET /schedules/filter?date=YYYY-MM-DD - Fetch today's schedules (convenience method)
+  async todaySessions(): Promise<ScheduleBrief[]> {
+    return this.fetchByDate();
   },
 
   // GET /schedules/available - Get available schedules
   async fetchAvailable(
     params: AvailableScheduleParams = {},
   ): Promise<ScheduleBrief[]> {
-    const { user, extractData } = useApiClients();
+    const { core, extractData } = useApiClients();
 
     const queryParams = new URLSearchParams();
     if (params.date) queryParams.set("date", params.date);
@@ -248,18 +339,21 @@ export const scheduleService = {
     if (params.endDate) queryParams.set("endDate", params.endDate);
     if (params.instructorId)
       queryParams.set("instructorId", params.instructorId);
-    if (params.vehicleId) queryParams.set("vehicleId", params.vehicleId);
+    if (params.carId) queryParams.set("carId", params.carId);
     if (params.duration) queryParams.set("duration", String(params.duration));
 
     const queryString = queryParams.toString();
     const url = `/schedules/available${queryString ? `?${queryString}` : ""}`;
 
     try {
-      const response = await user<ApiResponse<ScheduleBrief[]>>(url, {
+      const response = await core<ApiResponse<ScheduleApiResponse[]>>(url, {
         method: "GET",
       });
-      return extractData(response);
-    } catch {
+      const data = extractData(response);
+      // Map API response to ScheduleBrief format
+      return Array.isArray(data) ? data.map(mapApiToScheduleBrief) : [];
+    } catch (err) {
+      console.error("Error fetching available schedules:", err);
       return [];
     }
   },
@@ -386,4 +480,48 @@ export const scheduleService = {
     };
     return labelMap[status] || status;
   },
+
+  // GET /sessions - Fetch user sessions
+  async fetchSessions(params: { studentId?: string; userId?: string; page?: number; limit?: number }): Promise<SessionListResponse> {
+    const { booking } = useApiClients();
+    const queryParams = new URLSearchParams();
+    if (params.studentId) queryParams.set("studentId", params.studentId);
+    if (params.userId) queryParams.set("userId", params.userId);
+    if (params.page) queryParams.set("page", String(params.page));
+    if (params.limit) queryParams.set("limit", String(params.limit));
+
+    const queryString = queryParams.toString();
+    const url = `/sessions${queryString ? `?${queryString}` : ""}`;
+
+    return await booking<SessionListResponse>(url, { method: "GET" });
+  }
 };
+
+export interface SessionResponse {
+  id: number;
+  enrollmentId: string;
+  entitlementId: string;
+  userId: string;
+  instructorId: string;
+  carId: string;
+  scheduleId?: number;
+  date: string;
+  time: string;
+  duration: number;
+  status: string;
+  area?: string;
+  notes?: string;
+  startedAt?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SessionListResponse {
+  data: SessionResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+

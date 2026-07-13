@@ -2,6 +2,7 @@
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
 import type { Testimonial } from "~/stores/testimonials";
 
+const { t } = useI18n()
 const props = defineProps<{
   open: boolean;
   testimonial: Testimonial | null;
@@ -56,8 +57,8 @@ function handleSave() {
 
   if (!form.value.userName || !form.value.content) {
     toast.add({
-      title: "Error",
-      description: "Name and content are required.",
+      title: t('common.error'),
+      description: t('admin.testimonial.nameContentRequired'),
       color: "error",
     });
     return;
@@ -76,41 +77,41 @@ function handleClose() {
 </script>
 
 <template>
-  <UModal v-model="open" title="Edit Testimonial">
+  <UModal v-model:open="open" :title="t('admin.testimonial.edit')">
     <template #body>
       <div v-if="testimonial" class="space-y-4">
-        <UFormField label="Name" required>
+        <UFormField :label="t('admin.testimonial.name')" required>
           <UInput
             v-model="form.userName"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Role">
+        <UFormField :label="t('admin.testimonial.role')">
           <UInput
             v-model="form.userRole"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Photo URL">
+        <UFormField :label="t('admin.testimonial.photoUrl')">
           <UInput
             v-model="form.userImage"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Content" required>
+        <UFormField :label="t('admin.testimonial.content')" required>
           <UTextarea
             v-model="form.content"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Rating">
+        <UFormField :label="t('admin.testimonial.rating')">
           <USelect
             v-model="form.rating"
-            :options="
+            :items="
               [1, 2, 3, 4, 5].map((n) => ({
                 label: `${n} Star${n > 1 ? 's' : ''}`,
                 value: n,
@@ -121,17 +122,17 @@ function handleClose() {
             :popper="{ placement: 'bottom-start' }"
           />
         </UFormField>
-        <UFormField label="Tags">
+        <UFormField :label="t('admin.testimonial.tags')">
           <UInput
             v-model="form.tags"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Status">
+        <UFormField :label="t('admin.testimonial.status')">
           <USelect
             v-model="form.status"
-            :options="[
+            :items="[
               { label: 'Draft', value: 'draft' },
               { label: 'Pending', value: 'pending' },
               { label: 'Published', value: 'published' },
@@ -144,7 +145,7 @@ function handleClose() {
         </UFormField>
         <USwitch
           v-model="form.isFeatured"
-          label="Featured"
+          :label="t('admin.testimonial.isFeatured')"
           class="w-full"
           color="warning"
         />
@@ -153,13 +154,13 @@ function handleClose() {
     <template #footer>
       <div class="flex justify-end gap-3">
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           variant="ghost"
           color="neutral"
           @click="handleClose"
         />
         <UButton
-          label="Save Changes"
+          :label="t('admin.saveChanges')"
           icon="i-lucide-save"
           color="warning"
           @click="handleSave"

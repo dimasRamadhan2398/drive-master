@@ -61,3 +61,7 @@ type TestimonialListResponse struct {
 type ToggleFeaturedRequest struct {
 	IsFeatured *bool `json:"isFeatured"`
 }
+
+type UpdateTestimonialStatusRequest struct {
+	Status models.TestimonialStatus `json:"status" binding:"required"`
+}

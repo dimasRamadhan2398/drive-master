@@ -2,110 +2,234 @@
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
 import { reactive, ref } from "vue";
 
+const { t } = useI18n();
 definePageMeta({ layout: "admin" });
 
 const toast = useToast();
-const { promoEndDate } = useSettings();
+const settingsStore = useSettingsStore();
 const instructorsStore = useInstructorsStore();
+const vehiclesStore = useVehiclesStore();
 
-// Mock settings
+// General settings - synced with store
 const generalSettings = reactive({
-  businessName: "Drive Master Academy",
-  email: "info@drivemasteracademy.id",
-  phone: "+62 812-3456-7890",
-  address: "Jl. Alam Sutera Boulevard No. 123, Tangerang 15143",
-  whatsappNumber: "6281234567890",
-});
-
-const operatingHours = reactive({
-  mondayStart: "08:00",
-  mondayEnd: "18:00",
-  weekendStart: "08:00",
-  weekendEnd: "16:00",
-  nightStart: "18:00",
-  nightEnd: "20:00",
-  sundayClosed: true,
+  businessName: "",
+  email: "",
+  phone: "",
+  fax: "",
+  whatsApp: "",
+  address: "",
+  hoursMonFri: "",
+  hoursSatSun: "",
+  hoursNightShift: "",
+  promoEndDate: null as string | null,
+  notifyEmail: false,
+  notifySms: false,
+  notifyWhatsApp: false,
 });
 
 const notificationSettings = reactive({
-  emailNotifications: true,
-  whatsappNotifications: true,
+  emailNotifications: false,
+  whatsappNotifications: false,
   reminderHours: 24,
-  adminAlerts: true,
-  newUserRegistration: true,
-  newPackagePurchase: true,
+  adminAlerts: false,
+  newUserRegistration: false,
+  newPackagePurchase: false,
 });
 
-const vehicles = ref([
-  {
-    id: 1,
-    name: "BYD Atto 1",
-    plate: "B 1234 EV",
-    status: "active",
-    photoUrl: "",
-  },
-]);
+// Computed ref for vehicles from store
+const vehicles = computed(() => vehiclesStore.vehicles);
 
 // Vehicle CRUD State
 const isVehicleModalOpen = ref(false);
 const isEditingVehicle = ref(false);
-const vehicleForm = ref({
-  id: 0,
-  name: "",
-  plate: "",
-  status: "active",
-  photoUrl: "",
+const editingVehicleId = ref<string | null>(null);
+const vehicleImageRef = ref<HTMLInputElement | null>(null);
+const vehicleImageFile = ref<File | null>(null);
+const vehicleForm = reactive({
+  brand: "",
+  model: "",
+  year: new Date().getFullYear(),
+  licensePlate: "",
+  color: "",
+  transmission: "automatic" as "manual" | "automatic",
+  status: "available" as "available" | "in_use" | "maintenance" | "retired",
+  mileage: 0,
+  imageUrl: "",
+  notes: "",
 });
 
 function openNewVehicle() {
   isEditingVehicle.value = false;
-  vehicleForm.value = {
-    id: 0,
-    name: "",
-    plate: "",
-    status: "active",
-    photoUrl: "",
-  };
+  editingVehicleId.value = null;
+  vehicleImageFile.value = null;
+  Object.assign(vehicleForm, {
+    brand: "",
+    model: "",
+    year: new Date().getFullYear(),
+    licensePlate: "",
+    color: "",
+    transmission: "automatic",
+    status: "available",
+    mileage: 0,
+    imageUrl: "",
+    notes: "",
+  });
   isVehicleModalOpen.value = true;
 }
 
 function openEditVehicle(vehicle: any) {
   isEditingVehicle.value = true;
-  vehicleForm.value = { ...vehicle };
+  editingVehicleId.value = vehicle.id;
+  vehicleImageFile.value = null;
+  Object.assign(vehicleForm, {
+    brand: vehicle.brand,
+    model: vehicle.model,
+    year: vehicle.year,
+    licensePlate: vehicle.licensePlate,
+    color: vehicle.color,
+    transmission: vehicle.transmission,
+    status: vehicle.status,
+    mileage: vehicle.mileage,
+    imageUrl: vehicle.imageUrl,
+    notes: vehicle.notes,
+  });
   isVehicleModalOpen.value = true;
 }
 
-function saveVehicle() {
-  if (isEditingVehicle.value) {
-    const idx = vehicles.value.findIndex((v) => v.id === vehicleForm.value.id);
-    if (idx !== -1) vehicles.value[idx] = { ...vehicleForm.value };
+async function saveVehicle() {
+  if (!vehicleForm.brand || !vehicleForm.model || !vehicleForm.year) {
     toast.add({
-      title: "Vehicle Updated",
-      description: "Vehicle details saved.",
-      color: "success",
+      title: t("common.error"),
+      description: "Please fill in brand, model, and year",
+      color: "error",
     });
-  } else {
-    vehicles.value.push({
-      ...vehicleForm.value,
-      id: Math.max(0, ...vehicles.value.map((v) => v.id)) + 1,
-    });
-    toast.add({
-      title: "Vehicle Added",
-      description: "New vehicle created.",
-      color: "success",
-    });
+    return;
   }
-  isVehicleModalOpen.value = false;
+
+  if (isEditingVehicle.value && editingVehicleId.value) {
+    const result = await vehiclesStore.updateVehicle(editingVehicleId.value, {
+      brand: vehicleForm.brand,
+      model: vehicleForm.model,
+      year: vehicleForm.year,
+      licensePlate: vehicleForm.licensePlate,
+      color: vehicleForm.color,
+      transmission: vehicleForm.transmission,
+      status: vehicleForm.status,
+      mileage: vehicleForm.mileage,
+      imageUrl: vehicleForm.imageUrl,
+      notes: vehicleForm.notes,
+    });
+
+    if (result) {
+      toast.add({
+        title: "Vehicle Updated",
+        description: "Vehicle details saved.",
+        color: "success",
+      });
+      isVehicleModalOpen.value = false;
+    } else {
+      toast.add({
+        title: t("common.error"),
+        description: "Failed to update vehicle.",
+        color: "error",
+      });
+    }
+  } else {
+    const result = await vehiclesStore.createVehicle({
+      brand: vehicleForm.brand,
+      model: vehicleForm.model,
+      year: vehicleForm.year,
+      licensePlate: vehicleForm.licensePlate,
+      color: vehicleForm.color,
+      transmission: vehicleForm.transmission,
+      status: vehicleForm.status,
+      imageUrl: vehicleForm.imageUrl,
+      notes: vehicleForm.notes,
+    });
+
+    if (result) {
+      toast.add({
+        title: "Vehicle Added",
+        description: "New vehicle created.",
+        color: "success",
+      });
+      isVehicleModalOpen.value = false;
+    } else {
+      toast.add({
+        title: t("common.error"),
+        description: "Failed to create vehicle.",
+        color: "error",
+      });
+    }
+  }
 }
 
-function deleteVehicle() {
-  vehicles.value = vehicles.value.filter((v) => v.id !== vehicleForm.value.id);
-  toast.add({
-    title: "Vehicle Deleted",
-    description: "Vehicle has been removed.",
-    color: "error",
-  });
-  isVehicleModalOpen.value = false;
+async function deleteVehicle() {
+  if (editingVehicleId.value) {
+    const success = await vehiclesStore.deleteVehicle(editingVehicleId.value);
+    if (success) {
+      toast.add({
+        title: "Vehicle Deleted",
+        description: "Vehicle has been removed.",
+        color: "error",
+      });
+      isVehicleModalOpen.value = false;
+    } else {
+      toast.add({
+        title: t("common.error"),
+        description: "Failed to delete vehicle.",
+        color: "error",
+      });
+    }
+  }
+}
+
+function triggerVehicleImagePicker() {
+  vehicleImageRef.value?.click();
+}
+
+function clearVehicleImage() {
+  vehicleForm.imageUrl = "";
+  vehicleImageFile.value = null;
+  if (vehicleImageRef.value) {
+    vehicleImageRef.value.value = "";
+  }
+}
+
+function handleVehicleImageUpload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+
+  if (!file) return;
+
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    toast.add({
+      title: "Invalid File",
+      description: "Please upload JPG, PNG, or WebP.",
+      color: "error",
+    });
+    input.value = "";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    toast.add({
+      title: "File Too Large",
+      description: "Image exceeds 5MB limit.",
+      color: "error",
+    });
+    input.value = "";
+    return;
+  }
+
+  vehicleImageFile.value = file;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    vehicleForm.imageUrl = e.target?.result as string;
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
 }
 
 // Instructor CRUD State
@@ -152,15 +276,15 @@ function openEditInstructor(instructor: any) {
   isEditingInstructor.value = true;
   instructorUserId.value = instructor.userId || "";
   instructorPhotoUrl.value = instructor.image || "";
+  instructorFile.value = null;
   const nameParts = instructor.name?.split(" ") || [];
   instructorForm.value = {
     firstName: nameParts[0] || "",
     lastName: nameParts.slice(1).join(" ") || "",
     phoneNumber: instructor.phone || "",
     email: instructor.email || "",
-    bnspCertificateNumber:
-      instructor.certifications?.[0]?.replace("BNSP: ", "") || "",
-    licenseNumber: "",
+    bnspCertificateNumber: instructor.certifications?.[0]?.replace("BNSP: ", "") || "",
+    licenseNumber: instructor.licenseNumber || "",
     yearsOfExperience: instructor.yearsOfExperience || 0,
     description: instructor.description || "",
     status: instructor.status || "active",
@@ -188,6 +312,7 @@ async function saveInstructor() {
     const result = await instructorsStore.updateInstructor(
       instructorUserId.value,
       data,
+      instructorFile.value || undefined
     );
     if (result) {
       toast.add({
@@ -206,14 +331,13 @@ async function saveInstructor() {
     const createData = {
       ...data,
       username:
-        instructorForm.value.firstName.toLowerCase().replace(/\s/g, "") +
-        Date.now(),
+        instructorForm.value.firstName.toLowerCase().replace(/\s/g, "") + Date.now(),
       password: "TempPass123!",
       email: `${instructorForm.value.firstName.toLowerCase()}@example.com`,
     };
     const result = await instructorsStore.createInstructor(
       createData,
-      instructorFile.value || undefined,
+      instructorFile.value || undefined
     );
     if (result) {
       toast.add({
@@ -233,9 +357,7 @@ async function saveInstructor() {
 }
 
 async function deleteInstructor() {
-  const success = await instructorsStore.deleteInstructor(
-    instructorUserId.value,
-  );
+  const success = await instructorsStore.deleteInstructor(instructorUserId.value);
   if (success) {
     toast.add({
       title: "Instructor Deleted",
@@ -298,31 +420,79 @@ function handleInstructorImageUpload(event: Event) {
   input.value = "";
 }
 
-const vehicleImageRef = ref<HTMLInputElement | null>(null);
+async function saveSettings() {
+  try {
+    const result = await settingsStore.updateGeneralSettings({
+      businessName: generalSettings.businessName,
+      email: generalSettings.email,
+      phone: generalSettings.phone,
+      fax: generalSettings.fax,
+      whatsApp: generalSettings.whatsApp,
+      address: generalSettings.address,
+      hoursMonFri: generalSettings.hoursMonFri,
+      hoursSatSun: generalSettings.hoursSatSun,
+      hoursNightShift: generalSettings.hoursNightShift,
+      promoEndDate: generalSettings.promoEndDate,
+      notifyEmail: notificationSettings.emailNotifications,
+      notifySms: notificationSettings.whatsappNotifications,
+      notifyWhatsApp: notificationSettings.whatsappNotifications,
+    });
 
-function saveSettings() {
-  toast.add({
-    title: "Settings Saved",
-    description: "Your settings have been updated successfully.",
-    icon: "i-lucide-check-circle",
-    color: "success",
-  });
+    if (result) {
+      toast.add({
+        title: t("common.success"),
+        description: "Settings saved successfully.",
+        icon: "i-lucide-check-circle",
+        color: "success",
+      });
+    } else {
+      toast.add({
+        title: t("common.error"),
+        description: "Failed to save settings.",
+        color: "error",
+      });
+    }
+  } catch {
+    toast.add({
+      title: t("common.error"),
+      description: "Failed to save settings.",
+      color: "error",
+    });
+  }
+}
+
+async function fetchSettings() {
+  const settings = await settingsStore.fetchGeneralSettings();
+  if (settings) {
+    generalSettings.businessName = settings.businessName;
+    generalSettings.email = settings.email;
+    generalSettings.phone = settings.phone;
+    generalSettings.fax = settings.fax;
+    generalSettings.whatsApp = settings.whatsApp;
+    generalSettings.address = settings.address;
+    generalSettings.hoursMonFri = settings.hoursMonFri;
+    generalSettings.hoursSatSun = settings.hoursSatSun;
+    generalSettings.hoursNightShift = settings.hoursNightShift;
+    generalSettings.promoEndDate = settings.promoEndDate;
+    notificationSettings.emailNotifications = settings.notifyEmail;
+    notificationSettings.whatsappNotifications = settings.notifyWhatsApp;
+  }
 }
 
 onMounted(() => {
-  // Load initial settings from API or local storage here
-  // For now, we use the mock data defined above
+  fetchSettings();
   instructorsStore.fetchInstructors();
+  vehiclesStore.fetchVehicles();
 });
 </script>
 
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Settings">
+      <UDashboardNavbar :title="t('admin.settings')">
         <template #right>
           <UButton
-            label="Save All Changes"
+            :label="t('admin.saveChanges')"
             color="warning"
             icon="i-lucide-save"
             @click="saveSettings"
@@ -339,12 +509,12 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-settings" class="size-5 text-warning" />
-              <h2 class="font-semibold">General Settings</h2>
+              <h2 class="font-semibold">{{ t("admin.generalSettings") }}</h2>
             </div>
           </template>
 
           <div class="grid md:grid-cols-2 gap-4">
-            <UFormField label="Business Name">
+            <UFormField :label="t('admin.businessName')">
               <UInput
                 v-model="generalSettings.businessName"
                 icon="i-lucide-building"
@@ -361,7 +531,7 @@ onMounted(() => {
                 color="warning"
               />
             </UFormField>
-            <UFormField label="Phone Number">
+            <UFormField :label="t('profile.phone')">
               <UInput
                 v-model="generalSettings.phone"
                 icon="i-lucide-phone"
@@ -369,23 +539,32 @@ onMounted(() => {
                 color="warning"
               />
             </UFormField>
-            <UFormField label="WhatsApp Number">
+            <UFormField label="Fax">
               <UInput
-                v-model="generalSettings.whatsappNumber"
+                v-model="generalSettings.fax"
+                icon="i-lucide-printer"
+                class="w-full"
+                color="warning"
+              />
+            </UFormField>
+            <UFormField :label="t('admin.whatsappNumber')">
+              <UInput
+                v-model="generalSettings.whatsApp"
                 icon="i-simple-icons-whatsapp"
                 class="w-full"
                 color="warning"
               />
             </UFormField>
-            <UFormField label="Promo End Date">
+            <UFormField :label="t('admin.promoEndDate')">
               <UInput
-                v-model="promoEndDate"
+                :model-value="generalSettings.promoEndDate || ''"
                 type="datetime-local"
                 class="w-full"
                 color="warning"
+                @update:model-value="generalSettings.promoEndDate = $event || null"
               />
             </UFormField>
-            <UFormField label="Address" class="md:col-span-2">
+            <UFormField :label="t('profile.address')" class="md:col-span-2">
               <UTextarea
                 v-model="generalSettings.address"
                 class="w-full"
@@ -400,55 +579,39 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-clock" class="size-5 text-warning" />
-              <h2 class="font-semibold">Operating Hours</h2>
+              <h2 class="font-semibold">{{ t("home.operatingHours") }}</h2>
             </div>
           </template>
 
           <div class="space-y-4">
             <div class="flex items-center gap-4">
-              <span class="w-32 text-md font-medium">Monday - Friday</span>
+              <span class="w-32 text-md font-medium">{{ t("admin.mondayFriday") }}</span>
               <UInput
-                v-model="operatingHours.mondayStart"
-                type="time"
-                class="w-full"
-                color="warning"
-              />
-              <span class="text-muted">to</span>
-              <UInput
-                v-model="operatingHours.mondayEnd"
-                type="time"
+                v-model="generalSettings.hoursMonFri"
+                type="text"
+                placeholder="08:00 - 17:00"
                 class="w-full"
                 color="warning"
               />
             </div>
             <div class="flex items-center gap-4">
-              <span class="w-32 text-sm font-medium">Saturday & Sunday</span>
+              <span class="w-32 text-sm font-medium">{{
+                t("admin.saturdaySunday")
+              }}</span>
               <UInput
-                v-model="operatingHours.weekendStart"
-                type="time"
-                class="w-full"
-                color="warning"
-              />
-              <span class="text-muted">to</span>
-              <UInput
-                v-model="operatingHours.weekendEnd"
-                type="time"
+                v-model="generalSettings.hoursSatSun"
+                type="text"
+                placeholder="09:00 - 15:00"
                 class="w-full"
                 color="warning"
               />
             </div>
             <div class="flex items-center gap-4">
-              <span class="w-32 text-md font-medium">Night Shift</span>
+              <span class="w-32 text-md font-medium">{{ t("admin.nightShift") }}</span>
               <UInput
-                v-model="operatingHours.nightStart"
-                type="time"
-                class="w-full"
-                color="warning"
-              />
-              <span class="text-muted">to</span>
-              <UInput
-                v-model="operatingHours.nightEnd"
-                type="time"
+                v-model="generalSettings.hoursNightShift"
+                type="text"
+                placeholder="19:00 - 22:00"
                 class="w-full"
                 color="warning"
               />
@@ -462,10 +625,10 @@ onMounted(() => {
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-car" class="size-5 text-warning" />
-                <h2 class="font-semibold">Vehicles</h2>
+                <h2 class="font-semibold">{{ t("dashboard.vehicle") }}</h2>
               </div>
               <UButton
-                label="Add Vehicle"
+                :label="t('admin.addVehicle')"
                 icon="i-lucide-plus"
                 size="sm"
                 variant="outline"
@@ -483,28 +646,41 @@ onMounted(() => {
             >
               <div class="flex items-center gap-4">
                 <UAvatar
-                  :src="vehicle.photoUrl || undefined"
+                  :src="vehicle.imageUrl || undefined"
                   :text="
-                    !vehicle.photoUrl
-                      ? vehicle.name
-                          .split(' ')
-                          .map((n: string) => n[0])
-                          .join('')
+                    !vehicle.imageUrl
+                      ? (vehicle.brand?.[0] ?? '') + (vehicle.model?.[0] ?? '')
                       : undefined
                   "
                   size="md"
                 />
                 <div>
-                  <p class="font-medium">{{ vehicle.name }}</p>
-                  <p class="text-md text-muted">{{ vehicle.plate }}</p>
+                  <p class="font-medium">{{ vehicle.brand }} {{ vehicle.model }}</p>
+                  <p class="text-sm text-muted">
+                    {{ vehicle.licensePlate || "No plate" }} - {{ vehicle.year }}
+                  </p>
                 </div>
               </div>
               <div class="flex items-center gap-3">
                 <UBadge
                   :label="
-                    vehicle.status === 'active' ? 'Active' : 'Maintenance'
+                    vehicle.status === 'available'
+                      ? t('billing.active')
+                      : vehicle.status === 'in_use'
+                      ? 'In Use'
+                      : vehicle.status === 'maintenance'
+                      ? 'Maintenance'
+                      : 'Retired'
                   "
-                  :color="vehicle.status === 'active' ? 'info' : 'error'"
+                  :color="
+                    vehicle.status === 'available'
+                      ? 'success'
+                      : vehicle.status === 'in_use'
+                      ? 'info'
+                      : vehicle.status === 'maintenance'
+                      ? 'warning'
+                      : 'neutral'
+                  "
                   variant="subtle"
                 />
                 <UButton
@@ -516,6 +692,10 @@ onMounted(() => {
                 />
               </div>
             </div>
+            <div v-if="vehicles.length === 0" class="text-center py-8 text-muted">
+              <UIcon name="i-lucide-car" class="size-8 mx-auto mb-2 opacity-50" />
+              <p>No vehicles added yet</p>
+            </div>
           </div>
         </UCard>
 
@@ -525,10 +705,12 @@ onMounted(() => {
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-users" class="size-5 text-warning" />
-                <h2 class="font-semibold">Instructors</h2>
+                <h2 class="font-semibold">
+                  {{ t("admin.students").replace("Murid", "Instruktur") }}
+                </h2>
               </div>
               <UButton
-                label="Add Instructor"
+                :label="t('admin.addInstructor')"
                 icon="i-lucide-user-plus"
                 size="sm"
                 variant="outline"
@@ -565,7 +747,7 @@ onMounted(() => {
               <div class="flex items-center gap-3">
                 <UBadge
                   :label="
-                    instructor.status === 'active' ? 'Active' : 'Inactive'
+                    instructor.status === 'active' ? t('billing.active') : 'Inactive'
                   "
                   :color="instructor.status === 'active' ? 'info' : 'neutral'"
                   variant="subtle"
@@ -578,78 +760,6 @@ onMounted(() => {
                   @click="openEditInstructor(instructor)"
                 />
               </div>
-            </div>
-          </div>
-        </UCard>
-
-        <!-- Notification Settings -->
-        <UCard>
-          <template #header>
-            <div class="flex items-center gap-2">
-              <UIcon name="i-lucide-bell" class="size-5 text-warning" />
-              <h2 class="font-semibold">Notification Settings</h2>
-            </div>
-          </template>
-
-          <div class="space-y-4">
-            <USwitch
-              v-model="notificationSettings.emailNotifications"
-              label="Send email notifications to students"
-            />
-            <USwitch
-              v-model="notificationSettings.whatsappNotifications"
-              label="Send WhatsApp reminders to students"
-            />
-            <USwitch
-              v-model="notificationSettings.adminAlerts"
-              label="Send admin alerts for general events"
-            />
-            <USwitch
-              v-model="notificationSettings.newUserRegistration"
-              label="Notify when new user registers"
-            />
-            <USwitch
-              v-model="notificationSettings.newPackagePurchase"
-              label="Notify when user buys a package / becomes a member"
-            />
-
-            <UFormField label="Send reminders before session (hours)">
-              <UInput
-                v-model="notificationSettings.reminderHours"
-                type="number"
-                min="1"
-                max="72"
-                class="w-full"
-              />
-            </UFormField>
-          </div>
-        </UCard>
-
-        <!-- Danger Zone -->
-        <UCard>
-          <template #header>
-            <div class="flex items-center gap-2 text-red-500">
-              <UIcon name="i-lucide-alert-triangle" class="size-5" />
-              <h2 class="font-semibold">Danger Zone</h2>
-            </div>
-          </template>
-
-          <div class="space-y-4">
-            <div
-              class="flex items-center justify-between p-4 rounded-lg border border-red-200 dark:border-red-900"
-            >
-              <div>
-                <p class="font-medium">Export All Data</p>
-                <p class="text-md text-muted">
-                  Download all system data as a backup file.
-                </p>
-              </div>
-              <UButton
-                label="Export"
-                icon="i-lucide-download"
-                color="neutral"
-                variant="outline"
-              />
             </div>
           </div>
         </UCard>
@@ -666,7 +776,11 @@ onMounted(() => {
             class="px-6 py-4 border-b border-default flex items-center justify-between"
           >
             <h3 class="text-base font-semibold">
-              {{ isEditingVehicle ? "Edit Vehicle" : "Add New Vehicle" }}
+              {{
+                isEditingVehicle
+                  ? t("common.edit") + " " + t("dashboard.vehicle")
+                  : t("admin.addNew") + " " + t("dashboard.vehicle")
+              }}
             </h3>
             <UButton
               icon="i-lucide-x"
@@ -677,22 +791,23 @@ onMounted(() => {
           </div>
           <div class="p-6 space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-1.5"
-                >Vehicle Photo</label
-              >
+              <label class="block text-sm font-medium mb-1.5">{{
+                t("admin.vehiclePhoto")
+              }}</label>
               <input
                 ref="vehicleImageRef"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 class="hidden"
+                @change="handleVehicleImageUpload"
               />
               <div
                 class="border-2 border-dashed border-default rounded-lg p-4 text-center cursor-pointer hover:border-primary transition-colors"
-                @click="vehicleImageRef?.click()"
+                @click="triggerVehicleImagePicker"
               >
-                <div v-if="vehicleForm.photoUrl" class="relative w-full h-32">
+                <div v-if="vehicleForm.imageUrl" class="relative w-full h-32">
                   <img
-                    :src="vehicleForm.photoUrl"
+                    :src="vehicleForm.imageUrl"
                     class="w-full h-full object-cover rounded-md"
                   />
                   <UButton
@@ -700,40 +815,96 @@ onMounted(() => {
                     color="error"
                     size="xs"
                     class="absolute top-2 right-2"
-                    @click.stop="vehicleForm.photoUrl = ''"
+                    @click.stop="clearVehicleImage"
                   />
                 </div>
                 <div v-else class="flex flex-col items-center gap-2 py-4">
                   <UIcon name="i-lucide-image-plus" class="size-6 text-muted" />
-                  <span class="text-sm text-muted">Click to upload photo</span>
+                  <span class="text-sm text-muted">{{ t("admin.clickToUpload") }}</span>
                 </div>
               </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium mb-1.5"
-                >Vehicle Name</label
-              >
-              <UInput
-                v-model="vehicleForm.name"
-                placeholder="e.g. BYD Atto 1"
-                class="w-full"
-              />
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1.5">Brand</label>
+                <UInput
+                  v-model="vehicleForm.brand"
+                  placeholder="e.g. Toyota"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1.5">Model</label>
+                <UInput
+                  v-model="vehicleForm.model"
+                  placeholder="e.g. Yaris"
+                  class="w-full"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1.5">Year</label>
+                <UInput
+                  v-model="vehicleForm.year"
+                  type="number"
+                  placeholder="e.g. 2024"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("admin.licensePlate")
+                }}</label>
+                <UInput
+                  v-model="vehicleForm.licensePlate"
+                  placeholder="e.g. B 1234 EV"
+                  class="w-full"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1.5">Color</label>
+                <UInput
+                  v-model="vehicleForm.color"
+                  placeholder="e.g. Black"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1.5">Transmission</label>
+                <USelect
+                  v-model="vehicleForm.transmission"
+                  :items="[
+                    { label: 'Automatic', value: 'automatic' },
+                    { label: 'Manual', value: 'manual' },
+                  ]"
+                  class="w-full"
+                />
+              </div>
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1.5"
-                >License Plate</label
-              >
-              <UInput
-                v-model="vehicleForm.plate"
-                placeholder="e.g. B 1234 EV"
-                class="w-full"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1.5">Status</label>
+              <label class="block text-sm font-medium mb-1.5">{{
+                t("admin.status")
+              }}</label>
               <USelect
                 v-model="vehicleForm.status"
-                :items="['active', 'maintenance']"
+                :items="[
+                  { label: 'Available', value: 'available' },
+                  { label: 'In Use', value: 'in_use' },
+                  { label: 'Maintenance', value: 'maintenance' },
+                  { label: 'Unavailable', value: 'unavailable' },
+                ]"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1.5">Notes</label>
+              <UTextarea
+                v-model="vehicleForm.notes"
+                placeholder="Additional notes about this vehicle..."
+                :rows="2"
                 class="w-full"
               />
             </div>
@@ -744,7 +915,7 @@ onMounted(() => {
             <div>
               <UButton
                 v-if="isEditingVehicle"
-                label="Delete"
+                :label="t('common.delete')"
                 icon="i-lucide-trash"
                 color="error"
                 variant="ghost"
@@ -753,13 +924,17 @@ onMounted(() => {
             </div>
             <div class="flex gap-3">
               <UButton
-                label="Cancel"
+                :label="t('common.cancel')"
                 color="neutral"
                 variant="outline"
                 @click="isVehicleModalOpen = false"
               />
               <UButton
-                :label="isEditingVehicle ? 'Save Changes' : 'Add Vehicle'"
+                :label="
+                  isEditingVehicle
+                    ? t('admin.saveChanges')
+                    : t('admin.addNew').replace('Tambah Baru', 'Tambah Kendaraan')
+                "
                 icon="i-lucide-check"
                 @click="saveVehicle"
               />
@@ -780,7 +955,9 @@ onMounted(() => {
           >
             <h3 class="text-base font-semibold">
               {{
-                isEditingInstructor ? "Edit Instructor" : "Add New Instructor"
+                isEditingInstructor
+                  ? t("common.edit") + " Instruktur"
+                  : t("admin.addNew").replace("Tambah Baru", "Tambah Instruktur")
               }}
             </h3>
             <UButton
@@ -793,9 +970,9 @@ onMounted(() => {
           <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div class="grid grid-cols-2 gap-4">
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >First Name</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("register.form.firstName")
+                }}</label>
                 <UInput
                   v-model="instructorForm.firstName"
                   placeholder="e.g. Budi"
@@ -803,9 +980,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >Last Name</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("register.form.lastName")
+                }}</label>
                 <UInput
                   v-model="instructorForm.lastName"
                   placeholder="e.g. Santoso"
@@ -813,9 +990,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >Phone Number</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("profile.phone")
+                }}</label>
                 <UInput
                   v-model="instructorForm.phoneNumber"
                   placeholder="e.g. 08123456789"
@@ -823,9 +1000,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >Years of Experience</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("instructors.yearsExperience")
+                }}</label>
                 <UInput
                   v-model="instructorForm.yearsOfExperience"
                   type="number"
@@ -834,9 +1011,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >BNSP Certificate No.</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("admin.bnspNo")
+                }}</label>
                 <UInput
                   v-model="instructorForm.bnspCertificateNumber"
                   placeholder="e.g. BNSP-101-2023"
@@ -844,9 +1021,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-sm font-medium mb-1.5"
-                  >SIM / License Number</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("admin.licenseNo")
+                }}</label>
                 <UInput
                   v-model="instructorForm.licenseNumber"
                   placeholder="e.g. SIM A / 12345678"
@@ -854,9 +1031,9 @@ onMounted(() => {
                 />
               </div>
               <div class="col-span-2">
-                <label class="block text-sm font-medium mb-1.5"
-                  >Instructor Photo</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("admin.instructorPhoto")
+                }}</label>
                 <input
                   ref="instructorImageRef"
                   type="file"
@@ -885,20 +1062,15 @@ onMounted(() => {
                     />
                   </div>
                   <div v-else class="flex flex-col items-center gap-2 py-4">
-                    <UIcon
-                      name="i-lucide-image-plus"
-                      class="size-6 text-muted"
-                    />
-                    <span class="text-sm text-muted"
-                      >Click to upload photo</span
-                    >
+                    <UIcon name="i-lucide-image-plus" class="size-6 text-muted" />
+                    <span class="text-sm text-muted">{{ t("admin.clickToUpload") }}</span>
                   </div>
                 </div>
               </div>
               <div class="col-span-2">
-                <label class="block text-sm font-medium mb-1.5"
-                  >Bio Description</label
-                >
+                <label class="block text-sm font-medium mb-1.5">{{
+                  t("admin.bioDescription")
+                }}</label>
                 <UTextarea
                   v-model="instructorForm.description"
                   placeholder="Short description of the instructor..."
@@ -914,7 +1086,7 @@ onMounted(() => {
             <div>
               <UButton
                 v-if="isEditingInstructor"
-                label="Delete"
+                :label="t('common.delete')"
                 icon="i-lucide-trash"
                 color="error"
                 variant="ghost"
@@ -923,13 +1095,17 @@ onMounted(() => {
             </div>
             <div class="flex gap-3">
               <UButton
-                label="Cancel"
+                :label="t('common.cancel')"
                 color="neutral"
                 variant="outline"
                 @click="isInstructorModalOpen = false"
               />
               <UButton
-                :label="isEditingInstructor ? 'Save Changes' : 'Add Instructor'"
+                :label="
+                  isEditingInstructor
+                    ? t('admin.saveChanges')
+                    : t('admin.addNew').replace('Tambah Baru', 'Tambah Instruktur')
+                "
                 icon="i-lucide-check"
                 @click="saveInstructor"
               />

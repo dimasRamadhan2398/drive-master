@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -23,6 +24,7 @@ type IMailtrapEmailService interface {
 	SendBookingConfirmationEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, lessonType string) error
 	SendLessonReminderEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, lessonType string) error
 	SendLessonCancellationEmail(ctx context.Context, toEmail, studentName, instructorName, dateTime, reason string) error
+	SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string, pdfBytes []byte, pdfFilename string) error
 }
 
 // MailtrapEmailService sends emails via Mailtrap Sending API
@@ -108,7 +110,7 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 	}
 
 	// Set headers with Bearer token
-	req.Header.Add("Authorization", "Bearer "+s.apiKey)
+	req.Header.Add("Api-Token", s.apiKey)
 	req.Header.Add("Content-Type", "application/json")
 
 	// Send request
@@ -135,6 +137,65 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 		logger.LogField("from", s.fromEmail),
 		logger.LogField("subject", input.Subject),
 	)
+
+	return nil
+}
+
+// SendCertificationEmail sends a certification issued email
+func (s *MailtrapEmailService) SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string, pdfBytes []byte, pdfFilename string) error {
+	subject := "Congratulations! Your Certification is Ready"
+
+	text := fmt.Sprintf(`Hello %s,
+
+Congratulations! You have successfully completed the %s package.
+
+Your certification has been issued.
+Certificate Number: %s
+
+You can view and download your certificate from your dashboard.
+
+Best regards,
+The Team`, name, packageName, certNumber)
+
+	html := fmt.Sprintf(`<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+	<h1 style="color: #28a745;">Congratulations!</h1>
+	<p>Hello <strong>%s</strong>,</p>
+	<p>You have successfully completed the <strong>%s</strong> package.</p>
+
+	<div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #28a745;">
+		<p><strong>Certification Issued</strong></p>
+		<p><strong>Certificate Number:</strong> %s</p>
+	</div>
+
+	<p>You can view and download your certificate from your dashboard.</p>
+
+	<p style="color: #666; margin-top: 30px;">Best regards,<br>The Team</p>
+</body>
+</html>`, name, packageName, certNumber)
+
+	var attachments []dto.EmailAttachment
+	if len(pdfBytes) > 0 {
+		encoded := base64.StdEncoding.EncodeToString(pdfBytes)
+		attachments = append(attachments, dto.EmailAttachment{
+			Content:  encoded,
+			Filename: pdfFilename,
+			Type:     "application/pdf",
+		})
+	}
+
+	err := s.SendEmail(ctx, dto.SendEmailRequest{
+		To:          []dto.EmailAddress{{Email: toEmail}},
+		Subject:     subject,
+		Text:        text,
+		HTML:        html,
+		Attachments: attachments,
+	})
+
+	if err != nil {
+		s.LogError("Failed to send certification email", logger.LogField("error", err))
+		return err
+	}
 
 	return nil
 }
@@ -176,7 +237,6 @@ The Team`, username)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"welcome", "onboarding"},
 	})
 
 	if err != nil {
@@ -222,7 +282,6 @@ The Team`, resetLink)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"password-reset", "security"},
 	})
 
 	if err != nil {
@@ -268,7 +327,6 @@ The Team`, otp)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"otp", "email-verification"},
 	})
 
 	if err != nil {
@@ -320,7 +378,6 @@ The Team`, studentName, instructorName, dateTime, lessonType)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"booking", "confirmation"},
 	})
 
 	if err != nil {
@@ -371,7 +428,6 @@ The Team`, studentName, instructorName, dateTime, lessonType)
 		Subject: subject,
 		Text:    text,
 		HTML:    html,
-		Tags:    []string{"reminder", "lesson"},
 	})
 
 	if err != nil {

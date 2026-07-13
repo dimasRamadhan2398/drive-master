@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
+import { ref } from "vue";
 import type { CreatePackageData } from "~/services/packageService";
 import { packageService } from "~/services/packageService";
+import { useI18n } from "#imports";
 
 const props = defineProps<{
   open: boolean;
@@ -14,6 +16,7 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const isAddLoading = ref(false);
+const { t } = useI18n();
 
 const packageTypes = [
   { label: "Bronze", value: "bronze" },
@@ -53,7 +56,7 @@ function handleClose() {
 
 async function saveNewPackage(e: Event) {
   e.preventDefault();
-  
+
   if (!newPackage.value.name || newPackage.value.price <= 0) {
     toast.add({
       title: "Error",
@@ -71,10 +74,16 @@ async function saveNewPackage(e: Event) {
   const pkg: CreatePackageData = {
     name: newPackage.value.name,
     description: newPackage.value.description,
-    packageType: newPackage.value.packageType as "bronze" | "silver" | "gold" | "platinum",
+    packageType: newPackage.value.packageType as
+      | "bronze"
+      | "silver"
+      | "gold"
+      | "platinum",
     price: newPackage.value.price,
-    discountPrice: newPackage.value.isDiscountActive ? newPackage.value.discountPrice : undefined,
-    durationMinutes: newPackage.value.duration,
+    discountPrice: newPackage.value.isDiscountActive
+      ? newPackage.value.discountPrice
+      : undefined,
+    durationMinutes: 60,
     totalSessions: newPackage.value.sessions,
     benefits: featuresArray,
     highlight: newPackage.value.highlight,
@@ -108,12 +117,12 @@ async function saveNewPackage(e: Event) {
 <template>
   <UModal
     :open="open"
-    title="Add New Package"
-    @update:open="(val) => emit('update:open', val)"
+    :title="t('admin.package.add')"
+    @update:open="(val: any) => emit('update:open', val)"
   >
     <template #body>
       <div class="space-y-4">
-        <UFormField label="Package Name" required>
+        <UFormField :label="t('admin.package.name')" required>
           <UInput
             v-model="newPackage.name"
             placeholder="e.g. 15x Sessions"
@@ -121,7 +130,7 @@ async function saveNewPackage(e: Event) {
             color="warning"
           />
         </UFormField>
-        <UFormField label="Package Type" required>
+        <UFormField :label="t('admin.package.type')" required>
           <USelect
             v-model="newPackage.packageType"
             :items="packageTypes"
@@ -130,7 +139,7 @@ async function saveNewPackage(e: Event) {
           />
         </UFormField>
         <div class="grid grid-cols-2 gap-4">
-          <UFormField label="Price (IDR)" required>
+          <UFormField :label="t('admin.package.price')" required>
             <UInput
               v-model="newPackage.price"
               type="number"
@@ -139,7 +148,7 @@ async function saveNewPackage(e: Event) {
               color="warning"
             />
           </UFormField>
-          <UFormField label="Discount Price (IDR)">
+          <UFormField :label="t('admin.package.discountPrice')">
             <UInput
               v-model="newPackage.discountPrice"
               type="number"
@@ -152,39 +161,24 @@ async function saveNewPackage(e: Event) {
         </div>
         <USwitch
           v-model="newPackage.isDiscountActive"
-          label="Enable Discount"
+          :label="t('admin.package.enableDiscount')"
           class="w-full"
           color="warning"
         />
-        <div class="grid grid-cols-2 gap-4">
-          <UFormField label="Sessions" required>
-            <UInput
-              v-model="newPackage.sessions"
-              type="number"
-              class="w-full"
-              color="warning"
-            />
-          </UFormField>
-          <UFormField label="Duration (min)" required>
-            <UInput
-              v-model="newPackage.duration"
-              type="number"
-              :step="15"
-              class="w-full"
-              color="warning"
-            />
-          </UFormField>
-        </div>
-        <UFormField label="Description">
-          <UTextarea
-            v-model="newPackage.description"
+        <UFormField :label="t('admin.package.sessions')" required>
+          <UInput
+            v-model="newPackage.sessions"
+            type="number"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Features">
+        <UFormField :label="t('admin.package.description')">
+          <UTextarea v-model="newPackage.description" class="w-full" color="warning" />
+        </UFormField>
+        <UFormField :label="t('admin.package.features')">
           <template #hint>
-            <span>Masukkan satu fitur per baris.</span>
+            <span>{{ t("admin.package.featuresHint") }}</span>
           </template>
           <UTextarea
             v-model="newPackage.features"
@@ -195,7 +189,7 @@ async function saveNewPackage(e: Event) {
         </UFormField>
         <USwitch
           v-model="newPackage.highlight"
-          label="Mark as Popular"
+          :label="t('admin.package.markPopular')"
           class="w-full"
           color="warning"
         />
@@ -204,13 +198,13 @@ async function saveNewPackage(e: Event) {
     <template #footer>
       <div class="flex justify-end gap-3">
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           variant="ghost"
           color="neutral"
           @click="handleClose"
         />
         <UButton
-          label="Create Package"
+          :label="t('admin.package.add')"
           icon="i-lucide-plus"
           color="warning"
           :loading="isAddLoading"

@@ -1,28 +1,58 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 useSeoMeta({
-  title: "Instructors | Drive Master Academy",
-  description:
-    "Meet our professional instructors, certified and experienced in providing the best driving education.",
+  title: t('instructors.title') + " | Drive Master Academy",
+  description: t('instructors.subtitle'),
 });
 
 const instructorsStore = useInstructorsStore();
 
-const instructors = computed(() => instructorsStore.instructors);
+// Use useAsyncData so data is fetched during SSR and on SPA navigation
+const { pending, refresh } = await useAsyncData(
+  'instructors-page',
+  () => instructorsStore.fetchInstructors(),
+  { server: true }
+);
 
-onMounted(() => {
-  instructorsStore.fetchInstructors();
-});
+const instructors = computed(() => instructorsStore.instructors);
 </script>
 
 <template>
   <UContainer class="py-12">
     <UPageHeader
-      title="Meet Our Professional Instructors"
-      description="Learn from the best. Our certified instructors are dedicated to providing a premium learning experience."
+      :title="t('instructors.heroTitle')"
+      :description="t('instructors.heroDesc')"
       class="mb-12"
     />
 
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <!-- Loading skeleton -->
+    <div v-if="pending" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <UCard v-for="n in 6" :key="n" class="overflow-hidden animate-pulse">
+        <template #header>
+          <div class="h-64 -m-6 mb-0 bg-elevated rounded-t-lg" />
+        </template>
+        <div class="space-y-3 py-2">
+          <div class="h-5 bg-elevated rounded w-3/4" />
+          <div class="h-4 bg-elevated rounded w-1/2" />
+          <div class="h-3 bg-elevated rounded w-full" />
+          <div class="h-3 bg-elevated rounded w-5/6" />
+        </div>
+      </UCard>
+    </div>
+
+    <!-- Empty state -->
+    <div
+      v-else-if="!pending && instructors.length === 0"
+      class="flex flex-col items-center justify-center py-24 text-center"
+    >
+      <UIcon name="i-lucide-users" class="size-16 text-muted mb-4" />
+      <h3 class="text-xl font-semibold mb-2">{{ t('instructors.noInstructors') || 'No instructors found' }}</h3>
+      <p class="text-muted">{{ t('instructors.noInstructorsDesc') || 'Check back soon.' }}</p>
+    </div>
+
+    <!-- Instructor cards -->
+    <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
       <UCard
         v-for="instructor in instructors"
         :key="instructor.userId"
@@ -60,24 +90,24 @@ onMounted(() => {
             <h3 class="text-xl font-bold">{{ instructor.name }}</h3>
             <div class="flex items-center gap-2 text-warning">
               <UIcon name="i-lucide-star" class="size-4" />
-              <span class="text-sm font-medium">{{ instructor.rating.toFixed(1) }} Rating</span>
+              <span class="text-sm font-medium">{{ instructor.rating.toFixed(1) }} {{ t('instructors.rating') }}</span>
             </div>
           </div>
 
           <p class="text-muted text-sm leading-relaxed line-clamp-3">
-            {{ instructor.bio || 'No bio available' }}
+            {{ instructor.bio || t('instructors.noBio') }}
           </p>
 
           <div class="flex items-center gap-4 pt-2 border-t border-default">
             <div class="flex items-center gap-1">
               <UIcon name="i-lucide-clock" class="size-4 text-warning" />
               <span class="text-xs font-semibold"
-                >{{ instructor.yearsOfExperience }} Years</span
+                >{{ instructor.yearsOfExperience }} {{ t('home.yearsExperience') }}</span
               >
             </div>
             <div class="flex items-center gap-1">
               <UIcon name="i-lucide-users" class="size-4 text-warning" />
-              <span class="text-xs font-semibold">{{ instructor.totalStudents }} Students</span>
+              <span class="text-xs font-semibold">{{ instructor.totalStudents }} {{ t('instructors.students') }}</span>
             </div>
           </div>
         </div>
@@ -86,7 +116,7 @@ onMounted(() => {
           <div class="space-y-2">
             <div class="flex items-center gap-2 text-sm">
               <UIcon name="i-lucide-phone" class="size-4 text-muted" />
-              <span class="text-muted">{{ instructor.phone || 'No phone' }}</span>
+              <span class="text-muted">{{ instructor.phone || t('instructors.noPhone') }}</span>
             </div>
             <div class="flex items-center gap-2 text-sm">
               <UIcon name="i-lucide-mail" class="size-4 text-muted" />
@@ -102,11 +132,11 @@ onMounted(() => {
     </div>
 
     <UPageCTA
-      title="Ready to start your journey?"
-      description="Choose your favorite instructor and book your first session today."
+      :title="t('instructors.cta.title')"
+      :description="t('instructors.cta.description')"
       :links="[
         {
-          label: 'Register Now',
+          label: t('auth.register'),
           to: '/auth/register',
           color: 'warning',
           size: 'lg',
@@ -116,3 +146,4 @@ onMounted(() => {
     />
   </UContainer>
 </template>
+

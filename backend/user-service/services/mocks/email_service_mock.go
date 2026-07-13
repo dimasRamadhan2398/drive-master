@@ -24,6 +24,7 @@ type EmailServiceMock struct {
 	SendBookingConfirmCallCount int
 	SendLessonReminderCallCount int
 	SendCancellationCallCount   int
+	SendCertificationCallCount  int
 
 	// Captured data for assertions
 	LastSendEmailRequest    dto.SendEmailRequest
@@ -66,6 +67,7 @@ func (m *EmailServiceMock) Reset() {
 	m.SendBookingConfirmCallCount = 0
 	m.SendLessonReminderCallCount = 0
 	m.SendCancellationCallCount = 0
+	m.SendCertificationCallCount = 0
 	m.LastSendEmailRequest = dto.SendEmailRequest{}
 	m.SentEmails = make([]dto.SendEmailRequest, 0)
 	m.WelcomeEmailRecipients = make([]string, 0)
@@ -92,6 +94,20 @@ func (m *EmailServiceMock) SendEmail(ctx context.Context, input dto.SendEmailReq
 	m.SendEmailCallCount++
 	m.LastSendEmailRequest = input
 	m.SentEmails = append(m.SentEmails, input)
+
+	if m.ShouldError {
+		return m.ErrorToReturn
+	}
+
+	return nil
+}
+
+// SendCertificationEmail implements IMailtrapEmailService.SendCertificationEmail
+func (m *EmailServiceMock) SendCertificationEmail(ctx context.Context, toEmail, name, certNumber, packageName string, pdfBytes []byte, pdfFilename string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.SendCertificationCallCount++
 
 	if m.ShouldError {
 		return m.ErrorToReturn

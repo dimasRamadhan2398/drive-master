@@ -33,6 +33,7 @@ func (r *TestimonialRoute) Run() {
 		testimonials.PUT("/:id", r.controller.GetTestimonialController().UpdateTestimonial)
 		testimonials.DELETE("/:id", r.controller.GetTestimonialController().DeleteTestimonial)
 		testimonials.PUT("/:id/featured", r.controller.GetTestimonialController().ToggleFeatured)
+		testimonials.PATCH("/:id/status", r.controller.GetTestimonialController().UpdateStatus)
 
 		// Public endpoints
 		testimonials.GET("/published", r.controller.GetTestimonialController().GetPublishedTestimonials)

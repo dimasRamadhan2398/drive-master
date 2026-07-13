@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // EventType represents the type of auth event
@@ -53,6 +55,14 @@ const (
 
 	// Certification Events
 	EventCertificationIssued EventType = "certification.issued"
+
+	// Enrollment Events
+	EventEnrollmentPaid    EventType = "enrollment.paid"
+	EventEnrollmentCreated EventType = "enrollment.created"
+	EventTransactionPaid   EventType = "transaction.paid"
+
+	// Session Events
+	EventSessionCompleted EventType = "session.completed"
 )
 
 // Event represents a generic auth event
@@ -91,6 +101,9 @@ type IEventPublisher interface {
 	PublishSecurityEvent(ctx context.Context, userID, username string, eventType EventType, ip string, data map[string]interface{}) error
 	PublishRoleEvent(ctx context.Context, userID, username, role string, eventType EventType) error
 	PublishCertificationIssued(ctx context.Context, userID string, userEmail, userName, certType string, issueDate time.Time) error
+	PublishEnrollmentPaid(ctx context.Context, enrollmentID string, userID string, packageID uuid.UUID, totalPrice float64, totalSessions int, packageName string) error
+	PublishSessionCompleted(ctx context.Context, sessionID uint, entitlementID uuid.UUID, enrollmentID uuid.UUID, userID uuid.UUID, packageID uuid.UUID, sessionsUsed int) error
+	PublishSessionCompletedWithEnrollment(ctx context.Context, sessionID uint, entitlementID uuid.UUID, enrollmentID uuid.UUID, userID uuid.UUID, packageID uuid.UUID, sessionsUsed int, remainingSessions int) error
 
 	// Consumer management
 	StartConsumer(ctx context.Context) error
@@ -309,14 +322,73 @@ func (r *EventPublisher) PublishCertificationIssued(ctx context.Context, userID 
 	return r.Publish(ctx, event)
 }
 
+// PublishEnrollmentPaid publishes an enrollment paid event
+func (r *EventPublisher) PublishEnrollmentPaid(ctx context.Context, enrollmentID string, userID string, packageID uuid.UUID, totalPrice float64, totalSessions int, packageName string) error {
+	event := &Event{
+		Type:     EventEnrollmentPaid,
+		UserID:   userID,
+		Success:  true,
+		Data: map[string]interface{}{
+			"enrollment_id":  enrollmentID,
+			"package_id":     packageID.String(),
+			"total_price":    totalPrice,
+			"total_sessions": totalSessions,
+			"package_name":   packageName,
+		},
+		Timestamp: time.Now().UTC(),
+	}
+	return r.Publish(ctx, event)
+}
+
+// PublishSessionCompleted publishes a session completed event
+func (r *EventPublisher) PublishSessionCompleted(ctx context.Context, sessionID uint, entitlementID uuid.UUID, enrollmentID uuid.UUID, userID uuid.UUID, packageID uuid.UUID, sessionsUsed int) error {
+	event := &Event{
+		Type:    EventSessionCompleted,
+		UserID:  userID.String(),
+		Success: true,
+		Data: map[string]interface{}{
+			"session_id":     sessionID,
+			"entitlement_id": entitlementID.String(),
+			"booking_id":     enrollmentID.String(),
+			"member_id":      userID.String(),
+			"package_id":      packageID.String(),
+			"sessions_used":   sessionsUsed,
+		},
+		Timestamp: time.Now().UTC(),
+	}
+	return r.Publish(ctx, event)
+}
+
+// PublishSessionCompletedWithEnrollment publishes a session completed event with enrollment details
+// This event includes remaining sessions count and enrollment status update info
+func (r *EventPublisher) PublishSessionCompletedWithEnrollment(ctx context.Context, sessionID uint, entitlementID uuid.UUID, enrollmentID uuid.UUID, userID uuid.UUID, packageID uuid.UUID, sessionsUsed int, remainingSessions int) error {
+	event := &Event{
+		Type:    EventSessionCompleted,
+		UserID:  userID.String(),
+		Success: true,
+		Data: map[string]interface{}{
+			"session_id":          sessionID,
+			"entitlement_id":      entitlementID.String(),
+			"enrollment_id":       enrollmentID.String(),
+			"member_id":           userID.String(),
+			"package_id":          packageID.String(),
+			"sessions_used":       sessionsUsed,
+			"remaining_sessions":  remainingSessions,
+			"enrollment_status":    "completed", // Will be "in_progress" or "completed" based on logic
+			"enrollment_updated":  remainingSessions <= 0,
+		},
+		Timestamp: time.Now().UTC(),
+	}
+	return r.Publish(ctx, event)
+}
+
 // StartConsumer starts the event consumer
 func (r *EventPublisher) StartConsumer(ctx context.Context) error {
 	if r.consumer == nil || !r.consumer.IsEnabled() {
 		return nil
 	}
 
-	// Register a single handler that dispatches to all registered handlers
-	r.consumer.RegisterHandler(r.topic, NewJSONMessageHandler(func(ctx context.Context, msg LogMessage) error {
+	handler := NewJSONMessageHandler(func(ctx context.Context, msg LogMessage) error {
 		if eventData, ok := msg.Fields["event"]; ok {
 			if eventBytes, err := json.Marshal(eventData); err == nil {
 				var event Event
@@ -330,7 +402,11 @@ func (r *EventPublisher) StartConsumer(ctx context.Context) error {
 			}
 		}
 		return nil
-	}))
+	})
+
+	for _, topic := range r.consumer.topics {
+		r.consumer.RegisterHandler(topic, handler)
+	}
 
 	return r.consumer.Start()
 }
@@ -550,4 +626,127 @@ func (h *UserDeletedHandler) HandleEvent(ctx context.Context, event *Event) erro
 // GetEventTypes returns the event types this handler handles
 func (h *UserDeletedHandler) GetEventTypes() []EventType {
 	return []EventType{EventUserDeleted}
+}
+
+// ============================================
+// Enrollment Event Handlers
+// ============================================
+
+// EnrollmentPaidHandler handles enrollment.paid events to increment package count in core-service
+type EnrollmentPaidHandler struct {
+	incrementPackageCount func(ctx context.Context, packageID uint) error
+}
+
+// NewEnrollmentPaidHandler creates a new enrollment paid handler
+func NewEnrollmentPaidHandler(incrementPackageCount func(ctx context.Context, packageID uint) error) *EnrollmentPaidHandler {
+	return &EnrollmentPaidHandler{incrementPackageCount: incrementPackageCount}
+}
+
+// HandleEvent handles the enrollment.paid event
+func (h *EnrollmentPaidHandler) HandleEvent(ctx context.Context, event *Event) error {
+	if event.Type != EventEnrollmentPaid {
+		return nil
+	}
+
+	if h.incrementPackageCount == nil {
+		return nil
+	}
+
+	// Extract package_id from event data
+	packageIDData, ok := event.Data["package_id"]
+	if !ok {
+		return fmt.Errorf("missing package_id in enrollment.paid event")
+	}
+
+	// Handle string type (from UUID)
+	var packageID uint
+	switch v := packageIDData.(type) {
+	case string:
+		// Parse UUID string to get a numeric identifier
+		// For now, use hash or extract part of UUID
+		// In a real scenario, core-service should provide the numeric ID
+		parsedUUID, err := uuid.Parse(v)
+		if err != nil {
+			return fmt.Errorf("invalid package_id UUID: %w", err)
+		}
+		// Convert UUID bytes to uint (simple approach)
+		packageID = uint(parsedUUID[0])<<24 | uint(parsedUUID[1])<<16 | uint(parsedUUID[2])<<8 | uint(parsedUUID[3])
+	case float64:
+		packageID = uint(v)
+	case int:
+		packageID = uint(v)
+	case uint:
+		packageID = v
+	default:
+		return fmt.Errorf("invalid package_id type: %T", packageIDData)
+	}
+
+	return h.incrementPackageCount(ctx, packageID)
+}
+
+// GetEventTypes returns the event types this handler handles
+func (h *EnrollmentPaidHandler) GetEventTypes() []EventType {
+	return []EventType{EventEnrollmentPaid}
+}
+
+// TransactionPaidHandler handles transaction.paid events to mark enrollment as paid
+type TransactionPaidHandler struct {
+	onPaid func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64, packageID, packageName, paymentMethod string) error
+}
+
+// NewTransactionPaidHandler creates a new transaction paid handler
+func NewTransactionPaidHandler(onPaid func(ctx context.Context, enrollmentID uuid.UUID, totalPrice float64, packageID, packageName, paymentMethod string) error) *TransactionPaidHandler {
+	return &TransactionPaidHandler{onPaid: onPaid}
+}
+
+// HandleEvent processes the transaction.paid event
+func (h *TransactionPaidHandler) HandleEvent(ctx context.Context, event *Event) error {
+	if event.Type != EventTransactionPaid {
+		return nil
+	}
+
+	if h.onPaid == nil {
+		return nil
+	}
+
+	enrollmentIDStr, ok := event.Data["enrollment_id"].(string)
+	if !ok {
+		return fmt.Errorf("missing enrollment_id in transaction.paid event")
+	}
+
+	enrollmentID, err := uuid.Parse(enrollmentIDStr)
+	if err != nil {
+		return fmt.Errorf("invalid enrollment_id in transaction.paid event: %w", err)
+	}
+
+	totalPriceVal, ok := event.Data["total_price"]
+	if !ok {
+		return fmt.Errorf("missing total_price in transaction.paid event")
+	}
+
+	var totalPrice float64
+	switch v := totalPriceVal.(type) {
+	case float64:
+		totalPrice = v
+	case float32:
+		totalPrice = float64(v)
+	case int:
+		totalPrice = float64(v)
+	case int64:
+		totalPrice = float64(v)
+	default:
+		return fmt.Errorf("invalid total_price type in transaction.paid event")
+	}
+
+	// Extract optional enrichment fields (added when metadata is stored at payment creation)
+	packageID, _ := event.Data["package_id"].(string)
+	packageName, _ := event.Data["package_name"].(string)
+	paymentMethod, _ := event.Data["payment_method"].(string)
+
+	return h.onPaid(ctx, enrollmentID, totalPrice, packageID, packageName, paymentMethod)
+}
+
+// GetEventTypes returns the event types this handler handles
+func (h *TransactionPaidHandler) GetEventTypes() []EventType {
+	return []EventType{EventTransactionPaid}
 }

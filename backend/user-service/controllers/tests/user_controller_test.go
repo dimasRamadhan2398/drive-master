@@ -139,7 +139,15 @@ type MockMemberService struct {
 	mock.Mock
 }
 
-func (m *MockMemberService) GetMemberProfile(ctx context.Context, userID uuid.UUID) (*models.MemberProfile, error) {
+func (m *MockMemberService) GetMemberProfile(ctx context.Context, userID uuid.UUID) (*dto.MemberProfileResponse, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*dto.MemberProfileResponse), args.Error(1)
+}
+
+func (m *MockMemberService) GetRawMemberProfile(ctx context.Context, userID uuid.UUID) (*models.MemberProfile, error) {
 	args := m.Called(ctx, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -185,8 +193,8 @@ func (m *MockInstructorService) CreateInstructorProfile(ctx context.Context, use
 	return args.Get(0).(*dto.InstructorProfileResponse), args.Error(1)
 }
 
-func (m *MockInstructorService) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error {
-	args := m.Called(ctx, profile)
+func (m *MockInstructorService) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile, photoBase64 *string) error {
+	args := m.Called(ctx, profile, photoBase64)
 	return args.Error(0)
 }
 

@@ -2,6 +2,7 @@ package services
 
 import (
 	coreServices "core-service/services"
+	"fmt"
 	"user-service/clients"
 	"user-service/clients/region"
 	"user-service/pkg/config"
@@ -31,7 +32,6 @@ type IServiceRegistry interface {
 	GetRegionService() IRegionService
 	GetCertificationService() ICertificationService
 	GetEntitlementService() IEntitlementService
-	GetMemberCertificateService() IMemberCertificateService
 	GetTestimonialService() ITestimonialService
 	GetRecurringScheduleService() IRecurringScheduleService
 	GetDashboardService() IDashboardService
@@ -69,6 +69,7 @@ func (r *Registry) GetInstructorService() IInstructorService {
 		r.repoRegistry.GetRole(),
 		r.GetEmailService(),
 		r.redisClient,
+		r.GetMediaService(),
 	)
 }
 
@@ -82,12 +83,22 @@ func (r *Registry) GetAuthService() IAuthService {
 
 func (r *Registry) GetEmailService() IMailtrapEmailService {
 	cfg := config.Get()
+
+	// Debug logging for email configuration
+	fmt.Printf("[EMAIL DEBUG] FromEmail: %s\n", cfg.Email.FromEmail)
+	fmt.Printf("[EMAIL DEBUG] FromName: %s\n", cfg.Email.FromName)
+	fmt.Printf("[EMAIL DEBUG] APIKey: %s\n", cfg.Email.APIKey)
+	fmt.Printf("[EMAIL DEBUG] Host: %s\n", cfg.Email.Host)
+	fmt.Printf("[EMAIL DEBUG] Port: %d\n", cfg.Email.Port)
+	fmt.Printf("[EMAIL DEBUG] User: %s\n", cfg.Email.User)
+	fmt.Printf("[EMAIL DEBUG] SMTPEnabled: %s\n", cfg.Email.Password)
+
 	return NewMailtrapEmailService(cfg.Email.FromEmail, cfg.Email.FromName, cfg.Email.APIKey)
 }
 
 func (r *Registry) GetMediaService() IMediaService {
 	cfg := config.Get()
-	return coreServices.NewMediaService(cfg.ImageKit.PrivateKey)
+	return coreServices.NewMediaService(cfg.ImageKit.PrivateKey, cfg.ImageKit.URLEndpoint)
 }
 
 func (r *Registry) GetWorkExperienceService() IWorkExperienceService {
@@ -103,27 +114,21 @@ func (r *Registry) GetRegionService() IRegionService {
 }
 
 func (r *Registry) GetCertificationService() ICertificationService {
-	return NewCertificationService(r.repoRegistry.GetCertification())
+	return NewCertificationService(r.repoRegistry.GetCertification(), r.repoRegistry.GetUser(), r.GetEmailService())
 }
 
 func (r *Registry) GetEntitlementService() IEntitlementService {
 	certService := r.GetCertificationService()
-	// Initialize the completion listener
-	listener := listeners.NewEntitlementCompletedListener(certService, r.eventPublisher)
+	// Initialize the completion listener.
+	// Passing certRepo allows the listener to check for an existing certificate
+	// via the entitlement_id FK before attempting issuance (idempotent behaviour).
+	listener := listeners.NewEntitlementCompletedListener(certService, r.repoRegistry.GetCertification(), r.eventPublisher)
 	return NewEntitlementService(
 		r.repoRegistry.GetEntitlement(),
 		r.repoRegistry.GetMember(),
 		certService,
 		r.eventPublisher,
 		listener,
-	)
-}
-
-func (r *Registry) GetMemberCertificateService() IMemberCertificateService {
-	return NewMemberCertificateService(
-		r.repoRegistry.GetUser(),
-		r.repoRegistry.GetEntitlement(),
-		r.repoRegistry.GetCertification(),
 	)
 }
 
@@ -136,5 +141,5 @@ func (r *Registry) GetRecurringScheduleService() IRecurringScheduleService {
 }
 
 func (r *Registry) GetDashboardService() IDashboardService {
-	return NewDashboardService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole())
+	return NewDashboardService(r.repoRegistry.GetUser(), r.repoRegistry.GetRole(), r.repoRegistry.GetCertification())
 }

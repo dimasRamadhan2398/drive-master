@@ -12,16 +12,31 @@ const emit = defineEmits<{
   (e: "update:open", value: boolean): void;
 }>();
 
+const { t } = useI18n()
 const toast = useToast();
 const packagesStore = usePackagesStore();
 
-const editingAddon = ref<Addon | null>(null);
+const editingAddon = ref<{
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  sessions: number;
+} | null>(null);
+
+const isSubmitting = ref(false);
 
 watch(
   () => props.addon,
   (newAddon) => {
     if (newAddon) {
-      editingAddon.value = { ...newAddon };
+      editingAddon.value = {
+        id: newAddon.id,
+        name: newAddon.name,
+        price: newAddon.price,
+        description: newAddon.description,
+        sessions: newAddon.sessions || 1,
+      };
     }
   },
   { immediate: true },
@@ -32,43 +47,60 @@ function handleClose() {
   editingAddon.value = null;
 }
 
-function saveEditedAddon() {
+async function saveEditedAddon() {
   if (!editingAddon.value) return;
 
-  const updated = packagesStore.updateAddon(
-    editingAddon.value.id,
-    editingAddon.value,
-  );
-  if (updated) {
+  isSubmitting.value = true;
+  try {
+    const result = await packagesStore.updateAddon(
+      editingAddon.value.id,
+      {
+        name: editingAddon.value.name,
+        price: editingAddon.value.price,
+        description: editingAddon.value.description,
+        sessions: editingAddon.value.sessions,
+      },
+    );
+
+    if (result) {
+      toast.add({
+        title: t('admin.addon.updated'),
+        description: `"${editingAddon.value.name}" telah disimpan.`,
+        color: "success",
+      });
+      handleClose();
+    } else {
+      toast.add({
+        title: t('common.error'),
+        description: t('admin.addon.notFound'),
+        color: "error",
+      });
+    }
+  } catch (error) {
+    console.error("Error updating addon:", error);
     toast.add({
-      title: "Add-on Updated",
-      description: `"${editingAddon.value.name}" has been saved.`,
-      color: "success",
-    });
-  } else {
-    toast.add({
-      title: "Error",
-      description: "Add-on not found.",
+      title: t('common.error'),
+      description: "Gagal menyimpan add-on. Silakan coba lagi.",
       color: "error",
     });
+  } finally {
+    isSubmitting.value = false;
   }
-
-  handleClose();
 }
 </script>
 
 <template>
-  <UModal :open="open" title="Edit Add-on" @update:open="(val) => emit('update:open', val)">
+  <UModal :open="open" :title="t('admin.addon.edit')" @update:open="(val) => emit('update:open', val)">
     <template #body>
       <div v-if="editingAddon" class="space-y-4">
-        <UFormField label="Add-on Name" required>
+        <UFormField :label="t('admin.addon.name')" required>
           <UInput
             v-model="editingAddon.name"
             class="w-full"
             color="warning"
           />
         </UFormField>
-        <UFormField label="Price (IDR)" required>
+        <UFormField :label="t('admin.package.price')" required>
           <UInput
             v-model="editingAddon.price"
             type="number"
@@ -77,10 +109,19 @@ function saveEditedAddon() {
             color="warning"
           />
         </UFormField>
-        <UFormField label="Description">
+        <UFormField :label="t('admin.package.description')">
           <UTextarea
             v-model="editingAddon.description"
             placeholder="Briefly describe what this add-on includes."
+            class="w-full"
+            color="warning"
+          />
+        </UFormField>
+        <UFormField :label="t('admin.package.sessions')">
+          <UInput
+            v-model="editingAddon.sessions"
+            type="number"
+            :min="1"
             class="w-full"
             color="warning"
           />
@@ -90,15 +131,17 @@ function saveEditedAddon() {
     <template #footer>
       <div class="flex justify-end gap-3">
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           variant="ghost"
           color="neutral"
+          :disabled="isSubmitting"
           @click="handleClose"
         />
         <UButton
-          label="Save Changes"
+          :label="t('admin.saveChanges')"
           icon="i-lucide-save"
           color="warning"
+          :loading="isSubmitting"
           @click="saveEditedAddon"
         />
       </div>

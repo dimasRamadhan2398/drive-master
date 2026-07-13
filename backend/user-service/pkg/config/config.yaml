@@ -4,7 +4,7 @@ server:
   read_timeout: 60
 
 database:
-  host: drive_master_postgres
+  host: 127.0.0.1
   port: 5432
   username: admin_drive
   password: drivemaster123
@@ -16,9 +16,9 @@ database:
   maxIdleTime: 10
 
 redis:
-  host: redis
+  host: 127.0.0.1
   port: 6379
-  password: "drivemaster123"
+  password: ""
   db: 0
 
 imagekit:
@@ -39,7 +39,7 @@ log:
 kafka:
   enabled: true
   brokers:
-    - "kafka:29092"
+    - "127.0.0.1:9092"
   topic: "service-logs"
   service_name: "user-service"
 
@@ -51,11 +51,11 @@ app:
   rate_limiter_time: 1
 
 core_service:
-  base_url: "http://core-service:8002"
+  base_url: "http://127.0.0.1:8002"
 
 email:
-  api_key: 7cff6b7e84f42612fad1c453da7a6a62
-  from_email: "noreply@ai-forlearning.com"
+  api_key: 0f1f082f99f7b0a0229b317a08e031ce
+  from_email: "admin@drivemaster.id"
   app_name: user_service
   enabled: true
   smtp_host: send.api.mailtrap.io

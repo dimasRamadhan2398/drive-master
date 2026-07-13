@@ -1,29 +1,88 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { usePaymentsStore } from '~/stores/payments'
 
+const { t } = useI18n()
 definePageMeta({
   layout: 'blank'
 })
 
 const route = useRoute()
 const router = useRouter()
+const paymentsStore = usePaymentsStore()
 
 const status = ref(route.query.status as string || 'pending')
 const email = ref(route.query.email as string || '')
 const plan = ref(route.query.plan as string || 'standard')
+const orderId = ref(route.query.orderId as string || '')
+const enrollmentId = ref<string | null>(null)
 
-// Simulate waiting for confirmation
+const isSuccess = computed(() => status.value === 'success' || status.value === 'paid')
+const isFailed = computed(() => status.value === 'failed')
+
+let pollInterval: any = null
+
+const pollStatus = async (oid: string) => {
+  let attempts = 0
+  const maxAttempts = 6 // Poll for 12 seconds max
+  
+  const check = async () => {
+    attempts++
+    const res = await paymentsStore.checkPaymentStatus(oid)
+    if (res === 'success' || res === 'paid') {
+      status.value = 'success'
+      if (pollInterval) clearInterval(pollInterval)
+      setTimeout(() => {
+        navigateTo('/dashboard?just_paid=true')
+      }, 3000)
+    } else if (res === 'failed' || res === 'expired' || res === 'cancelled') {
+      status.value = 'failed'
+      if (pollInterval) clearInterval(pollInterval)
+    } else if (attempts >= maxAttempts) {
+      if (pollInterval) clearInterval(pollInterval)
+    }
+  }
+
+  await check()
+  
+  if (status.value === 'pending') {
+    pollInterval = setInterval(check, 2000)
+  }
+}
+
 onMounted(() => {
-  // After 3 seconds, auto-redirect to dashboard
-  if (status.value === 'success') {
+  if (import.meta.client) {
+    enrollmentId.value = sessionStorage.getItem("dm_enrollment_id") || null
+  }
+
+  // Resolve orderId from sessionStorage fallback if not in query
+  if (!orderId.value && import.meta.client) {
+    orderId.value = sessionStorage.getItem("dm_order_id") || ''
+  }
+
+  // Trigger status check & polling if we have orderId
+  if (orderId.value) {
+    paymentsStore.fetchPaymentByOrderId(orderId.value).then((payment) => {
+      if (payment && payment.enrollmentId) {
+        enrollmentId.value = payment.enrollmentId
+        if (import.meta.client) {
+          sessionStorage.setItem("dm_enrollment_id", payment.enrollmentId)
+        }
+      }
+    })
+    pollStatus(orderId.value)
+  } else if (status.value === 'success') {
     setTimeout(() => {
-      navigateTo('/dashboard')
+      navigateTo('/dashboard?just_paid=true')
     }, 5000)
   }
 })
 
-const isSuccess = computed(() => status.value === 'success')
-const isFailed = computed(() => status.value === 'failed')
+onUnmounted(() => {
+  if (pollInterval) {
+    clearInterval(pollInterval)
+  }
+})
 
 const packageNames = {
   starter: 'Starter Package (5 sessions)',
@@ -31,7 +90,7 @@ const packageNames = {
   pro: 'Pro Package (15 sessions)'
 }
 
-const nextSteps = {
+const nextSteps = computed(() => ({
   success: [
     'Check your email for payment confirmation and access details',
     'Confirm your full name and ID via WhatsApp for KTP verification',
@@ -45,7 +104,7 @@ const nextSteps = {
     'Try again with a different payment method',
     'Contact us via WhatsApp for assistance'
   ]
-}
+}))
 </script>
 
 <template>
@@ -62,26 +121,26 @@ const nextSteps = {
 
         <!-- Message -->
         <div>
-          <h1 class="text-3xl font-bold">Payment Successful!</h1>
+          <h1 class="text-3xl font-bold">{{ t('auth.paymentSuccessful') }}</h1>
           <p class="text-muted mt-2">
-            Your registration for {{ packageNames[plan as keyof typeof packageNames] || 'Standard Package' }} is confirmed.
+            {{ t('auth.paymentConfirmed', { plan: packageNames[plan as keyof typeof packageNames] || 'Standard Package' }) }}
           </p>
         </div>
 
         <!-- Confirmation Details -->
         <UCard class="text-left">
           <template #header>
-            <h2 class="font-semibold">Confirmation Details</h2>
+            <h2 class="font-semibold">{{ t('auth.confirmationDetails') }}</h2>
           </template>
 
           <div class="space-y-4">
             <div>
-              <p class="text-xs text-muted uppercase tracking-wide mb-1">Confirmation Email</p>
+              <p class="text-xs text-muted uppercase tracking-wide mb-1">{{ t('auth.confirmationEmail') }}</p>
               <p class="font-medium break-all">{{ email }}</p>
             </div>
 
             <div class="pt-4 border-t">
-              <p class="text-xs text-muted uppercase tracking-wide mb-2">What Happens Next:</p>
+              <p class="text-xs text-muted uppercase tracking-wide mb-2">{{ t('auth.whatHappensNext') }}</p>
               <ol class="space-y-2">
                 <li v-for="(step, index) in nextSteps.success" :key="index" class="flex gap-3 text-sm">
                   <span class="font-semibold text-primary shrink-0">{{ index + 1 }}.</span>
@@ -93,7 +152,7 @@ const nextSteps = {
 
           <template #footer>
             <div class="text-sm text-muted">
-              <p>Check your email for detailed instructions</p>
+              <p>{{ t('auth.checkEmailInstructions') }}</p>
             </div>
           </template>
         </UCard>
@@ -103,18 +162,18 @@ const nextSteps = {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-gift" class="size-5 text-warning" />
-              <h3 class="font-semibold text-warning">Free Trial Session</h3>
+              <h3 class="font-semibold text-warning">{{ t('freeTrial.title') }}</h3>
             </div>
           </template>
 
           <p class="text-sm text-warning">
-            You have access to a <span class="font-bold">free 15-minute trial session</span>. This is a one-time complimentary session available for registered users to experience our services at no cost. Use it wisely!
+            {{ t('freeTrial.heroDesc') }}
           </p>
 
           <template #footer>
             <NuxtLink to="/dashboard/free-trial">
               <UButton 
-                label="View Free Trial Details"
+                :label="t('auth.viewFreeTrialDetails')"
                 color="warning"
                 variant="soft"
                 block
@@ -126,23 +185,23 @@ const nextSteps = {
 
         <!-- Action Buttons -->
         <div class="space-y-3 pt-4">
-          <NuxtLink to="/dashboard">
+          <NuxtLink to="/dashboard?just_paid=true">
             <UButton 
-              label="Go to Dashboard"
+              :label="t('auth.goToDashboard')"
               icon="i-lucide-arrow-right"
               block
               color="warning"
             />
           </NuxtLink>
           <p class="text-xs text-muted text-center py-6">
-            Redirecting in 5 seconds...
+            {{ t('auth.redirectingIn') }}
           </p>
         </div>
 
         <!-- Support -->
         <UAlert icon="i-lucide-info" color="primary" variant="subtle">
           <template #description>
-            Need help? Contact us on WhatsApp at <span class="font-medium">+62 812-3456-7890</span>
+            {{ t('dashboard.needHelp') }}
           </template>
         </UAlert>
       </div>
@@ -158,7 +217,7 @@ const nextSteps = {
 
         <!-- Message -->
         <div>
-          <h1 class="text-3xl font-bold">Payment Failed</h1>
+          <h1 class="text-3xl font-bold">{{ t('auth.paymentFailed') }}</h1>
           <p class="text-muted mt-2">
             Unfortunately, your payment could not be processed.
           </p>
@@ -167,7 +226,7 @@ const nextSteps = {
         <!-- Error Details -->
         <UCard class="text-left bg-red-500/5 border-red-500/20">
           <template #header>
-            <h2 class="font-semibold text-red-900">What Went Wrong?</h2>
+            <h2 class="font-semibold text-red-900">{{ t('auth.whatWentWrong') }}</h2>
           </template>
 
           <ul class="space-y-2">
@@ -180,16 +239,16 @@ const nextSteps = {
 
         <!-- Action Buttons -->
         <div class="space-y-3 pt-4">
-          <NuxtLink :to="`/auth/payment-method?plan=${plan}`">
+          <NuxtLink :to="enrollmentId ? `/auth/payment-method?enrollment=${enrollmentId}` : '/auth/select-plan'">
             <UButton 
-              label="Try Again"
+              :label="t('auth.tryAgain')"
               icon="i-lucide-rotate-cw"
               block
             />
           </NuxtLink>
           <NuxtLink to="/packages">
             <UButton 
-              label="Back to Packages"
+              :label="t('auth.backToPackages')"
               color="neutral"
               variant="outline"
               icon="i-lucide-arrow-left"
@@ -201,7 +260,7 @@ const nextSteps = {
         <!-- Support -->
         <UAlert icon="i-lucide-help-circle" color="primary" variant="subtle">
           <template #description>
-            Still having issues? Contact our support team via WhatsApp
+            {{ t('dashboard.needHelp') }}
           </template>
         </UAlert>
       </div>
@@ -217,7 +276,7 @@ const nextSteps = {
 
         <!-- Message -->
         <div>
-          <h1 class="text-3xl font-bold">Processing Payment</h1>
+          <h1 class="text-3xl font-bold">{{ t('auth.processingPayment') }}</h1>
           <p class="text-muted mt-2">
             Please wait while we confirm your payment. This may take a few moments.
           </p>
@@ -225,7 +284,7 @@ const nextSteps = {
 
         <UCard>
           <p class="text-sm text-muted">
-            Do not close this window. You will be automatically redirected once payment is confirmed.
+            {{ t('auth.dontCloseWindow') }}
           </p>
         </UCard>
       </div>

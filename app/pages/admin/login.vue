@@ -4,16 +4,17 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { reactive, ref, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
+const { t } = useI18n()
 definePageMeta({
   layout: 'blank'
 })
 
-const schema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters')
-})
+const schema = computed(() => z.object({
+  email: z.string().email(t('validation.email')),
+  password: z.string().min(8, t('validation.password'))
+}))
 
-type Schema = z.output<typeof schema>
+type Schema = z.output<ReturnType<typeof schema>>
 
 const state = reactive({
   email: '',
@@ -55,7 +56,7 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
     // Navigate to admin dashboard after successful login
     navigateTo('/admin')
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Login failed'
+    error.value = err instanceof Error ? err.message : t('auth.loginError')
   } finally {
     loading.value = false
   }
@@ -68,17 +69,18 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
       <template #header>
         <div class="text-center">
           <div class="flex items-center justify-center gap-2 mb-4">
-            <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
+            <img src="/drive-master-logo-light.png" alt="Drive Master Logo" class="h-16 dark:hidden" />
+            <img src="/drive-master-logo-dark.jpg" alt="Drive Master Logo" class="h-16 hidden dark:block" />
           </div>
-          <h1 class="text-2xl font-bold">Admin Portal</h1>
-          <p class="text-muted mt-2">Sign in to access the management dashboard</p>
+          <h1 class="text-2xl font-bold">{{ t('admin.portal') }}</h1>
+          <p class="text-muted mt-2">{{ t('admin.portalDesc') }}</p>
         </div>
       </template>
 
       <UAlert v-if="error" color="error" variant="soft" class="mb-4" :title="error" />
 
       <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
-        <UFormField name="email" label="Admin Email">
+        <UFormField name="email" :label="t('admin.email')">
           <UInput 
             v-model="state.email" 
             type="email"
@@ -89,25 +91,25 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
           />
         </UFormField>
 
-        <UFormField name="password" label="Password">
+        <UFormField name="password" :label="t('auth.password')">
           <UInput 
             v-model="state.password" 
             type="password"
-            placeholder="Enter your password"
+            :placeholder="t('auth.password')"
             icon="i-lucide-lock"
             size="lg"
             class="w-full"
           />
         </UFormField>
 
-        <UButton type="submit" label="Sign In to Admin" color="warning" :loading="loading" block size="lg" />
+        <UButton type="submit" :label="t('admin.signInToAdmin')" color="warning" :loading="loading" block size="lg" />
       </UForm>
 
       <template #footer>
         <div class="text-center">
           <NuxtLink to="/" class="text-sm text-warning hover:underline flex items-center justify-center gap-1">
             <UIcon name="i-lucide-arrow-left" class="size-4" />
-            Back to Website
+            {{ t('admin.viewWebsite') }}
           </NuxtLink>
         </div>
       </template>

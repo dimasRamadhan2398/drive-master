@@ -1,20 +1,45 @@
 <script setup lang="ts">
 import { z } from "zod";
-import type { FormSubmitEvent } from "@nuxt/ui";
 import { computed, reactive, ref, onMounted } from "vue";
+import { enrollmentService } from "~/services/enrollmentService";
+import { mapMethodIdToCode } from "~/services/paymentService";
 
+
+const { t } = useI18n()
 definePageMeta({
   layout: "blank",
 });
 
 const route = useRoute();
-const router = useRouter();
 const showPrivacyModal = ref(false);
 const showTermsModal = ref(false);
+const authStore = useAuthStore();
+const paymentsStore = usePaymentsStore();
+const enrollmentsStore = useEnrollmentsStore();
+const packagesStore = usePackagesStore();
 
-const selectedPlan = computed(() => (route.query.plan as string) || "eight_package");
+// ── Resolved data ─────────────────────────────────────────────────────────────
+// Store resolved enrollment from session storage
+interface StoredEnrollment {
+  id: string;
+  packageId: string;
+  packageName?: string;
+  price: number;
+  discountPrice: number;
+  userId: string;
+  status: string;
+  createdAt: string;
+  [key: string]: any;
+}
 
-const paymentMethods = [
+const resolvedEnrollmentId = ref<string | null>(null);
+const resolvedEnrollment = ref<StoredEnrollment | null>(null);
+const resolvedAmount = ref<number>(0);
+const resolvedPackageName = ref<string>("");
+const errorMessage = ref<string | null>(null);
+const isResolvingEnrollment = ref<boolean>(false);
+
+const paymentMethods = computed(() => [
   {
     id: "va",
     name: "Virtual Account (VA)",
@@ -43,16 +68,16 @@ const paymentMethods = [
     icon: "i-lucide-wallet",
     color: "orange" as const,
   },
-];
+]);
 
-const schema = z.object({
-  paymentMethod: z.string().min(1, "Please select a payment method"),
-  email: z.string().email("Please enter a valid email"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
+const schema = computed(() => z.object({
+  paymentMethod: z.string().min(1, t('auth.choosePaymentMethod')),
+  email: z.string().email(t('validation.email')),
+  phone: z.string().min(10, t('validation.phone')),
   privacy: z
     .boolean()
-    .refine((val) => val === true, "You must agree to the privacy policy"),
-});
+    .refine((val) => val === true, t('register.validation.termsRequired')),
+}));
 
 const formData = reactive({
   paymentMethod: "va",
@@ -61,67 +86,187 @@ const formData = reactive({
   privacy: false,
 });
 
-// Isi otomatis dari data registrasi yang tersimpan di sessionStorage
-onMounted(() => {
-  if (import.meta.client) {
+// Pre-fill form & resolve enrollment/package info on mount
+onMounted(async () => {
+  console.log("[PAYMENT] Page mounted, resolving enrollment...");
+  console.log("[PAYMENT] Route query:", route.query);
+  console.log("[PAYMENT] Session storage keys:", Object.keys(sessionStorage || {}));
+
+  isResolvingEnrollment.value = true;
+
+  // Pre-fill contact info
+  if (authStore.user?.email) {
+    formData.email = authStore.user.email;
+  } else if (import.meta.client) {
     const savedEmail = sessionStorage.getItem("dm_reg_email");
-    const savedPhone = sessionStorage.getItem("dm_reg_phone");
     if (savedEmail) formData.email = savedEmail;
+  }
+
+  if (authStore.user?.phoneNumber) {
+    formData.phone = authStore.user.phoneNumber;
+  } else if (import.meta.client) {
+    const savedPhone = sessionStorage.getItem("dm_reg_phone");
     if (savedPhone) formData.phone = savedPhone;
   }
+
+  // Resolve enrollment ID: query param → sessionStorage
+  const enrollmentFromQuery = route.query.enrollment as string | undefined;
+  console.log("[PAYMENT] Enrollment from query:", enrollmentFromQuery);
+
+  if (enrollmentFromQuery) {
+    resolvedEnrollmentId.value = enrollmentFromQuery;
+    console.log("[PAYMENT] Set enrollment ID from query:", enrollmentFromQuery);
+  } else if (import.meta.client) {
+    const stored = sessionStorage.getItem("dm_enrollment_id");
+    console.log("[PAYMENT] Enrollment ID from session:", stored);
+    if (stored) resolvedEnrollmentId.value = stored;
+  }
+
+  // Resolve full enrollment from sessionStorage first (preferred)
+  if (import.meta.client) {
+    const storedEnrollment = sessionStorage.getItem("dm_enrollment");
+    console.log("[PAYMENT] Stored enrollment raw:", storedEnrollment);
+    if (storedEnrollment) {
+      try {
+        const parsed = JSON.parse(storedEnrollment) as StoredEnrollment;
+        console.log("[PAYMENT] Parsed enrollment:", parsed);
+        resolvedEnrollment.value = parsed;
+        // Use enrollment ID from stored object if not already set
+        if (!resolvedEnrollmentId.value) {
+          resolvedEnrollmentId.value = parsed.id;
+          console.log("[PAYMENT] Set enrollment ID from parsed:", parsed.id);
+        }
+        // Use stored enrollment data for amount and package name
+        resolvedAmount.value = parsed.totalPrice || parsed.price || parsed.discountPrice || 0;
+        resolvedPackageName.value = parsed.packageName || "Selected Package";
+      } catch (e) {
+        console.error("[PAYMENT] Failed to parse stored enrollment:", e);
+      }
+    }
+  }
+
+  console.log("[PAYMENT] Resolved enrollment ID:", resolvedEnrollmentId.value);
+  console.log("[PAYMENT] Resolved enrollment object:", resolvedEnrollment.value);
+
+  // Fetch enrollment to get amount & package name (if not already resolved from session)
+  if (resolvedEnrollmentId.value) {
+    if (!resolvedEnrollment.value) {
+      console.log("[PAYMENT] Fetching enrollment by ID:", resolvedEnrollmentId.value);
+      const response = await enrollmentService.fetchById(resolvedEnrollmentId.value);
+      console.log("[PAYMENT] Fetched enrollment response:", response);
+      const enrollment = response && typeof response === "object" && "enrollment" in response
+        ? (response as any).enrollment
+        : response;
+
+      if (enrollment) {
+        resolvedAmount.value = enrollment.totalPrice || enrollment.price || enrollment.discountPrice || 0;
+        resolvedPackageName.value = enrollment.packageName || "Selected Package";
+        // Also store it for reference
+        resolvedEnrollment.value = {
+          id: enrollment.id,
+          packageId: enrollment.packageId,
+          packageName: enrollment.packageName,
+          price: enrollment.price || enrollment.totalPrice,
+          totalPrice: enrollment.totalPrice,
+          discountPrice: enrollment.discountPrice,
+          userId: enrollment.userId,
+          status: enrollment.status,
+          createdAt: enrollment.createdAt,
+        };
+        // Update sessionStorage with full enrollment
+        if (import.meta.client) {
+          sessionStorage.setItem("dm_enrollment", JSON.stringify(resolvedEnrollment.value));
+        }
+      } else {
+        console.error("[PAYMENT] Failed to fetch enrollment by ID");
+      }
+    } else {
+      console.log("[PAYMENT] Skipping fetch - enrollment already resolved from session");
+    }
+  } else {
+    // If no enrollment ID was found anywhere, show error and redirect to select plan
+    console.error("[PAYMENT] No enrollment ID found anywhere!");
+    const toast = useToast();
+    toast.add({
+      title: t("register.errors.enrollmentError") || "No Enrollment Found",
+      description: "Please select a plan to proceed to payment.",
+      color: "error",
+    });
+    navigateTo("/auth/select-plan");
+    isResolvingEnrollment.value = false;
+    return;
+  }
+
+  isResolvingEnrollment.value = false;
 });
 
 const loading = ref(false);
 
 async function onSubmit() {
   loading.value = true;
+  errorMessage.value = null;
 
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1500));
+  try {
+    // Wait for enrollment to be resolved if still loading
+    if (isResolvingEnrollment.value) {
+      console.log("[PAYMENT] Waiting for enrollment to be resolved...");
+      // Poll until resolved or timeout
+      const maxWait = 10000; // 10 seconds
+      const startTime = Date.now();
+      while (isResolvingEnrollment.value && Date.now() - startTime < maxWait) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      console.log("[PAYMENT] After waiting - enrollment ID:", resolvedEnrollmentId.value);
+    }
 
-  loading.value = false;
+    if (!authStore.userId) {
+      errorMessage.value = "You must be logged in to complete payment.";
+      return;
+    }
 
-  // // Redirect to payment page
-  // navigateTo(`/auth/payment?method=${formData.paymentMethod}&plan=${selectedPlan.value}&email=${formData.email}&phone=${formData.phone}`)
+    if (!resolvedEnrollmentId.value) {
+      errorMessage.value = "No enrollment found. Please go back and select a plan.";
+      return;
+    }
+
+    const paymentMethodCode = mapMethodIdToCode(formData.paymentMethod);
+
+    // Build payment request with enrollment data
+    const paymentData: any = {
+      enrollmentId: resolvedEnrollmentId.value,
+      userId: authStore.userId,
+      amount: resolvedAmount.value,
+      paymentMethod: paymentMethodCode,
+    };
+
+    // Include full enrollment data if available
+    if (resolvedEnrollment.value) {
+      paymentData.enrollment = resolvedEnrollment.value;
+    }
+
+    const payment = await paymentsStore.createPayment(paymentData);
+
+    if (payment) {
+      // Store order ID for status tracking
+      if (import.meta.client) {
+        sessionStorage.setItem("dm_order_id", payment.orderId);
+      }
+
+      // If Midtrans returns a redirect URL, navigate there
+      if (payment.paymentUrl) {
+        window.location.href = payment.paymentUrl;
+      } else {
+        navigateTo(`/auth/payment-status?orderId=${payment.orderId}`);
+      }
+    } else {
+      errorMessage.value = paymentsStore.error || "Failed to create payment. Please try again.";
+    }
+  } finally {
+    loading.value = false;
+  }
 }
 
-const packagePrices = {
-  six_package: "Rp 1.750.000",
-  six_package_night: "Rp 1.850.000",
-  six_package_weekend: "Rp 1.850.000",
-  six_package_weekend_night: "Rp 1.950.000",
-  eight_package: "Rp 1.950.000",
-  eight_package_night: "Rp 2.100.000",
-  eight_package_weekend: "Rp 2.100.000",
-  eight_package_weekend_night: "Rp 2.250.000",
-  ten_package: "Rp 2.250.000",
-  ten_package_night: "Rp 2.450.000",
-  ten_package_weekend: "Rp 2.450.000",
-  ten_package_weekend_night: "Rp 2.650.000",
-  twelve_package: "Rp 2.650.000",
-  twelve_package_night: "Rp 2.900.000",
-  twelve_package_weekend: "Rp 2.900.000",
-  twelve_package_weekend_night: "Rp 3.150.000",
-};
 
-const packageNames = {
-  six_package: "6x Sessions",
-  six_package_night: "6x Sessions + Night Session",
-  six_package_weekend: "6x Sessions + Weekend Session",
-  six_package_weekend_night: "6x Sessions + Weekend & Night Session",
-  eight_package: "8x Sessions",
-  eight_package_night: "8x Sessions + Night Session",
-  eight_package_weekend: "8x Sessions + Weekend Session",
-  eight_package_weekend_night: "8x Sessions + Weekend & Night Session",
-  ten_package: "10x Sessions",
-  ten_package_night: "10x Sessions + Night Session",
-  ten_package_weekend: "10x Sessions + Weekend Session",
-  ten_package_weekend_night: "10x Sessions + Weekend & Night Session",
-  twelve_package: "12x Sessions",
-  twelve_package_night: "12x Sessions + Night Session",
-  twelve_package_weekend: "12x Sessions + Weekend Session",
-  twelve_package_weekend_night: "12x Sessions + Weekend & Night Session",
-};
 </script>
 
 <template>
@@ -131,12 +276,12 @@ const packageNames = {
       <div class="text-center mb-8">
         <div class="flex items-center justify-center gap-2 mb-4">
           <UIcon name="i-lucide-credit-card" class="size-8 text-warning" />
-          <span class="text-xl font-bold">Payment Method</span>
+          <span class="text-xl font-bold">{{ t('auth.paymentMethod') }}</span>
         </div>
-        <h1 class="text-2xl font-bold">Complete Your Purchase</h1>
+        <h1 class="text-2xl font-bold">{{ t('auth.completePurchase') }}</h1>
         <p class="text-muted mt-2">
-          {{ packageNames[selectedPlan as keyof typeof packageNames] }} -
-          {{ packagePrices[selectedPlan as keyof typeof packagePrices] }}
+          <span v-if="resolvedPackageName">{{ resolvedPackageName }} - Rp {{ resolvedAmount.toLocaleString('id-ID') }}</span>
+          <span v-else class="text-muted italic">Loading package info…</span>
         </p>
       </div>
 
@@ -144,7 +289,7 @@ const packageNames = {
         <UForm :schema="schema" :state="formData" class="space-y-6" @submit="onSubmit">
           <!-- Payment Method Selection -->
           <div>
-            <label class="block text-sm font-medium mb-4">Choose Payment Method</label>
+            <label class="block text-sm font-medium mb-4">{{ t('auth.choosePaymentMethod') }}</label>
             <div class="grid sm:grid-cols-2 gap-3">
               <div v-for="method in paymentMethods" :key="method.id" class="relative">
                 <input
@@ -191,14 +336,14 @@ const packageNames = {
           <!-- Contact Information -->
           <div class="pt-4 border-t">
             <div class="flex items-start justify-between mb-4">
-              <h3 class="font-medium">Contact Information</h3>
+              <h3 class="font-medium">{{ t('auth.contactInfo') }}</h3>
               <span class="text-xs text-muted flex items-center gap-1">
                 <UIcon name="i-lucide-info" class="size-3" />
-                Diambil dari data registrasi
+                {{ t('auth.fromRegistration') }}
               </span>
             </div>
 
-            <UFormField name="email" label="Email Address" required>
+            <UFormField name="email" :label="t('auth.email')" required>
               <UInput
                 v-model="formData.email"
                 type="email"
@@ -209,7 +354,7 @@ const packageNames = {
               />
             </UFormField>
 
-            <UFormField name="phone" label="WhatsApp Phone Number" required class="mt-4">
+            <UFormField name="phone" :label="t('auth.whatsappPhone')" required class="mt-4">
               <UInput
                 v-model="formData.phone"
                 placeholder="08123456789"
@@ -221,26 +366,25 @@ const packageNames = {
 
             <UAlert icon="i-lucide-info" color="warning" class="mt-4">
               <template #description>
-                We'll send payment instructions to this email and phone number for
-                confirmation. You can edit the fields above if needed.
+                {{ t('auth.paymentInstructionsNote') }}
               </template>
             </UAlert>
           </div>
 
           <!-- Terms -->
           <UFormField name="privacy">
-            <UCheckbox v-model="formData.privacy" color="warning" required>
+            <UCheckbox v-model:model-value="formData.privacy" color="warning" required>
               <template #label>
                 <span class="text-sm">
-                  I agree to the
+                  {{ t('register.terms.agree') }}
                   <UButton
-                    label="Terms of Service"
+                    :label="t('register.terms.termsOfService')"
                     color="warning"
                     variant="ghost"
-                    class="underline"
+                    class="underline mx-0 px-0 h-auto py-0 text-sm"
                     @click="showTermsModal = true"
                   />
-                  <UModal v-model:open="showTermsModal" title="Terms of Service">
+                  <UModal v-model:open="showTermsModal" :title="t('register.terms.termsOfService')">
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
                         <p>
@@ -379,15 +523,15 @@ const packageNames = {
                       </div>
                     </template>
                   </UModal>
-                  and
+                  {{ t('register.terms.and') }}
                   <UButton
-                    label="Privacy Policy"
+                    :label="t('register.terms.privacyPolicy')"
                     color="warning"
                     variant="ghost"
-                    class="underline"
+                    class="underline mx-0 px-0 h-auto py-0 text-sm"
                     @click="showPrivacyModal = true"
                   />
-                  <UModal v-model:open="showPrivacyModal" title="Privacy Policy">
+                  <UModal v-model:open="showPrivacyModal" :title="t('register.terms.privacyPolicy')">
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
                         <p>
@@ -551,14 +695,23 @@ const packageNames = {
             </UCheckbox>
           </UFormField>
 
+          <!-- Error Message -->
+          <UAlert
+            v-if="errorMessage"
+            icon="i-lucide-alert-circle"
+            color="error"
+            :description="errorMessage"
+            class="mt-2"
+          />
+
           <!-- Actions -->
           <div class="flex gap-3 pt-4 border-t">
             <NuxtLink to="/auth/select-plan" class="flex-1">
-              <UButton label="Back to Packages" color="neutral" variant="outline" block />
+              <UButton :label="t('auth.backToPackages')" color="neutral" variant="outline" block />
             </NuxtLink>
             <UButton
               type="submit"
-              label="Continue to Payment"
+              :label="t('auth.continueToPayment')"
               trailingIcon="i-lucide-arrow-right"
               :loading="loading"
               block

@@ -43,18 +43,16 @@ func main() {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		// Ganti dengan URL frontend Anda jika berbeda (misal: URL production)
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     cfg.CORS.AllowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Request-ID"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
 
 	// global middleware — order matters
 	router.Use(middleware.RequestIDMiddleware())
-	router.Use(middleware.CORSMiddleware(cfg.CORS.AllowedOrigins))
 	router.Use(middleware.NewRateLimiter(cfg.RateLimiter.Max, cfg.RateLimiter.Time).Allow())
 
 	// health check — no auth

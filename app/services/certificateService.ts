@@ -1,4 +1,5 @@
 import type { ApiResponse } from "~/composables/useApiClients";
+import { useAuthStore } from "~/stores/auth";
 
 export interface MemberCertificateResponse {
   id: string;
@@ -9,7 +10,7 @@ export interface MemberCertificateResponse {
   certNumber: string;
   issuedDate: string;
   completedAt: string;
-  status: "eligible" | "issued" | "expired";
+  status: "eligible" | "issued" | "expired" | "revoked";
 }
 
 export const certificateService = {
@@ -26,17 +27,110 @@ export const certificateService = {
     }
   },
 
-  async downloadCertificate(userId: string, certId: string): Promise<void> {
+  async getAllCertificates(): Promise<MemberCertificateResponse[]> {
+    const { user, extractData } = useApiClients();
+    try {
+      const response = await user<ApiResponse<MemberCertificateResponse[]>>(
+        `/certificates`,
+        { method: "GET" }
+      );
+      return extractData(response) || [];
+    } catch (e) {
+      console.error("Error fetching all certificates:", e);
+      return [];
+    }
+  },
+
+  async issueCertificate(input: {
+    memberId: string;
+    packageId: string;
+    packageName: string;
+    entitlementId: string;
+  }): Promise<any> {
+    const { user, extractData } = useApiClients();
+    const response = await user<ApiResponse<any>>(`/certificates`, {
+      method: "POST",
+      body: input,
+    });
+    return extractData(response);
+  },
+
+  async revokeCertificate(certId: string): Promise<void> {
     const { user } = useApiClients();
-    const { useAuthToken } = useAuth();
+    await user(`/certificates/${certId}`, {
+      method: "DELETE",
+    });
+  },
 
-    const token = useAuthToken();
-    const baseURL = useRuntimeConfig().public.apiBaseUrl || "";
+  async getStats(): Promise<any> {
+    const { user, extractData } = useApiClients();
+    try {
+      const response = await user<ApiResponse<any>>(`/certificates/stats`, {
+        method: "GET",
+      });
+      return extractData(response);
+    } catch (e) {
+      console.error("Error fetching certificate stats:", e);
+      return null;
+    }
+  },
 
-    const response = await fetch(`${baseURL}/api/v1/members/${userId}/certificates/${certId}/download`, {
+  async getCertificatePDFBlobUrl(certId: string): Promise<string> {
+    const authStore = useAuthStore();
+    const token = authStore.accessToken;
+    const baseURL = useRuntimeConfig().public.apiBase || "";
+
+    const response = await fetch(`${baseURL}/certificates/${certId}/pdf`, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${token.value}`,
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch certificate PDF");
+    }
+
+    const blob = await response.blob();
+    return window.URL.createObjectURL(blob);
+  },
+
+  async downloadCertificatePDF(certId: string, certNumber: string): Promise<void> {
+    const authStore = useAuthStore();
+    const token = authStore.accessToken;
+    const baseURL = useRuntimeConfig().public.apiBase || "";
+
+    const response = await fetch(`${baseURL}/certificates/${certId}/pdf`, {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to download certificate PDF");
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `certificate-${certNumber}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+
+  async downloadCertificate(userId: string, certId: string): Promise<void> {
+    const authStore = useAuthStore();
+    const token = authStore.accessToken;
+    const baseURL = useRuntimeConfig().public.apiBase || "";
+
+    const response = await fetch(`${baseURL}/members/${userId}/certificates/${certId}/download`, {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
       },
     });
 

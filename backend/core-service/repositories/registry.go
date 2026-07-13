@@ -33,10 +33,12 @@ type IRepositoryRegistry interface {
 	GetEvent() IEventRepository
 	GetCar() ICarRepository
 	GetPackage() IPackageRepository
+	GetAddOn() IAddOnRepository
 	GetArticle() IArticleRepository
 	GetSales() ISalesRepository
 	GetGeneralSettings() IGeneralSettingsRepository
 	GetFAQ() IFAQRepository
+	GetPage() IPageRepository
 }
 
 // GetCache returns the cache repository
@@ -67,6 +69,11 @@ func (r *Registry) GetPackage() IPackageRepository {
 	return NewPackageRepository(r.baseRepo)
 }
 
+// GetAddOn returns the add-on repository
+func (r *Registry) GetAddOn() IAddOnRepository {
+	return NewAddOnRepository(r.baseRepo)
+}
+
 // GetArticle returns the article repository
 func (r *Registry) GetArticle() IArticleRepository {
 	return NewArticleRepository(r.baseRepo)
@@ -85,4 +92,9 @@ func (r *Registry) GetGeneralSettings() IGeneralSettingsRepository {
 // GetFAQ returns the FAQ repository
 func (r *Registry) GetFAQ() IFAQRepository {
 	return NewFAQRepository(r.baseRepo)
+}
+
+// GetPage returns the Page repository
+func (r *Registry) GetPage() IPageRepository {
+	return NewPageRepository(r.baseRepo)
 }

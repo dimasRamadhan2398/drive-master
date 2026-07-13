@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"core-service/pkg/clients"
 	"core-service/repositories"
 	"core-service/services"
 )
@@ -13,11 +14,14 @@ type IControllerRegistry interface {
 	GetRegionController() IRegionController
 	GetCarController() ICarController
 	GetPackageController() IPackageController
+	GetAddOnController() IAddOnController
 	GetArticleController() IArticleController
 	GetAnalyticsController() IAnalyticsController
 	GetSalesController() ISalesController
 	GetGeneralSettingsController() IGeneralSettingsController
 	GetFAQController() IFAQController
+	GetTransactionController() ITransactionController
+	GetPageController() IPageController
 }
 
 // NewControllerRegistry creates a new controller registry
@@ -27,6 +31,22 @@ func NewControllerRegistry(svcRegistry services.IServiceRegistry) IControllerReg
 	}
 }
 
+// NewControllerRegistryWithPayment creates a new controller registry with payment client
+func NewControllerRegistryWithPayment(svcRegistry services.IServiceRegistry, paymentClient clients.ITransactionClient) IControllerRegistry {
+	return &RegistryWithPayment{
+		Registry: &Registry{
+			svcRegistry: svcRegistry,
+		},
+		paymentClient: paymentClient,
+	}
+}
+
+// RegistryWithPayment extends Registry with payment client
+type RegistryWithPayment struct {
+	*Registry
+	paymentClient clients.ITransactionClient
+}
+
 // GetRegionController returns the region controller
 func (r *Registry) GetRegionController() IRegionController {
 	return NewRegionController(r.svcRegistry.GetRegionService())
@@ -34,12 +54,17 @@ func (r *Registry) GetRegionController() IRegionController {
 
 // GetCarController returns the car controller
 func (r *Registry) GetCarController() ICarController {
-	return NewCarController(r.svcRegistry.GetCarService())
+	return NewCarController(r.svcRegistry.GetCarService(), r.svcRegistry.GetMediaService())
 }
 
 // GetPackageController returns the package controller
 func (r *Registry) GetPackageController() IPackageController {
 	return NewPackageController(r.svcRegistry.GetPackageService())
+}
+
+// GetAddOnController returns the add-on controller
+func (r *Registry) GetAddOnController() IAddOnController {
+	return NewAddOnController(r.svcRegistry.GetAddOnService())
 }
 
 // GetArticleController returns the article controller
@@ -65,6 +90,21 @@ func (r *Registry) GetGeneralSettingsController() IGeneralSettingsController {
 // GetFAQController returns the FAQ controller
 func (r *Registry) GetFAQController() IFAQController {
 	return NewFAQController(r.svcRegistry.GetFAQService())
+}
+
+// GetTransactionController returns the transaction controller (requires payment client)
+func (r *Registry) GetTransactionController() ITransactionController {
+	return nil // Will be overridden by RegistryWithPayment
+}
+
+// GetTransactionController returns the transaction controller for RegistryWithPayment
+func (r *RegistryWithPayment) GetTransactionController() ITransactionController {
+	return NewTransactionController(r.paymentClient)
+}
+
+// GetPageController returns the Page controller
+func (r *Registry) GetPageController() IPageController {
+	return NewPageController(r.svcRegistry.GetPageService())
 }
 
 // GetRepositoryRegistry returns the repository registry (for dependency injection)

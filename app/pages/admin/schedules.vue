@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, navigateTo } from "nuxt/app";
 import AddSlotModal from "~/components/schedules/AddSlotModal.vue";
 import EditSlotModal from "~/components/schedules/EditSlotModal.vue";
 
+const { t } = useI18n()
 definePageMeta({ layout: "admin" });
 
 const route = useRoute();
@@ -27,31 +28,29 @@ const localDateStr = computed(() => {
 const filterInstructor = ref("All Instructors");
 const filterVehicle = ref("All Vehicles");
 
-const {
-  slots: timeSlots,
-  toggleSlotStatus: _toggleSlotStatus,
-  deleteSlot: _deleteSlot,
-  updateSlotStatus,
-  addSlot,
-  editSlot,
-  bookSlot,
-} = useSchedules();
+const { toggleSlotStatus: _toggleSlotStatus, deleteSlot: _deleteSlot } = useSchedules();
+
+// Use store's slots for display
+const timeSlots = computed(() => {
+  if (schedulesStore.isInitialized) {
+    return schedulesStore.slots;
+  }
+  return [];
+});
 
 const instructors = computed(() => {
-	return instructorsStore.instructors.map((value) => {
+  return instructorsStore.instructors.map((value) => {
     return {
       label: value.name,
-      value: value.userId
-    }
-  })
-})
-const schedules = computed(() => {
-  var {slots: timeSlots} = useSchedules();
-  if(!schedulesStore.isInitialized){
-    return timeSlots
-  }
-  return schedulesStore.slots
-})
+      value: value.name, // Use name for comparison in filteredSlots
+    };
+  });
+});
+
+const instructorOptions = computed(() => [
+  { label: "All Instructors", value: "All Instructors" },
+  ...instructors.value,
+]);
 const vehicles = ["BYD Atto 1"];
 
 // FITUR BARU: Sinkronisasi jam operasional dari settings
@@ -101,7 +100,12 @@ function changeDay(offset: number) {
 }
 
 function toggleSlotStatus(slotId: string) {
-  _toggleSlotStatus(slotId);
+  schedulesStore.updateSlotStatus(
+    slotId,
+    timeSlots.value.find((s) => s.id === slotId)?.status === "blocked"
+      ? "available"
+      : "blocked"
+  );
   const slot = timeSlots.value.find((s) => s.id === slotId);
   if (slot?.status === "blocked") {
     toast.add({ title: "Slot Blocked", color: "warning", icon: "i-lucide-lock" });
@@ -115,7 +119,7 @@ function toggleSlotStatus(slotId: string) {
 }
 
 function deleteSlot(slotId: string) {
-  _deleteSlot(slotId);
+  schedulesStore.deleteSlot(slotId);
   toast.add({ title: "Slot Deleted", color: "error", icon: "i-lucide-trash" });
 }
 
@@ -133,7 +137,7 @@ function startSession(slotId: string) {
   if (
     confirm('Apakah kursus sudah mau jalan? Sesi akan berubah menjadi "In Progress".')
   ) {
-    updateSlotStatus(slotId, "in-progress");
+    schedulesStore.updateSlotStatus(slotId, "in-progress");
     toast.add({
       title: "Session Started",
       description: "Driving session is now in progress.",
@@ -145,7 +149,7 @@ function startSession(slotId: string) {
 
 function completeSession(slotId: string) {
   if (confirm('Apakah kursus sudah selesai? Sesi akan ditandai sebagai "Completed".')) {
-    updateSlotStatus(slotId, "completed");
+    schedulesStore.updateSlotStatus(slotId, "completed");
     toast.add({
       title: "Session Completed",
       description: "Driving session has been finished.",
@@ -160,7 +164,7 @@ function handleManualBooking(slotId: string) {
     ? decodeURIComponent(studentNameToBook.value)
     : null;
   if (studentName) {
-    bookSlot(slotId, studentName);
+    schedulesStore.bookSlotLocal(slotId, studentName);
     toast.add({
       title: "Slot Booked",
       description: `Berhasil booking untuk ${studentName}`,
@@ -171,7 +175,7 @@ function handleManualBooking(slotId: string) {
   } else {
     const name = prompt("Masukkan nama siswa untuk booking manual:", "Siswa Manual");
     if (name) {
-      bookSlot(slotId, name);
+      schedulesStore.bookSlotLocal(slotId, name);
       toast.add({
         title: "Slot Booked",
         description: `Berhasil booking untuk ${name}`,
@@ -184,7 +188,7 @@ function handleManualBooking(slotId: string) {
 function handleSlotClick(slot: any) {
   if (studentNameToBook.value && slot.status === "available") {
     const studentName = decodeURIComponent(studentNameToBook.value as string);
-    bookSlot(slot.id, studentName);
+    schedulesStore.bookSlotLocal(slot.id, studentName);
     toast.add({
       title: "Slot Booked",
       description: `Berhasil booking untuk ${studentName}`,
@@ -198,7 +202,7 @@ function handleSlotClick(slot: any) {
 
 function cancelBooking(slotId: string) {
   if (confirm("Batalkan booking dan kembalikan slot menjadi Available?")) {
-    updateSlotStatus(slotId, "available");
+    schedulesStore.cancelBookingLocal(slotId);
     toast.add({
       title: "Booking Cancelled",
       description: "Slot is now available again.",
@@ -208,9 +212,15 @@ function cancelBooking(slotId: string) {
 }
 
 // FITUR BARU: Add Slot State & Logic
-function handleAddSlot(form: { date?: string; time: string; duration: string; car: string; instructor: string; }) {
+function handleAddSlot(form: {
+  date?: string;
+  time: string;
+  duration: string;
+  car: string;
+  instructor: string;
+}) {
   if (!form.time || !form.car || !form.instructor) {
-    toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
+    toast.add({ title: t('common.error'), description: "Please fill all fields", color: "error" });
     return;
   }
 
@@ -224,7 +234,7 @@ function handleAddSlot(form: { date?: string; time: string; duration: string; ca
   } = currentDayOperatingHours.value;
   if (isClosed) {
     toast.add({
-      title: "Error",
+      title: t('common.error'),
       description: "Business is closed on this day",
       color: "error",
     });
@@ -232,20 +242,17 @@ function handleAddSlot(form: { date?: string; time: string; duration: string; ca
   }
 
   const isDayShift = form.time >= start && form.time <= end;
-  const isNightShift =
-    nightEnabled &&
-    form.time >= nightStart &&
-    form.time <= nightEnd;
+  const isNightShift = nightEnabled && form.time >= nightStart && form.time <= nightEnd;
 
   if (!isDayShift && !isNightShift) {
     let msg = `Time must be between ${start} - ${end}`;
     if (nightEnabled) msg += ` or ${nightStart} - ${nightEnd}`;
-    toast.add({ title: "Error", description: msg, color: "error" });
+    toast.add({ title: t('common.error'), description: msg, color: "error" });
     return;
   }
 
   const id = Date.now().toString();
-  addSlot({
+  schedulesStore.addSlot({
     id,
     date: form.date ?? localDateStr.value,
     time: form.time,
@@ -267,7 +274,7 @@ const selectedEditSlot = ref<any>(null);
 function openEditModal(slot: any) {
   if (slot.status !== "available") {
     toast.add({
-      title: "Error",
+      title: t('common.error'),
       description: "Hanya slot dengan status Available yang bisa diedit",
       color: "error",
     });
@@ -277,9 +284,15 @@ function openEditModal(slot: any) {
   showEditSlotModal.value = true;
 }
 
-function handleEditSlot(updated: { id: string; time: string; duration: string; car: string; instructor: string; }) {
+function handleEditSlot(updated: {
+  id: string;
+  time: string;
+  duration: string;
+  car: string;
+  instructor: string;
+}) {
   if (!updated.time || !updated.car || !updated.instructor) {
-    toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
+    toast.add({ title: t('common.error'), description: "Please fill all fields", color: "error" });
     return;
   }
 
@@ -293,7 +306,7 @@ function handleEditSlot(updated: { id: string; time: string; duration: string; c
   } = currentDayOperatingHours.value;
   if (isClosed) {
     toast.add({
-      title: "Error",
+      title: t('common.error'),
       description: "Business is closed on this day",
       color: "error",
     });
@@ -302,18 +315,16 @@ function handleEditSlot(updated: { id: string; time: string; duration: string; c
 
   const isDayShift = updated.time >= start && updated.time <= end;
   const isNightShift =
-    nightEnabled &&
-    updated.time >= nightStart &&
-    updated.time <= nightEnd;
+    nightEnabled && updated.time >= nightStart && updated.time <= nightEnd;
 
   if (!isDayShift && !isNightShift) {
     let msg = `Time must be between ${start} - ${end}`;
     if (nightEnabled) msg += ` or ${nightStart} - ${nightEnd}`;
-    toast.add({ title: "Error", description: msg, color: "error" });
+    toast.add({ title: t('common.error'), description: msg, color: "error" });
     return;
   }
 
-  editSlot(updated.id, {
+  schedulesStore.editSlot(updated.id, {
     time: updated.time,
     duration: updated.duration + " min",
     car: updated.car,
@@ -324,10 +335,16 @@ function handleEditSlot(updated: { id: string; time: string; duration: string; c
   showEditSlotModal.value = false;
 }
 
+// Re-fetch from backend whenever the selected date changes
+watch(localDateStr, (dateStr) => {
+  schedulesStore.fetchSchedulesByDate(dateStr);
+});
+
 onMounted(() => {
   instructorsStore.fetchInstructors();
-  schedulesStore.initialize();
-})
+  // Fetch schedules for the currently selected date on load
+  schedulesStore.fetchSchedulesByDate(localDateStr.value);
+});
 </script>
 
 <template>
@@ -339,27 +356,26 @@ onMounted(() => {
         color="info"
         variant="subtle"
         class="m-4"
-        title="Mode Booking"
+        :title="t('dashboard.bookingMode')"
       >
         <template #description>
           <span
-            >Pilih slot untuk <strong>{{ decodeURIComponent(studentNameToBook) }}</strong
-            >.
+                    >{{ t('admin.selectStudent').replace('Pilih Murid', 'Pilih slot untuk') }} <strong>{{ decodeURIComponent(studentNameToBook) }}</strong>.
             <UButton
               variant="link"
               :padded="false"
               @click="navigateTo('/admin/schedules')"
-              >Batalkan</UButton
+              >{{ t('schedule.cancel') }}</UButton
             ></span
           >
         </template>
       </UAlert>
-      <UDashboardNavbar title="Schedule Management">
+      <UDashboardNavbar :title="t('admin.schedules')">
         <template #right>
           <UButton
             icon="i-lucide-plus"
             color="warning"
-            label="Add Time Slot"
+            :label="t('admin.addNew').replace('Tambah Baru', 'Tambah Slot')"
             @click="showAddSlotModal = true"
           />
           <UColorModeButton />
@@ -387,7 +403,7 @@ onMounted(() => {
               class="relative flex items-center justify-center min-w-[160px] hover:bg-gray-100 rounded py-1 transition-colors cursor-pointer"
             >
               <span class="font-medium text-center pointer-events-none">{{
-                selectedDate.toLocaleDateString("en-US", {
+                selectedDate.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', {
                   month: "long",
                   day: "numeric",
                   year: "numeric",
@@ -411,16 +427,15 @@ onMounted(() => {
         <template #right>
           <UButton
             icon="i-lucide-calendar"
-            label="Today"
+            :label="t('time.today')"
             color="neutral"
             variant="outline"
             @click="selectedDate = new Date()"
           />
           <USelect
             v-model="filterInstructor"
-            :items="['All Instructors', ...instructors]"
-
-            placeholder="Filter by instructor"
+            :items="instructorOptions"
+            :placeholder="t('common.filter') + ' ' + t('dashboard.instructor')"
             class="w-48"
             color="warning"
           />
@@ -505,7 +520,7 @@ onMounted(() => {
           <UCard>
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">Select Date</h2>
+                <h2 class="font-semibold">{{ t('schedule.selectDate') }}</h2>
                 <div class="flex items-center gap-1">
                   <UButton
                     icon="i-lucide-chevron-left"
@@ -515,7 +530,7 @@ onMounted(() => {
                     @click="changeDay(-1)"
                   />
                   <span class="text-sm font-medium">{{
-                    selectedDate.toLocaleDateString("en-US", {
+                    selectedDate.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', {
                       month: "long",
                       year: "numeric",
                     })
@@ -533,7 +548,7 @@ onMounted(() => {
             <!-- Simple custom calendar grid -->
             <div class="grid grid-cols-7 gap-1 mb-2">
               <div
-                v-for="day in ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']"
+                v-for="day in (locale === 'id' ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'])"
                 :key="day"
                 class="text-center text-xs font-bold text-muted py-2"
               >
@@ -563,12 +578,12 @@ onMounted(() => {
           <UCard class="lg:col-span-2">
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">Time Slots</h2>
+                <h2 class="font-semibold">{{ t('schedule.availableSlots') }}</h2>
                 <div class="flex gap-2">
-                  <UBadge label="Available" color="success" variant="subtle" />
-                  <UBadge label="Booked" color="info" variant="subtle" />
-                  <UBadge label="Completed" color="neutral" variant="subtle" />
-                  <UBadge label="Blocked" color="error" variant="subtle" />
+                  <UBadge :label="t('common.available')" color="success" variant="subtle" />
+                  <UBadge :label="t('home.booked')" color="info" variant="subtle" />
+                  <UBadge :label="t('common.completed')" color="neutral" variant="subtle" />
+                  <UBadge :label="t('admin.blockSlot').replace('Blokir ', '')" color="error" variant="subtle" />
                 </div>
               </div>
             </template>
@@ -648,7 +663,7 @@ onMounted(() => {
                       class="flex items-center"
                     >
                       <UButton
-                        label="Start Session"
+                        :label="t('admin.startSession')"
                         icon="i-lucide-play"
                         size="sm"
                         color="warning"
@@ -661,7 +676,7 @@ onMounted(() => {
                       class="flex items-center"
                     >
                       <UButton
-                        label="Complete"
+                        :label="t('common.completed')"
                         icon="i-lucide-check-circle"
                         size="sm"
                         color="primary"
@@ -676,13 +691,13 @@ onMounted(() => {
                       class="hidden sm:flex"
                       :label="
                         slot.status === 'available'
-                          ? 'Available'
+                          ? t('common.available')
                           : slot.status === 'booked'
-                          ? 'Booked'
+                          ? t('home.booked')
                           : slot.status === 'in-progress'
                           ? 'In Progress'
                           : slot.status === 'completed'
-                          ? 'Completed'
+                          ? t('common.completed')
                           : 'Blocked'
                       "
                       :color="
@@ -703,7 +718,7 @@ onMounted(() => {
                         [
                           {
                             label:
-                              slot.status === 'blocked' ? 'Unblock Slot' : 'Block Slot',
+                              slot.status === 'blocked' ? t('admin.unblockSlot') : t('admin.blockSlot'),
                             icon:
                               slot.status === 'blocked'
                                 ? 'i-lucide-unlock'
@@ -714,13 +729,13 @@ onMounted(() => {
                               slot.status === 'completed',
                           },
                           {
-                            label: 'Book Manually',
+                            label: t('admin.addNew').replace('Tambah Baru', 'Booking Manual'),
                             icon: 'i-lucide-user-plus',
                             onSelect: () => handleManualBooking(slot.id),
                             disabled: slot.status !== 'available',
                           },
                           {
-                            label: 'Edit Slot',
+                            label: t('common.edit') + ' Slot',
                             icon: 'i-lucide-pencil',
                             onSelect: () => openEditModal(slot),
                             disabled: slot.status !== 'available',
@@ -728,21 +743,21 @@ onMounted(() => {
                         ],
                         [
                           {
-                            label: 'Start Session',
+                            label: t('admin.startSession'),
                             icon: 'i-lucide-play',
                             color: 'warning',
                             onSelect: () => startSession(slot.id),
                             disabled: slot.status !== 'booked',
                           },
                           {
-                            label: 'Complete Session',
+                            label: t('admin.completeSession'),
                             icon: 'i-lucide-check-circle',
                             color: 'primary',
                             onSelect: () => completeSession(slot.id),
                             disabled: slot.status !== 'in-progress',
                           },
                           {
-                            label: 'Cancel Booking',
+                            label: t('schedule.cancelSession'),
                             icon: 'i-lucide-user-minus',
                             color: 'neutral',
                             onSelect: () => cancelBooking(slot.id),
@@ -751,7 +766,7 @@ onMounted(() => {
                         ],
                         [
                           {
-                            label: 'Delete Slot',
+                            label: t('common.delete') + ' Slot',
                             icon: 'i-lucide-trash',
                             color: 'error',
                             onSelect: () => deleteSlot(slot.id),
@@ -778,7 +793,7 @@ onMounted(() => {
                   class="size-10 text-muted mx-auto mb-3"
                 />
                 <p class="text-muted font-medium">
-                  No time slots found for these filters.
+                  {{ t('blog.noArticles').replace('artikel', 'slot') }}.
                 </p>
               </div>
             </div>

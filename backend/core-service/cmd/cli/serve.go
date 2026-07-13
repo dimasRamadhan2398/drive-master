@@ -5,6 +5,7 @@ import (
 	"core-service/controllers"
 	"core-service/database"
 	"core-service/handlers"
+	"core-service/pkg/clients"
 	"core-service/pkg/config"
 	"core-service/pkg/kafka"
 	"core-service/pkg/logger"
@@ -166,7 +167,21 @@ func runServe(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize controller
-	controllerRegistry := controllers.NewControllerRegistry(serviceRegistry)
+	var controllerRegistry controllers.IControllerRegistry
+	if loadedConfig.PaymentService.Enabled {
+		paymentClient := clients.NewTransactionClient(
+			loadedConfig.PaymentService.BaseURL,
+			loadedConfig.PaymentService.ServiceName,
+			loadedConfig.PaymentService.SignatureKey,
+		)
+		controllerRegistry = controllers.NewControllerRegistryWithPayment(serviceRegistry, paymentClient)
+		logger.Info("Payment service client initialized",
+			logger.NewLogField("base_url", loadedConfig.PaymentService.BaseURL),
+			logger.NewLogField("service_name", loadedConfig.PaymentService.ServiceName))
+	} else {
+		controllerRegistry = controllers.NewControllerRegistry(serviceRegistry)
+		logger.Info("Payment service client disabled, using basic controller registry")
+	}
 
 	// Use gin.New() instead of gin.Default() to have full control
 	router := gin.New()
@@ -179,17 +194,41 @@ func runServe(cmd *cobra.Command, args []string) {
 	router.RedirectTrailingSlash = false
 	router.RedirectFixedPath = false
 
-	// // CORS middleware - MUST be added BEFORE routes
-	// router.Use(func(c *gin.Context) {
-	// 	c.Header("Access-Control-Allow-Origin", "*")
-	// 	c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	// 	c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
-	// 	if c.Request.Method == "OPTIONS" {
-	// 		c.AbortWithStatus(http.StatusNoContent)
-	// 		return
-	// 	}
-	// 	c.Next()
-	// })
+	// CORS middleware - MUST be added BEFORE routes
+	router.Use(func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
+		allowedOrigins := map[string]bool{
+			"http://localhost:3000":      true,
+			"http://localhost:3001":      true,
+			"https://drivemaster.id":     true,
+			"http://drivemaster.id":      true,
+			"http://203.194.114.20":      true,
+			"https://203.194.114.20":     true,
+			"https://dev.drivemaster.id":  true,
+			"http://dev.drivemaster.id":   true,
+			"https://api-dev.drivemaster.id": true,
+			"http://api-dev.drivemaster.id":  true,
+		}
+
+		if allowedOrigins[origin] {
+			c.Header("Access-Control-Allow-Origin", origin)
+		} else if origin == "" {
+			c.Header("Access-Control-Allow-Origin", "*")
+		} else {
+			c.Header("Access-Control-Allow-Origin", "https://drivemaster.id")
+		}
+
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Request-ID, X-Api-Key, X-Request-At, X-Service-Name")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Max-Age", "86400")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	})
 
 	maxRequests := float64(loadedConfig.App.RateLimiterMax)
 	expirationTTL := time.Duration(loadedConfig.App.RateLimiterTime) * time.Second

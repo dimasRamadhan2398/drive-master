@@ -22,20 +22,17 @@ func NewCertificationRoute(controller controllers.IControllerRegistry, group *gi
 }
 
 func (r *CertificationRoute) Run() {
-	group := r.group.Group("/certificates")
+	certGroup := r.group.Group("/certificates")
 	{
-		// Certificate stats
-		group.GET("/stats", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertificateStats)
-	}
+		// Admin routes - Issue and manage certificates
+		certGroup.GET("/stats", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertificateStats)
+		certGroup.POST("", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().IssueCertificate)
+		certGroup.GET("/member/:memberId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetMemberCertificates)
+		certGroup.DELETE("/:id", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().RevokeCertificate)
+		certGroup.GET("", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetAllCertificates)
 
-	instructorGroup := r.group.Group("/instructors")
-	{
-		// Instructor Certification routes
-		instructorGroup.POST("/:id/certifications", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().CreateCertification)
-		instructorGroup.GET("/:id/certifications", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().ListCertifications)
-		instructorGroup.GET("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertification)
-		instructorGroup.PUT("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().UpdateCertification)
-		instructorGroup.DELETE("/:id/certifications/:certId", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().DeleteCertification)
-		instructorGroup.POST("/:id/certifications/:certId/verify", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().VerifyCertification)
+		// Member routes - View and download their certificates
+		certGroup.GET("/:id", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().GetCertificate)
+		certGroup.GET("/:id/pdf", r.authMiddleware.Authenticate(), r.controller.GetCertificationController().DownloadCertificatePDF)
 	}
 }

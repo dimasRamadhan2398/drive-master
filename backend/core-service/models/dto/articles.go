@@ -10,7 +10,7 @@ type CreateArticleRequest struct {
 	Title         string    `json:"title" binding:"required,max=255"`
 	Slug          string    `json:"slug" binding:"required,max=255,alphanum"`
 	LeadParagraph string    `json:"leadParagraph"`
-	BodyBlocks    []byte    `json:"bodyBlocks"`
+	Content       string    `json:"content"`
 	Footer        string    `json:"footer"`
 	FeaturedImage string    `json:"featuredImage" binding:"omitempty,url"`
 
@@ -61,7 +61,7 @@ type ArticleResponse struct {
 	Title         string             `json:"title"`
 	Slug          string             `json:"slug"`
 	LeadParagraph string             `json:"leadParagraph"`
-	BodyBlocks    []byte             `json:"bodyBlocks"`
+	Content       string             `json:"content"`
 	Footer        string             `json:"footer"`
 	FeaturedImage string             `json:"featuredImage"`
 
@@ -137,7 +137,7 @@ type UpdateArticleRequest struct {
 	Title         string     `json:"title" binding:"max=255"`
 	Slug          string     `json:"slug" binding:"max=255"`
 	LeadParagraph string     `json:"leadParagraph"`
-	BodyBlocks    []byte     `json:"bodyBlocks"`
+	Content       string     `json:"content"`
 	Footer        string     `json:"footer"`
 	FeaturedImage string     `json:"featuredImage"`
 

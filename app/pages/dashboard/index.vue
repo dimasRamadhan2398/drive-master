@@ -1,101 +1,230 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { scheduleService } from '~/services/scheduleService'
+import type { SessionResponse } from '~/services/scheduleService'
 
+const { t } = useI18n()
 definePageMeta({ layout: 'dashboard' })
 
-// Mock data
-const userData = {
-  name: 'John Doe',
-  package: '8x Sessions Package',
-  totalSessions: 10,
-  completedSessions: 4,
-  remainingSessions: 6,
-  progress: 40,
-  nextSession: {
-    date: 'Tomorrow',
-    time: '09:30 AM',
-    car: 'BYD Atto 1',
-    instructor: 'Mr. Ahmad'
+const authStore = useAuthStore()
+const schedulesStore = useSchedulesStore()
+
+const userSessionsList = ref<SessionResponse[]>([])
+const isLoadingSessions = ref(false)
+
+const fetchDashboardData = async (userId: string) => {
+  await schedulesStore.fetchSchedules({ studentId: userId, limit: 100 })
+  try {
+    isLoadingSessions.value = true
+    const response = await scheduleService.fetchSessions({ studentId: userId, limit: 10 })
+    userSessionsList.value = response.data || []
+  } catch (err) {
+    console.error('Failed to fetch user sessions:', err)
+  } finally {
+    isLoadingSessions.value = false
   }
 }
 
-// FITUR BARU: Data detail instruktor dan state untuk modal
-const allInstructors = [
-  {
-    name: 'Mr. Ahmad',
-    phone: '081234567001',
-    bnsp: 'BNSP-101-2023',
-    sim: 'SIM A',
-    photoUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
-    experience: 10,
-    bio: 'Expert in smooth vehicle control and traffic safety management with extensive knowledge in electric vehicle systems.',
-    status: 'active',
-    role: 'Senior Instructor',
-    specialization: 'Defensive Driving & EV Specialist'
-  },
-  {
-    name: 'Ms. Sari',
-    phone: '081234567002',
-    bnsp: 'BNSP-102-2022',
-    sim: 'SIM A',
-    photoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
-    experience: 7,
-    bio: 'Specializes in helping beginners master city driving and complex parking maneuvers with patience and precision.',
-    status: 'active',
-    role: 'Professional Instructor',
-    specialization: 'Urban Driving & Parking Expert'
+// ── Fetch / refresh on mount ─────────────────────────────────────────────────
+onMounted(async () => {
+  await authStore.fetchMemberProfile()
+  if (authStore.userId) {
+    await fetchDashboardData(authStore.userId)
   }
-]
+})
+
+// Watch for userId change in case it loads asynchronously
+watch(() => authStore.userId, async (newUserId) => {
+  if (newUserId && userSessionsList.value.length === 0) {
+    await fetchDashboardData(newUserId)
+  }
+})
+
+// ── Derived profile data ──────────────────────────────────────────────────────
+const profile = computed(() => authStore.memberProfile)
+const isLoading = computed(() => authStore.isLoadingProfile)
+
+const firstName = computed(() =>
+  authStore.currentUser?.firstName || authStore.memberIdentityFullname?.split(' ')[0] || 'Student'
+)
+
+// Aggregate across all active entitlements
+const entitlements = computed(() => authStore.memberEntitlements ?? [])
+
+const totalSessions = computed(() =>
+  entitlements.value.reduce((sum, e) => sum + (e.totalSessions ?? 0), 0)
+)
+
+const completedSessions = computed(() =>
+  entitlements.value.reduce((sum, e) => sum + (e.usedSessions ?? 0), 0)
+)
+
+const remainingSessions = computed(() =>
+  entitlements.value.reduce((sum, e) => sum + (e.remaining ?? 0), 0)
+)
+
+const isCourseCompleted = computed(() => {
+  return totalSessions.value > 0 && remainingSessions.value === 0
+})
+
+const progressPercent = computed(() => {
+  const total = totalSessions.value
+  if (!total) return 0
+  return Math.round((completedSessions.value / total) * 100)
+})
+
+// Certificate: eligible when all sessions in at least one entitlement are used
+const certificateStatus = computed(() => {
+  if (!entitlements.value.length) return t('common.pending')
+  if (isCourseCompleted.value) return t('common.completed')
+  const hasCompleted = entitlements.value.some(e => e.status === 'completed')
+  if (hasCompleted) return t('common.ready')
+  if (progressPercent.value >= 100) return t('common.processing')
+  return t('common.pending')
+})
+
+// Active package name (most recent active entitlement)
+const packageName = computed(() => {
+  const active = entitlements.value.find(e => e.status === 'active')
+  return active?.packageName || t('dashboard.noPackage')
+})
+
+// Filter booked and in-progress slots for student
+const studentBookedSessions = computed(() => {
+  return schedulesStore.slots.filter(
+    slot => (slot.status === 'booked' || slot.status === 'in-progress')
+  )
+})
+
+// Sort by date and time in ascending order to get the closest upcoming session
+const sortedUpcomingSessions = computed(() => {
+  return [...studentBookedSessions.value].sort((a, b) => {
+    const dateTimeA = new Date(`${a.date}T${a.time}`)
+    const dateTimeB = new Date(`${b.date}T${b.time}`)
+    return dateTimeA.getTime() - dateTimeB.getTime()
+  })
+})
+
+const nextSession = computed(() => {
+  if (sortedUpcomingSessions.value.length === 0) return null
+  return sortedUpcomingSessions.value[0]
+})
 
 const nextInstructorDetails = computed(() => {
-  return allInstructors.find(inst => inst.name === userData.nextSession.instructor)
+  if (!nextSession.value) return null
+  return allInstructors.find(inst => inst.name === nextSession.value.instructor)
 })
 
 const showInstructorModal = ref(false)
-
 const showDetails = ref(false)
-const sessionDetails = {
-  pickup: 'Main Lobby of Green Bay Apartments, Pluit'
+
+const sessionDetails = computed(() => ({
+  pickup: nextSession.value?.notes || 'Main Lobby of Green Bay Apartments, Pluit'
+}))
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  const [year, month, day] = dateStr.split('-').map(Number)
+  if (!year || !month || !day) return dateStr
+  const date = new Date(year, month - 1, day)
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-const recentActivity = [
-  { 
-    id: 1, 
-    type: 'session', 
-    title: 'Training Session #4', 
-    description: 'Highway driving basics completed',
-    date: 'Mar 25, 2026',
-    status: 'completed'
-  },
-  { 
-    id: 2, 
-    type: 'session', 
-    title: 'Training Session #3', 
-    description: 'Parking and maneuvering',
-    date: 'Mar 22, 2026',
-    status: 'completed'
-  },
-  { 
-    id: 3, 
-    type: 'booking', 
-    title: 'Session Booked', 
-    description: 'Training Session #5 scheduled',
-    date: 'Mar 20, 2026',
-    status: 'info'
-  }
-]
+const recentActivity = computed(() => {
+  // If we have live sessions fetched, map them
+  if (userSessionsList.value.length > 0) {
+    const completedSessions = userSessionsList.value.filter(s => s.status === 'completed')
+    return userSessionsList.value
+      .slice(0, 3) // show top 3
+      .map((session) => {
+        const isCompleted = session.status === 'completed'
+        const isInProgress = session.status === 'in-progress'
+        
+        let title = t('schedule.bookingSuccess')
+        if (isCompleted) {
+          const completedIndex = completedSessions.findIndex(s => s.id === session.id)
+          const sessionNumber = completedIndex !== -1 ? completedSessions.length - completedIndex : 1
+          title = `${t('history.session')} #${sessionNumber}`
+        }
 
-const quickActions = [
-  { label: 'Book Session', icon: 'i-lucide-calendar-plus', to: '/dashboard/schedule', color: 'warning' as const },
-  { label: 'View History', icon: 'i-lucide-history', to: '/dashboard/history', color: 'neutral' as const },
-  { label: 'Get Support', icon: 'i-simple-icons-whatsapp', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', external: true, color: 'primary' as const }
-]
+        let description = `Training Session scheduled`
+        if (isInProgress) {
+          description = 'Driving session is in progress'
+        } else if (isCompleted) {
+          description = session.notes && session.notes.trim() ? session.notes : 'Driving session completed'
+        }
+
+        return {
+          id: session.id,
+          type: 'session',
+          title,
+          description,
+          date: formatDate(session.date),
+          status: isCompleted ? 'completed' : isInProgress ? 'warning' : 'info'
+        }
+      })
+  }
+
+  const userSlots = schedulesStore.slots.filter(
+    slot => slot.status === 'completed' || slot.status === 'booked' || slot.status === 'in-progress'
+  )
+  
+  if (userSlots.length === 0) {
+    return []
+  }
+
+  const completedSlots = userSlots.filter(s => s.status === 'completed')
+
+  return [...userSlots]
+    .sort((a, b) => {
+      const dateTimeA = new Date(`${a.date}T${a.time}`)
+      const dateTimeB = new Date(`${b.date}T${b.time}`)
+      return dateTimeB.getTime() - dateTimeA.getTime()
+    })
+    .slice(0, 3)
+    .map((slot) => {
+      const isCompleted = slot.status === 'completed'
+      const isInProgress = slot.status === 'in-progress'
+      
+      let title = t('schedule.bookingSuccess')
+      if (isCompleted) {
+        const completedIndex = completedSlots.findIndex(s => s.id === slot.id)
+        const sessionNumber = completedIndex !== -1 ? completedSlots.length - completedIndex : 1
+        title = `${t('history.session')} #${sessionNumber}`
+      }
+
+      return {
+        id: slot.id,
+        type: 'session',
+        title,
+        description: isInProgress 
+          ? 'Driving session is in progress' 
+          : isCompleted 
+            ? 'Driving session completed' 
+            : `Training Session with ${slot.instructor} scheduled`,
+        date: formatDate(slot.date),
+        status: isCompleted ? 'completed' : isInProgress ? 'warning' : 'info'
+      }
+    })
+})
+
+const quickActions = computed(() => {
+  const firstAction = isCourseCompleted.value
+    ? { label: t('dashboard.viewCertificate'), icon: 'i-lucide-award', to: '/dashboard/certificate', color: 'warning' as const }
+    : { label: t('dashboard.bookSession'), icon: 'i-lucide-calendar-plus', to: '/dashboard/schedule', color: 'warning' as const }
+
+  return [
+    firstAction,
+    { label: t('dashboard.viewHistory'), icon: 'i-lucide-history', to: '/dashboard/history', color: 'neutral' as const },
+    { label: t('dashboard.getSupport'), icon: 'i-simple-icons-whatsapp', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', external: true, color: 'primary' as const }
+  ]
+})
 </script>
 
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="Dashboard">
+      <UDashboardNavbar :title="t('common.dashboard')">
         <template #right>
           <UButton icon="i-lucide-bell" color="neutral" variant="ghost" />
           <UColorModeButton />
@@ -109,11 +238,12 @@ const quickActions = [
         <UCard class="bg-warning/5 border-warning/20">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 class="text-2xl font-bold">Welcome back, {{ userData.name.split(' ')[0] }}!</h1>
-              <p class="text-muted mt-1">You have {{ userData.remainingSessions }} sessions remaining in your {{ userData.package }}.</p>
+              <h1 class="text-2xl font-bold">{{ t('dashboard.welcome', { name: firstName }) }}</h1>
+              <p v-if="isCourseCompleted" class="text-muted mt-1">{{ t('dashboard.courseCompleted') }}</p>
+              <p v-else class="text-muted mt-1">{{ t('dashboard.sessionsRemaining', { count: remainingSessions, package: packageName }) }}</p>
             </div>
-            <NuxtLink to="/dashboard/schedule">
-              <UButton label="Book Next Session" icon="i-lucide-calendar-plus" color="warning" />
+            <NuxtLink :to="isCourseCompleted ? '/dashboard/certificate' : '/dashboard/schedule'">
+              <UButton :label="isCourseCompleted ? t('dashboard.viewCertificate') : t('dashboard.bookNextSession')" :icon="isCourseCompleted ? 'i-lucide-award' : 'i-lucide-calendar-plus'" color="warning" />
             </NuxtLink>
           </div>
         </UCard>
@@ -126,8 +256,11 @@ const quickActions = [
                 <UIcon name="i-lucide-book-check" class="size-6 text-primary" />
               </div>
               <div>
-                <p class="text-2xl font-bold">{{ userData.completedSessions }}</p>
-                <p class="text-sm text-muted">Sessions Completed</p>
+                <p class="text-2xl font-bold">
+                  <USkeleton v-if="isLoading" class="h-8 w-10" />
+                  <span v-else>{{ completedSessions }}</span>
+                </p>
+                <p class="text-sm text-muted">{{ t('dashboard.sessionsCompleted') }}</p>
               </div>
             </div>
           </UCard>
@@ -138,8 +271,11 @@ const quickActions = [
                 <UIcon name="i-lucide-clock" class="size-6 text-amber-500" />
               </div>
               <div>
-                <p class="text-2xl font-bold">{{ userData.remainingSessions }}</p>
-                <p class="text-sm text-muted">Sessions Remaining</p>
+                <p class="text-2xl font-bold">
+                  <USkeleton v-if="isLoading" class="h-8 w-10" />
+                  <span v-else>{{ remainingSessions }}</span>
+                </p>
+                <p class="text-sm text-muted">{{ t('dashboard.sessionsRemainingCount') }}</p>
               </div>
             </div>
           </UCard>
@@ -150,8 +286,11 @@ const quickActions = [
                 <UIcon name="i-lucide-target" class="size-6 text-info" />
               </div>
               <div>
-                <p class="text-2xl font-bold">{{ userData.progress }}%</p>
-                <p class="text-sm text-muted">Course Progress</p>
+                <p class="text-2xl font-bold">
+                  <USkeleton v-if="isLoading" class="h-8 w-12" />
+                  <span v-else>{{ progressPercent }}%</span>
+                </p>
+                <p class="text-sm text-muted">{{ t('dashboard.courseProgress') }}</p>
               </div>
             </div>
           </UCard>
@@ -162,8 +301,11 @@ const quickActions = [
                 <UIcon name="i-lucide-award" class="size-6 text-neutral" />
               </div>
               <div>
-                <p class="text-2xl font-bold">Pending</p>
-                <p class="text-sm text-muted">Certificate Status</p>
+                <p class="text-2xl font-bold">
+                  <USkeleton v-if="isLoading" class="h-8 w-20" />
+                  <span v-else>{{ certificateStatus }}</span>
+                </p>
+                <p class="text-sm text-muted">{{ t('dashboard.certificateStatus') }}</p>
               </div>
             </div>
           </UCard>
@@ -174,20 +316,20 @@ const quickActions = [
           <UCard class="lg:col-span-2">
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">Next Session</h2>
-                <UBadge label="Confirmed" color="success" variant="subtle" />
+                <h2 class="font-semibold">{{ t('dashboard.nextSession') }}</h2>
+                <UBadge v-if="nextSession" :label="nextSession.status === 'in-progress' ? t('dashboard.inProgress') : t('dashboard.confirmed')" :color="nextSession.status === 'in-progress' ? 'warning' : 'success'" variant="subtle" />
               </div>
             </template>
 
-            <div class="flex flex-col sm:flex-row gap-6">
+            <div v-if="nextSession" class="flex flex-col sm:flex-row gap-6">
               <div class="flex-1 space-y-4">
                 <div class="flex items-center gap-3">
                   <div class="p-2 rounded-lg bg-muted">
                     <UIcon name="i-lucide-calendar" class="size-5 text-warning" />
                   </div>
                   <div>
-                    <p class="text-sm text-muted">Date</p>
-                    <p class="font-medium">{{ userData.nextSession.date }}</p>
+                    <p class="text-sm text-muted">{{ t('dashboard.date') }}</p>
+                    <p class="font-medium">{{ nextSession.date }}</p>
                   </div>
                 </div>
 
@@ -196,8 +338,8 @@ const quickActions = [
                     <UIcon name="i-lucide-clock" class="size-5 text-warning" />
                   </div>
                   <div>
-                    <p class="text-sm text-muted">Time</p>
-                    <p class="font-medium">{{ userData.nextSession.time }}</p>
+                    <p class="text-sm text-muted">{{ t('dashboard.time') }}</p>
+                    <p class="font-medium">{{ nextSession.time }}</p>
                   </div>
                 </div>
               </div>
@@ -208,8 +350,8 @@ const quickActions = [
                     <UIcon name="i-lucide-car" class="size-5 text-warning" />
                   </div>
                   <div>
-                    <p class="text-sm text-muted">Vehicle</p>
-                    <p class="font-medium">{{ userData.nextSession.car }}</p>
+                    <p class="text-sm text-muted">{{ t('dashboard.vehicle') }}</p>
+                    <p class="font-medium">{{ nextSession.car || 'BYD Atto 3' }}</p>
                   </div>
                 </div>
 
@@ -218,17 +360,34 @@ const quickActions = [
                     <UIcon name="i-lucide-user" class="size-5 text-warning" />
                   </div>
                   <div class="flex-1">
-                    <p class="text-sm text-muted">Instructor</p>
-                    <p class="font-medium">{{ userData.nextSession.instructor }}</p>
-                  </div>
-                  
+                    <p class="text-sm text-muted">{{ t('dashboard.instructor') }}</p>
+                    <p class="font-medium">{{ nextSession.instructor || 'Instructor' }}</p>
                   </div>
                 </div>
+              </div>
             </div>
-            <template #footer>
+
+            <div v-else class="flex flex-col items-center justify-center py-8 text-center space-y-3">
+              <div class="p-4 rounded-full bg-muted">
+                <UIcon :name="isCourseCompleted ? 'i-lucide-award' : 'i-lucide-calendar-x'" :class="isCourseCompleted ? 'text-warning' : 'text-muted-foreground'" class="size-8" />
+              </div>
+              <div v-if="isCourseCompleted">
+                <p class="font-semibold text-base">{{ t('dashboard.courseCompletedTitle') }}</p>
+                <p class="text-sm text-muted mt-1">{{ t('dashboard.courseCompletedDesc') }}</p>
+              </div>
+              <div v-else>
+                <p class="font-semibold text-base">{{ t('schedule.noUpcoming') || 'Tidak ada sesi kelas terdekat' }}</p>
+                <p class="text-sm text-muted mt-1">{{ t('schedule.noUpcomingDescription') || 'Silakan pilih tanggal dan pesan kelas mengemudi Anda berikutnya.' }}</p>
+              </div>
+              <NuxtLink :to="isCourseCompleted ? '/dashboard/certificate' : '/dashboard/schedule'">
+                <UButton :label="isCourseCompleted ? t('dashboard.viewCertificate') : t('dashboard.bookNextSession')" :icon="isCourseCompleted ? 'i-lucide-award' : 'i-lucide-calendar-plus'" color="warning" size="sm" class="mt-2" />
+              </NuxtLink>
+            </div>
+
+            <template #footer v-if="nextSession">
               <div class="flex gap-3">
-                <UButton label="View Details" variant="outline" color="neutral" @click="showDetails = true" />
-                <UButton label="Reschedule" to="/dashboard/schedule" variant="ghost" color="neutral" icon="i-lucide-calendar-days" />
+                <UButton :label="t('dashboard.viewDetails')" variant="outline" color="neutral" @click="showDetails = true" />
+                <UButton :label="t('dashboard.reschedule')" to="/dashboard/schedule" variant="ghost" color="neutral" icon="i-lucide-calendar-days" />
               </div>
             </template>
           </UCard>
@@ -236,7 +395,7 @@ const quickActions = [
           <!-- Progress Card -->
           <UCard>
             <template #header>
-              <h2 class="font-semibold">Course Progress</h2>
+              <h2 class="font-semibold">{{ t('dashboard.courseProgressTitle') }}</h2>
             </template>
 
             <div class="space-y-4">
@@ -261,26 +420,27 @@ const quickActions = [
                       fill="none"
                       class="text-primary"
                       :stroke-dasharray="352"
-                      :stroke-dashoffset="352 - (352 * userData.progress) / 100"
+                      :stroke-dashoffset="352 - (352 * progressPercent) / 100"
                       stroke-linecap="round"
                     />
                   </svg>
-                  <span class="absolute text-2xl font-bold">{{ userData.progress }}%</span>
+                  <span class="absolute text-2xl font-bold">{{ progressPercent }}%</span>
                 </div>
               </div>
 
               <div class="space-y-2">
                 <div class="flex justify-between text-sm">
-                  <span class="text-muted">Completed</span>
-                  <span class="font-medium">{{ userData.completedSessions }}/{{ userData.totalSessions }}</span>
+                  <span class="text-muted">{{ t('common.completed') }}</span>
+                  <span class="font-medium">{{ completedSessions }}/{{ totalSessions }}</span>
                 </div>
-                <UProgress :value="userData.progress" />
+                <UProgress :model-value="progressPercent" />
               </div>
             </div>
 
             <template #footer>
               <p class="text-sm text-muted text-center">
-                {{ userData.remainingSessions }} more sessions to complete your course
+                <span v-if="isCourseCompleted">{{ t('dashboard.courseFinishedFooter') }}</span>
+                <span v-else>{{ t('dashboard.moreSessions', { count: remainingSessions }) }}</span>
               </p>
             </template>
           </UCard>
@@ -291,26 +451,43 @@ const quickActions = [
           <UCard class="lg:col-span-2">
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">Recent Activity</h2>
+                <h2 class="font-semibold">{{ t('dashboard.recentActivity') }}</h2>
                 <NuxtLink to="/dashboard/history">
-                  <UButton label="View All" variant="ghost" color="warning" size="sm" trailingIcon="i-lucide-arrow-right" />
+                  <UButton :label="t('dashboard.viewAll')" variant="ghost" color="warning" size="sm" trailingIcon="i-lucide-arrow-right" />
                 </NuxtLink>
               </div>
             </template>
 
             <div class="space-y-4">
+              <div v-if="isLoadingSessions" class="space-y-3 p-3">
+                <div class="flex items-center gap-4">
+                  <USkeleton class="h-10 w-10 rounded-lg" />
+                  <div class="flex-1 space-y-2">
+                    <USkeleton class="h-4 w-[40%]" />
+                    <USkeleton class="h-3 w-[70%]" />
+                  </div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <USkeleton class="h-10 w-10 rounded-lg" />
+                  <div class="flex-1 space-y-2">
+                    <USkeleton class="h-4 w-[30%]" />
+                    <USkeleton class="h-3 w-[60%]" />
+                  </div>
+                </div>
+              </div>
               <div 
+                v-else-if="recentActivity.length > 0"
                 v-for="activity in recentActivity" 
                 :key="activity.id"
                 class="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <div 
                   class="p-2 rounded-lg"
-                  :class="activity.status === 'completed' ? 'bg-green-500/10' : 'bg-blue-500/10'"
+                  :class="activity.status === 'completed' ? 'bg-green-500/10' : activity.status === 'warning' ? 'bg-yellow-500/10' : 'bg-blue-500/10'"
                 >
                   <UIcon 
                     :name="activity.type === 'session' ? 'i-lucide-car' : 'i-lucide-calendar-check'"
-                    :class="activity.status === 'completed' ? 'text-green-500' : 'text-blue-500'"
+                    :class="activity.status === 'completed' ? 'text-green-500' : activity.status === 'warning' ? 'text-yellow-500' : 'text-blue-500'"
                     class="size-5"
                   />
                 </div>
@@ -320,12 +497,34 @@ const quickActions = [
                 </div>
                 <span class="text-xs text-muted whitespace-nowrap">{{ activity.date }}</span>
               </div>
+              <div v-else class="flex flex-col items-center justify-center text-center py-8 px-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 transition-all duration-300">
+                <div class="relative flex items-center justify-center w-12 h-12 rounded-full bg-warning-500/10 text-warning-500 mb-3">
+                  <UIcon name="i-lucide-history" class="w-6 h-6" />
+                  <div class="absolute inset-0 rounded-full bg-warning-500/5 animate-pulse"></div>
+                </div>
+                <h3 class="font-semibold text-sm text-gray-900 dark:text-white mb-1">
+                  {{ t('history.noHistory') || 'No training history yet' }}
+                </h3>
+                <p class="text-xs text-muted max-w-[280px] mb-4 animate-fade-in">
+                  {{ t('dashboard.noActivityDesc') }}
+                </p>
+                <NuxtLink to="/dashboard/schedule">
+                  <UButton
+                    size="xs"
+                    color="warning"
+                    icon="i-lucide-calendar-plus"
+                    class="font-medium shadow-sm hover:scale-[1.02] transition-transform duration-200"
+                  >
+                    {{ t('dashboard.bookNextSession') }}
+                  </UButton>
+                </NuxtLink>
+              </div>
             </div>
           </UCard>
 
           <UCard>
             <template #header>
-              <h2 class="font-semibold">Quick Actions</h2>
+              <h2 class="font-semibold">{{ t('dashboard.quickActions') }}</h2>
             </template>
 
             <div class="grid grid-cols-1 space-y-3">
@@ -348,7 +547,7 @@ const quickActions = [
             <template #footer>
               <UAlert icon="i-lucide-info" variant="subtle">
                 <template #description>
-                  Need help? Contact our support team via WhatsApp.
+                  {{ t('dashboard.needHelp') }}
                 </template>
               </UAlert>
             </template>
@@ -356,31 +555,31 @@ const quickActions = [
         </div>
       </div>
       <!-- Centered Modal -->
-      <UModal v-model:open="showDetails" title="Session Detail" :ui="{ content: 'm-auto sm:max-w-md' }">
-        <template #body>
+      <UModal v-model:open="showDetails" :title="t('dashboard.sessionDetail')" :ui="{ content: 'm-auto sm:max-w-md' }">
+        <template #body v-if="nextSession">
           <div class="space-y-4 py-2">
             <div class="grid grid-cols-2 gap-4">
               <div class="col-span-2">
-                <p class="text-xs font-bold text-muted uppercase mb-1">Course Material</p>
-                <p class="font-bold">Driving on Highway</p>
+                <p class="text-xs font-bold text-muted uppercase mb-1">{{ t('dashboard.courseMaterial') }}</p>
+                <p class="font-bold">{{ t('home.material.highway') }}</p>
               </div>
               <div>
-                <p class="text-xs font-bold text-muted uppercase mb-1">Time</p>
-                <p class="text-sm font-medium text-primary">{{ userData.nextSession.time }}</p>
+                <p class="text-xs font-bold text-muted uppercase mb-1">{{ t('dashboard.time') }}</p>
+                <p class="text-sm font-medium text-primary">{{ nextSession.time }}</p>
               </div>
               <div>
-                <p class="text-xs font-bold text-muted uppercase mb-1">Instructor</p>
-                <p class="text-sm font-medium">{{ userData.nextSession.instructor }}</p>
+                <p class="text-xs font-bold text-muted uppercase mb-1">{{ t('dashboard.instructor') }}</p>
+                <p class="text-sm font-medium">{{ nextSession.instructor }}</p>
               </div>
               <div class="col-span-2">
-                <p class="text-xs font-bold text-muted uppercase mb-1">Pickup Location</p>
+                <p class="text-xs font-bold text-muted uppercase mb-1">{{ t('dashboard.pickupLocation') }}</p>
                 <p class="text-sm font-medium">{{ sessionDetails.pickup }}</p>
               </div>
             </div>
           </div>
         </template>
         <template #footer>
-          <UButton label="Close" block color="neutral" variant="soft" @click="showDetails = false" />
+          <UButton :label="t('dashboard.close')" block color="neutral" variant="soft" @click="showDetails = false" />
         </template>
       </UModal>
 

@@ -88,7 +88,7 @@ type IMidtransService interface {
 	ChargeEWallet(orderID string, amount float64, packageName, customerName, customerEmail string, walletType string) (*MidtransChargeResponse, error)
 
 	// Status operations
-	GetTransactionStatus(orderID string) (*MidtransStatusResponse, error)
+	GetMidtransTransactionStatus(orderID string) (*MidtransStatusResponse, error)
 
 	// Refund operations
 	Refund(orderID string, amount float64, reason string) error
@@ -141,6 +141,9 @@ func (s *MidtransService) CreateSnapTransaction(orderID string, amount float64, 
 			Email: customerEmail,
 		},
 		Items: &items,
+		Callbacks: &snap.Callbacks{
+			Finish: fmt.Sprintf("%s/auth/payment-status?status=success&orderId=%s", s.cfg.FrontendURL, orderID),
+		},
 	}
 
 	resp, midErr := s.snapClient.CreateTransaction(req)
@@ -149,13 +152,13 @@ func (s *MidtransService) CreateSnapTransaction(orderID string, amount float64, 
 	}
 
 	return &SnapResponse{
-		Token: resp.Token,
+		Token:       resp.Token,
 		RedirectURL: resp.RedirectURL,
 	}, nil
 }
 
 // NewMidtransService creates a new Midtrans service instance
-func NewMidtransService(cfg *config.MidtransConfig) IMidtransService {
+func NewMidtransService(cfg *config.MidtransConfig) *MidtransService {
 	env := midtrans.Sandbox
 	if cfg.Environment == "production" {
 		env = midtrans.Production
@@ -187,14 +190,18 @@ func (s *MidtransService) GetSnapURL() string {
 // generateItemDetails builds item details for a charge request.
 // FIX: return type is []midtrans.ItemDetails
 func generateItemDetails(orderID string, amount float64, packageName string) []midtrans.ItemDetails {
+	name := fmt.Sprintf("Paket %s", packageName)
+	if len(name) > 50 {
+		name = name[:50]
+	}
 	return []midtrans.ItemDetails{
 		{
-			ID:    orderID,
-			Name:  fmt.Sprintf("%s - Paket ", orderID, packageName),
-			Price: int64(amount),
-			Qty:   1,
-			Brand: "Drive Master",
-			Category: "Pembelian Paket Mengemudi",
+			ID:           orderID,
+			Name:         name,
+			Price:        int64(amount),
+			Qty:          1,
+			Brand:        "Drive Master",
+			Category:     "Pembelian Paket Mengemudi",
 			MerchantName: "PT. Drive Master Indonesia",
 		},
 	}
@@ -224,17 +231,18 @@ func (s *MidtransService) ChargeQRIS(orderID string, amount float64, packageName
 
 	return parseCoreAPIResponse(resp), nil
 }
-	// req := &snap.Request{
-	// 	TransactionDetails: midtrans.TransactionDetails{
-	// 		OrderID:  orderID,
-	// 		GrossAmt: int64(amount),
-	// 	},
-	// 	CustomerDetail: &midtrans.CustomerDetails{
-	// 		FName: customerName,
-	// 		Email: customerEmail,
-	// 	},
-	// 	Items: generateItemDetails(orderID, amount),
-	// }
+
+// req := &snap.Request{
+// 	TransactionDetails: midtrans.TransactionDetails{
+// 		OrderID:  orderID,
+// 		GrossAmt: int64(amount),
+// 	},
+// 	CustomerDetail: &midtrans.CustomerDetails{
+// 		FName: customerName,
+// 		Email: customerEmail,
+// 	},
+// 	Items: generateItemDetails(orderID, amount),
+// }
 
 // ChargeVA charges via Core API — returns a Virtual Account number directly.
 func (s *MidtransService) ChargeVA(orderID string, amount float64, packageName, customerName, customerEmail, bank string) (*MidtransChargeResponse, error) {
@@ -332,8 +340,8 @@ func (s *MidtransService) getEWalletPaymentType(walletType string) string {
 	return walletType
 }
 
-// GetTransactionStatus retrieves transaction status from Midtrans
-func (s *MidtransService) GetTransactionStatus(orderID string) (*MidtransStatusResponse, error) {
+// GetMidtransTransactionStatus retrieves transaction status from Midtrans
+func (s *MidtransService) GetMidtransTransactionStatus(orderID string) (*MidtransStatusResponse, error) {
 	resp, err := s.coreAPIClient.CheckTransaction(orderID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transaction status: %w", err)
@@ -359,9 +367,9 @@ func (s *MidtransService) GetTransactionStatus(orderID string) (*MidtransStatusR
 // Refund processes a refund request
 func (s *MidtransService) Refund(orderID string, amount float64, reason string) error {
 	req := &coreapi.RefundReq{
-		RefundKey:    "refund_" + orderID,
-		Amount: int64(amount),
-		Reason:       reason,
+		RefundKey: "refund_" + orderID,
+		Amount:    int64(amount),
+		Reason:    reason,
 	}
 
 	_, err := s.coreAPIClient.RefundTransaction(orderID, req)
@@ -532,4 +540,53 @@ func parseCoreAPIResponse(resp *coreapi.ChargeResponse) *MidtransChargeResponse 
 	}
 
 	return result
+}
+
+// GetName returns the gateway name
+func (s *MidtransService) GetName() string {
+	return "midtrans"
+}
+
+// CreateCheckout wraps CreateSnapTransaction to conform to IPaymentGatewayService
+func (s *MidtransService) CreateCheckout(orderID string, amount float64, packageName, customerName, customerEmail string) (*CheckoutResponse, error) {
+	snapResp, err := s.CreateSnapTransaction(orderID, amount, packageName, customerName, customerEmail)
+	if err != nil {
+		return nil, err
+	}
+	return &CheckoutResponse{
+		Token:       snapResp.Token,
+		RedirectURL: snapResp.RedirectURL,
+		OrderID:     orderID,
+	}, nil
+}
+
+// GetTransactionStatus conforms to IPaymentGatewayService and returns internal models.PaymentStatus
+func (s *MidtransService) GetTransactionStatus(orderID string) (models.PaymentStatus, error) {
+	resp, err := s.GetMidtransTransactionStatus(orderID)
+	if err != nil {
+		return models.PaymentStatusPending, err
+	}
+	return MapMidtransStatusToPaymentStatus(resp.TransactionStatus), nil
+}
+
+// VerifyNotification parses notification payload and maps to generic format
+func (s *MidtransService) VerifyNotification(headers map[string]string, rawBody []byte) (*NotificationPayload, error) {
+	var payload map[string]interface{}
+	if err := json.Unmarshal(rawBody, &payload); err != nil {
+		return nil, err
+	}
+
+	notif, err := s.ParseNotification(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return &NotificationPayload{
+		OrderID:           notif.OrderID,
+		TransactionID:     notif.TransactionID,
+		TransactionStatus: MapMidtransStatusToPaymentStatus(notif.TransactionStatus),
+		PaymentType:       notif.PaymentType,
+		GrossAmount:       notif.GrossAmount,
+		RawPayload:        payload,
+	}, nil
 }

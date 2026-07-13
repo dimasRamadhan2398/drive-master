@@ -3,37 +3,38 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const toast = useToast()
 
 const navItems = computed<NavigationMenuItem[]>(() => [
   {
-    label: 'Dashboard',
+    label: t('common.dashboard'),
     icon: 'i-lucide-layout-dashboard',
     to: '/dashboard'
   },
   {
-    label: 'Schedule',
+    label: t('schedule.title'),
     icon: 'i-lucide-calendar',
     to: '/dashboard/schedule'
   },
   {
-    label: 'Training History',
+    label: t('history.title'),
     icon: 'i-lucide-history',
     to: '/dashboard/history'
   },
   {
-    label: 'Certificate',
+    label: t('certificate.title'),
     icon: 'i-lucide-award',
     to: '/dashboard/certificate'
   },
   {
-    label: 'Billing',
+    label: t('billing.title'),
     icon: 'i-lucide-credit-card',
     to: '/dashboard/billing'
   },
   {
-    label: 'Profile',
+    label: t('profile.title'),
     icon: 'i-lucide-user',
     to: '/dashboard/profile'
   }
@@ -53,29 +54,29 @@ async function handleLogout() {
   try {
     await authStore.logout()
     toast.add({
-      title: 'Signed out',
-      description: 'You have been successfully signed out.',
+      title: t('toast.logoutSuccess'),
+      description: t('toast.logoutSuccess'), // Using same for now
       color: 'success'
     })
     navigateTo('/auth/login')
   } catch {
     toast.add({
-      title: 'Error',
-      description: 'Failed to sign out. Please try again.',
+      title: t('common.error'),
+      description: t('common.error'),
       color: 'error'
     })
   }
 }
 
-const userMenuItems = [
+const userMenuItems = computed(() => [
   [
-    { label: 'Profile Settings', icon: 'i-lucide-settings', to: '/dashboard/profile' },
-    { label: 'Help & Support', icon: 'i-lucide-help-circle', to: 'https://wa.me/6281234567890', external: true }
+    { label: t('profile.title'), icon: 'i-lucide-settings', to: '/dashboard/profile' },
+    { label: t('common.helpSupport'), icon: 'i-lucide-help-circle', to: 'https://wa.me/6281234567890', external: true }
   ],
   [
-    { label: 'Sign Out', icon: 'i-lucide-log-out', onClick: handleLogout }
+    { label: t('auth.logout'), icon: 'i-lucide-log-out', onClick: handleLogout }
   ]
-]
+])
 </script>
 
 <template>
@@ -90,7 +91,8 @@ const userMenuItems = [
     >
       <template #header="{ collapsed }">
         <NuxtLink v-if="!collapsed" to="/" class="flex items-center gap-2 px-2">
-          <img src="/drive-master-logo2.png" alt="Drive Master Logo" class="h-16" />
+          <img src="/drive-master-logo-light.png" alt="Drive Master Logo" class="h-16 dark:hidden" />
+          <img src="/drive-master-logo-dark.jpg" alt="Drive Master Logo" class="h-16 hidden dark:block" />
         </NuxtLink>
         <UIcon v-else name="i-simple-icons-nuxtdotjs" class="size-5 text-primary mx-auto" />
         <UDashboardSidebarCollapse variant="subtle" />

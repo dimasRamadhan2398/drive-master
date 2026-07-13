@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 useSeoMeta({
-  title: "Home | Drive Master Academy",
-  description:
-    "Drive Master Academy offers comprehensive EV and manual driving courses in Alam Sutera with expert instructors and certified programs.",
+  title: t('nav.home') + " | Drive Master Academy",
+  description: t('home.hero.description'),
 });
 
 // Course Material with i18n
@@ -13,50 +12,50 @@ const courseMaterial = computed(() => [
   {
     title: t("home.material.materialTheory"),
     description: [
-      t("home.material.materialTheoryDesc"),
-      t("home.material.materialTheoryDesc2"),
-      t("home.material.materialTheoryDesc3"),
-      t("home.material.materialTheoryDesc4"),
+      t("home.material.materialTheoryDesc", ""),
+      t("home.material.materialTheoryDesc2", ""),
+      t("home.material.materialTheoryDesc3", ""),
+      t("home.material.materialTheoryDesc4", ""),
     ],
     icon: "i-lucide-book-open",
   },
   {
     title: t("home.material.initialControl"),
     description: [
-      t("home.material.initialControlDesc"),
-      t("home.material.initialControlDesc2"),
-      t("home.material.initialControlDesc3"),
+      t("home.material.initialControlDesc", ""),
+      t("home.material.initialControlDesc2", ""),
+      t("home.material.initialControlDesc3", ""),
     ],
     icon: "i-lucide-shield-check",
   },
   {
     title: t("home.material.basicManeuvering"),
     description: [
-      t("home.material.basicManeuveringDesc"),
-      t("home.material.basicManeuveringDesc2"),
-      t("home.material.basicManeuveringDesc3"),
+      t("home.material.basicManeuveringDesc", ""),
+      t("home.material.basicManeuveringDesc2", ""),
+      t("home.material.basicManeuveringDesc3", ""),
     ],
     icon: "i-lucide-radar",
   },
   {
     title: t("home.material.uphillDownhill"),
     description: [
-      t("home.material.uphillDownhillDesc"),
-      t("home.material.uphillDownhillDesc2"),
+      t("home.material.uphillDownhillDesc", ""),
+      t("home.material.uphillDownhillDesc2", ""),
     ],
     icon: "i-lucide-car",
   },
   {
     title: t("home.material.parking"),
-    description: [t("home.material.parkingDesc"), t("home.material.parkingDesc2")],
+    description: [t("home.material.parkingDesc", ""), t("home.material.parkingDesc2", "")],
     icon: "i-lucide-car",
   },
   {
     title: t("home.material.highway"),
     description: [
-      t("home.material.highwayDesc"),
-      t("home.material.highwayDesc2"),
-      t("home.material.highwayDesc3"),
+      t("home.material.highwayDesc", ""),
+      t("home.material.highwayDesc2", ""),
+      t("home.material.highwayDesc3", ""),
     ],
     icon: "i-lucide-car",
   },
@@ -318,7 +317,8 @@ const testimonials = [
 ];
 
 // Dynamic content from admin
-const { faqs, pages } = useContent();
+const { pages } = useContent();
+const contentStore = useContentStore();
 
 const homePage = computed(() =>
   pages.value.find((p) => p.slug === "/" && p.status === "published"),
@@ -326,29 +326,89 @@ const homePage = computed(() =>
 
 // FAQ items
 const faqItems = computed(() => {
-  return faqs.value.map((faq, index) => ({
-    label: faq.question,
-    content: faq.answer,
-    defaultOpen: index === 0,
-  }));
+  return contentStore.faqs
+    .filter((faq) => faq.isActive)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((faq, index) => ({
+      label: faq.question,
+      content: faq.answer,
+      defaultOpen: index === 0,
+    }));
 });
 
-const { slots: globalSlots } = useSchedules();
+// Schedules - Use store to fetch from API
+const schedulesStore = useSchedulesStore();
 
-const selectedDate = ref(15);
+// Loading state for schedules
+const schedulesLoading = ref(false);
+
+// Helper to format date to YYYY-MM-DD
+const formatDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Today's date
+const todayDate = formatDateString(new Date());
+
+// Calendar state - use today's date
+const selectedDate = ref(new Date().getDate());
 const selectedSlot = ref<string | null>(null);
-const currentDate = ref(new Date("2026-04-10T00:00:00"));
+const currentDate = ref(new Date());
+
+// Fetch schedules when date changes
+const fetchSchedulesForDate = async (dateStr: string) => {
+  schedulesLoading.value = true;
+  try {
+    await schedulesStore.fetchByDate(dateStr);
+  } finally {
+    schedulesLoading.value = false;
+  }
+};
+
+// Watch for calendar date changes and fetch schedules
+watch(
+  () => [currentDate.value.getMonth(), currentDate.value.getFullYear()],
+  async () => {
+    // Fetch today's schedules when month/year changes
+    await fetchSchedulesForDate(todayDate);
+  },
+);
+
+// Also watch for selectedDate day changes
+watch(selectedDate, async (newDay) => {
+  const dateStr = `${currentDate.value.getFullYear()}-${String(currentDate.value.getMonth() + 1).padStart(2, "0")}-${String(newDay).padStart(2, "0")}`;
+  await fetchSchedulesForDate(dateStr);
+});
+
+// Calendar navigation
+function changeMonth(offset: number) {
+  const newDate = new Date(currentDate.value);
+  newDate.setMonth(newDate.getMonth() + offset);
+  currentDate.value = newDate;
+  // Reset selected date to 1 when changing month to avoid invalid dates
+  selectedDate.value = 1;
+}
+
+// Map store slots to TimeSlot format for UI compatibility
+const globalSlots = computed(() => schedulesStore.slots);
 
 const currentMonth = computed(() => {
-  return currentDate.value.toLocaleDateString("en-US", {
+  return currentDate.value.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', {
     month: "long",
     year: "numeric",
   });
 });
 const currentMonthShortStr = computed(() => {
-  return currentDate.value.toLocaleDateString("en-US", { month: "short" });
+  return currentDate.value.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', { month: "short" });
 });
-const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const weekDays = computed(() => {
+  return locale.value === 'id'
+    ? ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
+    : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+});
 
 // FITUR BARU: Kalender dinamis untuk halaman Home
 const calendarDays = computed(() => {
@@ -395,25 +455,35 @@ const testimonialsStore = useTestimonialsStore();
 const testimonialsList = computed(() => testimonialsStore.testimonials);
 
 const packagesStore = usePackagesStore();
-const packagesList = computed(() => packagesStore.packages);
+const packagesList = computed(() => packagesStore.activePackages);
 
-onMounted(() => {
+const { waLink, address, generalSettings, fetchGeneralSettings } = useSettings();
+
+const isMounted = ref(false);
+
+onMounted(async () => {
+  isMounted.value = true;
+  fetchGeneralSettings();
   instructorsStore.fetchInstructors();
   testimonialsStore.fetchTestimonials();
-  packagesStore.fetchPackages();
+  packagesStore.fetchPackages({ status: "active" });
+  contentStore.fetchFaqs();
+  // Fetch today's schedules from API
+  await fetchSchedulesForDate(todayDate);
 });
 </script>
 
 <template>
   <div>
     <!-- Dynamic Admin Sections for Home Page -->
-    <template v-if="homePage && homePage.sections.length > 0">
+    <template v-if="isMounted && homePage && homePage.sections.length > 0">
       <ContentSectionRenderer
         v-for="section in homePage.sections"
         :key="section.id"
-        :section="{ type: section.type, data: section }"
+        :section="section"
       />
     </template>
+    <template v-else>
 
     <!-- Hero Section -->
     <UPageHero
@@ -506,6 +576,7 @@ onMounted(() => {
         </UPageCard>
       </UPageGrid>
     </UPageSection>
+  </template>
 
     <!-- Pricing Section -->
     <UPageSection
@@ -515,94 +586,7 @@ onMounted(() => {
       :description="t('home.pricingDesc')"
       :ui="{ headline: 'text-warning' }"
     >
-      <!-- Premium Promo Banner with Real-time Countdown -->
-      <Transition
-        enter-active-class="transition duration-500 ease-out"
-        enter-from-class="opacity-0 translate-y-4"
-        enter-to-class="opacity-100 translate-y-0"
-      >
-        <div v-if="isPromoActive" class="mb-12 relative group">
-          <!-- Background Glow Effect -->
-          <div
-            class="absolute -inset-1 bg-gradient-to-r from-warning-500 to-orange-600 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"
-          ></div>
 
-          <div
-            class="relative bg-white dark:bg-gray-900 border border-warning-500/20 rounded-2xl overflow-hidden shadow-2xl"
-          >
-            <div class="flex flex-col lg:flex-row">
-              <!-- Left Side: Promo Info -->
-              <div class="flex-1 p-6 md:p-8 flex items-center gap-6">
-                <div class="relative">
-                  <div
-                    class="size-20 rounded-2xl bg-warning-500 flex items-center justify-center shadow-lg shadow-warning-500/30 animate-pulse"
-                  >
-                    <UIcon name="i-lucide-zap" class="size-10 text-white" />
-                  </div>
-                  <div
-                    class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter"
-                  >
-                    {{ t('home.hot') }}
-                  </div>
-                </div>
-
-                <div>
-                  <div
-                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-warning-500/10 text-warning-600 text-xs font-bold uppercase tracking-widest mb-3"
-                  >
-                    {{ t('home.flashSale') }}
-                  </div>
-                  <h2
-                    class="text-2xl md:text-3xl font-black tracking-tight mb-2"
-                  >
-                    {{ t('home.specialPrice') }}
-                    <span class="text-warning-500"
-                      >{{ translatedSaveAmount }}</span
-                    >
-                  </h2>
-                  <p class="text-muted text-sm md:text-base max-w-lg">
-                    {{ t('home.exclusiveDiscount') }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Right Side: Countdown Timer -->
-              <div
-                class="lg:w-[320px] bg-warning-50 dark:bg-warning-500/5 p-6 md:p-8 flex flex-col items-center justify-center border-t lg:border-t-0 lg:border-l border-warning-500/10"
-              >
-                <p
-                  class="text-xs font-bold text-warning-600 uppercase tracking-[0.2em] mb-4"
-                >
-                  {{ t('home.promoEndsIn') }}
-                </p>
-
-                <div class="flex gap-3">
-                  <div
-                    v-for="(val, unit) in {
-                      hours: timeLeft.hours,
-                      mins: timeLeft.minutes,
-                      secs: timeLeft.seconds,
-                    }"
-                    :key="unit"
-                    class="text-center"
-                  >
-                    <div
-                      class="size-14 md:size-16 bg-white dark:bg-gray-800 border border-warning-500/20 rounded-xl shadow-inner flex items-center justify-center mb-1"
-                    >
-                      <span class="text-2xl font-black text-foreground">{{
-                        String(val).padStart(2, "0")
-                      }}</span>
-                    </div>
-                    <span class="text-[10px] font-bold text-muted uppercase">{{
-                      unit
-                    }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Transition>
 
       <!-- Plan Cards -->
       <div class="grid md:grid-cols-4 gap-6 mb-12">
@@ -653,12 +637,7 @@ onMounted(() => {
                       Rp {{ plan.price.toLocaleString("id-ID") }}
                     </p>
                     <p class="text-xs text-green-600 font-medium">
-                      Save Rp
-                      {{
-                        (plan.price - plan.discountPrice).toLocaleString(
-                          "id-ID",
-                        )
-                      }}
+                      {{ t('home.saveAmount', { amount: (plan.price - plan.discountPrice).toLocaleString("id-ID") }) }}
                     </p>
                   </div>
                   <div v-else>
@@ -671,7 +650,7 @@ onMounted(() => {
                 <!-- Sessions Badge -->
                 <div class="text-center">
                   <UBadge
-                    :label="`${plan.sessions} Sessions`"
+                    :label="`${plan.sessions} ${t('home.sessions')}`"
                     color="warning"
                     variant="subtle"
                   />
@@ -732,61 +711,76 @@ onMounted(() => {
                   variant="ghost"
                   color="neutral"
                   size="md"
+                  @click="changeMonth(-1)"
                 />
-                <span class="text-md font-medium">{{ currentMonth }}</span>
+                <span class="text-md font-medium min-w-[100px] text-center">{{ currentMonth }}</span>
                 <UButton
                   icon="i-lucide-chevron-right"
                   variant="ghost"
                   color="neutral"
                   size="md"
+                  @click="changeMonth(1)"
                 />
               </div>
             </div>
           </template>
 
-          <!-- Custom Calendar Grid -->
-          <div class="grid grid-cols-7 gap-1 mb-2">
-            <div
-              v-for="day in weekDays"
-              :key="day"
-              class="text-center text-md font-medium text-muted py-2"
-            >
-              {{ day }}
-            </div>
-          </div>
-          <div class="grid grid-cols-7 gap-1">
-            <!-- PERUBAHAN: Kalender dinamis untuk Home Page -->
-            <div v-for="(item, index) in calendarDays" :key="index">
-              <button
-                v-if="item.day !== null"
-                :disabled="!item.available"
-                :class="[
-                  'w-full aspect-square rounded-lg text-md font-medium transition-all',
-                  selectedDate === item.day
-                    ? 'bg-primary text-white'
-                    : item.available && item.day >= 7
-                      ? 'hover:bg-primary/10 cursor-pointer'
-                      : 'text-muted/50 cursor-not-allowed',
-                ]"
-                @click="item.available && (selectedDate = item.day)"
-              >
-                {{ item.day }}
-              </button>
+          <div v-if="schedulesLoading" class="py-8">
+            <div class="animate-pulse space-y-4">
+              <div class="grid grid-cols-7 gap-1">
+                <div v-for="i in 7" :key="i" class="h-8 bg-muted rounded"></div>
+              </div>
+              <div class="grid grid-cols-7 gap-1">
+                <div v-for="i in 35" :key="i" class="aspect-square bg-muted rounded-lg"></div>
+              </div>
             </div>
           </div>
 
-          <div class="mt-4 flex items-center gap-4 text-md">
-            <div class="flex items-center gap-2">
+          <!-- Custom Calendar Grid -->
+          <template v-else>
+            <div class="grid grid-cols-7 gap-1 mb-2">
               <div
-                class="size-3 rounded bg-primary/10 border border-primary/30"
-              ></div>
-              <span class="text-muted">{{ t('home.available') }}</span>
+                v-for="day in weekDays"
+                :key="day"
+                class="text-center text-md font-medium text-muted py-2"
+              >
+                {{ day }}
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <div class="size-3 rounded bg-primary"></div>
-              <span class="text-muted">{{ t('home.selected') }}</span>
+            <div class="grid grid-cols-7 gap-1">
+              <!-- PERUBAHAN: Kalender dinamis untuk Home Page -->
+              <div v-for="(item, index) in calendarDays" :key="index">
+                <button
+                  v-if="item.day !== null"
+                  :disabled="!item.available"
+                  :class="[
+                    'w-full aspect-square rounded-lg text-md font-medium transition-all',
+                    selectedDate === item.day
+                      ? 'bg-primary text-white'
+                      : item.available && item.day >= 7
+                        ? 'hover:bg-primary/10 cursor-pointer'
+                        : 'text-muted/50 cursor-not-allowed',
+                  ]"
+                  @click="item.available && (selectedDate = item.day)"
+                >
+                  {{ item.day }}
+                </button>
+              </div>
             </div>
-          </div>
+
+            <div class="mt-4 flex items-center gap-4 text-md">
+              <div class="flex items-center gap-2">
+                <div
+                  class="size-3 rounded bg-primary/10 border border-primary/30"
+                ></div>
+                <span class="text-muted">{{ t('home.available') }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="size-3 rounded bg-primary"></div>
+                <span class="text-muted">{{ t('home.selected') }}</span>
+              </div>
+            </div>
+          </template>
         </UCard>
 
         <!-- Time Slots -->
@@ -797,15 +791,37 @@ onMounted(() => {
                 <UIcon name="i-lucide-clock" class="size-5 text-warning" />
                 <h3 class="font-semibold">{{ t('home.availableSlots') }}</h3>
               </div>
-              <!-- PERUBAHAN: Memperbaiki teks bulan statis -->
-              <UBadge
-                :label="`${currentMonthShortStr} ${selectedDate}`"
-                variant="subtle"
-              />
+              <div class="flex items-center gap-2">
+                <span v-if="schedulesLoading" class="text-xs text-muted">
+                  <UIcon name="i-lucide-loader-2" class="size-3 animate-spin inline" />
+                  Loading...
+                </span>
+                <UBadge
+                  v-else
+                  :label="`${currentMonthShortStr} ${selectedDate}`"
+                  variant="subtle"
+                />
+              </div>
             </div>
           </template>
 
-          <div class="space-y-3">
+          <div v-if="schedulesLoading" class="space-y-3">
+            <div
+              v-for="i in 4"
+              :key="i"
+              class="w-full p-4 rounded-lg border border-default animate-pulse"
+            >
+              <div class="flex items-center justify-between">
+                <div class="space-y-2">
+                  <div class="h-4 w-16 bg-muted rounded"></div>
+                  <div class="h-3 w-32 bg-muted rounded"></div>
+                </div>
+                <div class="h-6 w-16 bg-muted rounded"></div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="space-y-3">
             <button
               v-for="slot in timeSlots"
               :key="slot.time"
@@ -828,12 +844,20 @@ onMounted(() => {
                   </p>
                 </div>
                 <UBadge
-                  :label="slot.available ? 'Available' : 'Booked'"
+                  :label="slot.available ? t('home.available') : t('home.booked')"
                   :color="slot.available ? 'success' : 'error'"
                   variant="subtle"
                 />
               </div>
             </button>
+
+            <div
+              v-if="timeSlots.length === 0"
+              class="text-center py-8"
+            >
+              <UIcon name="i-lucide-calendar-x" class="size-8 text-muted mx-auto mb-2" />
+              <p class="text-muted text-sm">{{ t('home.noSlotsAvailable') || 'No slots available for this date' }}</p>
+            </div>
           </div>
 
           <template #footer>
@@ -922,7 +946,7 @@ onMounted(() => {
               <div>
                 <h3 class="font-semibold mb-1">{{ t('home.trainingCenter') }}</h3>
                 <p class="text-muted text-md">
-                  {{ t('home.address') }}
+                  {{ address ?? t('home.address') }}
                 </p>
               </div>
             </div>
@@ -952,8 +976,8 @@ onMounted(() => {
               <div>
                 <h3 class="font-semibold mb-1">{{ t('home.contactUs') }}</h3>
                 <p class="text-muted text-md">
-                  {{ t('home.phone') }}: +62 812-3456-7890<br />
-                  {{ t('home.email') }}: info@evdriveacademy.id
+                  {{ t('home.phone') }}: {{ generalSettings?.phone || '+62 812-3456-7890' }}<br />
+                  {{ t('home.email') }}: {{ generalSettings?.email || 'info@evdriveacademy.id' }}
                 </p>
               </div>
             </div>
@@ -961,7 +985,7 @@ onMounted(() => {
 
           <div class="flex gap-3">
             <NuxtLink
-              to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi"
+              :to="waLink"
               target="_blank"
               class="flex-1"
             >
@@ -993,7 +1017,7 @@ onMounted(() => {
           class="h-auto lg:h-full min-h-auto rounded-2xl overflow-hidden bg-elevated border border-default"
         >
           <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.1806061048765!2d106.65588507475077!3d-6.2399118937483635!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69fbc070b4d71d%3A0x8b1a633faf5dbd46!2sALAM%20SUTERA!5e0!3m2!1sen!2sid!4v1776223155011!5m2!1sen!2sid"
+            src="https://maps.google.com/maps?q=-6.22369663061115,106.66409468196608&z=17&output=embed"
             width="600"
             height="550"
             style="border: 0"

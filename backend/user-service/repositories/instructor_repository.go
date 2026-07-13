@@ -4,6 +4,7 @@ import (
 	"context"
 	"user-service/models"
 	"user-service/pkg/base"
+	apperrors "user-service/pkg/errors"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -24,7 +25,10 @@ type InstructorRepository struct {
 
 // DeleteInstructorProfile implements [IInstructorRepository].
 func (i *InstructorRepository) DeleteInstructorProfile(ctx context.Context, instructorID uuid.UUID) error {
-	return i.BaseRepository.Delete(&models.InstructorProfile{UserID: instructorID})
+	if err := i.BaseRepository.DB.Where("user_id = ?", instructorID).Delete(&models.InstructorProfile{}).Error; err != nil {
+		return apperrors.ErrDatabase
+	}
+	return nil
 }
 
 // CreateInstructorProfile implements [IInstructorRepository].
@@ -48,6 +52,12 @@ func (i *InstructorRepository) FindInstructorProfileByUserID(ctx context.Context
 
 // UpdateInstructorProfile implements [IInstructorRepository].
 func (i *InstructorRepository) UpdateInstructorProfile(ctx context.Context, profile *models.InstructorProfile) error {
+	if profile.ID == uuid.Nil && profile.UserID != uuid.Nil {
+		var existing models.InstructorProfile
+		if err := i.BaseRepository.FindOne(&existing, "user_id = ?", profile.UserID); err == nil {
+			profile.ID = existing.ID
+		}
+	}
 	return i.BaseRepository.Update(profile)
 }
 

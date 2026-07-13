@@ -1,26 +1,25 @@
-import type {
-  ApiResponse,
-  PaginatedResponse,
-} from "~/composables/useApiClients";
+import type { ApiResponse } from "~/composables/useApiClients";
 import type { Faq, CreateFaqData, UpdateFaqData } from "~/stores/content";
 
-// Blog Post Types (mirroring backend DTOs - blog_post.go)
-export interface BlogPostMedia {
-  id?: string;
-  name: string;
-  type: string;
-  size: string;
-  url: string;
-  fileType: "image" | "video";
-  order?: number;
+// ============================================================
+// Types matching Go backend DTOs exactly (blog_post.go)
+// ============================================================
+
+/** Mirrors dto.FileUpload in Go – base64-encoded file sent in JSON body */
+export interface FileUpload {
+  data: string;     // base64 encoded file data (without data: URI prefix)
+  fileName: string; // e.g. "cover.jpg"
+  mimeType: string; // e.g. "image/jpeg"
 }
 
+/** Mirrors dto.Publishing */
 export interface Publishing {
   status: "draft" | "published" | "archived";
-  publishedAt?: string;
-  scheduledAt?: string;
+  publishedAt?: string | null;
+  scheduledAt?: string | null;
 }
 
+/** Mirrors dto.Attractiveness */
 export interface Attractiveness {
   isFeatured: boolean;
   isSpotlight: boolean;
@@ -28,46 +27,42 @@ export interface Attractiveness {
   highlight: boolean;
 }
 
-// Request DTOs (matching backend CreateBlogPostRequest, UpdateBlogPostRequest)
+// -------------------------------------------------------
+// Request DTOs (matching Go CreateBlogPostRequest)
+// -------------------------------------------------------
 export interface CreateBlogPostData {
   title: string;
   slug?: string;
-  author: string;
-  content: string;
-  media?: BlogPostMedia[];
-  publishing: {
-    status: "draft" | "published" | "archived";
-    publishedAt?: string;
-    scheduledAt?: string;
-  };
-  attractiveness: {
-    isFeatured: boolean;
-    isSpotlight: boolean;
-    priority: number;
-    highlight: boolean;
-  };
+  author?: string;
+  leadParagraph?: string;
+  content?: string;
+  authorId: string;
+  /** Top-level status mirror (backend reads this for form-data compat) */
+  status?: string;
+  featuredImage?: FileUpload;
+  publishing?: Publishing;
+  attractiveness?: Attractiveness;
 }
 
+// -------------------------------------------------------
+// Request DTOs (matching Go UpdateBlogPostRequest)
+// -------------------------------------------------------
 export interface UpdateBlogPostData {
   title?: string;
   slug?: string;
   author?: string;
+  leadParagraph?: string;
   content?: string;
-  media?: BlogPostMedia[];
-  publishing?: {
-    status?: "draft" | "published" | "archived";
-    publishedAt?: string;
-    scheduledAt?: string;
-  };
-  attractiveness?: {
-    isFeatured?: boolean;
-    isSpotlight?: boolean;
-    priority?: number;
-    highlight?: boolean;
-  };
+  authorId: string;
+  status?: string;
+  featuredImage?: FileUpload;
+  publishing?: Publishing;
+  attractiveness?: Attractiveness;
 }
 
-// Response DTOs (matching backend BlogPostResponse)
+// -------------------------------------------------------
+// Response DTOs (matching Go BlogPostResponse)
+// -------------------------------------------------------
 export interface BlogPostResponse {
   id: string;
   title: string;
@@ -75,7 +70,7 @@ export interface BlogPostResponse {
   author: string;
   content: string;
   excerpt: string;
-  media: BlogPostMedia[];
+  featuredImage: string;
   publishing: Publishing;
   attractiveness: Attractiveness;
   viewCount: number;
@@ -86,19 +81,26 @@ export interface BlogPostResponse {
   updatedAt: string;
 }
 
-// Brief response for lists (matching backend BlogPostBrief)
+// -------------------------------------------------------
+// List response (matching Go BlogPostBrief)
+// -------------------------------------------------------
 export interface BlogPostBrief {
   id: string;
   title: string;
   slug: string;
   author: string;
   excerpt: string;
+  content?: string;
   featuredImage?: string;
   readingTime: number;
   status: string;
-  publishedAt?: string;
+  publishedAt?: string | null;
   viewCount: number;
   createdAt: string;
+  /** Nested publishing object – present when the list returns BlogPostResponse */
+  publishing?: Publishing;
+  /** Nested attractiveness object – present when the list returns BlogPostResponse */
+  attractiveness?: Attractiveness;
 }
 
 export interface BlogPostListResponse {
@@ -121,15 +123,35 @@ export interface BlogPostFilterParams {
   sortOrder?: "asc" | "desc";
 }
 
+// ============================================================
+// Helper: parse a data: URI into a FileUpload object
+// Returns null if the value is not a data URI (e.g. it's already a URL)
+// ============================================================
+export function dataUriToFileUpload(
+  dataUri: string,
+  fileName: string,
+): FileUpload | null {
+  // e.g. "data:image/jpeg;base64,/9j/4AAQ..."
+  const match = dataUri.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return null;
+  return {
+    mimeType: match[1]!,
+    data: match[2]!,
+    fileName,
+  };
+}
+
+// ============================================================
+// Service
+// ============================================================
 export const contentService = {
   // ==================== BLOG POST METHODS ====================
-  // Endpoint: /articles/blog
 
-  // GET /articles/blog - Get all blog posts
+  /** GET /articles/blog – returns paginated list */
   async fetchBlogPosts(
     params: BlogPostFilterParams = {},
   ): Promise<BlogPostListResponse> {
-    const { core, extractPaginatedData } = useApiClients();
+    const { core } = useApiClients();
 
     const queryParams = new URLSearchParams();
     if (params.page) queryParams.set("page", String(params.page));
@@ -147,87 +169,108 @@ export const contentService = {
     const queryString = queryParams.toString();
     const url = `/articles/blog${queryString ? `?${queryString}` : ""}`;
 
-    const response = await core<PaginatedResponse<BlogPostResponse>>(url, {
-      method: "GET",
-    });
+    try {
+      const response: any = await core(url, { method: "GET" });
 
-    const { data, pagination } = extractPaginatedData(response);
-    return {
-      posts: Array.isArray(data)
-        ? data.map<BlogPostBrief>((p: BlogPostResponse) => ({
-            id: p.id,
-            title: p.title,
-            slug: p.slug,
-            author: p.author,
-            excerpt: p.excerpt,
-            featuredImage: p.media.find((m) => m.fileType === "image")?.url,
-            readingTime: p.readingTime,
-            status: p.publishing.status,
-            publishedAt: p.publishing.publishedAt,
-            viewCount: p.viewCount,
-            createdAt: p.createdAt,
-          }))
-        : [],
-      ...pagination,
-    };
+      // Backend wraps the response as:
+      // { success, message, data: { data: BlogPostResponse[], pagination: { total, page, limit, totalPages } } }
+      const inner = response?.data ?? response;
+      const rawPosts: any[] = Array.isArray(inner?.data)
+        ? inner.data
+        : Array.isArray(inner)
+          ? inner
+          : [];
+
+      const pagination = inner?.pagination ?? {};
+
+      const posts: BlogPostBrief[] = rawPosts.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        slug: p.slug || "",
+        author: p.author || "Admin",
+        excerpt: p.excerpt || p.leadParagraph || "",
+        content: p.content || "",
+        featuredImage: p.featuredImage || "",
+        readingTime: p.readingTime || 1,
+        status: p.publishing?.status || p.status || "draft",
+        publishedAt: p.publishing?.publishedAt ?? p.publishedAt ?? null,
+        viewCount: p.viewCount || 0,
+        createdAt: p.createdAt || new Date().toISOString(),
+        publishing: p.publishing,
+        attractiveness: p.attractiveness,
+      }));
+
+      return {
+        posts,
+        total: pagination.total ?? posts.length,
+        page: pagination.page ?? 1,
+        limit: pagination.limit ?? 10,
+        totalPages: pagination.totalPages ?? 1,
+      };
+    } catch (error) {
+      console.error("Error fetching blog posts:", error);
+      return { posts: [], total: 0, page: 1, limit: 10, totalPages: 0 };
+    }
   },
 
-  // GET /articles/blog/:id - Get blog post by ID
+  /** GET /articles/blog/:id */
   async fetchBlogPostById(id: string): Promise<BlogPostResponse | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<BlogPostResponse>>(
-        `/articles/blog/${id}`,
-        {
-          method: "GET",
-        },
-      );
-      return extractData(response);
+      const response: any = await core(`/articles/blog/${id}`, {
+        method: "GET",
+      });
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
     } catch {
       return null;
     }
   },
 
-  // POST /articles/blog - Create blog post
+  /** POST /articles/blog – JSON body with optional FileUpload for featuredImage */
   async createBlogPost(
     data: CreateBlogPostData,
   ): Promise<BlogPostResponse | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<BlogPostResponse>>(
-        "/articles/blog",
-        {
-          method: "POST",
-          body: data,
-        },
-      );
-      return extractData(response);
+      const response: any = await core("/articles/blog", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
     } catch {
       return null;
     }
   },
 
-  // PUT /articles/blog/:id - Update blog post
+  /** PUT /articles/blog/:id – JSON body with optional FileUpload for featuredImage */
   async updateBlogPost(
     id: string,
     data: UpdateBlogPostData,
   ): Promise<BlogPostResponse | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<BlogPostResponse>>(
-        `/articles/blog/${id}`,
-        {
-          method: "PUT",
-          body: data,
-        },
-      );
-      return extractData(response);
+      const response: any = await core(`/articles/blog/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
     } catch {
       return null;
     }
   },
 
-  // DELETE /articles/blog/:id - Delete blog post
+  /** DELETE /articles/blog/:id */
   async deleteBlogPost(id: string): Promise<boolean> {
     const { core } = useApiClients();
     try {
@@ -239,63 +282,70 @@ export const contentService = {
   },
 
   // ==================== FAQ METHODS ====================
-  // Endpoint: /articles/faq
 
-  // GET /articles/faq - Get all FAQs
   async fetchFaqs(): Promise<Faq[]> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq[]>>("/articles/faq", {
+      const response = await core<ApiResponse<Faq[]> | Faq[]>("/articles/faq", {
         method: "GET",
       });
-      return extractData(response);
+      if (Array.isArray(response)) return response;
+      if (response && Array.isArray((response as any).data)) {
+        return (response as ApiResponse<Faq[]>).data;
+      }
+      return [];
     } catch {
       return [];
     }
   },
 
-  // GET /articles/faq/:id - Get FAQ by ID
   async fetchFaqById(id: string): Promise<Faq | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq>>(`/articles/faq/${id}`, {
+      const response: any = await core(`/articles/faq/${id}`, {
         method: "GET",
       });
-      return extractData(response);
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
     } catch {
       return null;
     }
   },
 
-  // POST /articles/faq - Create FAQ
   async createFaq(data: CreateFaqData): Promise<Faq | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq>>("/articles/faq", {
+      const response: any = await core("/articles/faq", {
         method: "POST",
         body: data,
       });
-      return extractData(response);
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
     } catch {
       return null;
     }
   },
 
-  // PUT /articles/faq/:id - Update FAQ
   async updateFaq(id: string, data: UpdateFaqData): Promise<Faq | null> {
-    const { core, extractData } = useApiClients();
+    const { core } = useApiClients();
     try {
-      const response = await core<ApiResponse<Faq>>(`/articles/faq/${id}`, {
+      const response: any = await core(`/articles/faq/${id}`, {
         method: "PUT",
         body: data,
       });
-      return extractData(response);
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
     } catch {
       return null;
     }
   },
 
-  // DELETE /articles/faq/:id - Delete FAQ
   async deleteFaq(id: string): Promise<boolean> {
     const { core } = useApiClients();
     try {
@@ -306,16 +356,97 @@ export const contentService = {
     }
   },
 
-  // POST /articles/faq/:id/reorder - Reorder FAQ
   async reorderFaq(id: string, orderNum: number): Promise<boolean> {
     const { core } = useApiClients();
     try {
       await core(`/articles/faq/${id}/reorder`, {
         method: "POST",
-        body: {
-          newOrder: orderNum,
-        },
+        body: { newOrder: orderNum },
       });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  // ==================== VIEW COUNT ====================
+
+  async incrementBlogPostViewCount(id: string): Promise<boolean> {
+    const { core } = useApiClients();
+    try {
+      await core(`/articles/${id}/view`, { method: "POST" });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  // ==================== PAGE METHODS ====================
+
+  async fetchPages(): Promise<any[]> {
+    const { core } = useApiClients();
+    try {
+      const response = await core<any>("/pages", { method: "GET" });
+      if (Array.isArray(response)) return response;
+      if (response && Array.isArray((response as any).data)) {
+        return (response as any).data;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
+  async fetchPageBySlug(slug: string): Promise<any | null> {
+    const { core } = useApiClients();
+    const cleanSlug = slug.startsWith("/") ? slug.slice(1) : slug;
+    try {
+      const response: any = await core(`/pages/slug/${cleanSlug}`, { method: "GET" });
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
+  async createPage(data: { title: string; slug: string; status: string }): Promise<any | null> {
+    const { core } = useApiClients();
+    try {
+      const response: any = await core("/pages", {
+        method: "POST",
+        body: data,
+      });
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
+  async updatePage(id: string, data: { title?: string; slug?: string; status?: string; sections?: string }): Promise<any | null> {
+    const { core } = useApiClients();
+    try {
+      const response: any = await core(`/pages/${id}`, {
+        method: "PUT",
+        body: data,
+      });
+      if (response && typeof response === "object") {
+        return response.data ?? response;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
+  async deletePage(id: string): Promise<boolean> {
+    const { core } = useApiClients();
+    try {
+      await core(`/pages/${id}`, { method: "DELETE" });
       return true;
     } catch {
       return false;

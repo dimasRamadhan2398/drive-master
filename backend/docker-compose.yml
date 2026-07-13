@@ -32,7 +32,7 @@ services:
     container_name: drive_master_redis
     command: redis-server --requirepass ${REDIS_PASSWORD:-drivemaster123}
     ports:
-      - "6379:6379"
+      - "6389:6379"
     volumes:
       - redis_data:/data
     environment:
@@ -51,7 +51,7 @@ services:
     image: redis/redisinsight:latest
     container_name: drive_master_redisinsight
     ports:
-      - "5540:5540"
+      - "5541:5540"
     depends_on:
       - redis
     networks:
@@ -65,7 +65,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "2181:2181"
+      - "2182:2181"
     volumes:
       - zookeeper_data:/var/lib/zookeeper/data
     healthcheck:
@@ -84,13 +84,13 @@ services:
       zookeeper:
         condition: service_healthy
     ports:
-      - "9092:9092"
-      - "29092:29092"
+      - "9093:9092"
+      - "29093:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9093
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -121,7 +121,7 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "8085:8080"
+      - "8086:8080"
     environment:
       TZ: Asia/Jakarta
       KAFKA_CLUSTERS_0_NAME: drive_master
@@ -166,7 +166,7 @@ services:
         aliases:
           - user-service
     ports:
-      - "8001:8001"
+      - "8011:8001"
 
   # Core Service
   core-service:
@@ -203,7 +203,7 @@ services:
         aliases:
           - core-service
     ports:
-      - "8002:8002"
+      - "8012:8002"
   # Booking Service
   booking-service:
     build:
@@ -235,12 +235,13 @@ services:
       - RUN_MIGRATIONS=true
       - RUN_SEEDERS=true
       - USER_SERVICE_URL=http://drive_master_user_service:8001
+      - CORE_SERVICE_URL=http://core-service:8002
     networks:
       drive_master_network:
         aliases:
           - booking-service
     ports:
-      - "8003:8003"
+      - "8013:8003"
 
   # Payment Service
   payment-service:
@@ -253,6 +254,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       - PORT=8004
       - POSTGRES_HOST=drive_master_postgres
@@ -263,18 +266,26 @@ services:
       - REDIS_HOST=drive_master_redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-drivemaster123}
-      - KAFKA_ENABLED=false
+      - KAFKA_ENABLED=true
+      - KAFKA_BROKERS=drive_master_kafka:29092
+      - KAFKA_TOPIC=payment.events
       - CONFIG_PATH=./pkg/config/config.yaml
       - RUN_MIGRATIONS=true
-      - RUN_SEEDERS=false
+      - RUN_SEEDERS=true
+      - PAYMENT_GATEWAY=${PAYMENT_GATEWAY:-pakasir}
       - MIDTRANS_SERVER_KEY=${MIDTRANS_SERVER_KEY:-}
       - MIDTRANS_CLIENT_KEY=${MIDTRANS_CLIENT_KEY:-}
+      - DOKU_CLIENT_ID=${DOKU_CLIENT_ID:-}
+      - DOKU_SECRET_KEY=${DOKU_SECRET_KEY:-}
+      - DOKU_BASE_URL=${DOKU_BASE_URL:-https://api-sandbox.doku.com}
+      - DOKU_NOTIFICATION_URL=${DOKU_NOTIFICATION_URL:-}
+      - DOKU_FRONTEND_URL=${DOKU_FRONTEND_URL:-http://localhost:3001}
     networks:
       drive_master_network:
         aliases:
           - payment-service
     ports:
-      - "8004:8004"
+      - "8014:8004"
 
   # Kong API Gateway (DB-less mode)
   kong-gateway:
@@ -301,9 +312,9 @@ services:
       KONG_NGINX_WORKER_PROCESSES: "2"
       KONG_PLUGINS: bundled
     ports:
-      - "8080:8080" # Proxy HTTP (main API gateway port)
-      - "8443:8443" # Proxy HTTPS
-      - "8081:8081" # Admin API HTTP
+      - "8088:8080" # Proxy HTTP (main API gateway port)
+      - "8445:8443" # Proxy HTTPS
+      - "8089:8081" # Admin API HTTP
     volumes:
       - ./api-gateway/kong/kong.yml:/kong/declarative/kong.yml:ro
     healthcheck:

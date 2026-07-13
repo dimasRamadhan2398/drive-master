@@ -27,6 +27,7 @@ type ITestimonialController interface {
 	UpdateTestimonial(ctx *gin.Context)
 	DeleteTestimonial(ctx *gin.Context)
 	ToggleFeatured(ctx *gin.Context)
+	UpdateStatus(ctx *gin.Context)
 }
 
 // NewTestimonialController creates a new testimonial controller
@@ -342,4 +343,47 @@ func (c *TestimonialController) ToggleFeatured(ctx *gin.Context) {
 	}
 
 	responseRes.OK(ctx, "Testimonial featured status updated", nil)
+}
+
+// UpdateStatus handles PATCH /api/v1/testimonials/:id/status
+// @Summary Update testimonial status
+// @Description Updates the status of a testimonial (e.g. draft, pending, published, archived)
+// @Tags Testimonials
+// @Accept json
+// @Produce json
+// @Param id path string true "Testimonial ID"
+// @Param request body dto.UpdateTestimonialStatusRequest true "Status data"
+// @Success 200 {object} response.Response
+// @Router /testimonials/{id}/status [patch]
+func (c *TestimonialController) UpdateStatus(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		responseRes.BadRequest(ctx, "Invalid testimonial ID format")
+		return
+	}
+
+	var req dto.UpdateTestimonialStatusRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		responseRes.BadRequest(ctx, "Invalid request body: " + err.Error())
+		return
+	}
+
+	testimonial, err := c.testimonialService.GetTestimonialByID(ctx.Request.Context(), id)
+	if err != nil {
+		responseRes.InternalServerError(ctx, "Failed to fetch testimonial")
+		return
+	}
+
+	if testimonial == nil {
+		responseRes.NotFound(ctx, "Testimonial not found")
+		return
+	}
+
+	if err := c.testimonialService.UpdateStatus(ctx.Request.Context(), id, req.Status, "admin"); err != nil {
+		responseRes.InternalServerError(ctx, "Failed to update testimonial status")
+		return
+	}
+
+	responseRes.OK(ctx, "Testimonial status updated successfully", nil)
 }

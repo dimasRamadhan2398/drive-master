@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+const { t } = useI18n()
 definePageMeta({
   layout: 'blank'
 })
@@ -67,7 +68,7 @@ const handlePaste = (event: ClipboardEvent) => {
 // Verify OTP
 async function verifyOTP() {
   if (otp.value.length !== 6) {
-    errorMessage.value = 'Please enter a complete 6-digit code'
+    errorMessage.value = t('auth.otpComplete')
     return
   }
 
@@ -85,10 +86,10 @@ async function verifyOTP() {
       console.log('[v0] OTP verified successfully:', otp.value)
       navigateTo('/auth/onboarding')
     } else {
-      errorMessage.value = 'Invalid OTP. Please try again.'
+      errorMessage.value = t('auth.invalidOtp')
     }
   } catch (error) {
-    errorMessage.value = 'Verification failed. Please try again.'
+    errorMessage.value = t('auth.verificationFailed')
     console.error('[v0] Verification error:', error)
   } finally {
     loading.value = false
@@ -134,10 +135,10 @@ const handleKeyDown = (event: KeyboardEvent) => {
       <div class="text-center mb-8">
         <div class="flex items-center justify-center gap-2 mb-4">
           <UIcon name="i-lucide-shield-check" class="size-8 text-warning" />
-          <span class="text-xl font-bold">Email Verification</span>
+          <span class="text-xl font-bold">{{ t('auth.emailVerification') }}</span>
         </div>
-        <h1 class="text-2xl font-bold">Verify Your Email</h1>
-        <p class="text-muted mt-2">We sent a 6-digit code to</p>
+        <h1 class="text-2xl font-bold">{{ t('auth.verifyYourEmail') }}</h1>
+        <p class="text-muted mt-2">{{ t('auth.sentOtp') }}</p>
         <p class="font-medium">{{ email }}</p>
       </div>
 
@@ -145,7 +146,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
         <div class="space-y-6">
           <!-- OTP Input Fields -->
           <div>
-            <label class="block text-sm font-medium mb-4">Enter Verification Code</label>
+            <label class="block text-sm font-medium mb-4">{{ t('auth.enterOtp') }}</label>
             <div class="flex gap-2 justify-between">
               <input
                 v-for="i in 6"
@@ -190,7 +191,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
           <!-- Verify Button -->
           <UButton 
-            label="Verify Email"
+            :label="t('auth.verifyEmail')"
             icon="i-lucide-check"
             :loading="loading"
             :disabled="otp.length !== 6 || loading"
@@ -202,14 +203,14 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
           <!-- Resend Code -->
           <div class="text-center">
-            <p class="text-sm text-muted mb-3">Didn't receive the code?</p>
+            <p class="text-sm text-muted mb-3">{{ t('auth.didntReceive') }}</p>
             <div v-if="resendCountdown > 0" class="text-sm">
-              <span class="text-muted">Resend code in </span>
+              <span class="text-muted">{{ t('auth.resendIn') }} </span>
               <span class="font-medium text-warning">{{ resendCountdown }}s</span>
             </div>
             <UButton
               v-else
-              label="Resend Code"
+              :label="t('auth.resendCode')"
               variant="ghost"
               size="sm"
               color="warning"
@@ -223,14 +224,14 @@ const handleKeyDown = (event: KeyboardEvent) => {
         <template #footer>
           <div class="text-center text-sm text-muted">
             <p class="mb-2">
-              Wrong email? 
+              {{ t('auth.wrongEmail') }}
               <NuxtLink to="/auth/register" class="text-warning hover:underline">
-                Go back to registration
+                {{ t('auth.backToReg') }}
               </NuxtLink>
             </p>
             <p>
               <NuxtLink to="/" class="text-warning hover:underline">
-                Back to Home
+                {{ t('auth.backToHome') }}
               </NuxtLink>
             </p>
           </div>
@@ -240,7 +241,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
       <!-- Support Info -->
       <div class="mt-6 p-4 bg-muted/50 rounded-lg text-center">
         <p class="text-xs text-muted">
-          Check your spam folder if you don't see the email
+          {{ t('auth.spamCheck') }}
         </p>
       </div>
     </div>

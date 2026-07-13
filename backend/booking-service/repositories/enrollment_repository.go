@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"booking-service/models"
@@ -19,15 +18,20 @@ type IEnrollmentRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*models.Enrollment, error)
 	FindByIDWithPreload(ctx context.Context, id uuid.UUID) (*models.Enrollment, error)
 	Update(ctx context.Context, enrollment *models.Enrollment) error
+	UpdateTx(tx *gorm.DB, enrollment *models.Enrollment) error
 	Delete(ctx context.Context, enrollment *models.Enrollment) error
 	FindAll(ctx context.Context) ([]models.Enrollment, error)
-	FindByUserID(ctx context.Context, userID uint) ([]models.Enrollment, error)
+	FindAllPaginated(ctx context.Context, page, limit int) ([]models.Enrollment, error)
+	FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.Enrollment, error)
+	FindByUserIDPaginated(ctx context.Context, userID uuid.UUID, page, limit int) ([]models.Enrollment, error)
 	FindByStatus(ctx context.Context, status models.EnrollmentStatus) ([]models.Enrollment, int64, error)
-	FindByPackageID(ctx context.Context, packageID uint) ([]models.Enrollment, error)
+	FindByPackageID(ctx context.Context, packageID uuid.UUID) ([]models.Enrollment, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status models.EnrollmentStatus) error
+	UpdateStatusTx(tx *gorm.DB, id uuid.UUID, status models.EnrollmentStatus) error
 	MarkAsPaid(ctx context.Context, id uuid.UUID, paidAt time.Time, totalPrice float64) error
 	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
 	CountAll(ctx context.Context) (int64, error)
+	CountByUserID(ctx context.Context, userID uuid.UUID) (int64, error)
 	CountByStatus(ctx context.Context, status models.EnrollmentStatus) (int64, error)
 	Exists(ctx context.Context, condition any, args ...any) (bool, error)
 	ToResponse(enrollment *models.Enrollment) dto.EnrollmentResponse
@@ -61,7 +65,7 @@ func (r *EnrollmentRepository) FindByID(ctx context.Context, id uuid.UUID) (*mod
 
 func (r *EnrollmentRepository) FindByIDWithPreload(ctx context.Context, id uuid.UUID) (*models.Enrollment, error) {
 	var enrollment models.Enrollment
-	opts := base.NewQueryOptions().WithPreloads("Entitlements")
+	opts := base.NewQueryOptions()
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollment, opts); err != nil {
 		return nil, err
 	}
@@ -72,6 +76,10 @@ func (r *EnrollmentRepository) Update(ctx context.Context, enrollment *models.En
 	return r.BaseRepository.Update(enrollment)
 }
 
+func (r *EnrollmentRepository) UpdateTx(tx *gorm.DB, enrollment *models.Enrollment) error {
+	return tx.Save(enrollment).Error
+}
+
 func (r *EnrollmentRepository) Delete(ctx context.Context, enrollment *models.Enrollment) error {
 	return r.BaseRepository.Delete(enrollment)
 }
@@ -79,7 +87,6 @@ func (r *EnrollmentRepository) Delete(ctx context.Context, enrollment *models.En
 func (r *EnrollmentRepository) FindAll(ctx context.Context) ([]models.Enrollment, error) {
 	var enrollments []models.Enrollment
 	opts := base.NewQueryOptions().
-		WithPreloads("Entitlements").
 		WithOrder("created_at DESC")
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
 		return nil, err
@@ -87,12 +94,36 @@ func (r *EnrollmentRepository) FindAll(ctx context.Context) ([]models.Enrollment
 	return enrollments, nil
 }
 
-func (r *EnrollmentRepository) FindByUserID(ctx context.Context, userID uint) ([]models.Enrollment, error) {
+func (r *EnrollmentRepository) FindAllPaginated(ctx context.Context, page, limit int) ([]models.Enrollment, error) {
+	var enrollments []models.Enrollment
+	offset := (page - 1) * limit
+	opts := base.NewQueryOptions().
+		WithOrder("created_at DESC").
+		WithPagination(offset, limit)
+	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
+		return nil, err
+	}
+	return enrollments, nil
+}
+
+func (r *EnrollmentRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]models.Enrollment, error) {
 	var enrollments []models.Enrollment
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"user_id": userID}).
-		WithPreloads("Entitlements").
 		WithOrder("created_at DESC")
+	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
+		return nil, err
+	}
+	return enrollments, nil
+}
+
+func (r *EnrollmentRepository) FindByUserIDPaginated(ctx context.Context, userID uuid.UUID, page, limit int) ([]models.Enrollment, error) {
+	var enrollments []models.Enrollment
+	offset := (page - 1) * limit
+	opts := base.NewQueryOptions().
+		WithWhere(map[string]any{"user_id": userID}).
+		WithOrder("created_at DESC").
+		WithPagination(offset, limit)
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
 		return nil, err
 	}
@@ -103,7 +134,6 @@ func (r *EnrollmentRepository) FindByStatus(ctx context.Context, status models.E
 	var enrollments []models.Enrollment
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"status": status}).
-		WithPreloads("Entitlements").
 		WithOrder("created_at DESC")
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
 		return nil, 0, err
@@ -111,11 +141,10 @@ func (r *EnrollmentRepository) FindByStatus(ctx context.Context, status models.E
 	return enrollments, int64(len(enrollments)), nil
 }
 
-func (r *EnrollmentRepository) FindByPackageID(ctx context.Context, packageID uint) ([]models.Enrollment, error) {
+func (r *EnrollmentRepository) FindByPackageID(ctx context.Context, packageID uuid.UUID) ([]models.Enrollment, error) {
 	var enrollments []models.Enrollment
 	opts := base.NewQueryOptions().
 		WithWhere(map[string]any{"package_id": packageID}).
-		WithPreloads("Entitlements").
 		WithOrder("created_at DESC")
 	if err := r.BaseRepository.FindMany(&models.Enrollment{}, &enrollments, opts); err != nil {
 		return nil, err
@@ -130,6 +159,13 @@ func (r *EnrollmentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, s
 	)
 }
 
+func (r *EnrollmentRepository) UpdateStatusTx(tx *gorm.DB, id uuid.UUID, status models.EnrollmentStatus) error {
+	return tx.Exec(
+		"UPDATE enrollments SET status = ?, updated_at = ? WHERE id = ?",
+		status, time.Now(), id,
+	).Error
+}
+
 func (r *EnrollmentRepository) MarkAsPaid(ctx context.Context, id uuid.UUID, paidAt time.Time, totalPrice float64) error {
 	return r.BaseRepository.Exec(
 		"UPDATE enrollments SET status = 'paid', paid_at = ?, total_price = ?, updated_at = ? WHERE id = ?",
@@ -138,20 +174,19 @@ func (r *EnrollmentRepository) MarkAsPaid(ctx context.Context, id uuid.UUID, pai
 }
 
 func (r *EnrollmentRepository) AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error {
-	// Convert UUID to uint (this assumes the UUID can be parsed as a number)
-	userIDUint, err := strconv.ParseUint(userID.String()[0:8], 16, 64)
-	if err != nil {
-		userIDUint = 0
-	}
-
 	return r.BaseRepository.Exec(
 		"UPDATE enrollments SET anonymized_at = ? WHERE user_id = ?",
-		anonymizedAt, userIDUint,
+		anonymizedAt, userID,
 	)
 }
 
 func (r *EnrollmentRepository) CountAll(ctx context.Context) (int64, error) {
 	return r.BaseRepository.Count(&models.Enrollment{}, base.NewQueryOptions())
+}
+
+func (r *EnrollmentRepository) CountByUserID(ctx context.Context, userID uuid.UUID) (int64, error) {
+	opts := base.NewQueryOptions().WithWhere(map[string]any{"user_id": userID})
+	return r.BaseRepository.Count(&models.Enrollment{}, opts)
 }
 
 func (r *EnrollmentRepository) CountByStatus(ctx context.Context, status models.EnrollmentStatus) (int64, error) {

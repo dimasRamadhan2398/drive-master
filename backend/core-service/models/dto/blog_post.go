@@ -9,23 +9,12 @@ import (
 // BlogPost DTOs
 // Blog Article DTOs
 
-type CreateBlogArticleRequest struct {
-	Title         string    `json:"title" binding:"required,max=255"`
-	Slug          string    `json:"slug" binding:"required,max=255"`
-	LeadParagraph string    `json:"leadParagraph"`
-	BodyBlocks    []byte    `json:"bodyBlocks"`
-	FeaturedImage string    `json:"featuredImage"`
-	CategoryID    uuid.UUID `json:"categoryId"`
-	AuthorID      uuid.UUID `json:"authorId" binding:"required"`
-	Tags          []string  `json:"tags"`
-	Status        string    `json:"status"`
-}
-
 type BlogArticleResponse struct {
 	ID            uuid.UUID `json:"id"`
 	Title         string    `json:"title"`
 	Slug          string    `json:"slug"`
 	LeadParagraph string    `json:"leadParagraph"`
+
 	FeaturedImage string    `json:"featuredImage"`
 	ReadingTime   int       `json:"readingTime"`
 	ViewCount     int64     `json:"viewCount"`
@@ -36,13 +25,7 @@ type BlogArticleResponse struct {
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
-type BlogArticleListResponse struct {
-	Articles   []BlogArticleResponse `json:"articles"`
-	Total      int64                `json:"total"`
-	Page       int                  `json:"page"`
-	Limit      int                  `json:"limit"`
-	TotalPages int                  `json:"totalPages"`
-}
+type BlogArticleListResponse = PagedData[BlogArticleResponse]
 
 // Media represents media attached to a blog post
 type BlogPostMedia struct {
@@ -73,36 +56,52 @@ type Attractiveness struct {
 
 // CreateBlogPostRequest is the DTO for creating a new blog post
 type CreateBlogPostRequest struct {
-	Title   string `json:"title" binding:"required,max=255"`
-	Slug    string `json:"slug" binding:"max=255"`
-	Author  string `json:"author" binding:"max=100"`
-	Content string `json:"content"`
-
-	// Media
-	Media []BlogPostMedia `json:"media"`
-
-	// Publishing
-	Publishing *Publishing `json:"publishing"`
-
-	// Attractiveness
+	Title          string          `json:"title" form:"title" binding:"required,max=255"`
+	Slug           string          `json:"slug" form:"slug" binding:"max=255"`
+	Author         string          `json:"author" form:"author" binding:"max=100"`
+	LeadParagraph  string          `json:"leadParagraph" form:"leadParagraph"`
+	Content        string          `json:"content" form:"content"`
+	AuthorID       uuid.UUID       `json:"authorId" form:"authorId" binding:"required"`
+	Status         string          `json:"status" form:"status"` // Top-level status support for FormData
+	FeaturedImage  *FileUpload     `json:"featuredImage"`
+	Publishing     *Publishing     `json:"publishing"`
 	Attractiveness *Attractiveness `json:"attractiveness"`
 }
 
 // UpdateBlogPostRequest is the DTO for updating an existing blog post
 type UpdateBlogPostRequest struct {
-	Title   string `json:"title" binding:"max=255"`
-	Slug    string `json:"slug" binding:"max=255"`
-	Author  string `json:"author" binding:"max=100"`
-	Content string `json:"content"`
-
-	// Media
-	Media []BlogPostMedia `json:"media"`
-
-	// Publishing
-	Publishing *Publishing `json:"publishing"`
-
-	// Attractiveness
+	Title          string          `json:"title" form:"title" binding:"max=255"`
+	Slug           string          `json:"slug" form:"slug" binding:"max=255"`
+	Author         string          `json:"author" form:"author" binding:"max=100"`
+	LeadParagraph  string          `json:"leadParagraph" form:"leadParagraph"`
+	Content        string          `json:"content" form:"content"`
+	AuthorID       uuid.UUID       `json:"authorId" form:"authorId" binding:"required"`
+	Status         string          `json:"status" form:"status"` // Top-level status support for FormData
+	FeaturedImage  *FileUpload     `json:"featuredImage"`
+	Publishing     *Publishing     `json:"publishing"`
 	Attractiveness *Attractiveness `json:"attractiveness"`
+}
+
+// FileUpload represents an uploaded file (for featured images)
+// Supported formats: jpg, jpeg, png
+type FileUpload struct {
+	Data     string `json:"data"`      // Base64 encoded file data
+	FileName string `json:"fileName"`  // Original filename with extension (must be jpg, jpeg, or png)
+	MimeType string `json:"mimeType"`  // MIME type (e.g., "image/jpeg", "image/png")
+}
+
+// SupportedImageFormats lists the allowed image formats for featured images
+var SupportedImageFormats = []string{"jpg", "jpeg", "png"}
+
+// IsSupportedImageFormat checks if the file format is supported
+func IsSupportedImageFormat(fileName string) bool {
+	for _, format := range SupportedImageFormats {
+		if len(fileName) >= len(format) && fileName[len(fileName)-len(format):] == format {
+			return true
+		}
+	}
+	return false
+
 }
 
 // BlogPostResponse is the DTO for blog post responses
@@ -114,8 +113,7 @@ type BlogPostResponse struct {
 	Content   string    `json:"content"`
 	Excerpt   string    `json:"excerpt"`
 
-	// Media
-	Media []BlogPostMedia `json:"media"`
+	FeaturedImage string `json:"featuredImage"`
 
 	// Publishing
 	Publishing *Publishing `json:"publishing"`
@@ -150,13 +148,7 @@ type BlogPostBrief struct {
 }
 
 // BlogPostListResponse is the paginated list response
-type BlogPostListResponse struct {
-	Posts      []BlogPostBrief `json:"posts"`
-	Total      int64           `json:"total"`
-	Page       int             `json:"page"`
-	Limit      int             `json:"limit"`
-	TotalPages int             `json:"totalPages"`
-}
+type BlogPostListResponse = PagedData[BlogPostResponse]
 
 // BlogPostFilterRequest is for filtering blog posts
 type BlogPostFilterRequest struct {

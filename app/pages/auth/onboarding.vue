@@ -1,66 +1,86 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
+const { t } = useI18n()
 definePageMeta({
   layout: 'blank'
 })
 
+const auth = useAuthStore()
 const loading = ref(false)
 const showTermsModal = ref(false)
 
-const schema = z.object({
-  fullName: z.string().min(3, 'Name must be at least 3 characters'),
-  agreedToTerms: z.boolean().refine(val => val === true, 'You must agree to terms')
+// Fetch member profile on mount
+onMounted(async () => {
+  if (auth.userId && !auth.memberProfile) {
+    await auth.fetchMemberProfile()
+  }
+  // Pre-fill form if identity fullname already exists
+  if (auth.memberIdentityFullname) {
+    formData.fullName = auth.memberIdentityFullname
+  }
 })
+
+const schema = computed(() => z.object({
+  fullName: z.string().min(3, t('validation.minLength', { min: 3 })),
+  agreedToTerms: z.boolean().refine(val => val === true, t('register.validation.termsRequired'))
+}))
 
 const formData = reactive({
   fullName: '',
   agreedToTerms: false
 })
 
-async function onSubmit(event: FormSubmitEvent<any>) {
+async function onSubmit(_event: FormSubmitEvent<any>) {
   loading.value = true
 
   try {
-    // Simulate API call to save profile
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    console.log('Onboarding completed:', formData)
-    
-    let plan = null
-    if (import.meta.client) {
-      plan = sessionStorage.getItem('dm_selected_plan')
+    // Update member profile with identity fullname
+    const result = await auth.updateMemberProfile({
+      identityFullname: formData.fullName
+    })
+
+    if (!result) {
+      console.error('[ONBOARDING] Failed to update member profile')
+      // Continue anyway since API might not be available
+    } else {
+      console.log('[ONBOARDING] Member profile updated successfully:', result)
     }
-    
-    if (plan) {
-      navigateTo(`/auth/payment-method?plan=${plan}`)
+
+    let enrollmentId = null
+    if (import.meta.client) {
+      enrollmentId = sessionStorage.getItem('dm_enrollment_id')
+    }
+
+    if (enrollmentId) {
+      navigateTo(`/auth/payment-method?enrollment=${enrollmentId}`)
     } else {
       navigateTo('/auth/select-plan')
     }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
-const features = [
+const features = computed(() => [
   {
     icon: 'i-lucide-gift',
-    title: 'Free Trial Access',
-    description: 'Unlock your 15-minute free trial session after onboarding'
+    title: t('freeTrial.readyToSchedule'),
+    description: t('freeTrial.heroDesc').split('.').shift()
   },
   {
     icon: 'i-lucide-calendar',
-    title: 'Schedule Sessions',
-    description: 'Book your training sessions at your preferred times'
+    title: t('schedule.title'),
+    description: t('schedule.subtitle')
   },
   {
     icon: 'i-lucide-award',
-    title: 'Earn Certificate',
-    description: 'Receive your official Drive Master certificate upon completion'
+    title: t('certificate.title'),
+    description: t('certificate.notAvailableDesc').split('.').shift()
   }
-]
+])
 </script>
 
 <template>
@@ -70,11 +90,11 @@ const features = [
       <div class="text-center mb-12">
         <div class="flex items-center justify-center gap-2 mb-4">
           <UIcon name="i-lucide-user-check" class="size-8 text-warning" />
-          <span class="text-xl font-bold">Complete Your Profile</span>
+          <span class="text-xl font-bold">{{ t('auth.completeProfile') }}</span>
         </div>
-        <h1 class="text-3xl font-bold">Onboarding</h1>
+        <h1 class="text-3xl font-bold">{{ t('auth.onboarding') }}</h1>
         <p class="text-muted mt-3">
-          Last step! Verify your identity to unlock your free trial and access all features.
+          {{ t('auth.onboardingDesc') }}
         </p>
       </div>
 
@@ -102,90 +122,90 @@ const features = [
           @submit="onSubmit"
         >
           <!-- Full Name -->
-          <UFormField name="fullName" label="Full Name (KTP Registered Name)" required>
+          <UFormField name="fullName" :label="t('auth.fullNameKtp')" required>
             <UInput 
               v-model="formData.fullName"
-              placeholder="Enter your full name as shown in your KTP"
+              :placeholder="t('auth.fullNamePlaceholder')"
               icon="i-lucide-user"
               size="lg"
               class="w-full"
             />
             <template #hint>
-              This name will be used on your official certificate
+              {{ t('auth.nameHint') }}
             </template>
           </UFormField>
 
           <!-- Info Alert -->
           <UAlert icon="i-lucide-shield-check" color="primary">
-            <template #title>Your Data is Secure</template>
+            <template #title>{{ t('auth.dataSecure') }}</template>
             <template #description>
-              Your personal information is encrypted and only used for official certificate issuance. We follow Indonesia's data protection standards.
+              {{ t('auth.dataSecureDesc') }}
             </template>
           </UAlert>
 
           <!-- Terms -->
           <UFormField name="agreedToTerms">
-            <UCheckbox v-model="formData.agreedToTerms" color="warning">
+            <UCheckbox v-model:model-value="formData.agreedToTerms" color="warning">
               <template #label>
                 <span class="text-sm">
-                  I agree that my information will be used to issue my official training certificate and follow 
-                  <UButton label="Terms of Service" color="warning" variant="ghost" class="underline" @click="showTermsModal = true" />
-                  <UModal v-model:open="showTermsModal" title="Terms of Service">
+                  {{ t('auth.agreeOnboarding') }}
+                  <UButton :label="t('register.terms.termsOfService')" color="warning" variant="ghost" class="underline mx-0 px-0 h-auto py-0 text-sm" @click="showTermsModal = true" />
+                  <UModal v-model:open="showTermsModal" :title="t('register.terms.termsOfService')">
                     <template #body>
                       <div class="prose dark:prose-invert max-w-none space-y-6">
                         <p>
-                          Welcome to Drive Master Indonesia. These Terms of Service ("Terms") govern your access to and use of the website <NuxtLink to="/" class="text-warning hover:underline">www.drivemaster.id</NuxtLink> and our driving school services. By accessing or using our services, you agree to be bound by these Terms.
+                          {{ t('register.tosContent.welcome', { url: 'www.drivemaster.id' }) }}
                         </p>
 
-                        <h2 class="text-2xl font-bold">1. Services Provided</h2>
-                        <p>Drive Master Indonesia provides professional driving instruction services, including theoretical training and practical on-road sessions. We reserve the right to modify, suspend, or discontinue any part of the services at any time without prior notice.</p>
-
-                        <h2 class="text-2xl font-bold">2. User Accounts</h2>
-                        <p>To access certain features of our platform, such as booking sessions, you must register for an account. You agree to:</p>
-                        <ul class="list-disc list-inside ml-4">
-                          <li>Provide accurate, current, and complete information during the registration process.</li>
-                          <li>Maintain the security of your password and accept all risks of unauthorized access to your account.</li>
-                          <li>Notify us immediately if you discover or suspect any security breaches related to our services.</li>
-                        </ul>
-
-                        <h2 class="text-2xl font-bold">3. Fees and Payments</h2>
-                        <p>All prices for our driving packages are listed in Indonesian Rupiah (IDR). Payment obligations include:</p>
-                        <ul class="list-disc list-inside ml-4">
-                          <li><strong>Payment Processing:</strong> Payments are processed securely via third-party gateways (e.g., Midtrans). We do not store your full financial credentials.</li>
-                          <li><strong>Refund Policy:</strong> Requests for refunds are subject to our internal review and are typically only granted if requested at least 48 hours before the start of the first session.</li>
-                        </ul>
-
-                        <h2 class="text-2xl font-bold">4. Scheduling and Cancellations</h2>
-                        <p>Efficient scheduling is key to our service quality. Our policy includes:</p>
-                        <ul class="list-disc list-inside ml-4">
-                          <li><strong>Booking:</strong> Sessions must be booked at least 24 hours in advance through the student dashboard.</li>
-                          <li><strong>Rescheduling:</strong> You may reschedule a session through our platform at no extra cost if done at least 24 hours before the scheduled time.</li>
-                          <li><strong>No-Show:</strong> Failure to attend a scheduled session without prior notice will result in the session being marked as completed and non-refundable.</li>
-                        </ul>
-
-                        <h2 class="text-2xl font-bold">5. Student Obligations</h2>
-                        <p>As a student of Drive Master Indonesia, you agree to:</p>
-                        <ul class="list-disc list-inside ml-4">
-                          <li>Possess a valid temporary or permanent driver's permit as required by local law.</li>
-                          <li>Follow the instructions of the assigned instructor at all times during practical sessions.</li>
-                          <li>Maintain a zero-tolerance policy regarding alcohol or drug use before or during training sessions.</li>
-                        </ul>
-
-                        <h2 class="text-2xl font-bold">6. Limitation of Liability</h2>
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.servicesTitle') }}</h2>
                         <p>
-                          To the maximum extent permitted by law, Drive Master Indonesia shall not be liable for any indirect, incidental, or consequential damages resulting from your use of our services or any interaction with our instructors. While we strive for absolute safety, practical driving involves inherent risks.
+                          {{ t('register.tosContent.servicesDesc') }}
                         </p>
 
-                        <h2 class="text-2xl font-bold">7. Changes to Terms</h2>
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.accountsTitle') }}</h2>
                         <p>
-                          We reserve the right to change or modify these Terms at any time. If we make changes, we will notify you by revising the date at the top of the policy or by posting a notice on our homepage. Your continued use of the services confirms your acceptance of the revised Terms.
+                          {{ t('register.tosContent.accountsDesc') }}
                         </p>
-
-                        <h2 class="text-2xl font-bold">8. Contact Us</h2>
-                        <p>If you have any questions or concerns regarding these Terms, please reach out to us:</p>
                         <ul class="list-disc list-inside ml-4">
-                          <li>By email: <a href="mailto:info@drivemaster.id" class="text-warning hover:underline">info@drivemaster.id</a></li>
-                          <li>By phone: +62 812-3456-7890</li>
+                          <li>{{ t('register.tosContent.accountsList1') }}</li>
+                          <li>{{ t('register.tosContent.accountsList2') }}</li>
+                          <li>{{ t('register.tosContent.accountsList3') }}</li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.feesTitle') }}</h2>
+                        <p>{{ t('register.tosContent.feesDesc') }}</p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li><strong>{{ t('register.tosContent.feesList1').split(':')[0] }}:</strong> {{ t('register.tosContent.feesList1').split(':')[1] }}</li>
+                          <li><strong>{{ t('register.tosContent.feesList2').split(':')[0] }}:</strong> {{ t('register.tosContent.feesList2').split(':')[1] }}</li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.schedulingTitle') }}</h2>
+                        <p>{{ t('register.tosContent.schedulingDesc') }}</p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li><strong>{{ t('register.tosContent.schedulingList1').split(':')[0] }}:</strong> {{ t('register.tosContent.schedulingList1').split(':')[1] }}</li>
+                          <li><strong>{{ t('register.tosContent.schedulingList2').split(':')[0] }}:</strong> {{ t('register.tosContent.schedulingList2').split(':')[1] }}</li>
+                          <li><strong>{{ t('register.tosContent.schedulingList3').split(':')[0] }}:</strong> {{ t('register.tosContent.schedulingList3').split(':')[1] }}</li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.obligationsTitle') }}</h2>
+                        <p>{{ t('register.tosContent.obligationsDesc') }}</p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>{{ t('register.tosContent.obligationsList1') }}</li>
+                          <li>{{ t('register.tosContent.obligationsList2') }}</li>
+                          <li>{{ t('register.tosContent.obligationsList3') }}</li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.liabilityTitle') }}</h2>
+                        <p>{{ t('register.tosContent.liabilityDesc') }}</p>
+
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.changesTitle') }}</h2>
+                        <p>{{ t('register.tosContent.changesDesc') }}</p>
+
+                        <h2 class="text-2xl font-bold">{{ t('register.tosContent.contactTitle') }}</h2>
+                        <p>{{ t('register.tosContent.contactDesc') }}</p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>{{ t('register.tosContent.contactEmail', { email: 'info@drivemaster.id' }) }}</li>
+                          <li>{{ t('register.tosContent.contactPhone') }}</li>
                         </ul>
                       </div>
                     </template>
@@ -199,7 +219,7 @@ const features = [
           <div class="flex gap-3 pt-4 border-t">
             <NuxtLink to="/auth/register" class="flex-1">
               <UButton 
-                label="Back" 
+                :label="t('auth.back')"
                 color="neutral"
                 variant="outline"
                 block
@@ -207,7 +227,7 @@ const features = [
             </NuxtLink>
             <UButton 
               type="submit"
-              label="Continue to Plans"
+              :label="t('auth.continueToPlans')"
               trailingIcon="i-lucide-arrow-right"
               color="warning"
               :loading="loading"
@@ -219,7 +239,7 @@ const features = [
 
         <template #footer>
           <div class="text-center text-sm text-muted">
-            <p>Email verification completed ✓</p>
+            <p>{{ t('auth.emailVerified') }}</p>
           </div>
         </template>
       </UCard>

@@ -4,7 +4,7 @@ server:
   read_timeout: 60
 
 database:
-  host: drive_master_postgres
+  host: 127.0.0.1
   port: 5432
   username: admin_drive
   password: drivemaster123
@@ -19,9 +19,9 @@ email:
   token: 13f6eb6d56f0d2c5aea7fadfbda452e9
 
 redis:
-  host: redis
+  host: 127.0.0.1
   port: 6379
-  password: "drivemaster123"
+  password: ""
   db: 0
 
 imagekit:
@@ -42,7 +42,7 @@ log:
 kafka:
   enabled: true
   brokers:
-    - "kafka:9092"
+    - "127.0.0.1:9092"
   topic: "service-logs" # Default topic for producer (legacy)
   topics: # Topics to consume
     - "user-events"
@@ -60,9 +60,15 @@ app:
   signature_key: 8718779f20ada46e0bfb6845c2635cff3a3589627e15e5441788f0abbb24d4c0
   rate_limiter_max: 100
   rate_limiter_time: 1
-  base_path: /app
+  base_path: /var/www/drive/backend/core-service
 
 analytics:
   ga_measurement_id: G-07PS1N5DZ5
   ga_property_id: G-539969879
-  ga_credentials_file: /app/analytics/ga_credentials.json
+  ga_credentials_file: /var/www/drive/backend/core-service/analytics/ga_credentials.json
+
+payment_service:
+  base_url: http://localhost:8004/api/v1
+  service_name: core-service
+  signature_key: baf8f21c59948f5731ece01240fb303a8744e668a0befff55a63a3eb7022d8c9
+  enabled: true 

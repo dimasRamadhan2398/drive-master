@@ -22,6 +22,7 @@ type ITestimonialService interface {
 	ArchiveTestimonial(ctx context.Context, id uuid.UUID, archivedBy string) error
 	CountTestimonials(ctx context.Context) (int64, error)
 	ToggleFeatured(ctx context.Context, id uuid.UUID, isFeatured bool) error
+	UpdateStatus(ctx context.Context, id uuid.UUID, status models.TestimonialStatus, updatedBy string) error
 }
 
 type TestimonialService struct {
@@ -168,4 +169,31 @@ func (s *TestimonialService) CountTestimonials(ctx context.Context) (int64, erro
 // ToggleFeatured toggles the featured status of a testimonial
 func (s *TestimonialService) ToggleFeatured(ctx context.Context, id uuid.UUID, isFeatured bool) error {
 	return s.testimonialRepo.ToggleFeatured(ctx, id, isFeatured)
+}
+
+// UpdateStatus updates the status of a testimonial
+func (s *TestimonialService) UpdateStatus(ctx context.Context, id uuid.UUID, status models.TestimonialStatus, updatedBy string) error {
+	testimonial, err := s.testimonialRepo.GetTestimonialByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	testimonial.Status = status
+	if err := s.testimonialRepo.UpdateTestimonial(ctx, testimonial); err != nil {
+		return err
+	}
+
+	// Publish event (async to not block response)
+	if s.eventPublisher != nil {
+		go s.eventPublisher.PublishTestimonialUpdated(
+			context.Background(),
+			testimonial.ID.String(),
+			testimonial.UserName,
+			testimonial.Content,
+			testimonial.Rating,
+			string(testimonial.Status),
+		)
+	}
+
+	return nil
 }

@@ -1,16 +1,20 @@
 import { defineStore } from "pinia";
 import { authService } from "~/services/authService";
+import { memberService } from "~/services/memberService";
 import type {
   LoginCredentials,
   RegisterData,
   BackendUserResponse,
 } from "~/types/auth";
+import type { MemberProfile } from "~/services/memberService";
 
 interface AuthStoreState {
   user: BackendUserResponse | null;
+  memberProfile: MemberProfile | null;
   accessToken: string | null;
   refreshTokenValue: string | null;
   isLoading: boolean;
+  isLoadingProfile: boolean;
   error: string | null;
 }
 
@@ -30,9 +34,11 @@ export const useAuthStore = defineStore("auth", {
 
     return {
       user,
+      memberProfile: null,
       accessToken: tokenCookie.value || null,
       refreshTokenValue: refreshCookie.value || null,
       isLoading: false,
+      isLoadingProfile: false,
       error: null,
     };
   },
@@ -40,6 +46,15 @@ export const useAuthStore = defineStore("auth", {
     isAuthenticated: (state) => !!state.user && !!state.accessToken,
     currentUser: (state) => state.user,
     userRole: (state) => state.user?.role?.name ?? null,
+    userId: (state) => state.user?.userId ?? null,
+    // Member profile getters
+    memberSessionsCompleted: (state) => state.memberProfile?.sessionsCompleted ?? 0,
+    memberTrainingTime: (state) => state.memberProfile?.trainingTime ?? 0,
+    memberAverageRating: (state) => state.memberProfile?.averageRating ?? 0,
+    memberAvailableSessions: (state) => state.memberProfile?.totalAvailableSessions ?? 0,
+    memberEntitlements: (state) => state.memberProfile?.entitlements ?? [],
+    memberIdentityFullname: (state) => state.memberProfile?.identityFullname ?? "",
+    hasMemberProfile: (state) => !!state.memberProfile,
   },
   actions: {
     // Dedicated action to set authentication state
@@ -149,7 +164,8 @@ export const useAuthStore = defineStore("auth", {
         );
         this.error = authService.parseError(error);
         console.log("[AUTH STORE] Parsed error message:", this.error);
-        throw error;
+        const enhancedError = new Error(this.error || error.message);
+        throw enhancedError;
       } finally {
         console.log(
           "[AUTH STORE] register() completed, isLoading set to false",
@@ -193,16 +209,19 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async fetchCurrentUser() {
-      if (!this.accessToken) return null;
+      if (!this.user?.userId) return this.user;
 
       try {
-        const userData = await authService.fetchCurrentUser(this.accessToken);
+        const userData = await authService.fetchUserById(this.user.userId);
         if (userData) {
-          this.user = userData;
+          const newUser = { ...this.user, ...userData };
+          this.user = newUser;
+          this.setUserCookie(newUser);
         }
-        return userData;
-      } catch {
-        return null;
+        return this.user;
+      } catch (err) {
+        console.warn("[AUTH STORE] Failed to fetch current user, using cached login data:", err);
+        return this.user;
       }
     },
 
@@ -243,6 +262,7 @@ export const useAuthStore = defineStore("auth", {
 
     clearAuth() {
       this.user = null;
+      this.memberProfile = null;
       this.accessToken = null;
       this.refreshTokenValue = null;
       this.error = null;
@@ -259,6 +279,89 @@ export const useAuthStore = defineStore("auth", {
 
     clearError() {
       this.error = null;
+    },
+
+    // ========== Member Profile Actions ==========
+
+    /**
+     * Fetch member profile for the current user
+     */
+    async fetchMemberProfile() {
+      if (!this.user?.userId) return null;
+
+      this.isLoadingProfile = true;
+      try {
+        const profile = await memberService.getMemberProfile(this.user.userId);
+        if (profile) {
+          this.memberProfile = profile;
+        }
+        return profile;
+      } catch (error) {
+        console.error("[AUTH STORE] Failed to fetch member profile:", error);
+        return null;
+      } finally {
+        this.isLoadingProfile = false;
+      }
+    },
+
+    /**
+     * Update member profile
+     */
+    async updateMemberProfile(data: { identityFullname?: string }) {
+      if (!this.user?.userId) return null;
+
+      this.isLoadingProfile = true;
+      try {
+        const profile = await memberService.updateMemberProfile(
+          this.user.userId,
+          data,
+        );
+        if (profile) {
+          this.memberProfile = profile;
+        }
+        return profile;
+      } catch (error) {
+        console.error("[AUTH STORE] Failed to update member profile:", error);
+        return null;
+      } finally {
+        this.isLoadingProfile = false;
+      }
+    },
+
+    /**
+     * Update current user basic details
+     */
+    async updateUser(data: {
+      firstName: string;
+      lastName: string;
+      phoneNumber?: string;
+      address?: string;
+      dateOfBirth?: string;
+    }) {
+      if (!this.user?.userId) return null;
+
+      this.isLoading = true;
+      try {
+        const updatedUser = await memberService.updateUser(this.user.userId, data);
+        if (updatedUser) {
+          const newUser = { ...this.user, ...updatedUser };
+          this.user = newUser;
+          this.setUserCookie(newUser);
+        }
+        return updatedUser;
+      } catch (error) {
+        console.error("[AUTH STORE] Failed to update user:", error);
+        return null;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    /**
+     * Clear member profile (on logout)
+     */
+    clearMemberProfile() {
+      this.memberProfile = null;
     },
   },
 });

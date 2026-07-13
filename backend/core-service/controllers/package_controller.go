@@ -35,20 +35,15 @@ func NewPackageController(packageService services.IPackageService) IPackageContr
 	}
 }
 
-// ToggleStatusPackage handles DELETE /api/v1/packages/toggle-status
+// ToggleStatusPackage handles PUT /api/v1/packages/toggle-status/:id
 // @Summary Toggle package status
 // @Description Toggles a package status between active and inactive
 // @Tags Packages
 // @Produce json
-// @Param id query string true "Package ID"
+// @Param id path string true "Package ID"
 // @Success 200 {object} response.Response
-// @Router /packages/toggle-status [delete]
+// @Router /packages/toggle-status/{id} [put]
 func (c *PackageController) ToggleStatusPackage(ctx *gin.Context) {
-	var req dto.StatusPackageRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(ctx, "Invalid request body: "+err.Error())
-		return
-	}
 	idParam := ctx.Param("id")
 	if idParam == "" {
 		response.BadRequest(ctx, "Package ID is required")
@@ -80,7 +75,10 @@ func (c *PackageController) ToggleStatusPackage(ctx *gin.Context) {
 // @Success 200 {object} response.Response
 // @Router /packages [get]
 func (c *PackageController) GetAllPackages(ctx *gin.Context) {
-	var query dto.PaginationQuery
+	var query struct {
+		dto.PaginationQuery
+		Status string `form:"status"`
+	}
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		response.BadRequest(ctx, "Invalid query parameters")
 		return
@@ -99,7 +97,17 @@ func (c *PackageController) GetAllPackages(ctx *gin.Context) {
 		limit = 100
 	}
 
-	packages, total, err := c.packageService.GetAllPackagesPaginated(ctx.Request.Context(), page, limit)
+	var packages []models.Package
+	var total int64
+	var err error
+
+	if query.Status != "" {
+		packages, err = c.packageService.GetPackagesByStatus(ctx.Request.Context(), models.PackageStatus(query.Status))
+		total = int64(len(packages))
+	} else {
+		packages, total, err = c.packageService.GetAllPackagesPaginated(ctx.Request.Context(), page, limit)
+	}
+
 	if err != nil {
 		response.InternalServerError(ctx, "Failed to fetch packages")
 		return
@@ -280,10 +288,10 @@ func (c *PackageController) UpdatePackage(ctx *gin.Context) {
 		pkg.ImageURL = req.ImageURL
 	}
 
-	// Handle Features (converted from Benefits input)
-	if len(req.Benefits) > 0 {
+	// Handle Features
+	if len(req.Features) > 0 {
 		var features models.StringArray
-		for _, b := range req.Benefits {
+		for _, b := range req.Features {
 			switch v := b.(type) {
 			case string:
 				features = append(features, v)

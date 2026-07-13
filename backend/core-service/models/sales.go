@@ -100,6 +100,16 @@ type SalesByPackageType struct {
 	Percentage   float64 `json:"percentage"`
 }
 
+// SalesByPackage represents sales breakdown by individual package (from sale_items)
+type SalesByPackage struct {
+	PackageID     *uuid.UUID `json:"packageId"`
+	PackageName   string     `json:"packageName"`
+	TotalSales    int64      `json:"totalSales"`
+	TotalQuantity int64      `json:"totalQuantity"`
+	TotalRevenue  float64    `json:"totalRevenue"`
+	AvgUnitPrice  float64    `json:"avgUnitPrice"`
+}
+
 // SalesOverviewStats represents overall sales statistics
 type SalesOverviewStats struct {
 	TotalRevenue    float64 `json:"totalRevenue"`

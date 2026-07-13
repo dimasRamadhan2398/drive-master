@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
-import type { Faq } from "~/stores/content";
+import { computed, ref, watch } from "vue";
 
 export interface FaqFormData {
   id: string;
@@ -99,7 +99,7 @@ async function saveFaq() {
   <UModal
     :open="open"
     :title="isEditing ? 'Edit FAQ' : 'Add New FAQ'"
-    @update:open="(val) => emit('update:open', val)"
+    @update:open="(val: any) => emit('update:open', val)"
   >
     <template #content>
       <div class="bg-default rounded-2xl w-full">

@@ -72,6 +72,12 @@ export interface UserDashboardStats {
   growthTotalMembers: number;
   growthTotalInstructors: number;
   growthRecentRegistrations: number;
+  activeSessions: number;
+  totalSessions: number;
+  revenueMTD: number;
+  revenueCurrency: string;
+  certificatesIssued: number;
+  totalCertifications: number;
 }
 
 export interface UserDashboardStatsAPI {
@@ -83,6 +89,12 @@ export interface UserDashboardStatsAPI {
   growthTotalMembers: number;
   growthTotalInstructors: number;
   growthRecentRegistrations: number;
+  activeSessions?: number;
+  totalSessions?: number;
+  revenueMTD?: number;
+  revenueCurrency?: string;
+  certificatesIssued?: number;
+  totalCertifications?: number;
 }
 
 export interface DashboardStats {
@@ -114,6 +126,12 @@ function mapApiToData(data: UserDashboardStatsAPI): UserDashboardStats {
     growthTotalMembers: (data.growthTotalMembers ?? 0) * 100,
     growthTotalInstructors: (data.growthTotalInstructors ?? 0) * 100,
     growthRecentRegistrations: (data.growthRecentRegistrations ?? 0) * 100,
+    activeSessions: data.activeSessions ?? 0,
+    totalSessions: data.totalSessions ?? 0,
+    revenueMTD: data.revenueMTD ?? 0,
+    revenueCurrency: data.revenueCurrency ?? "IDR",
+    certificatesIssued: data.certificatesIssued ?? 0,
+    totalCertifications: data.totalCertifications ?? 0,
   };
 }
 
@@ -154,7 +172,8 @@ export const dashboardService = {
       );
       const rawData = extractData(response);
       return mapApiToData(rawData);
-    } catch {
+    } catch (err) {
+      console.error("[dashboardService] fetchUserDashboardStats failed:", err);
       return {
         totalUsers: 0,
         totalMembers: 0,
@@ -164,6 +183,12 @@ export const dashboardService = {
         growthTotalUsers: 0,
         growthTotalMembers: 0,
         growthTotalInstructors: 0,
+        activeSessions: 0,
+        totalSessions: 0,
+        revenueMTD: 0,
+        revenueCurrency: "IDR",
+        certificatesIssued: 0,
+        totalCertifications: 0,
       };
     }
   },

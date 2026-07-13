@@ -142,7 +142,7 @@ export const paymentService = {
     const { booking, extractData } = useApiClients();
     try {
       const response = await booking<ApiResponse<PaymentApiResponse>>(
-        "/payments",
+        "/payments/transactions",
         {
           method: "POST",
           body: data,

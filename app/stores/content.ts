@@ -1,9 +1,15 @@
 import { defineStore } from "pinia";
-import { contentService } from "~/services/contentService";
-import type { BlogPostMedia, CreateBlogPostData, UpdateBlogPostData } from "~/services/contentService";
+import {
+  contentService,
+  dataUriToFileUpload,
+  type Publishing,
+  type Attractiveness,
+  type FileUpload,
+} from "../services/contentService";
 
-// Re-export types from contentService for convenience
-export type { BlogPostMedia, CreateBlogPostData, UpdateBlogPostData };
+// ============================================================
+// Local types
+// ============================================================
 
 export interface PageSection {
   id: string;
@@ -13,7 +19,7 @@ export interface PageSection {
 }
 
 export interface Page {
-  id: number;
+  id: string | number;
   title: string;
   slug: string;
   lastUpdated: string;
@@ -21,37 +27,31 @@ export interface Page {
   sections: PageSection[];
 }
 
+/** Internal BlogPost representation used by the store / UI */
 export interface BlogPost {
-  id: number;
+  id: string;
   title: string;
-  slug?: string;
+  slug: string;
   author: string;
-  excerpt?: string;
+  leadParagraph: string;
+  featuredImage: string;
+  excerpt: string;
   date: string;
   status: "published" | "draft" | "archived";
   views: number;
   content: string;
-  media: BlogPostMedia[];
-  publishing: {
-    status: "draft" | "published" | "archived";
-    publishedAt?: string;
-    scheduledAt?: string;
-  };
-  attractiveness: {
-    isFeatured: boolean;
-    isSpotlight: boolean;
-    priority: number;
-    highlight: boolean;
-  };
-  viewCount?: number;
-  likeCount?: number;
-  shareCount?: number;
-  readingTime?: number;
-  createdAt?: string;
-  updatedAt?: string;
+  publishing: Publishing;
+  attractiveness: Attractiveness;
+  viewCount: number;
+  likeCount: number;
+  readingTime: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
+// -------------------------------------------------------
 // FAQ Types
+// -------------------------------------------------------
 export interface Faq {
   id: string;
   question: string;
@@ -75,6 +75,10 @@ export interface UpdateFaqData {
   sortOrder?: number;
   isActive?: boolean;
 }
+
+// ============================================================
+// Store state
+// ============================================================
 
 interface ContentState {
   pages: Page[];
@@ -104,33 +108,10 @@ const initialPages: Page[] = [
   },
 ];
 
-const initialBlogPosts: BlogPost[] = [
-  {
-    id: 1,
-    title: "Welcome to Our New Blog!",
-    author: "Admin",
-    date: "Apr 10, 2026",
-    status: "published",
-    views: 120,
-    content:
-      "This is the first post on our brand new blog. Stay tuned for more updates!",
-    media: [],
-    publishing: {
-      status: "published",
-    },
-    attractiveness: {
-      isFeatured: false,
-      isSpotlight: false,
-      priority: 0,
-      highlight: false,
-    },
-  },
-];
-
 export const useContentStore = defineStore("content", {
   state: (): ContentState => ({
     pages: initialPages,
-    blogPosts: initialBlogPosts,
+    blogPosts: [],
     faqs: [],
     currentFaq: null,
     isLoading: false,
@@ -143,280 +124,354 @@ export const useContentStore = defineStore("content", {
     draftPages: (state) => state.pages.filter((p) => p.status === "draft"),
     publishedPosts: (state) =>
       state.blogPosts.filter((p) => p.status === "published"),
-    draftPosts: (state) => state.blogPosts.filter((p) => p.status === "draft"),
+    draftPosts: (state) =>
+      state.blogPosts.filter((p) => p.status === "draft"),
     totalPages: (state) => state.pages.length,
     totalPosts: (state) => state.blogPosts.length,
-    getPageById: (state) => (id: number) =>
-      state.pages.find((p) => p.id === id),
-    getPageBySlug: (state) => (slug: string) =>
-      state.pages.find((p) => p.slug === slug),
-    getPostById: (state) => (id: number) =>
-      state.blogPosts.find((p) => p.id === id),
+    getPageById: (state) => (id: string | number) => state.pages.find((p) => String(p.id) === String(id)),
+    getPageBySlug: (state) => (slug: string) => state.pages.find((p) => p.slug === slug),
+    getPostById: (state) => (id: string) => state.blogPosts.find((p) => p.id === id),
     // FAQ getters
     activeFaqs: (state) => state.faqs.filter((f) => f.isActive),
-    sortedFaqs: (state) =>
-      [...state.faqs].sort((a, b) => a.sortOrder - b.sortOrder),
+    sortedFaqs: (state) => [...state.faqs].sort((a, b) => a.sortOrder - b.sortOrder),
     totalFaqs: (state) => state.faqs.length,
     getFaqById: (state) => (id: string) => state.faqs.find((f) => f.id === id),
   },
 
   actions: {
-    // Page actions
-    addPage(data: {
-      title: string;
-      slug: string;
-      status: "published" | "draft";
-    }) {
-      const newId = Math.max(...this.pages.map((p) => p.id), 0) + 1;
-      const newPage: Page = {
-        ...data,
-        id: newId,
-        lastUpdated: this.formatDate(new Date()),
-        sections: [],
+    // ----------------------------------------------------------
+    _mapResponseToPage(pageApi: any): Page {
+      let parsedSections: PageSection[] = [];
+      if (pageApi.sections) {
+        try {
+          if (typeof pageApi.sections === "string") {
+            parsedSections = JSON.parse(pageApi.sections);
+          } else if (Array.isArray(pageApi.sections)) {
+            parsedSections = pageApi.sections;
+          }
+        } catch (e) {
+          console.error("Failed to parse page sections:", e);
+        }
+      }
+      return {
+        id: pageApi.id,
+        title: pageApi.title,
+        slug: pageApi.slug,
+        status: pageApi.status,
+        lastUpdated: pageApi.lastUpdated || this.formatDate(new Date(pageApi.updatedAt || Date.now())),
+        sections: parsedSections,
       };
-      this.pages.push(newPage);
-      return newPage;
     },
 
-    updatePage(id: number, data: Partial<Page>) {
-      const index = this.pages.findIndex((p) => p.id === id);
-      if (index !== -1) {
-        const existing = this.pages[index];
-        if (!existing) return null;
-        this.pages[index] = {
-          id: existing.id,
-          title: data.title ?? existing.title,
-          slug: data.slug ?? existing.slug,
-          lastUpdated: this.formatDate(new Date()),
-          status: data.status ?? existing.status,
-          sections: data.sections ?? existing.sections,
-        };
-        return this.pages[index];
+    async fetchPages() {
+      this.isLoading = true;
+      try {
+        const rawPages = await contentService.fetchPages();
+        this.pages = rawPages.map((p) => this._mapResponseToPage(p));
+      } catch (e) {
+        console.error("Failed to fetch pages:", e);
+        this.error = "Failed to fetch pages";
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async addPage(data: { title: string; slug: string; status: "published" | "draft" }) {
+      this.isLoading = true;
+      try {
+        const created = await contentService.createPage(data);
+        if (created) {
+          const mapped = this._mapResponseToPage(created);
+          this.pages.push(mapped);
+          return mapped;
+        }
+      } catch (e) {
+        console.error("Failed to create page:", e);
+      } finally {
+        this.isLoading = false;
       }
       return null;
     },
 
-    deletePage(id: number) {
-      this.pages = this.pages.filter((p) => p.id !== id);
+    async updatePage(id: string | number, data: Partial<Page>) {
+      this.isLoading = true;
+      try {
+        const payload: any = {};
+        if (data.title !== undefined) payload.title = data.title;
+        if (data.slug !== undefined) payload.slug = data.slug;
+        if (data.status !== undefined) payload.status = data.status;
+        if (data.sections !== undefined) payload.sections = JSON.stringify(data.sections);
+
+        const updated = await contentService.updatePage(String(id), payload);
+        if (updated) {
+          const mapped = this._mapResponseToPage(updated);
+          const index = this.pages.findIndex((p) => String(p.id) === String(id));
+          if (index !== -1) {
+            this.pages[index] = mapped;
+          }
+          return mapped;
+        }
+      } catch (e) {
+        console.error("Failed to update page:", e);
+      } finally {
+        this.isLoading = false;
+      }
+      return null;
     },
 
-    togglePageStatus(id: number) {
-      const page = this.pages.find((p) => p.id === id);
+    async deletePage(id: string | number) {
+      this.isLoading = true;
+      try {
+        const ok = await contentService.deletePage(String(id));
+        if (ok) {
+          this.pages = this.pages.filter((p) => String(p.id) !== String(id));
+        }
+      } catch (e) {
+        console.error("Failed to delete page:", e);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async updatePageSections(slug: string, sections: PageSection[]) {
+      const page = this.pages.find((p) => p.slug === slug);
       if (page) {
-        page.status = page.status === "published" ? "draft" : "published";
-        page.lastUpdated = this.formatDate(new Date());
-        return page.status;
+        await this.updatePage(page.id, { sections });
+      }
+    },
+
+    async togglePageStatus(id: string | number) {
+      const page = this.pages.find((p) => String(p.id) === String(id));
+      if (page) {
+        const nextStatus = page.status === "published" ? "draft" : "published";
+        const updated = await this.updatePage(id, { status: nextStatus });
+        return updated ? updated.status : null;
       }
       return null;
     },
 
+    // ----------------------------------------------------------
     // Blog Post actions
+    // ----------------------------------------------------------
+
+    /**
+     * Create a new blog post. Sends a JSON payload matching Go's
+     * CreateBlogPostRequest. If featuredImage is a data URI string,
+     * it is converted to a FileUpload object for upload.
+     */
     async addPost(data: {
       title: string;
-      author: string;
-      content: string;
-      media?: BlogPostMedia[];
-      publishing: {
-        status: "draft" | "published" | "archived";
-        publishedAt?: string;
-        scheduledAt?: string;
-      };
-      attractiveness: {
-        isFeatured: boolean;
-        isSpotlight: boolean;
-        priority: number;
-        highlight: boolean;
-      };
+      slug?: string;
+      author?: string;
+      authorId: string;
+      leadParagraph?: string;
+      /** Either a data URI (newly selected file) or an existing URL */
+      featuredImage?: File | string;
+      /** Raw filename of the selected file (needed for format validation) */
+      featuredImageFileName?: string;
+      content?: string;
+      status?: "draft" | "published" | "archived";
+      publishing?: Partial<Publishing>;
+      attractiveness?: Partial<Attractiveness>;
     }) {
+      this.isLoading = true;
       try {
+        // Build featuredImage FileUpload if a data URI was provided
+        let featuredImagePayload: FileUpload | undefined;
+        if (data.featuredImage && typeof data.featuredImage === "string") {
+          const parsed = dataUriToFileUpload(
+            data.featuredImage,
+            data.featuredImageFileName || "image.jpg",
+          );
+          if (parsed) featuredImagePayload = parsed;
+          // If not a data URI it's an existing URL – skip (backend ignores it)
+        }
+
+        const status = data.status || data.publishing?.status || "draft";
+
         const created = await contentService.createBlogPost({
           title: data.title,
+          slug: data.slug,
           author: data.author,
+          authorId: data.authorId,
+          leadParagraph: data.leadParagraph,
           content: data.content,
-          media: data.media,
-          publishing: data.publishing,
-          attractiveness: data.attractiveness,
+          status,
+          featuredImage: featuredImagePayload,
+          publishing: {
+            status: status as "draft" | "published" | "archived",
+            publishedAt: data.publishing?.publishedAt ?? null,
+            scheduledAt: data.publishing?.scheduledAt ?? null,
+          },
+          attractiveness: {
+            isFeatured: data.attractiveness?.isFeatured ?? false,
+            isSpotlight: data.attractiveness?.isSpotlight ?? false,
+            priority: data.attractiveness?.priority ?? 0,
+            highlight: data.attractiveness?.highlight ?? false,
+          },
         });
 
         if (created) {
-          const newPost: BlogPost = {
-            id: parseInt(created.id) || this.blogPosts.length + 1,
-            title: created.title,
-            slug: created.slug,
-            author: created.author,
-            content: created.content,
-            excerpt: created.excerpt,
-            date: this.formatDate(new Date(created.createdAt)),
-            status: created.publishing?.status || "draft",
-            views: created.viewCount || 0,
-            media: created.media || [],
-            publishing: created.publishing,
-            attractiveness: created.attractiveness,
-          };
-          this.blogPosts.push(newPost);
+          const newPost = this._mapResponseToPost(created);
+          this.blogPosts.unshift(newPost);
           return newPost;
         }
       } catch (e) {
         console.error("Failed to create blog post:", e);
+        this.error = "Failed to create blog post";
+      } finally {
+        this.isLoading = false;
       }
-
-      // Fallback to local creation if API fails
-      const newId = Math.max(...this.blogPosts.map((p) => p.id), 0) + 1;
-      const newPost: BlogPost = {
-        ...data,
-        id: newId,
-        date: this.formatDate(new Date()),
-        views: 0,
-        status: data.publishing.status,
-        media: data.media || [],
-      };
-      this.blogPosts.push(newPost);
-      return newPost;
+      return null;
     },
 
-    async updatePost(id: number, data: {
-      title?: string;
-      author?: string;
-      content?: string;
-      media?: BlogPostMedia[];
-      publishing?: {
+    /**
+     * Update an existing blog post. Same JSON payload approach.
+     */
+    async updatePost(
+      id: string,
+      data: {
+        title?: string;
+        slug?: string;
+        author?: string;
+        authorId: string;
+        leadParagraph?: string;
+        /** Either a data URI (new upload) or an existing URL (no-op) */
+        featuredImage?: File | string;
+        featuredImageFileName?: string;
+        content?: string;
         status?: "draft" | "published" | "archived";
-        publishedAt?: string;
-        scheduledAt?: string;
-      };
-      attractiveness?: {
-        isFeatured?: boolean;
-        isSpotlight?: boolean;
-        priority?: number;
-        highlight?: boolean;
-      };
-    }) {
+        publishing?: Partial<Publishing>;
+        attractiveness?: Partial<Attractiveness>;
+      },
+    ) {
+      this.isLoading = true;
       try {
-        const updated = await contentService.updateBlogPost(String(id), {
+        let featuredImagePayload: FileUpload | undefined;
+        if (data.featuredImage && typeof data.featuredImage === "string") {
+          const parsed = dataUriToFileUpload(
+            data.featuredImage,
+            data.featuredImageFileName || "image.jpg",
+          );
+          if (parsed) featuredImagePayload = parsed;
+        }
+
+        const status = data.status || data.publishing?.status;
+
+        const updated = await contentService.updateBlogPost(id, {
           title: data.title,
+          slug: data.slug,
           author: data.author,
+          authorId: data.authorId,
+          leadParagraph: data.leadParagraph,
           content: data.content,
-          media: data.media,
-          publishing: data.publishing,
-          attractiveness: data.attractiveness,
+          status,
+          featuredImage: featuredImagePayload,
+          publishing: data.publishing
+            ? {
+                status: (data.publishing.status || status || "draft") as
+                  | "draft"
+                  | "published"
+                  | "archived",
+                publishedAt: data.publishing.publishedAt ?? null,
+                scheduledAt: data.publishing.scheduledAt ?? null,
+              }
+            : undefined,
+          attractiveness: data.attractiveness
+            ? {
+                isFeatured: data.attractiveness.isFeatured ?? false,
+                isSpotlight: data.attractiveness.isSpotlight ?? false,
+                priority: data.attractiveness.priority ?? 0,
+                highlight: data.attractiveness.highlight ?? false,
+              }
+            : undefined,
         });
 
         if (updated) {
           const index = this.blogPosts.findIndex((p) => p.id === id);
+          const updatedPost = this._mapResponseToPost(updated);
           if (index !== -1) {
-            const existing = this.blogPosts[index];
-            if (!existing) return null;
-            this.blogPosts[index] = {
-              ...existing,
-              title: updated.title,
-              slug: updated.slug,
-              author: updated.author,
-              content: updated.content,
-              excerpt: updated.excerpt,
-              date: this.formatDate(new Date(updated.updatedAt)),
-              status: updated.publishing?.status || existing.status,
-              views: updated.viewCount || existing.views,
-              media: updated.media || existing.media,
-              publishing: updated.publishing || existing.publishing,
-              attractiveness: updated.attractiveness || existing.attractiveness,
-            };
-            return this.blogPosts[index];
+            this.blogPosts[index] = updatedPost;
           }
+          return updatedPost;
         }
       } catch (e) {
         console.error("Failed to update blog post:", e);
-      }
-
-      // Fallback to local update if API fails
-      const index = this.blogPosts.findIndex((p) => p.id === id);
-      if (index !== -1) {
-        const existing = this.blogPosts[index];
-        if (!existing) return null;
-        const updatedPublishing = data.publishing
-          ? { ...existing.publishing, ...data.publishing }
-          : existing.publishing;
-        const updatedAttractiveness = data.attractiveness
-          ? { ...existing.attractiveness, ...data.attractiveness }
-          : existing.attractiveness;
-        this.blogPosts[index] = {
-          ...existing,
-          title: data.title ?? existing.title,
-          author: data.author ?? existing.author,
-          date: this.formatDate(new Date()),
-          status: updatedPublishing.status,
-          views: existing.views,
-          content: data.content ?? existing.content,
-          media: data.media ?? existing.media,
-          publishing: updatedPublishing,
-          attractiveness: updatedAttractiveness,
-        };
-        return this.blogPosts[index];
+        this.error = "Failed to update blog post";
+      } finally {
+        this.isLoading = false;
       }
       return null;
     },
 
-    async deletePost(id: number) {
+    async deletePost(id: string) {
+      this.isLoading = true;
       try {
-        await contentService.deleteBlogPost(String(id));
+        const success = await contentService.deleteBlogPost(id);
+        if (success) {
+          this.blogPosts = this.blogPosts.filter((p) => p.id !== id);
+          return true;
+        }
       } catch (e) {
         console.error("Failed to delete blog post from server:", e);
+        this.error = "Failed to delete blog post";
+      } finally {
+        this.isLoading = false;
       }
-
-      // Always remove locally
-      this.blogPosts = this.blogPosts.filter((p) => p.id !== id);
+      return false;
     },
 
-    togglePostStatus(id: number) {
-      const post = this.blogPosts.find((p) => p.id === id);
-      if (post) {
-        post.status = post.status === "published" ? "draft" : "published";
-        post.date = this.formatDate(new Date());
-        return post.status;
-      }
-      return null;
-    },
-
-    incrementPostViews(id: number) {
-      const post = this.blogPosts.find((p) => p.id === id);
-      if (post) {
-        post.views++;
-      }
-    },
-
-    async fetchBlogPosts(params: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      status?: string;
-    } = {}) {
+    async fetchBlogPosts(
+      params: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+      } = {},
+    ) {
       this.isLoading = true;
       this.error = null;
       try {
         const result = await contentService.fetchBlogPosts(params);
-        this.blogPosts = result.posts.map((p) => ({
-          id: parseInt(p.id) || 0,
+        this.blogPosts = (result?.posts ?? []).map((p: any) => ({
+          id: p.id,
           title: p.title,
-          slug: p.slug,
-          author: p.author,
-          content: "",
-          excerpt: p.excerpt,
+          slug: p.slug || "",
+          author: p.author || "Admin",
+          leadParagraph: p.leadParagraph || p.excerpt || "",
+          featuredImage: p.featuredImage || "",
+          excerpt: p.excerpt || p.leadParagraph || "",
           date: this.formatDate(new Date(p.createdAt)),
-          status: (p.status as "published" | "draft" | "archived") || "draft",
+          status: (p.publishing?.status || p.status || "draft") as
+            | "published"
+            | "draft"
+            | "archived",
           views: p.viewCount || 0,
-          media: [],
+          content: p.content || "",
           publishing: {
-            status: (p.status as "published" | "draft" | "archived") || "draft",
+            status: (p.publishing?.status || p.status || "draft") as
+              | "draft"
+              | "published"
+              | "archived",
+            publishedAt: p.publishing?.publishedAt ?? null,
+            scheduledAt: p.publishing?.scheduledAt ?? null,
           },
           attractiveness: {
-            isFeatured: false,
-            isSpotlight: false,
-            priority: 0,
-            highlight: false,
+            isFeatured: p.attractiveness?.isFeatured ?? false,
+            isSpotlight: p.attractiveness?.isSpotlight ?? false,
+            priority: p.attractiveness?.priority ?? 0,
+            highlight: p.attractiveness?.highlight ?? false,
           },
+          viewCount: p.viewCount || 0,
+          likeCount: p.likeCount || 0,
+          readingTime: p.readingTime || 1,
+          createdAt: p.createdAt || new Date().toISOString(),
+          updatedAt: p.updatedAt || new Date().toISOString(),
         }));
         return result;
       } catch (err) {
-        this.error = err instanceof Error ? err.message : "Failed to fetch blog posts";
+        this.error =
+          err instanceof Error ? err.message : "Failed to fetch blog posts";
         console.error("Error fetching blog posts:", err);
         return null;
       } finally {
@@ -424,7 +479,63 @@ export const useContentStore = defineStore("content", {
       }
     },
 
-    // Helper functions
+    async incrementBlogPostViewCount(id: string) {
+      try {
+        await contentService.incrementBlogPostViewCount(id);
+        const post = this.blogPosts.find((p) => p.id === id);
+        if (post) {
+          post.viewCount++;
+          post.views++;
+        }
+      } catch {
+        // Silent fail – don't disrupt UX
+      }
+    },
+
+    // ----------------------------------------------------------
+    // Helper: map a BlogPostResponse to the internal BlogPost type
+    // ----------------------------------------------------------
+    _mapResponseToPost(r: any): BlogPost {
+      return {
+        id: r.id,
+        title: r.title,
+        slug: r.slug || "",
+        author: r.author || "Admin",
+        leadParagraph: r.leadParagraph || r.excerpt || "",
+        featuredImage: r.featuredImage || "",
+        excerpt: r.excerpt || r.leadParagraph || "",
+        date: this.formatDate(new Date(r.createdAt || Date.now())),
+        status: (r.publishing?.status || r.status || "draft") as
+          | "published"
+          | "draft"
+          | "archived",
+        views: r.viewCount || 0,
+        content: r.content || "",
+        publishing: {
+          status: (r.publishing?.status || "draft") as
+            | "draft"
+            | "published"
+            | "archived",
+          publishedAt: r.publishing?.publishedAt ?? null,
+          scheduledAt: r.publishing?.scheduledAt ?? null,
+        },
+        attractiveness: {
+          isFeatured: r.attractiveness?.isFeatured ?? false,
+          isSpotlight: r.attractiveness?.isSpotlight ?? false,
+          priority: r.attractiveness?.priority ?? 0,
+          highlight: r.attractiveness?.highlight ?? false,
+        },
+        viewCount: r.viewCount || 0,
+        likeCount: r.likeCount || 0,
+        readingTime: r.readingTime || 1,
+        createdAt: r.createdAt || new Date().toISOString(),
+        updatedAt: r.updatedAt || new Date().toISOString(),
+      };
+    },
+
+    // ----------------------------------------------------------
+    // Helpers
+    // ----------------------------------------------------------
     formatDate(date: Date): string {
       return date.toLocaleDateString("en-US", {
         month: "short",
@@ -443,37 +554,18 @@ export const useContentStore = defineStore("content", {
       );
     },
 
-    // Media helpers
-    addMediaToPost(postId: number, media: BlogPostMedia) {
-      const post = this.blogPosts.find((p) => p.id === postId);
-      if (post) {
-        post.media.push(media);
-        return true;
-      }
-      return false;
-    },
-
-    removeMediaFromPost(postId: number, mediaIndex: number) {
-      const post = this.blogPosts.find((p) => p.id === postId);
-      if (post && mediaIndex >= 0 && mediaIndex < post.media.length) {
-        post.media.splice(mediaIndex, 1);
-        return true;
-      }
-      return false;
-    },
-
+    // ----------------------------------------------------------
     // FAQ Actions
+    // ----------------------------------------------------------
     async fetchFaqs() {
       this.isLoading = true;
       this.error = null;
-
       try {
         const faqs = await contentService.fetchFaqs();
         this.faqs = faqs;
         return faqs;
       } catch (err) {
-        this.error =
-          err instanceof Error ? err.message : "Failed to fetch FAQs";
+        this.error = err instanceof Error ? err.message : "Failed to fetch FAQs";
         console.error("Error fetching FAQs:", err);
         return [];
       } finally {
@@ -484,7 +576,6 @@ export const useContentStore = defineStore("content", {
     async fetchFaqById(id: string) {
       this.isLoading = true;
       this.error = null;
-
       try {
         const faq = await contentService.fetchFaqById(id);
         if (faq) {
@@ -504,7 +595,6 @@ export const useContentStore = defineStore("content", {
     async createFaq(data: CreateFaqData) {
       this.isLoading = true;
       this.error = null;
-
       try {
         const faq = await contentService.createFaq(data);
         if (faq) {
@@ -513,8 +603,7 @@ export const useContentStore = defineStore("content", {
         }
         return null;
       } catch (err) {
-        this.error =
-          err instanceof Error ? err.message : "Failed to create FAQ";
+        this.error = err instanceof Error ? err.message : "Failed to create FAQ";
         console.error("Error creating FAQ:", err);
         return null;
       } finally {
@@ -525,23 +614,17 @@ export const useContentStore = defineStore("content", {
     async updateFaq(id: string, data: UpdateFaqData) {
       this.isLoading = true;
       this.error = null;
-
       try {
         const faq = await contentService.updateFaq(id, data);
         if (faq) {
           const index = this.faqs.findIndex((f) => f.id === id);
-          if (index !== -1) {
-            this.faqs[index] = faq;
-          }
-          if (this.currentFaq?.id === id) {
-            this.currentFaq = faq;
-          }
+          if (index !== -1) this.faqs[index] = faq;
+          if (this.currentFaq?.id === id) this.currentFaq = faq;
           return faq;
         }
         return null;
       } catch (err) {
-        this.error =
-          err instanceof Error ? err.message : "Failed to update FAQ";
+        this.error = err instanceof Error ? err.message : "Failed to update FAQ";
         console.error("Error updating FAQ:", err);
         return null;
       } finally {
@@ -552,19 +635,15 @@ export const useContentStore = defineStore("content", {
     async deleteFaq(id: string) {
       this.isLoading = true;
       this.error = null;
-
       try {
         const success = await contentService.deleteFaq(id);
         if (success) {
           this.faqs = this.faqs.filter((f) => f.id !== id);
-          if (this.currentFaq?.id === id) {
-            this.currentFaq = null;
-          }
+          if (this.currentFaq?.id === id) this.currentFaq = null;
         }
         return success;
       } catch (err) {
-        this.error =
-          err instanceof Error ? err.message : "Failed to delete FAQ";
+        this.error = err instanceof Error ? err.message : "Failed to delete FAQ";
         console.error("Error deleting FAQ:", err);
         return false;
       } finally {
@@ -580,10 +659,7 @@ export const useContentStore = defineStore("content", {
       const faq = this.faqs.splice(fromIndex, 1)[0];
       if (faq) {
         this.faqs.splice(toIndex, 0, faq);
-        // Update sort order locally first
         this.faqs.forEach((f, i) => (f.sortOrder = i + 1));
-
-        // Then sync with API
         try {
           await Promise.all(
             this.faqs.map((f, i) => contentService.reorderFaq(f.id, i + 1)),
@@ -594,10 +670,9 @@ export const useContentStore = defineStore("content", {
       }
     },
 
-    // Reset state
     reset() {
       this.pages = [...initialPages];
-      this.blogPosts = [...initialBlogPosts];
+      this.blogPosts = [];
       this.faqs = [];
       this.currentFaq = null;
       this.isLoading = false;

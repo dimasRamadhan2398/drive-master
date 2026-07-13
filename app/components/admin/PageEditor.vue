@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const props = defineProps({
   page: {
     type: Object,
@@ -19,19 +20,39 @@ if (!formData.value.sections) {
 const generateId = () => Math.random().toString(36).substr(2, 9)
 
 const sectionTypes = [
-  { label: 'Hero Section', value: 'hero', icon: 'i-lucide-layout-template' },
-  { label: 'Text Block', value: 'text', icon: 'i-lucide-align-left' },
-  { label: 'Image + Text', value: 'image_text', icon: 'i-lucide-image' },
-  { label: 'Call to Action (CTA)', value: 'cta', icon: 'i-lucide-megaphone' }
+  { label: t('admin.heroSection'), value: 'hero', icon: 'i-lucide-layout-template' },
+  { label: t('admin.textBlock'), value: 'text', icon: 'i-lucide-align-left' },
+  { label: t('admin.imageText'), value: 'image_text', icon: 'i-lucide-image' },
+  { label: t('admin.ctaSection'), value: 'cta', icon: 'i-lucide-megaphone' },
+  { label: 'Course Material Grid', value: 'course_material', icon: 'i-lucide-book-open' }
 ]
 
 function addSection(type: string) {
   let defaultData = {}
   
-  if (type === 'hero') defaultData = { heading: '', subheading: '', ctaText: '', bgImage: '' }
+  if (type === 'hero') {
+    defaultData = {
+      heading: '',
+      subheading: '',
+      ctaText: '',
+      ctaLink: '',
+      secondaryCtaText: '',
+      secondaryCtaLink: '',
+      bgImage: '',
+      features: []
+    }
+  }
   else if (type === 'text') defaultData = { content: '' }
   else if (type === 'image_text') defaultData = { image: '', content: '' }
   else if (type === 'cta') defaultData = { heading: '', buttonText: '', buttonLink: '' }
+  else if (type === 'course_material') {
+    defaultData = {
+      headline: '',
+      title: '',
+      description: '',
+      materials: []
+    }
+  }
 
   formData.value.sections.push({
     id: generateId(),
@@ -80,10 +101,98 @@ function onDragEnd() {
   dragIndex.value = null
 }
 
+function addFeature(section: any) {
+  if (!section.data.features) section.data.features = []
+  section.data.features.push({ title: '', icon: 'i-lucide-check-circle' })
+}
+
+function removeFeature(section: any, index: number) {
+  section.data.features.splice(index, 1)
+}
+
+function addMaterial(section: any) {
+  if (!section.data.materials) section.data.materials = []
+  section.data.materials.push({ title: '', icon: 'i-lucide-book-open', description: [] })
+}
+
+function removeMaterial(section: any, index: number) {
+  section.data.materials.splice(index, 1)
+}
+
+function getBulletsText(description: string[] | undefined) {
+  if (!description) return ''
+  return description.join('\n')
+}
+
+function setBulletsText(material: any, text: string) {
+  material.description = text.split('\n').map(line => line.trim()).filter(line => line.length > 0)
+}
+
+// ==================== IMAGE UPLOADS ====================
+function triggerFileUpload(sectionId: string) {
+  const input = document.getElementById(`file-input-${sectionId}`) as HTMLInputElement
+  input?.click()
+}
+
+function handleFileChange(event: Event, section: any) {
+  const input = event.target as HTMLInputElement
+  if (!input.files || !input.files[0]) return
+
+  const file = input.files[0]
+  if (file.size > 5 * 1024 * 1024) {
+    toast.add({
+      title: "File Too Large",
+      description: `"${file.name}" exceeds the 5 MB limit for images.`,
+      color: "error",
+    })
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    section.data.bgImage = e.target?.result as string
+  }
+  reader.readAsDataURL(file)
+}
+
+function clearBgImage(section: any) {
+  section.data.bgImage = ''
+}
+
+function triggerImageUpload(sectionId: string) {
+  const input = document.getElementById(`image-input-${sectionId}`) as HTMLInputElement
+  input?.click()
+}
+
+function handleImageFileChange(event: Event, section: any) {
+  const input = event.target as HTMLInputElement
+  if (!input.files || !input.files[0]) return
+
+  const file = input.files[0]
+  if (file.size > 5 * 1024 * 1024) {
+    toast.add({
+      title: "File Too Large",
+      description: `"${file.name}" exceeds the 5 MB limit for images.`,
+      color: "error",
+    })
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    section.data.image = e.target?.result as string
+  }
+  reader.readAsDataURL(file)
+}
+
+function clearImage(section: any) {
+  section.data.image = ''
+}
+
 // ==================== ACTIONS ====================
 function handleSave() {
   emit('save', formData.value)
-  toast.add({ title: 'Page Saved', description: `Sections for "${formData.value.title}" have been saved.`, color: 'success' })
+  toast.add({ title: t('admin.pageSaved'), description: t('admin.pageSavedDesc', { title: formData.value.title }), color: 'success' })
 }
 
 function handleClose() {
@@ -98,14 +207,14 @@ function handleClose() {
       <div>
         <div class="flex items-center gap-3 mb-1">
           <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" @click="handleClose" />
-          <h2 class="text-xl font-semibold">Editing: {{ formData.title }}</h2>
+          <h2 class="text-xl font-semibold">{{ t('admin.editPage') }}: {{ formData.title }}</h2>
           <UBadge :label="formData.status" :color="formData.status === 'published' ? 'success' : 'warning'" variant="subtle" />
         </div>
         <p class="text-sm text-muted ml-11">Path: <code>{{ formData.slug }}</code></p>
       </div>
       <div class="flex items-center gap-3">
-        <UButton label="Discard Changes" color="neutral" variant="ghost" @click="handleClose" />
-        <UButton label="Save Page" icon="i-lucide-save" @click="handleSave" />
+        <UButton :label="t('admin.discardChanges')" color="neutral" variant="ghost" @click="handleClose" />
+        <UButton :label="t('admin.savePage')" icon="i-lucide-save" @click="handleSave" />
       </div>
     </div>
 
@@ -115,8 +224,8 @@ function handleClose() {
       <!-- Empty State -->
       <div v-if="formData.sections.length === 0" class="text-center py-16 border-2 border-dashed border-default rounded-xl">
         <UIcon name="i-lucide-layout-dashboard" class="size-12 text-muted mb-3 mx-auto" />
-        <h3 class="text-lg font-medium mb-1">No sections yet</h3>
-        <p class="text-muted text-sm mb-4">Start building your page by adding a section below.</p>
+        <h3 class="text-lg font-medium mb-1">{{ t('admin.noSections') }}</h3>
+        <p class="text-muted text-sm mb-4">{{ t('admin.addSectionDesc') }}</p>
       </div>
 
       <!-- Sections List -->
@@ -147,62 +256,226 @@ function handleClose() {
             <!-- HERO FORM -->
             <div v-if="section.type === 'hero'" class="grid grid-cols-2 gap-4">
               <div class="col-span-2">
-                <label class="block text-xs font-medium text-muted mb-1.5">Heading</label>
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.heading') }}</label>
                 <UInput v-model="section.data.heading" placeholder="Main big title" class="w-full" />
               </div>
               <div class="col-span-2">
-                <label class="block text-xs font-medium text-muted mb-1.5">Subheading</label>
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.subheading') }}</label>
                 <UTextarea v-model="section.data.subheading" placeholder="Description under the title" :rows="2" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-muted mb-1.5">CTA Button Text</label>
-                <UInput v-model="section.data.ctaText" placeholder="e.g. Get Started" class="w-full" />
+                <label class="block text-xs font-medium text-muted mb-1.5">Primary CTA Button Text</label>
+                <UInput v-model="section.data.ctaText" placeholder="e.g. Pesan Sesi Pertama" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-muted mb-1.5">Background Image URL</label>
-                <UInput v-model="section.data.bgImage" icon="i-lucide-image" placeholder="https://..." class="w-full" />
+                <label class="block text-xs font-medium text-muted mb-1.5">Primary CTA Link</label>
+                <UInput v-model="section.data.ctaLink" placeholder="e.g. /auth/register" class="w-full" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted mb-1.5">Secondary CTA Button Text</label>
+                <UInput v-model="section.data.secondaryCtaText" placeholder="e.g. Lihat Paket" class="w-full" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted mb-1.5">Secondary CTA Link</label>
+                <UInput v-model="section.data.secondaryCtaLink" placeholder="e.g. /packages" class="w-full" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.bgImageUrl') }}</label>
+                <div class="flex flex-col gap-2">
+                  <div v-if="section.data.bgImage" class="relative h-40 rounded-lg overflow-hidden border border-default group">
+                    <img :src="section.data.bgImage" class="w-full h-full object-cover" />
+                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <UButton
+                        label="Change Image"
+                        icon="i-lucide-upload"
+                        size="sm"
+                        color="neutral"
+                        @click="triggerFileUpload(section.id)"
+                      />
+                      <UButton
+                        label="Remove"
+                        icon="i-lucide-trash"
+                        size="sm"
+                        color="error"
+                        @click="clearBgImage(section)"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div class="flex gap-2">
+                    <UInput
+                      v-model="section.data.bgImage"
+                      icon="i-lucide-image"
+                      placeholder="Paste image URL or upload local image..."
+                      class="flex-1"
+                    />
+                    <UButton
+                      icon="i-lucide-upload"
+                      color="neutral"
+                      variant="soft"
+                      @click="triggerFileUpload(section.id)"
+                    />
+                    <input
+                      :id="`file-input-${section.id}`"
+                      type="file"
+                      class="hidden"
+                      accept="image/*"
+                      @change="handleFileChange($event, section)"
+                    />
+                  </div>
+                </div>
+              </div>
+              <!-- Features manager -->
+              <div class="col-span-2 border-t border-default pt-4 mt-2">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold text-muted uppercase tracking-wider">Features</span>
+                  <UButton label="Add Feature" icon="i-lucide-plus" size="xs" color="neutral" variant="soft" @click="addFeature(section)" />
+                </div>
+                <div class="space-y-2">
+                  <div v-for="(feat, fIdx) in section.data.features" :key="fIdx" class="flex gap-2 items-center">
+                    <UInput v-model="feat.title" placeholder="Feature title" class="flex-1" size="sm" />
+                    <UInput v-model="feat.icon" placeholder="Icon class (e.g. i-lucide-car)" class="w-48" size="sm" />
+                    <UButton icon="i-lucide-trash" color="error" variant="ghost" size="xs" @click="removeFeature(section, fIdx)" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- COURSE MATERIAL GRID FORM -->
+            <div v-if="section.type === 'course_material'" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-muted mb-1.5">Headline</label>
+                  <UInput v-model="section.data.headline" placeholder="e.g. Materi kursus yang akan Anda pelajari" class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-muted mb-1.5">Title</label>
+                  <UInput v-model="section.data.title" placeholder="e.g. Materi Kursus" class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-muted mb-1.5">Description</label>
+                  <UInput v-model="section.data.description" placeholder="Short introduction" class="w-full" />
+                </div>
+              </div>
+
+              <!-- Materials Manager -->
+              <div class="border-t border-default pt-4 mt-2">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold text-muted uppercase tracking-wider">Course Materials / Cards</span>
+                  <UButton label="Add Card" icon="i-lucide-plus" size="xs" color="neutral" variant="soft" @click="addMaterial(section)" />
+                </div>
+                <div class="space-y-4">
+                  <div 
+                    v-for="(mat, mIdx) in section.data.materials" 
+                    :key="mIdx" 
+                    class="p-4 rounded-lg border border-default bg-muted/20 relative"
+                  >
+                    <UButton 
+                      icon="i-lucide-trash" 
+                      color="error" 
+                      variant="ghost" 
+                      size="xs" 
+                      class="absolute top-2 right-2" 
+                      @click="removeMaterial(section, mIdx)" 
+                    />
+                    <div class="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label class="block text-[10px] font-bold uppercase text-muted mb-1">Card Title</label>
+                        <UInput v-model="mat.title" placeholder="e.g. Teori Materi" size="sm" class="w-full" />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold uppercase text-muted mb-1">Card Icon</label>
+                        <UInput v-model="mat.icon" placeholder="e.g. i-lucide-book-open" size="sm" class="w-full" />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Bullet Points (One per line)</label>
+                      <UTextarea 
+                        :model-value="getBulletsText(mat.description)" 
+                        @update:model-value="setBulletsText(mat, $event)"
+                        placeholder="Bullet 1&#10;Bullet 2&#10;Bullet 3" 
+                        size="sm" 
+                        :rows="4" 
+                        class="w-full" 
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- TEXT BLOCK FORM -->
             <div v-if="section.type === 'text'">
-              <label class="block text-xs font-medium text-muted mb-1.5">Content</label>
+              <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.content.label') }}</label>
               <UTextarea v-model="section.data.content" placeholder="Write your paragraph here..." :rows="4" class="w-full" />
             </div>
 
             <!-- IMAGE + TEXT FORM -->
             <div v-if="section.type === 'image_text'" class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-medium text-muted mb-1.5">Image URL</label>
-                <div class="border-2 border-dashed border-default rounded-lg p-4 text-center h-32 flex flex-col items-center justify-center relative overflow-hidden">
-                  <template v-if="section.data.image">
-                    <img :src="section.data.image" class="absolute inset-0 w-full h-full object-cover opacity-30" />
-                    <UInput v-model="section.data.image" class="relative z-10 w-[90%]" size="sm" placeholder="URL..." />
-                  </template>
-                  <template v-else>
-                    <UIcon name="i-lucide-image-plus" class="size-6 text-muted mb-2" />
-                    <UInput v-model="section.data.image" class="w-full" size="sm" placeholder="Paste image URL here" />
-                  </template>
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.imageUrl') }}</label>
+                <div class="flex flex-col gap-2">
+                  <div v-if="section.data.image" class="relative h-40 rounded-lg overflow-hidden border border-default group">
+                    <img :src="section.data.image" class="w-full h-full object-cover" />
+                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <UButton
+                        label="Change Image"
+                        icon="i-lucide-upload"
+                        size="sm"
+                        color="neutral"
+                        @click="triggerImageUpload(section.id)"
+                      />
+                      <UButton
+                        label="Remove"
+                        icon="i-lucide-trash"
+                        size="sm"
+                        color="error"
+                        @click="clearImage(section)"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="flex gap-2">
+                    <UInput
+                      v-model="section.data.image"
+                      icon="i-lucide-image"
+                      placeholder="Paste image URL or upload local image..."
+                      class="flex-1"
+                    />
+                    <UButton
+                      icon="i-lucide-upload"
+                      color="neutral"
+                      variant="soft"
+                      @click="triggerImageUpload(section.id)"
+                    />
+                    <input
+                      :id="`image-input-${section.id}`"
+                      type="file"
+                      class="hidden"
+                      accept="image/*"
+                      @change="handleImageFileChange($event, section)"
+                    />
+                  </div>
                 </div>
               </div>
               <div>
-                <label class="block text-xs font-medium text-muted mb-1.5">Text Content</label>
-                <UTextarea v-model="section.data.content" placeholder="Description text..." class="w-full h-32" />
+                <label class="block text-xs font-medium text-muted mb-1.5">{{ t('admin.textContent') }}</label>
+                <UTextarea v-model="section.data.content" placeholder="Description text..." class="w-full h-40" />
               </div>
             </div>
 
             <!-- CTA FORM -->
             <div v-if="section.type === 'cta'" class="grid grid-cols-2 gap-4 bg-primary/5 p-4 rounded-lg border border-primary/20">
               <div class="col-span-2">
-                <label class="block text-xs font-medium text-primary mb-1.5">CTA Heading</label>
+                <label class="block text-xs font-medium text-primary mb-1.5">{{ t('admin.ctaSection') }} {{ t('admin.heading') }}</label>
                 <UInput v-model="section.data.heading" placeholder="e.g. Ready to start driving?" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-primary mb-1.5">Button Text</label>
+                <label class="block text-xs font-medium text-primary mb-1.5">{{ t('admin.buttonText') }}</label>
                 <UInput v-model="section.data.buttonText" placeholder="e.g. Contact Us" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-primary mb-1.5">Button Link</label>
+                <label class="block text-xs font-medium text-primary mb-1.5">{{ t('admin.buttonLink') }}</label>
                 <UInput v-model="section.data.buttonLink" placeholder="e.g. /contact" class="w-full" />
               </div>
             </div>
@@ -215,14 +488,14 @@ function handleClose() {
       <div class="flex justify-center mt-8">
         <UDropdownMenu
           :items="[
-            sectionTypes.map(t => ({ 
-              label: t.label, 
-              icon: t.icon, 
-              onSelect: () => addSection(t.value) 
+            sectionTypes.map(st => ({
+              label: st.label,
+              icon: st.icon,
+              onSelect: () => addSection(st.value)
             }))
           ]"
         >
-          <UButton label="Add Section" icon="i-lucide-plus" color="primary" variant="soft" size="lg" class="shadow-sm" />
+          <UButton :label="t('admin.addSection')" icon="i-lucide-plus" color="primary" variant="soft" size="lg" class="shadow-sm" />
         </UDropdownMenu>
       </div>
       

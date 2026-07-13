@@ -4,7 +4,7 @@ server:
   read_timeout: 60
 
 database:
-  host: drive_master_postgres
+  host: 127.0.0.1
   port: 5432
   username: admin_drive
   password: drivemaster123
@@ -16,9 +16,9 @@ database:
   maxIdleTime: 10
 
 redis:
-  host: redis
+  host: 127.0.0.1
   port: 6379
-  password: "drivemaster123"
+  password: ""
   db: 0
 
 jwt:
@@ -44,15 +44,31 @@ app:
   rate_limiter_max: 100
   rate_limiter_time: 1
   base_path: /app
+  payment_gateway: pakasir
 
 midtrans:
   server_key: Mid-server-RzMK8evhW7EZiDp4xL0kIKYY
   client_key: Mid-client-VRtikOzo00hMYblh
-  environment: ${MIDTRANS_ENVIRONMENT:-sandbox}
+  environment: sandbox
   merchant_id: "M243240030"
   base_url: https://api.midtrans.com
   snap_url: https://app.midtrans.com/snap/snap.js
   enabled: true
-  notification_url: ${MIDTRANS_NOTIFICATION_URL:-http://localhost:8080/notifications}
+  notification_url: https://drivemaster.id/api/v1/payments/notification
   timeout_seconds: 30
-  gopay_callback_url: "localhost:3000/payment/success"
+  gopay_callback_url: "drivemaster.id/payment/success"
+  frontend_url: "https://drivemaster.id"
+
+doku:
+  client_id: ""
+  secret_key: ""
+  environment: sandbox
+  base_url: https://api-sandbox.doku.com
+  notification_url: https://drivemaster.id/api/v1/payments/doku/notification
+  payment_due_date: 60
+  frontend_url: https://drivemaster.id
+
+pakasir:
+  slug: "drivemaster"
+  api_key: "default_api_key"
+  base_url: "https://app.pakasir.com"

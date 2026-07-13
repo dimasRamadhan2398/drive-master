@@ -40,7 +40,7 @@ func (c *DashboardController) GetStats(ctx *gin.Context) {
 }
 
 func (c *DashboardController) GetCertificationStats(ctx *gin.Context) {
-	stats, err := c.certificationService.GetStats(ctx.Request.Context())
+	stats, err := c.certificationService.GetCertificateStats(ctx.Request.Context())
 	if err != nil {
 		responseRes.ErrorFromGeneric(ctx, err)
 		return

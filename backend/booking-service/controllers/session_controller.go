@@ -9,6 +9,7 @@ import (
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type SessionController struct {
@@ -96,6 +97,25 @@ func (c *SessionController) GetSession(ctx *gin.Context) {
 func (c *SessionController) ListSessions(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	userIDStr := ctx.Query("userId")
+	if userIDStr == "" {
+		userIDStr = ctx.Query("studentId")
+	}
+
+	if userIDStr != "" {
+		parsedID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			return
+		}
+		resp, err := c.sessionService.ListUserSessions(ctx.Request.Context(), parsedID, page, limit)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusOK, resp)
+		return
+	}
 
 	resp, err := c.sessionService.ListSessions(ctx.Request.Context(), page, limit)
 	if err != nil {

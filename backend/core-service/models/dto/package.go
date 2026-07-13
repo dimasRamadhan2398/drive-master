@@ -44,7 +44,7 @@ type UpdatePackageRequest struct {
 	TotalSessions   int                 `json:"totalSessions" binding:"omitempty,gte=1"`
 	Status          models.PackageStatus `json:"status" binding:"omitempty,oneof=active inactive"`
 	ImageURL        string              `json:"imageUrl" binding:"omitempty,url,max=500"`
-	Benefits        []BenefitInput       `json:"benefits"`
+	Features        []BenefitInput       `json:"features"`
 	Highlight       bool                `json:"highlight"`
 }
 

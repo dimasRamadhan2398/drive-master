@@ -75,6 +75,13 @@ func (r *SeederRunner) RunAll() error {
 	}
 	log.Println("Testimonials seeded successfully")
 
+	// 9. Seed certifications
+	certSeeder := NewCertificationSeeder(r.db)
+	if err := certSeeder.Seed(); err != nil {
+		return err
+	}
+	log.Println("Certifications seeded successfully")
+
 	log.Println("All seeders completed successfully")
 	return nil
 }

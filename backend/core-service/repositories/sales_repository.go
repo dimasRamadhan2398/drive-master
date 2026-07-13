@@ -26,6 +26,7 @@ type ISalesRepository interface {
 	GetSalesTrend(ctx context.Context, startDate, endDate string) ([]models.DailySales, error)
 	GetSalesBySource(ctx context.Context, startDate, endDate string) ([]models.SalesBySource, error)
 	GetSalesByPackageType(ctx context.Context, startDate, endDate string) ([]models.SalesByPackageType, error)
+	GetSalesByPackage(ctx context.Context, startDate, endDate string) ([]models.SalesByPackage, error)
 	GetOverviewStats(ctx context.Context, startDate, endDate string) (*models.SalesOverviewStats, error)
 	CountByStatus(ctx context.Context, status models.SaleStatus, startDate, endDate string) (int64, error)
 	SumRevenue(ctx context.Context, startDate, endDate string) (float64, error)
@@ -227,6 +228,29 @@ func (r *SalesRepository) GetSalesByPackageType(ctx context.Context, startDate, 
 		FROM sales
 		WHERE created_at >= $1::date AND created_at <= $2::date
 		GROUP BY COALESCE(package_type, 'unknown')
+		ORDER BY total_revenue DESC
+	`
+	if err := r.BaseRepository.DB.WithContext(ctx).Raw(sql, startDate, endDate).Scan(&results).Error; err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+// GetSalesByPackage retrieves sales breakdown by individual package (from sale_items)
+func (r *SalesRepository) GetSalesByPackage(ctx context.Context, startDate, endDate string) ([]models.SalesByPackage, error) {
+	var results []models.SalesByPackage
+	sql := `
+		SELECT
+			si.package_id as package_id,
+			COALESCE(si.package_name, 'Unknown Package') as package_name,
+			COUNT(DISTINCT s.id)::bigint as total_sales,
+			COALESCE(SUM(si.quantity), 0)::bigint as total_quantity,
+			COALESCE(SUM(CASE WHEN s.status = 'completed' THEN si.subtotal ELSE 0 END), 0)::float8 as total_revenue,
+			COALESCE(AVG(si.unit_price), 0)::float8 as avg_unit_price
+		FROM sale_items si
+		JOIN sales s ON s.id = si.sale_id
+		WHERE s.created_at >= $1::date AND s.created_at <= $2::date
+		GROUP BY si.package_id, si.package_name
 		ORDER BY total_revenue DESC
 	`
 	if err := r.BaseRepository.DB.WithContext(ctx).Raw(sql, startDate, endDate).Scan(&results).Error; err != nil {

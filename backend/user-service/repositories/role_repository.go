@@ -72,5 +72,8 @@ func (r *RoleRepository) UpdateUserRole(ctx context.Context, userID uuid.UUID, r
 	if len(roles) == 0 {
 		return apperrors.ErrNotFound
 	}
+	if err := r.BaseRepository.DB.Model(&models.User{}).Where("id = ?", userID).Update("role_id", roleID).Error; err != nil {
+		return apperrors.TranslateDBError(err)
+	}
 	return nil
 }

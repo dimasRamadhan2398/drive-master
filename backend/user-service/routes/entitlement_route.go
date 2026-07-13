@@ -25,21 +25,24 @@ func (r *EntitlementRoute) Run() {
 	group := r.group.Group("/entitlements")
 	{
 		// List entitlements for a member (with pagination)
-		group.GET("/members/:memberId", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().ListEntitlements)
+		group.GET("/members/:id", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().ListEntitlements)
 
-		// Get single entitlement by ID
-		group.GET("/:id", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().GetEntitlement)
+		// Get single entitlement by member ID and entitlement ID
+		group.GET("/members/:id/entitlements/:entId", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().GetEntitlement)
+
+		// Get single entitlement by ID only (for backward compatibility)
+		group.GET("/:id", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().GetEntitlementByID)
 
 		// Create new entitlement
-		group.POST("/", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().CreateEntitlement)
+		group.POST("/members/:id", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().CreateEntitlement)
 
 		// Update entitlement
-		group.PUT("/:id", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().UpdateEntitlement)
+		group.PUT("/members/:id/entitlements/:entId", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().UpdateEntitlement)
 
 		// Delete entitlement
-		group.DELETE("/:id", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().DeleteEntitlement)
+		group.DELETE("/members/:id/entitlements/:entId", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().DeleteEntitlement)
 
 		// Use session (decrement remaining, increment used)
-		group.POST("/:id/use-session", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().UseSession)
+		group.POST("/members/:id/entitlements/:entId/use-session", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().UseSession)
 	}
 }

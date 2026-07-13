@@ -46,3 +46,18 @@ type UserInfo struct {
 	LastName  string `json:"lastName"`
 	Username  string `json:"username"`
 }
+
+// EntitlementInfo represents entitlement data from user-service
+type EntitlementInfo struct {
+	ID                uuid.UUID `json:"id"`
+	MemberID          uuid.UUID `json:"memberId"`
+	BookingID         uuid.UUID `json:"bookingId"`
+	PackageID         string    `json:"packageId"`
+	PackageName       string    `json:"packageName"`
+	TotalSessions     int       `json:"totalSessions"`
+	RemainingSessions int       `json:"remaining"`
+	UsedSessions      int       `json:"usedSessions"`
+	ExpiresAt         string    `json:"expiresAt"`
+	Status            string    `json:"status"`
+	IsActive          bool      `json:"isActive"`
+}

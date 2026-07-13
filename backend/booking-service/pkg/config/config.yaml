@@ -4,7 +4,7 @@ server:
   read_timeout: 60
 
 database:
-  host: drive_master_postgres
+  host: 127.0.0.1
   port: 5432
   username: admin_drive
   password: drivemaster123
@@ -16,9 +16,9 @@ database:
   maxIdleTime: 10
 
 redis:
-  host: redis
+  host: 127.0.0.1
   port: 6379
-  password: "drivemaster123"
+  password: ""
   db: 0
 
 imagekit:
@@ -36,7 +36,7 @@ log:
 kafka:
   enabled: true
   brokers:
-    - "kafka:29092"
+    - "127.0.0.1:9092"
   topic: "service-logs"
   service_name: "user-service"
 

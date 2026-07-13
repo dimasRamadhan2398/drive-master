@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install dependencies (frontend)
         run: |
@@ -39,29 +39,29 @@ jobs:
     needs: build-frontend
     strategy:
       matrix:
-        service: [user-service, core-service, api-gateway]
+        service: [user-service, core-service, booking-service, payment-service]
     defaults:
       run:
         working-directory: ./backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+ 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.23'
-
+ 
       - name: Build ${{ matrix.service }}
         run: |
           cd ${{ matrix.service }} && go build -v -o bin/${{ matrix.service }} ./cmd
-
+ 
       - name: Upload backend binaries
         uses: actions/upload-artifact@v4
         with:
           name: backend-binaries-${{ matrix.service }}
           path: backend/${{ matrix.service }}/bin
-
+ 
   deploy:
     runs-on: ubuntu-latest
     needs: [build-frontend, build-backend]
@@ -69,30 +69,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+ 
       - name: Download frontend artifact
         uses: actions/download-artifact@v4
         with:
           name: frontend-dist
-
+ 
       - name: Download backend artifacts
         uses: actions/download-artifact@v4
         with:
           name: backend-binaries-user-service
+          path: backend/user-service/bin
       - name: Download backend core
         uses: actions/download-artifact@v4
         with:
           name: backend-binaries-core-service
-      - name: Download backend api-gateway
+          path: backend/core-service/bin
+      - name: Download backend booking
         uses: actions/download-artifact@v4
         with:
-          name: backend-binaries-api-gateway
-
+          name: backend-binaries-booking-service
+          path: backend/booking-service/bin
+      - name: Download backend payment
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-binaries-payment-service
+          path: backend/payment-service/bin
+ 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.8.1
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
+ 
       - name: Rsync files to server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -102,8 +110,8 @@ jobs:
         run: |
           rsync -avz -e "ssh -p ${SSH_PORT} -o StrictHostKeyChecking=no" ./docker-compose.yml ${SSH_USER}@${SSH_HOST}:${SSH_TARGET_PATH}/
           rsync -avz -e "ssh -p ${SSH_PORT} -o StrictHostKeyChecking=no" .output ${SSH_USER}@${SSH_HOST}:${SSH_TARGET_PATH}/frontend/
-          rsync -avz -e "ssh -p ${SSH_PORT} -o StrictHostKeyChecking=no" backend/*/bin ${SSH_USER}@${SSH_HOST}:${SSH_TARGET_PATH}/backend/
-
+          rsync -avz -e "ssh -p ${SSH_PORT} -o StrictHostKeyChecking=no" --exclude="node_modules" --exclude=".git" backend/ ${SSH_USER}@${SSH_HOST}:${SSH_TARGET_PATH}/backend/
+ 
       - name: Run remote deploy script
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}

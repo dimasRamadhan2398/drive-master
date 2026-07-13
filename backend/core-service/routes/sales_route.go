@@ -40,8 +40,14 @@ func (r *SalesRoute) Run() {
 			analytics.GET("/trend", r.controller.GetSalesController().GetSalesTrend)
 			analytics.GET("/by-source", r.controller.GetSalesController().GetSalesBySource)
 			analytics.GET("/by-package-type", r.controller.GetSalesController().GetSalesByPackageType)
+			analytics.GET("/by-package", r.controller.GetSalesController().GetSalesByPackage)
 			analytics.GET("/monthly/:year/:month", r.controller.GetSalesController().GetMonthlySales)
 			analytics.GET("/yearly/:year", r.controller.GetSalesController().GetYearlySales)
+
+			// Recent transactions from payment service (only if transaction controller is available)
+			if tc := r.controller.GetTransactionController(); tc != nil {
+				analytics.GET("/recent-transactions", tc.GetRecentTransactions)
+			}
 		}
 	}
 }

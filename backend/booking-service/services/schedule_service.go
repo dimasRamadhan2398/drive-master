@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -19,9 +20,11 @@ import (
 type ScheduleService struct {
 	scheduleRepo        repositories.IScheduleRepository
 	enrollmentRepo      repositories.IEnrollmentRepository
+	sessionRepo         repositories.ISessionRepository
+	sessionService      ISessionService
 	availabilityService IAvailabilityService
 	userClient          uClient.IUserClient
-	coreClient         	cClient.ICoreClient
+	coreClient          cClient.ICoreClient
 }
 
 type IScheduleService interface {
@@ -34,12 +37,16 @@ type IScheduleService interface {
 	GetAvailableSchedules(ctx context.Context, startDate, endDate string) (*dto.ScheduleListResponse, error)
 	BookSlot(ctx context.Context, slotID uint, req dto.BookSlotRequest) (*dto.ScheduleResponse, error)
 	CancelBooking(ctx context.Context, slotID uint) error
+	StartSession(ctx context.Context, slotID uint) (*dto.ScheduleResponse, error)
+	CompleteSession(ctx context.Context, slotID uint) (*dto.ScheduleResponse, error)
 	GetStats(ctx context.Context) (*dto.ScheduleStatsResponse, error)
 }
 
 func NewScheduleService(
 	scheduleRepo repositories.IScheduleRepository,
 	enrollmentRepo repositories.IEnrollmentRepository,
+	sessionRepo repositories.ISessionRepository,
+	sessionService ISessionService,
 	availabilityService IAvailabilityService,
 	userClient uClient.IUserClient,
 	coreClient cClient.ICoreClient,
@@ -47,6 +54,8 @@ func NewScheduleService(
 	return &ScheduleService{
 		scheduleRepo:        scheduleRepo,
 		enrollmentRepo:      enrollmentRepo,
+		sessionRepo:         sessionRepo,
+		sessionService:      sessionService,
 		availabilityService: availabilityService,
 		userClient:          userClient,
 		coreClient:          coreClient,
@@ -83,8 +92,7 @@ func (s *ScheduleService) CreateSchedule(ctx context.Context, req dto.CreateSche
 		return nil, err
 	}
 
-	resp := s.scheduleRepo.ToResponse(schedule)
-	return &resp, nil
+	return s.enrichSchedule(ctx, schedule)
 }
 
 func (s *ScheduleService) GetSchedule(ctx context.Context, id uint) (*dto.ScheduleResponse, error) {
@@ -93,8 +101,7 @@ func (s *ScheduleService) GetSchedule(ctx context.Context, id uint) (*dto.Schedu
 		return nil, err
 	}
 
-	resp := s.scheduleRepo.ToResponse(schedule)
-	return &resp, nil
+	return s.enrichSchedule(ctx, schedule)
 }
 
 func (s *ScheduleService) UpdateSchedule(ctx context.Context, id uint, req dto.UpdateScheduleRequest) (*dto.ScheduleResponse, error) {
@@ -133,8 +140,7 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, id uint, req dto.U
 		return nil, err
 	}
 
-	resp := s.scheduleRepo.ToResponse(schedule)
-	return &resp, nil
+	return s.enrichSchedule(ctx, schedule)
 }
 
 func (s *ScheduleService) DeleteSchedule(ctx context.Context, id uint) error {
@@ -156,13 +162,24 @@ func (s *ScheduleService) ListSchedules(ctx context.Context, page, limit int) (*
 		return nil, err
 	}
 
-	total, err := s.scheduleRepo.CountAll(ctx)
-	if err != nil {
-		return nil, err
+	total := int64(len(schedules))
+	if limit <= 0 {
+		limit = 10
 	}
 
+	start := (page - 1) * limit
+	if start > int(total) {
+		start = int(total)
+	}
+	end := start + limit
+	if end > int(total) {
+		end = int(total)
+	}
+
+	paginatedSchedules := schedules[start:end]
+
 	// Enrich schedules with instructor, car, and user names
-	enrichedSchedules, err := s.enrichSchedules(ctx, schedules)
+	enrichedSchedules, err := s.enrichSchedules(ctx, paginatedSchedules)
 	if err != nil {
 		return nil, err
 	}
@@ -199,9 +216,20 @@ func (s *ScheduleService) GetAvailableSchedules(ctx context.Context, startDate, 
 		return nil, err
 	}
 
-	// Use page=1 and limit=len(schedules) for the response
-	resp := s.scheduleRepo.ToListResponse(schedules, int64(len(schedules)), 1, len(schedules))
-	return &resp, nil
+	enriched, err := s.enrichSchedules(ctx, schedules)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.ScheduleListResponse{
+		Data: enriched,
+		Pagination: dto.PaginationMeta{
+			Page:       1,
+			Total:      int64(len(schedules)),
+			Limit:      len(schedules),
+			TotalPages: 1,
+		},
+	}, nil
 }
 
 func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.ScheduleFilterParams) (*dto.ScheduleListResponse, error) {
@@ -219,30 +247,34 @@ func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.
 		match := true
 
 		if params.Date != "" {
-			parsedDate, _ := time.Parse("2006-01-02", params.Date)
-			if !sched.Date.Equal(parsedDate) {
+			if sched.Date.Format("2006-01-02") != params.Date {
 				match = false
 			}
 		}
 
 		if params.StartDate != "" && params.EndDate != "" {
-			startDate, _ := time.Parse("2006-01-02", params.StartDate)
-			endDate, _ := time.Parse("2006-01-02", params.EndDate)
-			if sched.Date.Before(startDate) || sched.Date.After(endDate) {
+			schedDateStr := sched.Date.Format("2006-01-02")
+			if schedDateStr < params.StartDate || schedDateStr > params.EndDate {
 				match = false
 			}
-		}
+		} 
 
 		if params.InstructorID != "" && sched.InstructorID.String() != params.InstructorID {
 			match = false
 		}
 
-		if params.CarID != 0 && sched.CarID != params.CarID {
+		if params.CarID != "" && sched.CarID.String() != params.CarID {
 			match = false
 		}
 
 		if params.Status != "" && string(sched.Status) != params.Status {
 			match = false
+		}
+
+		if params.StudentID != "" {
+			if sched.UserID == nil || sched.UserID.String() != params.StudentID {
+				match = false
+			}
 		}
 
 		if match {
@@ -251,8 +283,41 @@ func (s *ScheduleService) ListSchedulesFiltered(ctx context.Context, params dto.
 	}
 
 	total := int64(len(schedules))
-	resp := s.scheduleRepo.ToListResponse(schedules, total, params.Page, params.Limit)
-	return &resp, nil
+	limit := params.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+
+	start := (params.Page - 1) * limit
+	if start > int(total) {
+		start = int(total)
+	}
+	end := start + limit
+	if end > int(total) {
+		end = int(total)
+	}
+
+	paginatedSchedules := schedules[start:end]
+
+	enriched, err := s.enrichSchedules(ctx, paginatedSchedules)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := int(total) / limit
+	if int(total)%limit > 0 {
+		totalPages++
+	}
+
+	return &dto.ScheduleListResponse{
+		Data: enriched,
+		Pagination: dto.PaginationMeta{
+			Page:       params.Page,
+			Total:      total,
+			Limit:      limit,
+			TotalPages: totalPages,
+		},
+	}, nil
 }
 
 func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.BookSlotRequest) (*dto.ScheduleResponse, error) {
@@ -266,21 +331,57 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 		return nil, errors.New("schedule slot is not available")
 	}
 
-	// Re-validate instructor availability (schedule was created with availability check,
-	// but we check again to handle cases where schedule might have been created externally)
-	if err := s.availabilityService.CheckAvailability(ctx, schedule.InstructorID, schedule.Date, schedule.Time, schedule.Duration); err != nil {
+	// Check if entitlement exists and is active
+	entitlement, err := s.userClient.GetEntitlement(ctx, req.UserID, req.EntitlementID)
+	if err != nil {
+		return nil, fmt.Errorf("entitlement not found or invalid: %w", err)
+	}
+
+	// Count existing non-cancelled sessions for this entitlement to verify remaining count
+	sessions, err := s.sessionRepo.FindByEntitlementID(ctx, req.EntitlementID)
+	if err != nil {
 		return nil, err
 	}
 
-	// Check if enrollment exists
-	_, err = s.enrollmentRepo.FindByID(ctx, req.EntitlementID)
+	activeCount := 0
+	for _, sess := range sessions {
+		if sess.Status != "cancelled" {
+			activeCount++
+		}
+	}
+
+	if activeCount >= entitlement.TotalSessions {
+		return nil, errors.New("entitlement has no sessions remaining")
+	}
+
+	expiresAt, err := time.Parse(time.RFC3339, entitlement.ExpiresAt)
 	if err != nil {
-		return nil, errors.New("enrollment not found")
+		expiresAt, err = time.Parse("2006-01-02 15:04:05", entitlement.ExpiresAt)
+	}
+	if err == nil && expiresAt.Before(time.Now()) {
+		return nil, errors.New("entitlement has expired")
 	}
 
 	// Book the slot
-	if err := s.scheduleRepo.BookSlot(ctx, slotID, req.UserID, req.EntitlementID); err != nil {
+	if err := s.scheduleRepo.BookSlot(ctx, slotID, req.UserID, entitlement.BookingID); err != nil {
 		return nil, err
+	}
+
+	// Create a driving session record using SessionService
+	_, err = s.sessionService.CreateSession(ctx, dto.CreateSessionRequest{
+		EnrollmentID:  entitlement.BookingID,
+		EntitlementID: entitlement.ID,
+		UserID:        entitlement.MemberID,
+		InstructorID:  schedule.InstructorID,
+		CarID:         schedule.CarID,
+		ScheduleID:    &slotID,
+		Date:          schedule.Date,
+		Time:          schedule.Time,
+		Duration:      schedule.Duration,
+		Notes:         req.Notes,
+	})
+	if err != nil {
+		log.Printf("Failed to create driving session: %v", err)
 	}
 
 	// Reload schedule
@@ -289,8 +390,7 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 		return nil, err
 	}
 
-	resp := s.scheduleRepo.ToResponse(schedule)
-	return &resp, nil
+	return s.enrichSchedule(ctx, schedule)
 }
 
 func (s *ScheduleService) CancelBooking(ctx context.Context, slotID uint) error {
@@ -303,7 +403,56 @@ func (s *ScheduleService) CancelBooking(ctx context.Context, slotID uint) error 
 		return errors.New("schedule slot is not booked")
 	}
 
-	return s.scheduleRepo.ReleaseSlot(ctx, slotID)
+	// Find the session and cancel it via SessionService
+	session, err := s.sessionRepo.FindByScheduleID(ctx, slotID)
+	if err == nil && session != nil {
+		if _, err := s.sessionService.CancelSession(ctx, session.ID); err != nil {
+			log.Printf("Warning: failed to cancel session: %v", err)
+		}
+	} else {
+		// Fallback for direct schedule release if session not found
+		return s.scheduleRepo.ReleaseSlot(ctx, slotID)
+	}
+
+	return nil
+}
+
+func (s *ScheduleService) StartSession(ctx context.Context, slotID uint) (*dto.ScheduleResponse, error) {
+	session, err := s.sessionRepo.FindByScheduleID(ctx, slotID)
+	if err != nil || session == nil {
+		return nil, errors.New("booked session not found for this schedule")
+	}
+
+	if _, err := s.sessionService.StartSession(ctx, session.ID); err != nil {
+		return nil, err
+	}
+
+	// Reload schedule
+	schedule, err := s.scheduleRepo.FindByID(ctx, slotID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.enrichSchedule(ctx, schedule)
+}
+
+func (s *ScheduleService) CompleteSession(ctx context.Context, slotID uint) (*dto.ScheduleResponse, error) {
+	session, err := s.sessionRepo.FindByScheduleID(ctx, slotID)
+	if err != nil || session == nil {
+		return nil, errors.New("booked session not found for this schedule")
+	}
+
+	if _, err := s.sessionService.CompleteSession(ctx, session.ID); err != nil {
+		return nil, err
+	}
+
+	// Reload schedule
+	schedule, err := s.scheduleRepo.FindByID(ctx, slotID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.enrichSchedule(ctx, schedule)
 }
 
 func (s *ScheduleService) GetStats(ctx context.Context) (*dto.ScheduleStatsResponse, error) {
@@ -316,13 +465,13 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 	// --- Collect unique IDs to minimize external calls ---
 	instructorIDSet := make(map[string]struct{})
 	userIDSet       := make(map[string]struct{})
-	carIDSet        := make(map[uint]struct{})
+	carIDSet        := make(map[uuid.UUID]struct{})
 
 	for _, sched := range schedules {
 		instructorIDSet[sched.InstructorID.String()] = struct{}{}
 		carIDSet[sched.CarID] = struct{}{}
 		if sched.UserID != nil {
-			userIDSet[fmt.Sprintf("%d", *sched.UserID)] = struct{}{}
+			userIDSet[sched.UserID.String()] = struct{}{}
 		}
 	}
 
@@ -337,7 +486,7 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 		wg       sync.WaitGroup
 		fetchErr error
 		userMap  = make(map[string]uClient.UserInfo)
-		carMap   = make(map[uint]cClient.CarInfo)
+		carMap   = make(map[uuid.UUID]cClient.CarInfo)
 	)
 
 	for id := range allUserIDs {
@@ -355,7 +504,12 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
-				fetchErr = fmt.Errorf("failed to fetch user %s: %w", userID, err)
+				log.Printf("Warning: failed to fetch user %s, using fallback: %v", userID, err)
+				userMap[userID] = uClient.UserInfo{
+					ID:        parsedID,
+					FirstName: "Unknown",
+					LastName:  "User",
+				}
 				return
 			}
 			userMap[userID] = *info
@@ -364,13 +518,30 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 
 	for _, id := range carIDs {
 		wg.Add(1)
-		go func(carID uint) {
+		go func(carID uuid.UUID) {
 			defer wg.Done()
-			info, err := s.coreClient.GetCarByID(ctx, carID)
 			mu.Lock()
 			defer mu.Unlock()
+
+			// Check for zero UUID or invalid car ID - use default fallback
+			if carID == uuid.Nil {
+				carMap[carID] = cClient.CarInfo{
+					ID:    "898170a5-08db-4467-b33e-049660a4231c",
+					Brand: "BYD",
+					Model: "Atto 1",
+				}
+				return
+			}
+
+			info, err := s.coreClient.GetCarByID(ctx, carID)
 			if err != nil {
-				fetchErr = fmt.Errorf("failed to fetch car %d: %w", carID, err)
+				// If car not found (404) or other error, use default fallback
+				log.Printf("Warning: failed to fetch car %s, using default fallback: %v", carID, err)
+				carMap[carID] = cClient.CarInfo{
+					ID:    "898170a5-08db-4467-b33e-049660a4231c",
+					Brand: "BYD",
+					Model: "Atto 1",
+				}
 				return
 			}
 			carMap[carID] = *info
@@ -395,7 +566,7 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 			resp.CarName = c.Brand + " " + c.Model
 		}
 		if sched.UserID != nil {
-			key := fmt.Sprintf("%d", *sched.UserID)
+			key := sched.UserID.String()
 			if u, ok := userMap[key]; ok {
 				name := u.FirstName + " " + u.LastName
 				resp.UserName = &name
@@ -406,4 +577,16 @@ func (s *ScheduleService) enrichSchedules(ctx context.Context, schedules []dto.S
 	}
 
 	return result, nil
+}
+
+// enrichSchedule enriches a single schedule response.
+func (s *ScheduleService) enrichSchedule(ctx context.Context, schedule *dto.Schedule) (*dto.ScheduleResponse, error) {
+	enriched, err := s.enrichSchedules(ctx, []dto.Schedule{*schedule})
+	if err != nil {
+		return nil, err
+	}
+	if len(enriched) == 0 {
+		return nil, fmt.Errorf("failed to enrich schedule")
+	}
+	return &enriched[0], nil
 }

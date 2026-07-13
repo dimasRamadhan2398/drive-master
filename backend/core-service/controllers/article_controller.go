@@ -1,153 +1,31 @@
 package controllers
 
 import (
+	"encoding/base64"
+	"strings"
+	"strconv"
+
 	"core-service/models/dto"
 	"core-service/pkg/response"
 	"core-service/services"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
-// ArticleController handles article-related HTTP requests
+// ArticleController handles blog-related HTTP requests
 type ArticleController struct {
 	articleService services.IArticleService
 }
 
-// DeleteBlogArticle implements [IArticleController].
-func (c *ArticleController) DeleteBlogArticle(ctx *gin.Context) {
-	idParam := ctx.Param("id")
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		response.BadRequest(ctx, "Invalid article ID format")
-		return
-	}
-
-	if err := c.articleService.DeleteBlogArticle(ctx.Request.Context(), id); err != nil {
-		response.InternalServerError(ctx, "Failed to delete blog article")
-		return
-	}
-
-	response.OK(ctx, "Blog article deleted successfully", nil)
-}
-
-// DeleteFAQArticle implements [IArticleController].
-func (c *ArticleController) DeleteFAQArticle(ctx *gin.Context) {
-	idParam := ctx.Param("id")
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		response.BadRequest(ctx, "Invalid FAQ ID format")
-		return
-	}
-
-	if err := c.articleService.DeleteFAQ(ctx.Request.Context(), id); err != nil {
-		response.InternalServerError(ctx, "Failed to delete FAQ")
-		return
-	}
-
-	response.OK(ctx, "FAQ deleted successfully", nil)
-}
-
-// CreateBlogArticle implements [IArticleController].
-func (c *ArticleController) CreateBlogArticle(ctx *gin.Context) {
-	var req dto.CreateBlogArticleRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(ctx, "Invalid request body: "+err.Error())
-		return
-	}
-
-	article, err := c.articleService.CreateBlogArticle(ctx.Request.Context(), &req)
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to create blog article: "+err.Error())
-		return
-	}
-
-	response.Created(ctx, "Blog article created successfully", article)
-}
-
-// CreateFAQArticle implements [IArticleController].
-func (c *ArticleController) CreateFAQArticle(ctx *gin.Context) {
-	var req dto.CreateFAQRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(ctx, "Invalid request body: "+err.Error())
-		return
-	}
-
-	faq, err := c.articleService.CreateFAQ(ctx.Request.Context(), &req)
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to create FAQ: "+err.Error())
-		return
-	}
-
-	response.Created(ctx, "FAQ created successfully", faq)
-}
-
-// GetBlogArticles implements [IArticleController].
-func (c *ArticleController) GetBlogArticles(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
-
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
-	if limit > 100 {
-		limit = 100
-	}
-
-	result, err := c.articleService.GetBlogArticles(ctx.Request.Context(), page, limit)
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch blog articles")
-		return
-	}
-
-	response.OK(ctx, "Blog articles fetched successfully", result)
-}
-
-// GetFAQArticles implements [IArticleController].
-func (c *ArticleController) GetFAQArticles(ctx *gin.Context) {
-	faqs, err := c.articleService.GetFAQs(ctx.Request.Context())
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch FAQs")
-		return
-	}
-
-	response.OK(ctx, "FAQs fetched successfully", faqs)
-}
-
-// IArticleController defines the interface for article controller
+// IArticleController defines the interface for blog post controller
 type IArticleController interface {
-	GetAllArticles(ctx *gin.Context)
-	GetArticleByID(ctx *gin.Context)
-	GetArticleBySlug(ctx *gin.Context)
-	CreateArticle(ctx *gin.Context)
-	UpdateArticle(ctx *gin.Context)
-	DeleteArticle(ctx *gin.Context)
-
-	// Public endpoints
-	SearchArticles(ctx *gin.Context)
-	GetFeaturedArticles(ctx *gin.Context)
-	GetSpotlightArticle(ctx *gin.Context)
-	GetRelatedArticles(ctx *gin.Context)
-	GetArticlesByTag(ctx *gin.Context)
-	IncrementViewCount(ctx *gin.Context)
-
-	// Admin endpoints
-	PublishArticle(ctx *gin.Context)
-	ArchiveArticle(ctx *gin.Context)
-
-	// Blog endpoints
 	GetBlogArticles(ctx *gin.Context)
-	CreateBlogArticle(ctx *gin.Context)
-	DeleteBlogArticle(ctx *gin.Context)
-
-	// FAQ endpoints
-	GetFAQArticles(ctx *gin.Context)
-	CreateFAQArticle(ctx *gin.Context)
-	DeleteFAQArticle(ctx *gin.Context)
+	GetBlogPostByID(ctx *gin.Context)
+	CreateBlogPost(ctx *gin.Context)
+	UpdateBlogPost(ctx *gin.Context)
+	DeleteBlogPost(ctx *gin.Context)
+	IncrementViewCount(ctx *gin.Context)
 }
 
 // NewArticleController creates a new article controller
@@ -157,205 +35,11 @@ func NewArticleController(articleService services.IArticleService) IArticleContr
 	}
 }
 
-// GetAllArticles handles GET /api/v1/articles
-// @Summary Get all articles
-// @Description Retrieves all articles with filters and pagination
-// @Tags Articles
-// @Produce json
-// @Param page query int false "Page number"
-// @Param limit query int false "Items per page"
-// @Param search query string false "Search query"
-// @Param categoryId query string false "Category ID"
-// @Param status query string false "Status (draft, published, archived)"
-// @Success 200 {object} response.Response
-// @Router /articles [get]
-func (c *ArticleController) GetAllArticles(ctx *gin.Context) {
-	var req dto.ArticleListRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		response.BadRequest(ctx, "Invalid query parameters: "+err.Error())
-		return
-	}
-
-	// Set defaults
-	if req.Page < 1 {
-		req.Page = 1
-	}
-	if req.Limit < 1 {
-		req.Limit = 10
-	}
-	if req.Limit > 100 {
-		req.Limit = 100
-	}
-
-	result, err := c.articleService.GetArticles(ctx.Request.Context(), &req)
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch articles: "+err.Error())
-		return
-	}
-
-	response.OK(ctx, "Articles fetched successfully", result)
-}
-
-// GetArticleByID handles GET /api/v1/articles/:id
-// @Summary Get article by ID
-// @Description Retrieves a specific article by ID
-// @Tags Articles
-// @Produce json
-// @Param id path string true "Article ID"
-// @Success 200 {object} response.Response
-// @Router /articles/{id} [get]
-func (c *ArticleController) GetArticleByID(ctx *gin.Context) {
-	idParam := ctx.Param("id")
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		response.BadRequest(ctx, "Invalid article ID format")
-		return
-	}
-
-	article, err := c.articleService.GetArticleByID(ctx.Request.Context(), id)
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch article")
-		return
-	}
-
-	if article == nil {
-		response.NotFound(ctx, "Article not found")
-		return
-	}
-
-	response.OK(ctx, "Article fetched successfully", article)
-}
-
-// GetArticleBySlug handles GET /api/v1/articles/slug/:slug
-// @Summary Get article by slug
-// @Description Retrieves a specific article by slug
-// @Tags Articles
-// @Produce json
-// @Param slug path string true "Article slug"
-// @Success 200 {object} response.Response
-// @Router /articles/slug/{slug} [get]
-func (c *ArticleController) GetArticleBySlug(ctx *gin.Context) {
-	slug := ctx.Param("slug")
-	if slug == "" {
-		response.BadRequest(ctx, "Slug is required")
-		return
-	}
-
-	article, err := c.articleService.GetArticleBySlug(ctx.Request.Context(), slug)
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch article")
-		return
-	}
-
-	if article == nil {
-		response.NotFound(ctx, "Article not found")
-		return
-	}
-
-	response.OK(ctx, "Article fetched successfully", article)
-}
-
-// CreateArticle handles POST /api/v1/articles
-// @Summary Create a new article
-// @Description Creates a new article
-// @Tags Articles
-// @Accept json
-// @Produce json
-// @Param request body dto.CreateArticleRequest true "Article data"
-// @Success 201 {object} response.Response
-// @Router /articles [post]
-func (c *ArticleController) CreateArticle(ctx *gin.Context) {
-	var req dto.CreateArticleRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(ctx, "Invalid request body: "+err.Error())
-		return
-	}
-
-	article, err := c.articleService.CreateArticle(ctx.Request.Context(), &req)
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to create article: "+err.Error())
-		return
-	}
-
-	response.Created(ctx, "Article created successfully", article)
-}
-
-// UpdateArticle handles PUT /api/v1/articles/:id
-// @Summary Update an article
-// @Description Updates an existing article
-// @Tags Articles
-// @Accept json
-// @Produce json
-// @Param id path string true "Article ID"
-// @Param request body dto.UpdateArticleRequest true "Article data"
-// @Success 200 {object} response.Response
-// @Router /articles/{id} [put]
-func (c *ArticleController) UpdateArticle(ctx *gin.Context) {
-	idParam := ctx.Param("id")
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		response.BadRequest(ctx, "Invalid article ID format")
-		return
-	}
-
-	var req dto.UpdateArticleRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(ctx, "Invalid request body: "+err.Error())
-		return
-	}
-
-	article, err := c.articleService.UpdateArticle(ctx.Request.Context(), id, &req)
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to update article: "+err.Error())
-		return
-	}
-
-	response.OK(ctx, "Article updated successfully", article)
-}
-
-// DeleteArticle handles DELETE /api/v1/articles/:id
-// @Summary Delete an article
-// @Description Soft-deletes an article by ID
-// @Tags Articles
-// @Produce json
-// @Param id path string true "Article ID"
-// @Success 200 {object} response.Response
-// @Router /articles/{id} [delete]
-func (c *ArticleController) DeleteArticle(ctx *gin.Context) {
-	idParam := ctx.Param("id")
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		response.BadRequest(ctx, "Invalid article ID format")
-		return
-	}
-
-	if err := c.articleService.DeleteArticle(ctx.Request.Context(), id); err != nil {
-		response.InternalServerError(ctx, "Failed to delete article")
-		return
-	}
-
-	response.OK(ctx, "Article deleted successfully", nil)
-}
-
-// SearchArticles handles GET /api/v1/articles/search
-// @Summary Search articles
-// @Description Searches articles by query string
-// @Tags Articles
-// @Produce json
-// @Param q query string true "Search query"
-// @Param page query int false "Page number"
-// @Param limit query int false "Items per page"
-// @Success 200 {object} response.Response
-// @Router /articles/search [get]
-func (c *ArticleController) SearchArticles(ctx *gin.Context) {
-	query := ctx.Query("q")
-	if query == "" {
-		response.BadRequest(ctx, "Search query is required")
-		return
-	}
-
+// GetBlogArticles handles GET /api/v1/articles/blog
+func (c *ArticleController) GetBlogArticles(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	status := ctx.Query("status")
 
 	if page < 1 {
 		page = 1
@@ -367,73 +51,17 @@ func (c *ArticleController) SearchArticles(ctx *gin.Context) {
 		limit = 100
 	}
 
-	result, err := c.articleService.SearchArticles(ctx.Request.Context(), query, page, limit)
+	result, err := c.articleService.GetBlogArticles(ctx.Request.Context(), page, limit, status)
 	if err != nil {
-		response.InternalServerError(ctx, "Failed to search articles")
+		response.InternalServerError(ctx, "Failed to fetch blog articles: "+err.Error())
 		return
 	}
 
-	response.OK(ctx, "Articles found", result)
+	response.OK(ctx, "Blog articles fetched successfully", result)
 }
 
-// GetFeaturedArticles handles GET /api/v1/articles/featured
-// @Summary Get featured articles
-// @Description Retrieves featured articles
-// @Tags Articles
-// @Produce json
-// @Param limit query int false "Number of articles"
-// @Success 200 {object} response.Response
-// @Router /articles/featured [get]
-func (c *ArticleController) GetFeaturedArticles(ctx *gin.Context) {
-	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "5"))
-	if limit < 1 {
-		limit = 5
-	}
-	if limit > 20 {
-		limit = 20
-	}
-
-	articles, err := c.articleService.GetFeaturedArticles(ctx.Request.Context(), limit)
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch featured articles")
-		return
-	}
-
-	response.OK(ctx, "Featured articles fetched successfully", articles)
-}
-
-// GetSpotlightArticle handles GET /api/v1/articles/spotlight
-// @Summary Get spotlight article
-// @Description Retrieves the spotlight article
-// @Tags Articles
-// @Produce json
-// @Success 200 {object} response.Response
-// @Router /articles/spotlight [get]
-func (c *ArticleController) GetSpotlightArticle(ctx *gin.Context) {
-	article, err := c.articleService.GetSpotlightArticle(ctx.Request.Context())
-	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch spotlight article")
-		return
-	}
-
-	if article == nil {
-		response.NotFound(ctx, "No spotlight article found")
-		return
-	}
-
-	response.OK(ctx, "Spotlight article fetched successfully", article)
-}
-
-// GetRelatedArticles handles GET /api/v1/articles/:id/related
-// @Summary Get related articles
-// @Description Retrieves articles related to the specified article
-// @Tags Articles
-// @Produce json
-// @Param id path string true "Article ID"
-// @Param limit query int false "Number of articles"
-// @Success 200 {object} response.Response
-// @Router /articles/{id}/related [get]
-func (c *ArticleController) GetRelatedArticles(ctx *gin.Context) {
+// GetBlogPostByID handles GET /api/v1/articles/blog/:id
+func (c *ArticleController) GetBlogPostByID(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
@@ -441,70 +69,142 @@ func (c *ArticleController) GetRelatedArticles(ctx *gin.Context) {
 		return
 	}
 
-	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "5"))
-	if limit < 1 {
-		limit = 5
-	}
-	if limit > 10 {
-		limit = 10
-	}
-
-	articles, err := c.articleService.GetRelatedArticles(ctx.Request.Context(), id, limit)
+	article, err := c.articleService.GetBlogPostByID(ctx.Request.Context(), id)
 	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch related articles")
+		response.InternalServerError(ctx, "Failed to fetch blog post: "+err.Error())
 		return
 	}
 
-	response.OK(ctx, "Related articles fetched successfully", articles)
+	if article == nil {
+		response.NotFound(ctx, "Blog post not found")
+		return
+	}
+
+	// Map to DTO for response consistency if needed, or return models.Article directly
+	response.OK(ctx, "Blog post fetched successfully", article)
 }
 
-// GetArticlesByTag handles GET /api/v1/articles/tag/:tag
-// @Summary Get articles by tag
-// @Description Retrieves articles with a specific tag
-// @Tags Articles
-// @Produce json
-// @Param tag path string true "Tag name"
-// @Param page query int false "Page number"
-// @Param limit query int false "Items per page"
-// @Success 200 {object} response.Response
-// @Router /articles/tag/{tag} [get]
-func (c *ArticleController) GetArticlesByTag(ctx *gin.Context) {
-	tag := ctx.Param("tag")
-	if tag == "" {
-		response.BadRequest(ctx, "Tag is required")
-		return
+// CreateBlogPost handles POST /api/v1/articles/blog
+// Supports both JSON (application/json) and multipart form-data (multipart/form-data)
+func (c *ArticleController) CreateBlogPost(ctx *gin.Context) {
+	var req dto.CreateBlogPostRequest
+	contentType := ctx.GetHeader("Content-Type")
+
+	if strings.Contains(contentType, "multipart/form-data") {
+		// Bind text fields from form
+		if err := ctx.ShouldBind(&req); err != nil {
+			response.BadRequest(ctx, "Invalid form data: "+err.Error())
+			return
+		}
+
+		// Handle file upload for featuredImage if present
+		file, err := ctx.FormFile("featuredImage")
+		if err == nil && file != nil {
+			openedFile, err := file.Open()
+			if err == nil {
+				defer openedFile.Close()
+				buffer := make([]byte, file.Size)
+				_, err = openedFile.Read(buffer)
+				if err == nil {
+					base64Data := base64.StdEncoding.EncodeToString(buffer)
+					req.FeaturedImage = &dto.FileUpload{
+						Data:     base64Data,
+						FileName: file.Filename,
+						MimeType: file.Header.Get("Content-Type"),
+					}
+				}
+			}
+		}
+	} else {
+		// Fallback to JSON binding
+		if err := ctx.ShouldBindJSON(&req); err != nil {
+			response.BadRequest(ctx, "Invalid request body: "+err.Error())
+			return
+		}
 	}
 
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
-
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
-	if limit > 100 {
-		limit = 100
-	}
-
-	result, err := c.articleService.GetArticlesByTag(ctx.Request.Context(), tag, page, limit)
+	article, err := c.articleService.CreateBlogPost(ctx.Request.Context(), &req)
 	if err != nil {
-		response.InternalServerError(ctx, "Failed to fetch articles by tag")
+		response.InternalServerError(ctx, "Failed to create blog post: "+err.Error())
 		return
 	}
 
-	response.OK(ctx, "Articles found", result)
+	response.Created(ctx, "Blog post created successfully", article)
+}
+
+// UpdateBlogPost handles PUT /api/v1/articles/blog/:id
+// Supports both JSON and multipart form-data
+func (c *ArticleController) UpdateBlogPost(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		response.BadRequest(ctx, "Invalid article ID format")
+		return
+	}
+
+	var req dto.UpdateBlogPostRequest
+	contentType := ctx.GetHeader("Content-Type")
+
+	if strings.Contains(contentType, "multipart/form-data") {
+		// Bind text fields from form
+		if err := ctx.ShouldBind(&req); err != nil {
+			response.BadRequest(ctx, "Invalid form data: "+err.Error())
+			return
+		}
+
+		// Handle file upload for featuredImage if present
+		file, err := ctx.FormFile("featuredImage")
+		if err == nil && file != nil {
+			openedFile, err := file.Open()
+			if err == nil {
+				defer openedFile.Close()
+				buffer := make([]byte, file.Size)
+				_, err = openedFile.Read(buffer)
+				if err == nil {
+					base64Data := base64.StdEncoding.EncodeToString(buffer)
+					req.FeaturedImage = &dto.FileUpload{
+						Data:     base64Data,
+						FileName: file.Filename,
+						MimeType: file.Header.Get("Content-Type"),
+					}
+				}
+			}
+		}
+	} else {
+		// Fallback to JSON binding
+		if err := ctx.ShouldBindJSON(&req); err != nil {
+			response.BadRequest(ctx, "Invalid request body: "+err.Error())
+			return
+		}
+	}
+
+	article, err := c.articleService.UpdateBlogPost(ctx.Request.Context(), id, &req)
+	if err != nil {
+		response.InternalServerError(ctx, "Failed to update blog post: "+err.Error())
+		return
+	}
+
+	response.OK(ctx, "Blog post updated successfully", article)
+}
+
+// DeleteBlogPost handles DELETE /api/v1/articles/blog/:id
+func (c *ArticleController) DeleteBlogPost(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		response.BadRequest(ctx, "Invalid article ID format")
+		return
+	}
+
+	if err := c.articleService.DeleteBlogPost(ctx.Request.Context(), id); err != nil {
+		response.InternalServerError(ctx, "Failed to delete blog post: "+err.Error())
+		return
+	}
+
+	response.OK(ctx, "Blog post deleted successfully", nil)
 }
 
 // IncrementViewCount handles POST /api/v1/articles/:id/view
-// @Summary Increment view count
-// @Description Increments the view count of an article
-// @Tags Articles
-// @Produce json
-// @Param id path string true "Article ID"
-// @Success 200 {object} response.Response
-// @Router /articles/{id}/view [post]
 func (c *ArticleController) IncrementViewCount(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := uuid.Parse(idParam)
@@ -514,57 +214,9 @@ func (c *ArticleController) IncrementViewCount(ctx *gin.Context) {
 	}
 
 	if err := c.articleService.IncrementViewCount(ctx.Request.Context(), id); err != nil {
-		response.InternalServerError(ctx, "Failed to increment view count")
+		response.InternalServerError(ctx, "Failed to increment view count: "+err.Error())
 		return
 	}
 
-	response.OK(ctx, "View count incremented", nil)
-}
-
-// PublishArticle handles POST /api/v1/articles/:id/publish
-// @Summary Publish an article
-// @Description Sets article status to published
-// @Tags Articles
-// @Produce json
-// @Param id path string true "Article ID"
-// @Success 200 {object} response.Response
-// @Router /articles/{id}/publish [post]
-func (c *ArticleController) PublishArticle(ctx *gin.Context) {
-	idParam := ctx.Param("id")
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		response.BadRequest(ctx, "Invalid article ID format")
-		return
-	}
-
-	if err := c.articleService.PublishArticle(ctx.Request.Context(), id); err != nil {
-		response.InternalServerError(ctx, "Failed to publish article")
-		return
-	}
-
-	response.OK(ctx, "Article published successfully", nil)
-}
-
-// ArchiveArticle handles POST /api/v1/articles/:id/archive
-// @Summary Archive an article
-// @Description Sets article status to archived
-// @Tags Articles
-// @Produce json
-// @Param id path string true "Article ID"
-// @Success 200 {object} response.Response
-// @Router /articles/{id}/archive [post]
-func (c *ArticleController) ArchiveArticle(ctx *gin.Context) {
-	idParam := ctx.Param("id")
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		response.BadRequest(ctx, "Invalid article ID format")
-		return
-	}
-
-	if err := c.articleService.ArchiveArticle(ctx.Request.Context(), id); err != nil {
-		response.InternalServerError(ctx, "Failed to archive article")
-		return
-	}
-
-	response.OK(ctx, "Article archived successfully", nil)
+	response.OK(ctx, "View count incremented successfully", nil)
 }
