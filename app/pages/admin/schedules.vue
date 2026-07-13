@@ -1,25 +1,19 @@
 <script setup lang="ts">
-import { useToast, useInstructorsStore, useVehiclesStore, useSchedulesStore, useI18n, useLocale, useSettings } from "#imports";
-import { ref, computed, onMounted } from "vue";
-import type { ScheduleSlot } from "~/stores/schedules";
-import { useRoute, navigateTo } from "#imports";
+import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute, navigateTo } from "nuxt/app";
 import AddSlotModal from "~/components/schedules/AddSlotModal.vue";
 import EditSlotModal from "~/components/schedules/EditSlotModal.vue";
-import ManualBookingModal from "~/components/schedules/ManualBookingModal.vue";
 
-const { t } = useI18n();
-const { locale } = useLocale();
+const { t } = useI18n()
 definePageMeta({ layout: "admin" });
 
 const route = useRoute();
 const toast = useToast();
 const instructorsStore = useInstructorsStore();
-const vehiclesStore = useVehiclesStore();
 const schedulesStore = useSchedulesStore();
 const studentNameToBook = computed(() => route.query.studentName as string | undefined);
 const showAddSlotModal = ref(false);
-const showManualBookingModal = ref(false);
-const selectedBookingSlotId = ref("");
 const selectedDate = ref(new Date());
 
 // FIX: Define localDateStr to format the selected date
@@ -34,12 +28,12 @@ const localDateStr = computed(() => {
 const filterInstructor = ref("All Instructors");
 const filterVehicle = ref("All Vehicles");
 
+const { toggleSlotStatus: _toggleSlotStatus, deleteSlot: _deleteSlot } = useSchedules();
+
 // Use store's slots for display
 const timeSlots = computed(() => {
   if (schedulesStore.isInitialized) {
-    const slots = schedulesStore.slots;
-    console.log('[AdminSchedules] timeSlots computed:', slots.map(s => ({ id: s.id, status: s.status })));
-    return slots;
+    return schedulesStore.slots;
   }
   return [];
 });
@@ -48,7 +42,7 @@ const instructors = computed(() => {
   return instructorsStore.instructors.map((value) => {
     return {
       label: value.name,
-      value: value.userId,
+      value: value.name, // Use name for comparison in filteredSlots
     };
   });
 });
@@ -57,13 +51,7 @@ const instructorOptions = computed(() => [
   { label: "All Instructors", value: "All Instructors" },
   ...instructors.value,
 ]);
-
-const vehicleOptionsList = computed(() => {
-  return vehiclesStore.vehicles.map((v) => ({
-    label: `${v.brand} ${v.model}`,
-    value: v.id,
-  }));
-});
+const vehicles = ["BYD Atto 1"];
 
 // FITUR BARU: Sinkronisasi jam operasional dari settings
 const { operatingHours } = useSettings();
@@ -98,12 +86,9 @@ const filteredSlots = computed(() => {
     const matchDate = slot.date === dateStr;
     const matchInst =
       filterInstructor.value === "All Instructors" ||
-      slot.instructorId === filterInstructor.value ||
       slot.instructor === filterInstructor.value;
     const matchVeh =
-      filterVehicle.value === "All Vehicles" ||
-      slot.carId === filterVehicle.value ||
-      slot.car === filterVehicle.value;
+      filterVehicle.value === "All Vehicles" || slot.car === filterVehicle.value;
     return matchDate && matchInst && matchVeh;
   });
 });
@@ -114,33 +99,28 @@ function changeDay(offset: number) {
   selectedDate.value = nextDate;
 }
 
-async function toggleSlotStatus(slotId: string) {
-  const currentSlot = timeSlots.value.find((s) => s.id === slotId);
-  if (!currentSlot) return;
-
-  const newStatus = currentSlot.status === "blocked" ? "available" : "blocked";
-  const success = await schedulesStore.updateSlot(slotId, { status: newStatus });
-
-  if (success) {
-    if (newStatus === "blocked") {
-      toast.add({ title: "Slot Blocked", color: "warning", icon: "i-lucide-lock" });
-    } else {
-      toast.add({
-        title: `Slot is now ${newStatus}`,
-        color: "success",
-        icon: "i-lucide-check",
-      });
-    }
+function toggleSlotStatus(slotId: string) {
+  schedulesStore.updateSlotStatus(
+    slotId,
+    timeSlots.value.find((s) => s.id === slotId)?.status === "blocked"
+      ? "available"
+      : "blocked"
+  );
+  const slot = timeSlots.value.find((s) => s.id === slotId);
+  if (slot?.status === "blocked") {
+    toast.add({ title: "Slot Blocked", color: "warning", icon: "i-lucide-lock" });
+  } else {
+    toast.add({
+      title: `Slot is now ${slot?.status}`,
+      color: "success",
+      icon: "i-lucide-check",
+    });
   }
 }
 
-async function deleteSlot(slotId: string) {
-  if (confirm("Are you sure you want to delete this slot?")) {
-    const success = await schedulesStore.deleteSlot(slotId);
-    if (success) {
-      toast.add({ title: "Slot Deleted", color: "error", icon: "i-lucide-trash" });
-    }
-  }
+function deleteSlot(slotId: string) {
+  schedulesStore.deleteSlot(slotId);
+  toast.add({ title: "Slot Deleted", color: "error", icon: "i-lucide-trash" });
 }
 
 // FITUR BARU: Logika In-Progress Session
@@ -153,39 +133,56 @@ const isToday = computed(() => {
   return localDateStr.value === todayStr;
 });
 
-async function startSession(slotId: string) {
+function startSession(slotId: string) {
   if (
     confirm('Apakah kursus sudah mau jalan? Sesi akan berubah menjadi "In Progress".')
   ) {
-    const success = await schedulesStore.startSession(slotId);
-    if (success) {
-      toast.add({
-        title: "Session Started",
-        description: "Driving session is now in progress.",
-        color: "warning",
-        icon: "i-lucide-play",
-      });
-    }
+    schedulesStore.updateSlotStatus(slotId, "in-progress");
+    toast.add({
+      title: "Session Started",
+      description: "Driving session is now in progress.",
+      color: "warning",
+      icon: "i-lucide-play",
+    });
   }
 }
 
-async function completeSession(slotId: string) {
+function completeSession(slotId: string) {
   if (confirm('Apakah kursus sudah selesai? Sesi akan ditandai sebagai "Completed".')) {
-    const success = await schedulesStore.completeSession(slotId);
-    if (success) {
-      toast.add({
-        title: "Session Completed",
-        description: "Driving session has been finished.",
-        color: "neutral",
-        icon: "i-lucide-check-circle",
-      });
-    }
+    schedulesStore.updateSlotStatus(slotId, "completed");
+    toast.add({
+      title: "Session Completed",
+      description: "Driving session has been finished.",
+      color: "neutral",
+      icon: "i-lucide-check-circle",
+    });
   }
 }
 
 function handleManualBooking(slotId: string) {
-  selectedBookingSlotId.value = slotId;
-  showManualBookingModal.value = true;
+  const studentName = studentNameToBook.value
+    ? decodeURIComponent(studentNameToBook.value)
+    : null;
+  if (studentName) {
+    schedulesStore.bookSlotLocal(slotId, studentName);
+    toast.add({
+      title: "Slot Booked",
+      description: `Berhasil booking untuk ${studentName}`,
+      color: "success",
+    });
+    // Kembali ke halaman schedule tanpa query untuk membersihkan state
+    navigateTo("/admin/schedules");
+  } else {
+    const name = prompt("Masukkan nama siswa untuk booking manual:", "Siswa Manual");
+    if (name) {
+      schedulesStore.bookSlotLocal(slotId, name);
+      toast.add({
+        title: "Slot Booked",
+        description: `Berhasil booking untuk ${name}`,
+        color: "success",
+      });
+    }
+  }
 }
 
 function handleSlotClick(slot: any) {
@@ -203,33 +200,27 @@ function handleSlotClick(slot: any) {
   }
 }
 
-async function cancelBooking(slotId: string) {
+function cancelBooking(slotId: string) {
   if (confirm("Batalkan booking dan kembalikan slot menjadi Available?")) {
-    const success = await schedulesStore.cancelBooking(slotId);
-    if (success) {
-      toast.add({
-        title: "Booking Cancelled",
-        description: "Slot is now available again.",
-        color: "neutral",
-      });
-    }
+    schedulesStore.cancelBookingLocal(slotId);
+    toast.add({
+      title: "Booking Cancelled",
+      description: "Slot is now available again.",
+      color: "neutral",
+    });
   }
 }
 
 // FITUR BARU: Add Slot State & Logic
-async function handleAddSlot(form: {
+function handleAddSlot(form: {
   date?: string;
   time: string;
   duration: string;
-  carId: string;
-  instructorId: string;
+  car: string;
+  instructor: string;
 }) {
-  if (!form.time || !form.carId || !form.instructorId) {
-    toast.add({
-      title: t("common.error"),
-      description: "Please fill all fields",
-      color: "error",
-    });
+  if (!form.time || !form.car || !form.instructor) {
+    toast.add({ title: t('common.error'), description: "Please fill all fields", color: "error" });
     return;
   }
 
@@ -243,7 +234,7 @@ async function handleAddSlot(form: {
   } = currentDayOperatingHours.value;
   if (isClosed) {
     toast.add({
-      title: t("common.error"),
+      title: t('common.error'),
       description: "Business is closed on this day",
       color: "error",
     });
@@ -256,17 +247,20 @@ async function handleAddSlot(form: {
   if (!isDayShift && !isNightShift) {
     let msg = `Time must be between ${start} - ${end}`;
     if (nightEnabled) msg += ` or ${nightStart} - ${nightEnd}`;
-    toast.add({ title: t("common.error"), description: msg, color: "error" });
+    toast.add({ title: t('common.error'), description: msg, color: "error" });
     return;
   }
 
   const id = Date.now().toString();
-  await schedulesStore.createSlot({
+  schedulesStore.addSlot({
+    id,
     date: form.date ?? localDateStr.value,
     time: form.time,
-    duration: parseInt(form.duration),
-    carId: form.carId,
-    instructorId: form.instructorId,
+    duration: form.duration + " min",
+    car: form.car,
+    instructor: form.instructor,
+    student: null,
+    status: "available",
   });
 
   toast.add({ title: "New Slot Added", color: "success", icon: "i-lucide-check" });
@@ -277,36 +271,28 @@ async function handleAddSlot(form: {
 const showEditSlotModal = ref(false);
 const selectedEditSlot = ref<any>(null);
 
-function openEditModal(slot: ScheduleSlot) {
+function openEditModal(slot: any) {
   if (slot.status !== "available") {
     toast.add({
-      title: t("common.error"),
+      title: t('common.error'),
       description: "Hanya slot dengan status Available yang bisa diedit",
       color: "error",
     });
     return;
   }
-  selectedEditSlot.value = {
-    ...slot,
-    car: slot.carId,
-    instructor: slot.instructorId
-  };
+  selectedEditSlot.value = slot;
   showEditSlotModal.value = true;
 }
 
-async function handleEditSlot(updated: {
+function handleEditSlot(updated: {
   id: string;
   time: string;
   duration: string;
-  carId: string;
-  instructorId: string;
+  car: string;
+  instructor: string;
 }) {
-  if (!updated.time || !updated.carId || !updated.instructorId) {
-    toast.add({
-      title: t("common.error"),
-      description: "Please fill all fields",
-      color: "error",
-    });
+  if (!updated.time || !updated.car || !updated.instructor) {
+    toast.add({ title: t('common.error'), description: "Please fill all fields", color: "error" });
     return;
   }
 
@@ -320,7 +306,7 @@ async function handleEditSlot(updated: {
   } = currentDayOperatingHours.value;
   if (isClosed) {
     toast.add({
-      title: t("common.error"),
+      title: t('common.error'),
       description: "Business is closed on this day",
       color: "error",
     });
@@ -334,35 +320,31 @@ async function handleEditSlot(updated: {
   if (!isDayShift && !isNightShift) {
     let msg = `Time must be between ${start} - ${end}`;
     if (nightEnabled) msg += ` or ${nightStart} - ${nightEnd}`;
-    toast.add({ title: t("common.error"), description: msg, color: "error" });
+    toast.add({ title: t('common.error'), description: msg, color: "error" });
     return;
   }
 
-  await schedulesStore.updateSlot(updated.id, {
+  schedulesStore.editSlot(updated.id, {
     time: updated.time,
-    duration: parseInt(updated.duration),
-    carId: updated.carId,
-    instructorId: updated.instructorId,
+    duration: updated.duration + " min",
+    car: updated.car,
+    instructor: updated.instructor,
   });
 
   toast.add({ title: "Slot Updated", color: "success", icon: "i-lucide-check" });
   showEditSlotModal.value = false;
 }
 
-onMounted(() => {
-  instructorsStore.fetchInstructors();
-  vehiclesStore.fetchVehicles();
-  schedulesStore.initialize();
+// Re-fetch from backend whenever the selected date changes
+watch(localDateStr, (dateStr) => {
+  schedulesStore.fetchSchedulesByDate(dateStr);
 });
 
-// Debug: Watch for slot changes
-watch(
-  () => schedulesStore.slots,
-  (newSlots) => {
-    console.log('[AdminSchedules] slots changed:', newSlots.map(s => ({ id: s.id, status: s.status })));
-  },
-  { deep: true }
-);
+onMounted(() => {
+  instructorsStore.fetchInstructors();
+  // Fetch schedules for the currently selected date on load
+  schedulesStore.fetchSchedulesByDate(localDateStr.value);
+});
 </script>
 
 <template>
@@ -378,14 +360,12 @@ watch(
       >
         <template #description>
           <span
-            >{{ t("admin.selectStudent").replace("Pilih Murid", "Pilih slot untuk") }}
-            <strong>{{ decodeURIComponent(studentNameToBook) }}</strong
-            >.
+                    >{{ t('admin.selectStudent').replace('Pilih Murid', 'Pilih slot untuk') }} <strong>{{ decodeURIComponent(studentNameToBook) }}</strong>.
             <UButton
               variant="link"
               :padded="false"
               @click="navigateTo('/admin/schedules')"
-              >{{ t("schedule.cancel") }}</UButton
+              >{{ t('schedule.cancel') }}</UButton
             ></span
           >
         </template>
@@ -403,7 +383,7 @@ watch(
             v-model:open="showAddSlotModal"
             :date="localDateStr"
             :instructors="instructors"
-            :vehicles="vehicleOptionsList"
+            :vehicles="vehicles"
             :operatingHours="currentDayOperatingHours"
             @saved="handleAddSlot"
           />
@@ -423,7 +403,7 @@ watch(
               class="relative flex items-center justify-center min-w-[160px] hover:bg-gray-100 rounded py-1 transition-colors cursor-pointer"
             >
               <span class="font-medium text-center pointer-events-none">{{
-                selectedDate.toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
+                selectedDate.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', {
                   month: "long",
                   day: "numeric",
                   year: "numeric",
@@ -540,7 +520,7 @@ watch(
           <UCard>
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">{{ t("schedule.selectDate") }}</h2>
+                <h2 class="font-semibold">{{ t('schedule.selectDate') }}</h2>
                 <div class="flex items-center gap-1">
                   <UButton
                     icon="i-lucide-chevron-left"
@@ -550,13 +530,10 @@ watch(
                     @click="changeDay(-1)"
                   />
                   <span class="text-sm font-medium">{{
-                    selectedDate.toLocaleDateString(
-                      locale === "id" ? "id-ID" : "en-US",
-                      {
-                        month: "long",
-                        year: "numeric",
-                      }
-                    )
+                    selectedDate.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', {
+                      month: "long",
+                      year: "numeric",
+                    })
                   }}</span>
                   <UButton
                     icon="i-lucide-chevron-right"
@@ -571,9 +548,7 @@ watch(
             <!-- Simple custom calendar grid -->
             <div class="grid grid-cols-7 gap-1 mb-2">
               <div
-                v-for="day in locale === 'id'
-                  ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
-                  : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']"
+                v-for="day in (locale === 'id' ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'])"
                 :key="day"
                 class="text-center text-xs font-bold text-muted py-2"
               >
@@ -603,24 +578,12 @@ watch(
           <UCard class="lg:col-span-2">
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">{{ t("schedule.availableSlots") }}</h2>
+                <h2 class="font-semibold">{{ t('schedule.availableSlots') }}</h2>
                 <div class="flex gap-2">
-                  <UBadge
-                    :label="t('common.available')"
-                    color="success"
-                    variant="subtle"
-                  />
+                  <UBadge :label="t('common.available')" color="success" variant="subtle" />
                   <UBadge :label="t('home.booked')" color="info" variant="subtle" />
-                  <UBadge
-                    :label="t('common.completed')"
-                    color="neutral"
-                    variant="subtle"
-                  />
-                  <UBadge
-                    :label="t('admin.blockSlot').replace('Blokir ', '')"
-                    color="error"
-                    variant="subtle"
-                  />
+                  <UBadge :label="t('common.completed')" color="neutral" variant="subtle" />
+                  <UBadge :label="t('admin.blockSlot').replace('Blokir ', '')" color="error" variant="subtle" />
                 </div>
               </div>
             </template>
@@ -755,9 +718,7 @@ watch(
                         [
                           {
                             label:
-                              slot.status === 'blocked'
-                                ? t('admin.unblockSlot')
-                                : t('admin.blockSlot'),
+                              slot.status === 'blocked' ? t('admin.unblockSlot') : t('admin.blockSlot'),
                             icon:
                               slot.status === 'blocked'
                                 ? 'i-lucide-unlock'
@@ -768,10 +729,7 @@ watch(
                               slot.status === 'completed',
                           },
                           {
-                            label: t('admin.addNew').replace(
-                              'Tambah Baru',
-                              'Booking Manual'
-                            ),
+                            label: t('admin.addNew').replace('Tambah Baru', 'Booking Manual'),
                             icon: 'i-lucide-user-plus',
                             onSelect: () => handleManualBooking(slot.id),
                             disabled: slot.status !== 'available',
@@ -835,7 +793,7 @@ watch(
                   class="size-10 text-muted mx-auto mb-3"
                 />
                 <p class="text-muted font-medium">
-                  {{ t("blog.noArticles").replace("artikel", "slot") }}.
+                  {{ t('blog.noArticles').replace('artikel', 'slot') }}.
                 </p>
               </div>
             </div>
@@ -847,15 +805,9 @@ watch(
         v-model:open="showEditSlotModal"
         :initialSlot="selectedEditSlot"
         :instructors="instructors"
-        :vehicles="vehicleOptionsList"
+        :vehicles="vehicles"
         :operatingHours="currentDayOperatingHours"
         @saved="handleEditSlot"
-      />
-
-      <ManualBookingModal
-        v-model:open="showManualBookingModal"
-        :slotId="selectedBookingSlotId"
-        @booked="schedulesStore.fetchByDate(localDateStr)"
       />
     </template>
   </UDashboardPanel>

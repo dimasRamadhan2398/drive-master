@@ -1,5 +1,4 @@
 import { defineNuxtConfig } from "nuxt/config";
-import react from "@vitejs/plugin-react";
 
 export default defineNuxtConfig({
   devtools: { enabled: true },
@@ -43,7 +42,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase:
-        process.env.NUXT_PUBLIC_API_BASE_URL || "https://drivemaster.id/api/v1",
+        process.env.NUXT_PUBLIC_MODE == "dev"
+          ? process.env.NUXT_PUBLIC_API_BASE_URL
+          : "https://api.drivemaster.id/api/v1",
       // userApiBase:
       //   process.env.NUXT_PUBLIC_USER_API_BASE ||
       //   (process.env.NUXT_PUBLIC_API_BASE_URL
@@ -85,7 +86,6 @@ export default defineNuxtConfig({
     },
   },
   vite: {
-    plugins: [react()],
     server: {
       watch: {
         usePolling: true,
