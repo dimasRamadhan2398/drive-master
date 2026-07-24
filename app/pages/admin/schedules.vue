@@ -36,12 +36,7 @@ const filterVehicle = ref("All Vehicles");
 
 // Use store's slots for display
 const timeSlots = computed(() => {
-  if (schedulesStore.isInitialized) {
-    const slots = schedulesStore.slots;
-    console.log('[AdminSchedules] timeSlots computed:', slots.map(s => ({ id: s.id, status: s.status })));
-    return slots;
-  }
-  return [];
+  return schedulesStore.slots;
 });
 
 const instructors = computed(() => {
@@ -90,6 +85,31 @@ const currentDayOperatingHours = computed(() => {
     nightEnabled: operatingHours.value.nightEnabled,
     isClosed: false,
   };
+});
+
+const adminCalendarDays = computed(() => {
+  const year = selectedDate.value.getFullYear();
+  const month = selectedDate.value.getMonth();
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const emptyDays = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const days = [];
+  for (let i = 0; i < emptyDays; i++) {
+    days.push({ day: null, hasSlots: false });
+  }
+
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+    const hasSlots = timeSlots.value.some((s) => s.date === dateStr);
+    days.push({
+      day: i,
+      hasSlots,
+    });
+  }
+
+  return days;
 });
 
 const filteredSlots = computed(() => {
@@ -353,20 +373,33 @@ async function handleEditSlot(updated: {
 const isLoadingAdminSchedules = ref(false);
 
 const fetchAdminSchedules = async () => {
-  const dateStr = localDateStr.value;
-  if (!dateStr) return;
+  const date = selectedDate.value;
+  const year = date.getFullYear();
+  const month = date.getMonth(); // 0-11
+
+  // Start of month: YYYY-MM-01
+  const startDayStr = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+
+  // End of month
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const endDayStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
   try {
     isLoadingAdminSchedules.value = true;
-    await schedulesStore.fetchByDate(dateStr);
+    await schedulesStore.fetchSchedules({
+      startDate: startDayStr,
+      endDate: endDayStr,
+      limit: 500, // retrieve all slots for the month
+    });
   } catch (err) {
-    console.error("Failed to fetch admin schedules for date:", err);
+    console.error("Failed to fetch admin schedules:", err);
   } finally {
     isLoadingAdminSchedules.value = false;
   }
 };
 
 watch(
-  localDateStr,
+  () => [selectedDate.value.getFullYear(), selectedDate.value.getMonth()],
   async () => {
     await fetchAdminSchedules();
   },
@@ -604,21 +637,30 @@ watch(
               </div>
             </div>
             <div class="grid grid-cols-7 gap-1">
-              <div></div>
-              <div></div>
-              <button
-                v-for="d in 30"
-                :key="d"
-                :class="[
-                  'w-full aspect-square rounded-full text-sm font-medium transition-all flex items-center justify-center',
-                  selectedDate.getDate() === d
-                    ? 'bg-primary text-white shadow-md'
-                    : 'hover:bg-muted/50 cursor-pointer',
-                ]"
-                @click="selectedDate = new Date(2026, selectedDate.getMonth(), d)"
+              <div
+                v-for="(item, idx) in adminCalendarDays"
+                :key="idx"
+                class="w-full aspect-square flex items-center justify-center"
               >
-                {{ d }}
-              </button>
+                <button
+                  v-if="item.day !== null"
+                  :class="[
+                    'w-full h-full rounded-lg text-sm font-medium transition-all cursor-pointer flex items-center justify-center relative',
+                    selectedDate.getDate() === item.day
+                      ? 'bg-primary text-white shadow-md'
+                      : item.hasSlots
+                      ? 'hover:bg-primary/10 text-primary-600 dark:text-primary-400 font-semibold'
+                      : 'hover:bg-muted/50 text-gray-700 dark:text-gray-300',
+                  ]"
+                  @click="selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), item.day)"
+                >
+                  {{ item.day }}
+                  <span
+                    v-if="item.hasSlots && selectedDate.getDate() !== item.day"
+                    class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-primary"
+                  ></span>
+                </button>
+              </div>
             </div>
           </UCard>
 
