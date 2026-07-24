@@ -87,6 +87,30 @@ const currentDayOperatingHours = computed(() => {
   };
 });
 
+const isSlotPast = (slotDateStr: string, slotTimeStr: string): boolean => {
+  if (!slotDateStr) return false;
+
+  let timeStr = (slotTimeStr || "00:00").trim();
+  if (timeStr.includes("-")) {
+    timeStr = timeStr.split("-")[0].trim();
+  }
+
+  const isPM = /pm/i.test(timeStr);
+  const isAM = /am/i.test(timeStr);
+  timeStr = timeStr.replace(/(am|pm)/i, "").trim();
+
+  const [year, month, day] = slotDateStr.split("-").map(Number);
+  const timeParts = timeStr.split(":");
+  let hours = Number(timeParts[0]) || 0;
+  const minutes = Number(timeParts[1]) || 0;
+
+  if (isPM && hours < 12) hours += 12;
+  if (isAM && hours === 12) hours = 0;
+
+  const slotDateTime = new Date(year, month - 1, day, hours, minutes, 0);
+  return slotDateTime.getTime() < Date.now();
+};
+
 const adminCalendarDays = computed(() => {
   const year = selectedDate.value.getFullYear();
   const month = selectedDate.value.getMonth();
@@ -114,18 +138,23 @@ const adminCalendarDays = computed(() => {
 
 const filteredSlots = computed(() => {
   const dateStr = localDateStr.value; // FIX: Menggunakan localDateStr
-  return timeSlots.value.filter((slot) => {
-    const matchDate = slot.date === dateStr;
-    const matchInst =
-      filterInstructor.value === "All Instructors" ||
-      slot.instructorId === filterInstructor.value ||
-      slot.instructor === filterInstructor.value;
-    const matchVeh =
-      filterVehicle.value === "All Vehicles" ||
-      slot.carId === filterVehicle.value ||
-      slot.car === filterVehicle.value;
-    return matchDate && matchInst && matchVeh;
-  });
+  return timeSlots.value
+    .filter((slot) => {
+      const matchDate = slot.date === dateStr;
+      const matchInst =
+        filterInstructor.value === "All Instructors" ||
+        slot.instructorId === filterInstructor.value ||
+        slot.instructor === filterInstructor.value;
+      const matchVeh =
+        filterVehicle.value === "All Vehicles" ||
+        slot.carId === filterVehicle.value ||
+        slot.car === filterVehicle.value;
+      return matchDate && matchInst && matchVeh;
+    })
+    .map((slot) => ({
+      ...slot,
+      isPast: isSlotPast(slot.date, slot.time),
+    }));
 });
 
 function changeDay(offset: number) {
