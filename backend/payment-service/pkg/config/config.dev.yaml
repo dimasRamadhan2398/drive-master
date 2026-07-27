@@ -31,10 +31,10 @@ log:
   format: json
 
 kafka:
-  enabled: false
+  enabled: true
   brokers:
-    - localhost:29092
-  topic: payment.events
+    - 127.0.0.1:9092
+  topic: dev.payment.events
   service_name: payment-service
 
 app:

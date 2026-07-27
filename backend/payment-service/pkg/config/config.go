@@ -213,6 +213,7 @@ func Load(path string) (*Config, error) {
 	// Kafka env overrides
 	_ = viper.BindEnv("kafka.brokers", "KAFKA_BROKERS")
 	_ = viper.BindEnv("kafka.enabled", "KAFKA_ENABLED")
+	_ = viper.BindEnv("kafka.topic", "KAFKA_TOPIC")
 
 	// JWT env overrides
 	_ = viper.BindEnv("jwt.secret", "JWT_SECRET")

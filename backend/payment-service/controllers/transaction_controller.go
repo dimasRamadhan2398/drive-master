@@ -670,6 +670,31 @@ func (t *TransactionController) Callback(c *gin.Context) {
 			"success": true,
 		}
 
+		// Direct HTTP call to booking-service as instant fallback
+		if payment.BookingID != nil {
+			bookingServiceURL := getEnv("BOOKING_SERVICE_URL", "http://127.0.0.1:8003")
+			if bookingServiceURL == "http://booking-service:8003" {
+				bookingServiceURL = "http://127.0.0.1:8003"
+			}
+			payUrl := fmt.Sprintf("%s/api/v1/enrollments/%s/pay", bookingServiceURL, payment.BookingID.String())
+			payBody, _ := json.Marshal(map[string]interface{}{
+				"totalPrice": payment.Amount,
+			})
+			payReq, payErr := http.NewRequest("POST", payUrl, bytes.NewBuffer(payBody))
+			if payErr == nil {
+				payReq.Header.Set("Content-Type", "application/json")
+				authHeader := c.GetHeader("Authorization")
+				if authHeader != "" {
+					payReq.Header.Set("Authorization", authHeader)
+				}
+				httpClient := &http.Client{Timeout: 10 * time.Second}
+				payResp, payDoErr := httpClient.Do(payReq)
+				if payDoErr == nil {
+					payResp.Body.Close()
+				}
+			}
+		}
+
 		err := t.eventPublisher.Publish(payment.ID.String(), event)
 		if err != nil {
 			fmt.Printf("[Callback] Error publishing kafka event: %v\n", err)
@@ -788,6 +813,31 @@ func (t *TransactionController) GetPaymentStatus(c *gin.Context) {
 							"package_name":   meta.PackageName,
 						},
 						"success": true,
+					}
+
+					// Direct HTTP call to booking-service as instant fallback
+					if payment.BookingID != nil {
+						bookingServiceURL := getEnv("BOOKING_SERVICE_URL", "http://127.0.0.1:8003")
+						if bookingServiceURL == "http://booking-service:8003" {
+							bookingServiceURL = "http://127.0.0.1:8003"
+						}
+						payUrl := fmt.Sprintf("%s/api/v1/enrollments/%s/pay", bookingServiceURL, payment.BookingID.String())
+						payBody, _ := json.Marshal(map[string]interface{}{
+							"totalPrice": payment.Amount,
+						})
+						payReq, payErr := http.NewRequest("POST", payUrl, bytes.NewBuffer(payBody))
+						if payErr == nil {
+							payReq.Header.Set("Content-Type", "application/json")
+							authHeader := c.GetHeader("Authorization")
+							if authHeader != "" {
+								payReq.Header.Set("Authorization", authHeader)
+							}
+							httpClient := &http.Client{Timeout: 10 * time.Second}
+							payResp, payDoErr := httpClient.Do(payReq)
+							if payDoErr == nil {
+								payResp.Body.Close()
+							}
+						}
 					}
 
 					err := t.eventPublisher.Publish(payment.ID.String(), event)
