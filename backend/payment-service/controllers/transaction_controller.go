@@ -38,6 +38,7 @@ type ITransactionController interface {
 	GetPaymentByOrderID(c *gin.Context)
 	GetPaymentDetail(c *gin.Context)
 	GetPaymentStatus(c *gin.Context)
+	SimulatePayment(c *gin.Context)
 	ListPayments(c *gin.Context)
 }
 
@@ -901,5 +902,105 @@ func (t *TransactionController) ListPayments(c *gin.Context) {
 			"total":      total,
 			"totalPages": totalPages,
 		},
+	})
+}
+
+func (t *TransactionController) SimulatePayment(c *gin.Context) {
+	orderID := c.Param("orderId")
+	if orderID == "" {
+		orderID = c.Param("id")
+	}
+	if orderID == "" {
+		var req struct {
+			OrderID string `json:"orderId"`
+		}
+		_ = c.ShouldBindJSON(&req)
+		orderID = req.OrderID
+	}
+
+	if orderID == "" {
+		response.Error(c, http.StatusBadRequest, "Order ID is required")
+		return
+	}
+
+	payment, err := t.paymentRepo.GetByOrderID(orderID)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, "Payment record not found")
+		return
+	}
+
+	if t.paymentGateway != nil {
+		_ = t.paymentGateway.SimulatePayment(orderID, payment.Amount)
+	}
+
+	now := time.Now()
+	payment.Status = models.PaymentStatusSuccess
+	payment.PaidAt = &now
+	payment.UpdatedAt = now
+	_ = t.paymentRepo.Update(payment)
+
+	txs, err := t.transactionRepo.GetByPaymentID(payment.ID)
+	if err == nil && len(txs) > 0 {
+		for i := range txs {
+			txs[i].Status = models.TransactionStatusSuccess
+			txs[i].GatewayTxnID = orderID
+			txs[i].ProcessedAt = &now
+			txs[i].UpdatedAt = now
+			_ = t.transactionRepo.Update(&txs[i])
+		}
+	}
+
+	if payment.BookingID != nil {
+		bookingServiceURL := getEnv("BOOKING_SERVICE_URL", "http://127.0.0.1:8003")
+		if bookingServiceURL == "http://booking-service:8003" {
+			bookingServiceURL = "http://127.0.0.1:8003"
+		}
+		payUrl := fmt.Sprintf("%s/api/v1/enrollments/%s/pay", bookingServiceURL, payment.BookingID.String())
+		payBody, _ := json.Marshal(map[string]interface{}{
+			"totalPrice": payment.Amount,
+		})
+		payReq, payErr := http.NewRequest("POST", payUrl, bytes.NewBuffer(payBody))
+		if payErr == nil {
+			payReq.Header.Set("Content-Type", "application/json")
+			authHeader := c.GetHeader("Authorization")
+			if authHeader != "" {
+				payReq.Header.Set("Authorization", authHeader)
+			}
+			httpClient := &http.Client{Timeout: 10 * time.Second}
+			payResp, payDoErr := httpClient.Do(payReq)
+			if payDoErr == nil {
+				payResp.Body.Close()
+			}
+		}
+	}
+
+	var meta struct {
+		PackageID     string `json:"package_id"`
+		PackageName   string `json:"package_name"`
+		PaymentMethod string `json:"payment_method"`
+	}
+	if payment.Metadata != "" && payment.Metadata != "{}" {
+		_ = json.Unmarshal([]byte(payment.Metadata), &meta)
+	}
+
+	event := map[string]interface{}{
+		"id":        uuid.New().String(),
+		"type":      "transaction.paid",
+		"timestamp": time.Now().Format(time.RFC3339),
+		"user_id":   payment.UserID.String(),
+		"data": map[string]interface{}{
+			"enrollment_id":  func() string { if payment.BookingID != nil { return payment.BookingID.String() }; return "" }(),
+			"total_price":    payment.Amount,
+			"payment_method": meta.PaymentMethod,
+			"package_id":     meta.PackageID,
+			"package_name":   meta.PackageName,
+		},
+		"success": true,
+	}
+	_ = t.eventPublisher.Publish(payment.ID.String(), event)
+
+	response.Success(c, http.StatusOK, "Payment simulated successfully", gin.H{
+		"orderId": orderID,
+		"status":  "paid",
 	})
 }
