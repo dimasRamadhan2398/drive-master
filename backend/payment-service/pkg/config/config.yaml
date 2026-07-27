@@ -72,3 +72,5 @@ pakasir:
   slug: "drive-master-indonesia-dev"
   api_key: "vJBTSyuJxhwp9Yc8A28EhM84GSOMDRh9"
   base_url: "https://app.pakasir.com"
+  webhook_url: "https://api.drivemaster.id/api/v1/payments/pakasir/webhook"
+  frontend_url: "https://drivemaster.id"

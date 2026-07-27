@@ -113,6 +113,7 @@ module.exports = {
         PAYMENT_GATEWAY: "pakasir",
         PAKASIR_SLUG: "drive-master-indonesia-dev",
         PAKASIR_API_KEY: "vJBTSyuJxhwp9Yc8A28EhM84GSOMDRh9",
+        PAKASIR_FRONTEND_URL: "https://drivemaster.id",
         DOKU_CLIENT_ID: "BRN-0226-1782972609555",
         DOKU_SECRET_KEY: "SK-OdJ7OYT6G5nGW2HLs0b6",
         DOKU_BASE_URL: "https://api.doku.com",

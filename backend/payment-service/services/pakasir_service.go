@@ -41,8 +41,12 @@ func (s *PakasirService) IsSandbox() bool {
 
 // CreateCheckout generates a Pakasir hosted payment URL
 func (s *PakasirService) CreateCheckout(orderID string, amount float64, packageName, customerName, customerEmail string) (*CheckoutResponse, error) {
-	// Format return redirect URL
-	returnURL := fmt.Sprintf("https://drivemaster.id/auth/payment-status?orderId=%s", orderID)
+	// Use configured frontend URL, fall back to production if not set
+	frontendURL := s.cfg.FrontendURL
+	if frontendURL == "" {
+		frontendURL = "https://drivemaster.id"
+	}
+	returnURL := fmt.Sprintf("%s/auth/payment-status?orderId=%s", frontendURL, orderID)
 
 	// URL-based integration: https://app.pakasir.com/pay/{slug}/{amount}?order_id={order_id}&redirect={return_url}
 	redirectURL := fmt.Sprintf("%s/pay/%s/%d?order_id=%s&redirect=%s",
