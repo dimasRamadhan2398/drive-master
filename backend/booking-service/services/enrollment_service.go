@@ -1,9 +1,13 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
 	"time"
 
 	cClient "booking-service/clients/core"
@@ -283,7 +287,12 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 		return nil, err
 	}
 
-	if enrollment.Status != models.EnrollmentStatusPendingPayment {
+	if enrollment.Status == models.EnrollmentStatusPaid || enrollment.Status == "paid" || enrollment.Status == "active" {
+		resp := s.enrollmentRepo.ToResponse(enrollment)
+		return &resp, nil
+	}
+
+	if enrollment.Status != models.EnrollmentStatusPendingPayment && enrollment.Status != "pending" && enrollment.Status != "pending_payment" {
 		return nil, errors.New("enrollment is not in pending_payment status")
 	}
 
@@ -298,36 +307,59 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 		return nil, err
 	}
 
-	// Publish enrollment.paid event if event publisher is available
-	if s.eventPublisher != nil {
-		// Get package details for the event
-		var totalSessions int
-		var pkgName string
-		if s.coreClient != nil {
-			if pkg, err := s.coreClient.GetPackageByID(ctx, enrollment.PackageID); err == nil {
-				totalSessions = pkg.Sessions
-				pkgName = pkg.Name
-			}
+	// Get package details for event & sync
+	var totalSessions int
+	var pkgName string
+	if s.coreClient != nil {
+		if pkg, err := s.coreClient.GetPackageByID(ctx, enrollment.PackageID); err == nil {
+			totalSessions = pkg.Sessions
+			pkgName = pkg.Name
 		}
-		if packageName != "" {
-			pkgName = packageName
-		}
+	}
+	if packageName != "" {
+		pkgName = packageName
+	}
 
-		// Calculate extra sessions from the enrollment transaction
-		extraSessions := 0
-		if s.transactionSvc != nil {
-			tx, err := s.transactionSvc.GetTransactionByEnrollmentID(ctx, enrollment.ID)
-			if err == nil && tx != nil {
-				for _, item := range tx.Items {
-					if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222201") {
-						extraSessions += item.Sessions * item.Quantity
-					}
+	// Calculate extra sessions from transaction
+	extraSessions := 0
+	if s.transactionSvc != nil {
+		tx, err := s.transactionSvc.GetTransactionByEnrollmentID(ctx, enrollment.ID)
+		if err == nil && tx != nil {
+			for _, item := range tx.Items {
+				if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222201") {
+					extraSessions += item.Sessions * item.Quantity
 				}
 			}
 		}
-		totalSessions += extraSessions
+	}
+	totalSessions += extraSessions
 
+	// Publish enrollment.paid event if event publisher is available
+	if s.eventPublisher != nil {
 		_ = s.eventPublisher.PublishEnrollmentPaid(ctx, enrollment.ID.String(), enrollment.UserID.String(), enrollment.PackageID, totalPrice, totalSessions, pkgName)
+	}
+
+	// Direct HTTP call to user-service as dual sync fallback for entitlement creation
+	userServiceURL := getEnv("USER_SERVICE_URL", "http://127.0.0.1:8001")
+	if userServiceURL == "http://user-service:8001" {
+		userServiceURL = "http://127.0.0.1:8001"
+	}
+	syncUrl := fmt.Sprintf("%s/api/v1/entitlements/sync", userServiceURL)
+	syncBody, _ := json.Marshal(map[string]interface{}{
+		"member_id":      enrollment.UserID.String(),
+		"booking_id":     enrollment.ID.String(),
+		"package_id":     enrollment.PackageID.String(),
+		"package_name":   pkgName,
+		"total_sessions": totalSessions,
+	})
+	syncReq, syncErr := http.NewRequest("POST", syncUrl, bytes.NewBuffer(syncBody))
+	if syncErr == nil {
+		syncReq.Header.Set("Content-Type", "application/json")
+		httpClient := &http.Client{Timeout: 10 * time.Second}
+		syncResp, syncDoErr := httpClient.Do(syncReq)
+		if syncDoErr == nil {
+			syncResp.Body.Close()
+		}
 	}
 
 
@@ -567,4 +599,11 @@ func (s *EnrollmentService) populateDetailsWithCache(
 			resp.AddOns = addonResponses
 		}
 	}
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok && value != "" {
+		return value
+	}
+	return fallback
 }

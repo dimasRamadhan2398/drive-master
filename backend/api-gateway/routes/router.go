@@ -202,6 +202,10 @@ func Register(r *gin.Engine, cfg *config.Config) {
 			}
 		})
 
+		mixed.Any("/entitlements/sync", func(c *gin.Context) {
+			proxy.ToUserServiceDirect(c)
+		})
+
 		// vehicles — GET is public (already registered), write ops require auth
 		mixed.Any("/vehicles", func(c *gin.Context) {
 			if c.Request.Method == http.MethodGet {
