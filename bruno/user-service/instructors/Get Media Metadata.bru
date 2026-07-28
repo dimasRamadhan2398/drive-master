@@ -1,0 +1,15 @@
+meta {
+  name: Get Media Metadata
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{user_service_url}}/api/v1/instructors/:id/media/metadata
+  body: none
+  auth: none
+}
+
+params:path {
+  id: {{instructor_id}}
+}

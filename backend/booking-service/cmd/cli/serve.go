@@ -114,7 +114,7 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	// Initialize services (after Kafka is initialized so we can pass the eventPublisher)
 	transactionService := services.NewTransactionService(transactionRepo)
-	sessionService := services.NewSessionServiceWithAllDeps(sessionRepo, scheduleRepo, enrollmentRepo, eventPublisher, userClient, db)
+	sessionService := services.NewSessionServiceWithAllDeps(sessionRepo, scheduleRepo, enrollmentRepo, eventPublisher, userClient, coreClient, db)
 	enrollmentService := services.NewEnrollmentServiceWithAllDeps(enrollmentRepo, transactionService, eventPublisher, coreClient, userClient)
 
 	// Register TransactionPaidHandler to update enrollment state when transaction is paid
@@ -139,19 +139,28 @@ func runServe(cmd *cobra.Command, args []string) {
 		revenueService:    revenueService,
 	}
 
-	// Start background session monitor to complete ongoing sessions when they reach end time
+	// Start background session monitor to auto-start scheduled sessions and auto-complete ongoing sessions
 	go func() {
-		ticker := time.NewTicker(1 * time.Minute)
+		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		ctx := context.Background()
 
-		log.Println("Session auto-completion monitor started (checking every 1 minute)")
-		for {
-			select {
-			case <-ticker.C:
-				if err := sessionService.AutoCompleteOngoingSessions(ctx); err != nil {
-					log.Printf("Session auto-completion monitor error: %v", err)
-				}
+		log.Println("Session auto start/completion monitor started (checking every 30 seconds)")
+
+		// Immediate check on startup
+		if err := sessionService.AutoStartScheduledSessions(ctx); err != nil {
+			log.Printf("Session auto-start monitor error: %v", err)
+		}
+		if err := sessionService.AutoCompleteOngoingSessions(ctx); err != nil {
+			log.Printf("Session auto-completion monitor error: %v", err)
+		}
+
+		for range ticker.C {
+			if err := sessionService.AutoStartScheduledSessions(ctx); err != nil {
+				log.Printf("Session auto-start monitor error: %v", err)
+			}
+			if err := sessionService.AutoCompleteOngoingSessions(ctx); err != nil {
+				log.Printf("Session auto-completion monitor error: %v", err)
 			}
 		}
 	}()

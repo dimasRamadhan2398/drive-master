@@ -387,6 +387,14 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 					enrollment.TotalPrice = req.Enrollment.Price
 				}
 			}
+
+			// Validate user ownership: prevent creating a payment for another user's enrollment
+			if enrollment.UserID != "" && userUUID != uuid.Nil {
+				if enrollmentUserUUID, err := uuid.Parse(enrollment.UserID); err == nil && enrollmentUserUUID != userUUID {
+					response.Error(c, http.StatusBadRequest, fmt.Sprintf("Enrollment %s belongs to a different user (%s)", enrollment.ID, enrollment.UserID))
+					return
+				}
+			}
 		}
 	}
 

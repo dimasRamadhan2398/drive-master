@@ -1,0 +1,28 @@
+meta {
+  name: Update Recurring Schedule
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{user_service_url}}/api/v1/instructors/:id/recurring-schedules/:scheduleId
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: {{instructor_id}}
+  scheduleId: 1
+}
+
+body:json {
+  {
+    "start_time": "08:00",
+    "end_time": "16:00",
+    "is_active": true
+  }
+}

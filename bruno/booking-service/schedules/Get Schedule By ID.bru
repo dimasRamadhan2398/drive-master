@@ -1,0 +1,19 @@
+meta {
+  name: Get Schedule By ID
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{booking_service_url}}/api/v1/schedules/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}

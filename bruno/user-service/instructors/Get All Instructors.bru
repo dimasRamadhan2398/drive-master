@@ -1,0 +1,16 @@
+meta {
+  name: Get All Instructors
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{user_service_url}}/api/v1/instructors/all
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  limit: 10
+}

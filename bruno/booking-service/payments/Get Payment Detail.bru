@@ -1,0 +1,19 @@
+meta {
+  name: Get Payment Detail
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{booking_service_url}}/api/v1/payments/order/:orderId/detail
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  orderId: ORD-001
+}

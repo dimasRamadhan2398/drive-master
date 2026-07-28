@@ -1,0 +1,17 @@
+meta {
+  name: Remove Coverage Area
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{user_service_url}}/api/v1/instructors/:id/coverage-areas/:areaType/:areaId
+  body: none
+  auth: none
+}
+
+params:path {
+  id: {{instructor_id}}
+  areaType: regency
+  areaId: 3201
+}

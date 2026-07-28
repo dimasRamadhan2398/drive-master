@@ -1,0 +1,19 @@
+meta {
+  name: Get Transaction By ID
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{payment_service_url}}/api/v1/transactions/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}

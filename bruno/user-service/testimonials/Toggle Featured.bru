@@ -1,0 +1,15 @@
+meta {
+  name: Toggle Featured
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{user_service_url}}/api/v1/testimonials/:id/featured
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

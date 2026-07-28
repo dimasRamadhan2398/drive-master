@@ -1,0 +1,20 @@
+meta {
+  name: Create Inquiry
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{core_service_url}}/api/v1/contact
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "081234567890",
+    "message": "I would like to know more about your packages."
+  }
+}

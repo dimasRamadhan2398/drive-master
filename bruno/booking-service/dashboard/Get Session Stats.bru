@@ -1,0 +1,15 @@
+meta {
+  name: Get Session Stats
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{booking_service_url}}/api/v1/dashboard/sessions/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}

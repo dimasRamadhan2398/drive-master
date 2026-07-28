@@ -1,0 +1,21 @@
+meta {
+  name: Create Car
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{core_service_url}}/api/v1/cars
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "brand": "Toyota",
+    "model": "Avanza",
+    "year": 2023,
+    "transmission": "manual",
+    "status": "available"
+  }
+}

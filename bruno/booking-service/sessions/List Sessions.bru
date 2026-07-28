@@ -1,0 +1,16 @@
+meta {
+  name: List Sessions
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{booking_service_url}}/api/v1/sessions
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  limit: 10
+}

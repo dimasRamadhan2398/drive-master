@@ -1,0 +1,15 @@
+meta {
+  name: Get Recent Registrations
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{user_service_url}}/api/v1/members/recent
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}

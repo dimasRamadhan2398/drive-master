@@ -1,0 +1,25 @@
+meta {
+  name: Update Schedule
+  type: http
+  seq: 12
+}
+
+put {
+  url: {{booking_service_url}}/api/v1/schedules/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "max_slots": 6
+  }
+}

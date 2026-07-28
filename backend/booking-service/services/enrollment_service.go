@@ -288,6 +288,11 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 	}
 
 	if enrollment.Status == models.EnrollmentStatusPaid || enrollment.Status == "paid" || enrollment.Status == "active" {
+		// Enrollment is already paid — still trigger entitlement sync as a safety net.
+		// The sync is idempotent (user-service deduplicates by bookingID), so calling
+		// it again is harmless but ensures the entitlement gets created if it was missed
+		// on the first attempt (e.g. due to service restart, network error, or race).
+		go s.syncEntitlementForPaidEnrollment(ctx, enrollment, packageID, packageName, totalPrice, paymentMethod)
 		resp := s.enrollmentRepo.ToResponse(enrollment)
 		return &resp, nil
 	}
@@ -312,7 +317,7 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 	var pkgName string
 	if s.coreClient != nil {
 		if pkg, err := s.coreClient.GetPackageByID(ctx, enrollment.PackageID); err == nil {
-			totalSessions = pkg.Sessions
+			totalSessions = pkg.GetSessions()
 			pkgName = pkg.Name
 		}
 	}
@@ -454,7 +459,78 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 	return &resp, nil
 }
 
+// syncEntitlementForPaidEnrollment triggers entitlement creation in user-service
+// for an enrollment that is already marked as paid. It publishes the enrollment.paid
+// Kafka event and makes a direct HTTP call to user-service as a fallback.
+// This is called in a goroutine and is idempotent — user-service deduplicates by bookingID.
+func (s *EnrollmentService) syncEntitlementForPaidEnrollment(ctx context.Context, enrollment *models.Enrollment, packageID, packageName string, totalPrice float64, paymentMethod string) {
+	// Get package details for event & sync
+	var totalSessions int
+	var pkgName string
+	if s.coreClient != nil {
+		if pkg, err := s.coreClient.GetPackageByID(ctx, enrollment.PackageID); err == nil {
+			totalSessions = pkg.GetSessions()
+			pkgName = pkg.Name
+		}
+	}
+	if packageName != "" {
+		pkgName = packageName
+	}
+	if pkgName == "" {
+		pkgName = "Driving Package"
+	}
 
+	// Calculate extra sessions from transaction
+	extraSessions := 0
+	if s.transactionSvc != nil {
+		tx, err := s.transactionSvc.GetTransactionByEnrollmentID(ctx, enrollment.ID)
+		if err == nil && tx != nil {
+			for _, item := range tx.Items {
+				if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222201") {
+					extraSessions += item.Sessions * item.Quantity
+				}
+			}
+		}
+	}
+	totalSessions += extraSessions
+
+	if totalSessions <= 0 {
+		totalSessions = 6 // Fallback default sessions count
+	}
+
+	fmt.Printf("[MarkAsPaid] Enrollment %s already paid — syncing entitlement (sessions=%d, pkg=%s)\n", enrollment.ID.String(), totalSessions, pkgName)
+
+	// Publish enrollment.paid event if event publisher is available
+	if s.eventPublisher != nil {
+		_ = s.eventPublisher.PublishEnrollmentPaid(ctx, enrollment.ID.String(), enrollment.UserID.String(), enrollment.PackageID, totalPrice, totalSessions, pkgName)
+	}
+
+	// Direct HTTP call to user-service as dual sync fallback for entitlement creation
+	userServiceURL := getEnv("USER_SERVICE_URL", "http://127.0.0.1:8001")
+	if userServiceURL == "http://user-service:8001" {
+		userServiceURL = "http://127.0.0.1:8001"
+	}
+	syncUrl := fmt.Sprintf("%s/api/v1/entitlements/sync", userServiceURL)
+	syncBody, _ := json.Marshal(map[string]interface{}{
+		"member_id":      enrollment.UserID.String(),
+		"booking_id":     enrollment.ID.String(),
+		"package_id":     enrollment.PackageID.String(),
+		"package_name":   pkgName,
+		"total_sessions": totalSessions,
+	})
+	syncReq, syncErr := http.NewRequest("POST", syncUrl, bytes.NewBuffer(syncBody))
+	if syncErr == nil {
+		syncReq.Header.Set("Content-Type", "application/json")
+		httpClient := &http.Client{Timeout: 10 * time.Second}
+		syncResp, syncDoErr := httpClient.Do(syncReq)
+		if syncDoErr == nil {
+			syncResp.Body.Close()
+			fmt.Printf("[MarkAsPaid] Entitlement sync HTTP call succeeded for enrollment %s\n", enrollment.ID.String())
+		} else {
+			fmt.Printf("[MarkAsPaid] Entitlement sync HTTP call failed for enrollment %s: %v\n", enrollment.ID.String(), syncDoErr)
+		}
+	}
+}
 
 func (s *EnrollmentService) ListEnrollments(ctx context.Context, page, limit int) (*dto.EnrollmentListResponse, error) {
 	enrollments, err := s.enrollmentRepo.FindAllPaginated(ctx, page, limit)

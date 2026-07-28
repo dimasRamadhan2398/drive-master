@@ -92,17 +92,18 @@ const isSlotPast = (slotDateStr: string, slotTimeStr: string): boolean => {
 
   let timeStr = (slotTimeStr || "00:00").trim();
   if (timeStr.includes("-")) {
-    timeStr = timeStr.split("-")[0].trim();
+    timeStr = (timeStr.split("-")[0] ?? timeStr).trim();
   }
 
   const isPM = /pm/i.test(timeStr);
   const isAM = /am/i.test(timeStr);
   timeStr = timeStr.replace(/(am|pm)/i, "").trim();
 
-  const [year, month, day] = slotDateStr.split("-").map(Number);
+  const dateParts = slotDateStr.split("-").map(Number);
+  const [year, month, day] = [dateParts[0] ?? 0, dateParts[1] ?? 1, dateParts[2] ?? 1];
   const timeParts = timeStr.split(":");
-  let hours = Number(timeParts[0]) || 0;
-  const minutes = Number(timeParts[1]) || 0;
+  let hours = Number(timeParts[0] ?? 0) || 0;
+  const minutes = Number(timeParts[1] ?? 0) || 0;
 
   if (isPM && hours < 12) hours += 12;
   if (isAM && hours === 12) hours = 0;
@@ -166,6 +167,15 @@ function changeDay(offset: number) {
 async function toggleSlotStatus(slotId: string) {
   const currentSlot = timeSlots.value.find((s) => s.id === slotId);
   if (!currentSlot) return;
+
+  if (isSlotPast(currentSlot.date, currentSlot.time)) {
+    toast.add({
+      title: t("common.error"),
+      description: "Tidak dapat mengubah status slot waktu yang sudah terlewat.",
+      color: "error",
+    });
+    return;
+  }
 
   const newStatus = currentSlot.status === "blocked" ? "available" : "blocked";
   const success = await schedulesStore.updateSlot(slotId, { status: newStatus });
@@ -233,12 +243,29 @@ async function completeSession(slotId: string) {
 }
 
 function handleManualBooking(slotId: string) {
+  const slot = timeSlots.value.find((s) => s.id === slotId);
+  if (slot && isSlotPast(slot.date, slot.time)) {
+    toast.add({
+      title: t("common.error"),
+      description: "Tidak dapat melakukan booking manual untuk slot waktu yang sudah terlewat.",
+      color: "error",
+    });
+    return;
+  }
   selectedBookingSlotId.value = slotId;
   showManualBookingModal.value = true;
 }
 
 function handleSlotClick(slot: any) {
   if (studentNameToBook.value && slot.status === "available") {
+    if (slot.isPast || isSlotPast(slot.date, slot.time)) {
+      toast.add({
+        title: t("common.error"),
+        description: "Slot waktu ini sudah terlewat dan tidak dapat dibooking.",
+        color: "error",
+      });
+      return;
+    }
     const studentName = decodeURIComponent(studentNameToBook.value as string);
     schedulesStore.bookSlotLocal(slot.id, studentName);
     toast.add({
@@ -327,11 +354,11 @@ async function handleAddSlot(form: {
 const showEditSlotModal = ref(false);
 const selectedEditSlot = ref<any>(null);
 
-function openEditModal(slot: ScheduleSlot) {
+function openEditModal(slot: ScheduleSlot & { isPast?: boolean }) {
   if (slot.status !== "available") {
     toast.add({
       title: t("common.error"),
-      description: "Hanya slot dengan status Available yang bisa diedit",
+      description: "Slot yang sudah di-book atau tidak tersedia tidak dapat diedit.",
       color: "error",
     });
     return;
@@ -388,9 +415,11 @@ async function handleEditSlot(updated: {
     return;
   }
 
+  const durMins = parseInt(updated.duration.replace(/[^0-9]/g, "")) || 60;
+
   await schedulesStore.updateSlot(updated.id, {
     time: updated.time,
-    duration: parseInt(updated.duration),
+    duration: durMins > 0 ? durMins : 60,
     carId: updated.carId,
     instructorId: updated.instructorId,
   });
@@ -464,7 +493,7 @@ watch(
         <template #description>
           <span
             >{{ t("admin.selectStudent").replace("Pilih Murid", "Pilih slot untuk") }}
-            <strong>{{ decodeURIComponent(studentNameToBook) }}</strong
+            <strong>{{ decodeURIComponent(studentNameToBook || '') }}</strong
             >.
             <UButton
               variant="link"
@@ -725,14 +754,16 @@ watch(
                 :key="slot.id"
                 class="p-4 rounded-lg border border-default hover:shadow-md transition-shadow"
                 :class="{
-                  'border-l-4 border-l-primary': slot.status === 'available',
+                  'border-l-4 border-l-primary': slot.status === 'available' && !slot.isPast,
+                  'border-l-4 border-l-neutral-400 bg-neutral-500/10 opacity-60': slot.isPast && slot.status === 'available',
                   'border-l-4 border-l-info bg-info/5': slot.status === 'booked',
                   'border-l-4 border-l-amber-500': slot.status === 'in-progress',
                   'border-l-4 border-l-neutral-500 bg-neutral-500/5':
                     slot.status === 'completed',
                   'border-l-4 border-l-red-500 opacity-60': slot.status === 'blocked',
                   'cursor-pointer hover:bg-primary/5':
-                    studentNameToBook && slot.status === 'available',
+                    studentNameToBook && slot.status === 'available' && !slot.isPast,
+                  'cursor-not-allowed': slot.isPast,
                 }"
                 @click="handleSlotClick(slot)"
               >
@@ -821,7 +852,9 @@ watch(
                     <UBadge
                       class="hidden sm:flex"
                       :label="
-                        slot.status === 'available'
+                        slot.isPast && slot.status === 'available'
+                          ? (t('common.passed') || 'Passed')
+                          : slot.status === 'available'
                           ? t('common.available')
                           : slot.status === 'booked'
                           ? t('home.booked')
@@ -832,7 +865,9 @@ watch(
                           : 'Blocked'
                       "
                       :color="
-                        slot.status === 'available'
+                        slot.isPast && slot.status === 'available'
+                          ? 'neutral'
+                          : slot.status === 'available'
                           ? 'primary'
                           : slot.status === 'booked'
                           ? 'info'
@@ -859,7 +894,8 @@ watch(
                             onSelect: () => toggleSlotStatus(slot.id),
                             disabled:
                               slot.status === 'in-progress' ||
-                              slot.status === 'completed',
+                              slot.status === 'completed' ||
+                              slot.isPast,
                           },
                           {
                             label: t('admin.addNew').replace(
@@ -868,13 +904,13 @@ watch(
                             ),
                             icon: 'i-lucide-user-plus',
                             onSelect: () => handleManualBooking(slot.id),
-                            disabled: slot.status !== 'available',
+                            disabled: slot.status !== 'available' || slot.isPast,
                           },
                           {
                             label: t('common.edit') + ' Slot',
                             icon: 'i-lucide-pencil',
                             onSelect: () => openEditModal(slot),
-                            disabled: slot.status !== 'available',
+                            disabled: slot.status !== 'available' || slot.isPast,
                           },
                         ],
                         [

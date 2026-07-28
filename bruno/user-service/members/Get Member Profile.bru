@@ -1,0 +1,19 @@
+meta {
+  name: Get Member Profile
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{user_service_url}}/api/v1/members/:userId/profile
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  userId: {{user_id}}
+}

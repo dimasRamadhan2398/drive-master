@@ -1,0 +1,25 @@
+meta {
+  name: Update Enrollment
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{booking_service_url}}/api/v1/enrollments/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "status": "active"
+  }
+}

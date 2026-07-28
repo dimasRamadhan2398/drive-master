@@ -1,0 +1,22 @@
+meta {
+  name: Midtrans Callback
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{payment_service_url}}/api/v1/payments/callback
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "order_id": "ORD-001",
+    "status_code": "200",
+    "gross_amount": "1500000.00",
+    "signature_key": "signature-here",
+    "transaction_status": "settlement",
+    "payment_type": "bank_transfer"
+  }
+}

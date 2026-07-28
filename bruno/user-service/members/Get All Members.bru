@@ -1,0 +1,20 @@
+meta {
+  name: Get All Members
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{user_service_url}}/api/v1/members/all
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:query {
+  page: 1
+  limit: 10
+}

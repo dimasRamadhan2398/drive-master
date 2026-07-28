@@ -111,6 +111,7 @@ module.exports = {
         KAFKA_BROKERS: "127.0.0.1:9092",
         KAFKA_ENABLED: "true",
         KAFKA_TOPIC: "dev.payment.events",
+        KAFKA_GROUP_ID: "dev-payment-service-consumer",
         CONFIG_PATH: "./backend/payment-service/pkg/config/config.yaml",
         RUN_MIGRATIONS: "true",
         RUN_SEEDERS: "true",

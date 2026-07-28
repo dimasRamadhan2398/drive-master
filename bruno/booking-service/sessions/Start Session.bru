@@ -1,0 +1,15 @@
+meta {
+  name: Start Session
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{booking_service_url}}/api/v1/sessions/:id/start
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

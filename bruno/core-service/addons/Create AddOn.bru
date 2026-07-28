@@ -1,0 +1,20 @@
+meta {
+  name: Create AddOn
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{core_service_url}}/api/v1/addons/create
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Highway Driving",
+    "description": "Extra highway driving session",
+    "price": 250000,
+    "is_active": true
+  }
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Revoke Certificate
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{user_service_url}}/api/v1/certificates/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Upload Base64 Media
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{user_service_url}}/api/v1/instructors/:id/media/upload-base64
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: {{instructor_id}}
+}
+
+body:json {
+  {
+    "image": "data:image/jpeg;base64,/9j/4AAQ...",
+    "filename": "profile.jpg"
+  }
+}

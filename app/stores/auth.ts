@@ -1,0 +1,367 @@
+import { defineStore } from "pinia";
+import { authService } from "~/services/authService";
+import { memberService } from "~/services/memberService";
+import type {
+  LoginCredentials,
+  RegisterData,
+  BackendUserResponse,
+} from "~/types/auth";
+import type { MemberProfile } from "~/services/memberService";
+
+interface AuthStoreState {
+  user: BackendUserResponse | null;
+  memberProfile: MemberProfile | null;
+  accessToken: string | null;
+  refreshTokenValue: string | null;
+  isLoading: boolean;
+  isLoadingProfile: boolean;
+  error: string | null;
+}
+
+export const useAuthStore = defineStore("auth", {
+  state: (): AuthStoreState => {
+    // rehydrate from cookie on init
+    const tokenCookie = useCookie("auth_token");
+    const refreshCookie = useCookie("refresh_token");
+    const userCookie = useCookie("user_data");
+
+    let user: BackendUserResponse | null = null;
+    try {
+      user = userCookie.value ? JSON.parse(userCookie.value) : null;
+    } catch {
+      user = null;
+    }
+
+    return {
+      user,
+      memberProfile: null,
+      accessToken: tokenCookie.value || null,
+      refreshTokenValue: refreshCookie.value || null,
+      isLoading: false,
+      isLoadingProfile: false,
+      error: null,
+    };
+  },
+  getters: {
+    isAuthenticated: (state) => !!state.user && !!state.accessToken,
+    currentUser: (state) => state.user,
+    userRole: (state) => state.user?.role?.name ?? null,
+    userId: (state) => state.user?.userId ?? null,
+    // Member profile getters
+    memberSessionsCompleted: (state) => state.memberProfile?.sessionsCompleted ?? 0,
+    memberTrainingTime: (state) => state.memberProfile?.trainingTime ?? 0,
+    memberAverageRating: (state) => state.memberProfile?.averageRating ?? 0,
+    memberAvailableSessions: (state) => state.memberProfile?.totalAvailableSessions ?? 0,
+    memberEntitlements: (state) => state.memberProfile?.entitlements ?? [],
+    memberIdentityFullname: (state) => state.memberProfile?.identityFullname ?? "",
+    hasMemberProfile: (state) => !!state.memberProfile,
+  },
+  actions: {
+    // Dedicated action to set authentication state
+    setAuth(
+      user: BackendUserResponse,
+      accessToken: string,
+      refreshToken?: string,
+    ) {
+      this.user = user;
+      this.accessToken = accessToken;
+      this.refreshTokenValue = refreshToken || null;
+
+      // Store tokens in cookies
+      this.setTokenCookie(accessToken);
+      if (refreshToken) {
+        this.setRefreshTokenCookie(refreshToken);
+      }
+      // Persist user data for rehydration
+      this.setUserCookie(user);
+    },
+
+    // Transform backend user to frontend user format
+    transformUser(backendUser: BackendUserResponse) {
+      return {
+        userId: backendUser.userId,
+        email: backendUser.email,
+        firstName: backendUser.firstName,
+        lastName: backendUser.lastName,
+        phone: backendUser.phoneNumber,
+        role: backendUser.role.name as "admin" | "student" | "instructor",
+        createdAt: backendUser.createdAt,
+      };
+    },
+
+    async login(credentials: LoginCredentials) {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const authData = await authService.login(credentials);
+        this.setAuth(
+          authData.user,
+          authData.accessToken,
+          authData.refreshToken,
+        );
+        return authData;
+      } catch (error: any) {
+        this.error = authService.parseError(error);
+        const enhancedError = new Error(this.error);
+        throw enhancedError;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async register(data: RegisterData) {
+      console.log(
+        "[AUTH STORE] register() called with data:",
+        JSON.stringify({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          username: data.username,
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          dateOfBirth: data.dateOfBirth,
+          password: data.password ? "***" : undefined,
+          roleId: data.roleId,
+        }),
+      );
+
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        console.log("[AUTH STORE] Calling authService.register()...");
+        const response = await authService.register(data);
+        console.log(
+          "[AUTH STORE] authService.register() succeeded, response:",
+          JSON.stringify({
+            userId: response.user?.userId,
+            username: response.user?.username,
+            email: response.user?.email,
+          }),
+        );
+
+        this.user = {
+          userId: response.user.userId,
+          username: response.user.username,
+          email: response.user.email,
+          firstName: response.user.firstName,
+          lastName: response.user.lastName,
+          phoneNumber: response.user.phoneNumber,
+          roleId: response.user.roleId,
+          role: {
+            id: response.user.roleId,
+            name: "member",
+          },
+          dateOfBirth: response.user.dateOfBirth,
+        };
+
+        this.setAuth(this.user, response.accessToken, response.refreshToken);
+        return response;
+      } catch (error: any) {
+        console.log(
+          "[AUTH STORE] authService.register() failed with error:",
+          error,
+        );
+        this.error = authService.parseError(error);
+        console.log("[AUTH STORE] Parsed error message:", this.error);
+        const enhancedError = new Error(this.error || error.message);
+        throw enhancedError;
+      } finally {
+        console.log(
+          "[AUTH STORE] register() completed, isLoading set to false",
+        );
+        this.isLoading = false;
+      }
+    },
+
+    async logout() {
+      try {
+        await authService.logout(this.accessToken);
+      } catch {
+        // Continue with logout even if API call fails
+      } finally {
+        this.clearAuth();
+      }
+    },
+
+    async refreshToken() {
+      if (!this.refreshTokenValue) {
+        this.clearAuth();
+        return false;
+      }
+
+      try {
+        const authData = await authService.refreshToken(this.refreshTokenValue);
+        if (authData) {
+          this.setAuth(
+            authData.user,
+            authData.accessToken,
+            authData.refreshToken,
+          );
+          return true;
+        }
+        this.clearAuth();
+        return false;
+      } catch {
+        this.clearAuth();
+        return false;
+      }
+    },
+
+    async fetchCurrentUser() {
+      if (!this.user?.userId) return this.user;
+
+      try {
+        const userData = await authService.fetchUserById(this.user.userId);
+        if (userData) {
+          const newUser = { ...this.user, ...userData };
+          this.user = newUser;
+          this.setUserCookie(newUser);
+        }
+        return this.user;
+      } catch (err) {
+        console.warn("[AUTH STORE] Failed to fetch current user, using cached login data:", err);
+        return this.user;
+      }
+    },
+
+    setTokenCookie(token: string) {
+      const cookie = useCookie("auth_token", {
+        maxAge: 60 * 60 * 24 * 7,
+        secure: true,
+        sameSite: "lax",
+      });
+      cookie.value = token;
+    },
+
+    getRefreshTokenCookie() {
+      if (import.meta.client) {
+        const cookie = useCookie("refresh_token");
+        return cookie.value;
+      }
+      return null;
+    },
+
+    setRefreshTokenCookie(token: string) {
+      const cookie = useCookie("refresh_token", {
+        maxAge: 60 * 60 * 24 * 30,
+        secure: true,
+        sameSite: "lax",
+      });
+      cookie.value = token;
+    },
+
+    setUserCookie(user: BackendUserResponse) {
+      const cookie = useCookie("user_data", {
+        maxAge: 60 * 60 * 24 * 7,
+        secure: true,
+        sameSite: "lax",
+      });
+      cookie.value = JSON.stringify(user);
+    },
+
+    clearAuth() {
+      this.user = null;
+      this.memberProfile = null;
+      this.accessToken = null;
+      this.refreshTokenValue = null;
+      this.error = null;
+
+      if (import.meta.client) {
+        const tokenCookie = useCookie("auth_token");
+        const refreshCookie = useCookie("refresh_token");
+        const userCookie = useCookie("user_data");
+        tokenCookie.value = null;
+        refreshCookie.value = null;
+        userCookie.value = null;
+      }
+    },
+
+    clearError() {
+      this.error = null;
+    },
+
+    // ========== Member Profile Actions ==========
+
+    /**
+     * Fetch member profile for the current user
+     */
+    async fetchMemberProfile() {
+      if (!this.user?.userId) return null;
+
+      this.isLoadingProfile = true;
+      try {
+        const profile = await memberService.getMemberProfile(this.user.userId);
+        if (profile) {
+          this.memberProfile = profile;
+        }
+        return profile;
+      } catch (error) {
+        console.error("[AUTH STORE] Failed to fetch member profile:", error);
+        return null;
+      } finally {
+        this.isLoadingProfile = false;
+      }
+    },
+
+    /**
+     * Update member profile
+     */
+    async updateMemberProfile(data: { identityFullname?: string }) {
+      if (!this.user?.userId) return null;
+
+      this.isLoadingProfile = true;
+      try {
+        const profile = await memberService.updateMemberProfile(
+          this.user.userId,
+          data,
+        );
+        if (profile) {
+          this.memberProfile = profile;
+        }
+        return profile;
+      } catch (error) {
+        console.error("[AUTH STORE] Failed to update member profile:", error);
+        return null;
+      } finally {
+        this.isLoadingProfile = false;
+      }
+    },
+
+    /**
+     * Update current user basic details
+     */
+    async updateUser(data: {
+      firstName: string;
+      lastName: string;
+      phoneNumber?: string;
+      address?: string;
+      dateOfBirth?: string;
+    }) {
+      if (!this.user?.userId) return null;
+
+      this.isLoading = true;
+      try {
+        const updatedUser = await memberService.updateUser(this.user.userId, data);
+        if (updatedUser) {
+          const newUser = { ...this.user, ...updatedUser };
+          this.user = newUser;
+          this.setUserCookie(newUser);
+        }
+        return updatedUser;
+      } catch (error) {
+        console.error("[AUTH STORE] Failed to update user:", error);
+        return null;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    /**
+     * Clear member profile (on logout)
+     */
+    clearMemberProfile() {
+      this.memberProfile = null;
+    },
+  },
+});

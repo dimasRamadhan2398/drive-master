@@ -1,0 +1,1112 @@
+definitions:
+  dto.BookingListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.BookingResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
+  dto.BookingResponse:
+    properties:
+      area:
+        type: string
+      carId:
+        type: integer
+      createdAt:
+        type: string
+      dateOfSession:
+        type: string
+      entitlementId:
+        type: integer
+      fromTime:
+        type: string
+      id:
+        type: integer
+      instructorId:
+        type: integer
+      notes:
+        type: string
+      status:
+        type: string
+      toTime:
+        type: string
+      updatedAt:
+        type: string
+      userId:
+        type: integer
+    type: object
+  dto.CertificationListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.CertificationResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
+  dto.CertificationResponse:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: integer
+      issueDate:
+        type: string
+      packageId:
+        type: integer
+      recipient:
+        type: string
+      status:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  dto.CreateBookingRequest:
+    properties:
+      area:
+        type: string
+      carId:
+        type: integer
+      dateOfSession:
+        type: string
+      entitlementId:
+        type: integer
+      fromTime:
+        type: string
+      instructorId:
+        type: integer
+      notes:
+        type: string
+      toTime:
+        type: string
+      userId:
+        type: integer
+    required:
+    - carId
+    - dateOfSession
+    - entitlementId
+    - fromTime
+    - instructorId
+    - toTime
+    - userId
+    type: object
+  dto.CreateCertificationRequest:
+    properties:
+      issueDate:
+        type: string
+      packageId:
+        type: integer
+      recipient:
+        type: string
+      type:
+        type: string
+    required:
+    - issueDate
+    - packageId
+    - recipient
+    - type
+    type: object
+  dto.CreateEntitlementRequest:
+    properties:
+      expiresAt:
+        type: string
+      sessionsRemaining:
+        type: integer
+      sourceId:
+        type: string
+      sourceType:
+        type: string
+      totalSessions:
+        type: integer
+      userId:
+        type: integer
+    required:
+    - expiresAt
+    - sessionsRemaining
+    - sourceId
+    - sourceType
+    - totalSessions
+    - userId
+    type: object
+  dto.CreateSessionRequest:
+    properties:
+      area:
+        type: string
+      carId:
+        type: integer
+      dateOfSession:
+        type: string
+      duration:
+        type: integer
+      instructorId:
+        type: integer
+      notes:
+        type: string
+      userId:
+        type: integer
+    required:
+    - carId
+    - dateOfSession
+    - duration
+    - instructorId
+    - userId
+    type: object
+  dto.EntitlementListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.EntitlementResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
+  dto.EntitlementResponse:
+    properties:
+      createdAt:
+        type: string
+      expiresAt:
+        type: string
+      id:
+        type: integer
+      sessionsRemaining:
+        type: integer
+      sourceId:
+        type: string
+      sourceType:
+        type: string
+      totalSessions:
+        type: integer
+      updatedAt:
+        type: string
+      userId:
+        type: integer
+    type: object
+  dto.IssueCertificationRequest:
+    properties:
+      certificationId:
+        type: integer
+      userId:
+        type: integer
+    required:
+    - certificationId
+    - userId
+    type: object
+  dto.SessionListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.SessionResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
+  dto.SessionResponse:
+    properties:
+      area:
+        type: string
+      carId:
+        type: integer
+      createdAt:
+        type: string
+      dateOfSession:
+        type: string
+      duration:
+        type: integer
+      id:
+        type: integer
+      instructorId:
+        type: integer
+      notes:
+        type: string
+      updatedAt:
+        type: string
+      userId:
+        type: integer
+    type: object
+  dto.UpdateBookingRequest:
+    properties:
+      area:
+        type: string
+      carId:
+        type: integer
+      dateOfSession:
+        type: string
+      fromTime:
+        type: string
+      notes:
+        type: string
+      status:
+        type: string
+      toTime:
+        type: string
+    type: object
+  dto.UpdateCertificationRequest:
+    properties:
+      status:
+        type: string
+    type: object
+  dto.UpdateEntitlementRequest:
+    properties:
+      expiresAt:
+        type: string
+      sessionsRemaining:
+        type: integer
+    type: object
+  dto.UserCertificationResponse:
+    properties:
+      certification:
+        $ref: '#/definitions/dto.CertificationResponse'
+      certificationId:
+        type: integer
+      issuedAt:
+        type: string
+      userId:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /bookings:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of bookings
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BookingListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List all bookings
+      tags:
+      - bookings
+    post:
+      consumes:
+      - application/json
+      description: Creates a new booking with the provided details
+      parameters:
+      - description: Booking data
+        in: body
+        name: booking
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.BookingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new booking
+      tags:
+      - bookings
+  /bookings/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a booking by its ID
+      parameters:
+      - description: Booking ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BookingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a booking by ID
+      tags:
+      - bookings
+    put:
+      consumes:
+      - application/json
+      description: Updates a booking with the provided details
+      parameters:
+      - description: Booking ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Booking data
+        in: body
+        name: booking
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BookingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update a booking
+      tags:
+      - bookings
+  /bookings/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels a booking by its ID
+      parameters:
+      - description: Booking ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Cancel a booking
+      tags:
+      - bookings
+  /bookings/{id}/complete:
+    post:
+      consumes:
+      - application/json
+      description: Marks a booking as completed
+      parameters:
+      - description: Booking ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Complete a booking
+      tags:
+      - bookings
+  /bookings/{id}/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirms a booking by its ID
+      parameters:
+      - description: Booking ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Confirm a booking
+      tags:
+      - bookings
+  /certifications:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of certifications
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CertificationListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List all certifications
+      tags:
+      - certifications
+    post:
+      consumes:
+      - application/json
+      description: Creates a new certification with the provided details
+      parameters:
+      - description: Certification data
+        in: body
+        name: certification
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCertificationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new certification
+      tags:
+      - certifications
+  /certifications/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a certification by its ID
+      parameters:
+      - description: Certification ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a certification by ID
+      tags:
+      - certifications
+  /certifications/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Updates the status of a certification
+      parameters:
+      - description: Certification ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Status update data
+        in: body
+        name: certification
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateCertificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update certification status
+      tags:
+      - certifications
+  /certifications/issue:
+    post:
+      consumes:
+      - application/json
+      description: Issues a certification to a specific user
+      parameters:
+      - description: Issue certification data
+        in: body
+        name: issue
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IssueCertificationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.UserCertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Issue a certification to a user
+      tags:
+      - certifications
+  /certifications/package/{packageId}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all certifications for a specific package
+      parameters:
+      - description: Package ID
+        in: path
+        name: packageId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CertificationListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get certifications by package ID
+      tags:
+      - certifications
+  /certifications/revoke:
+    post:
+      consumes:
+      - application/json
+      description: Revokes a certification from a specific user
+      parameters:
+      - description: Revoke certification data
+        in: body
+        name: revoke
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IssueCertificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Revoke a user's certification
+      tags:
+      - certifications
+  /certifications/user/{userId}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all certifications for a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserCertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get certifications by user ID
+      tags:
+      - certifications
+  /entitlements:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of entitlements
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.EntitlementListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List all entitlements
+      tags:
+      - entitlements
+    post:
+      consumes:
+      - application/json
+      description: Creates a new entitlement with the provided details
+      parameters:
+      - description: Entitlement data
+        in: body
+        name: entitlement
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateEntitlementRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.EntitlementResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new entitlement
+      tags:
+      - entitlements
+  /entitlements/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an entitlement by its ID
+      parameters:
+      - description: Entitlement ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete an entitlement
+      tags:
+      - entitlements
+    get:
+      consumes:
+      - application/json
+      description: Retrieves an entitlement by its ID
+      parameters:
+      - description: Entitlement ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.EntitlementResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get an entitlement by ID
+      tags:
+      - entitlements
+    put:
+      consumes:
+      - application/json
+      description: Updates an entitlement with the provided details
+      parameters:
+      - description: Entitlement ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Entitlement data
+        in: body
+        name: entitlement
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateEntitlementRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.EntitlementResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update an entitlement
+      tags:
+      - entitlements
+  /entitlements/user/{userId}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all entitlements for a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.EntitlementListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get entitlements by user ID
+      tags:
+      - entitlements
+  /sessions:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of sessions
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SessionListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List all sessions
+      tags:
+      - sessions
+    post:
+      consumes:
+      - application/json
+      description: Creates a new session with the provided details
+      parameters:
+      - description: Session data
+        in: body
+        name: session
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateSessionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.SessionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new session
+      tags:
+      - sessions
+  /sessions/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a session by its ID
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SessionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a session by ID
+      tags:
+      - sessions
+swagger: "2.0"

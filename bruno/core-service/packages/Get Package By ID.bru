@@ -1,0 +1,15 @@
+meta {
+  name: Get Package By ID
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{core_service_url}}/api/v1/packages/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

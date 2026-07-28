@@ -44,10 +44,7 @@ export const mapScheduleToSlot = (
     id: String(schedule.id), // Ensure ID is always a string
     date: schedule.date,
     time: schedule.time,
-    duration:
-      schedule.duration >= 60
-        ? `${Math.floor(schedule.duration / 60)}h ${schedule.duration % 60 > 0 ? `${schedule.duration % 60}m` : ""}`.trim()
-        : `${schedule.duration} min`,
+    duration: `${schedule.duration || 60} min`,
     car: "carName" in schedule ? schedule.carName : "",
     carId: "carId" in schedule ? schedule.carId : "",
     instructor: "instructorName" in schedule ? schedule.instructorName : "",

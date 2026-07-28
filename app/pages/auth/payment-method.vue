@@ -1,0 +1,785 @@
+<script setup lang="ts">
+import { z } from "zod";
+import { computed, reactive, ref, onMounted } from "vue";
+import { enrollmentService } from "~/services/enrollmentService";
+import { mapMethodIdToCode } from "~/services/paymentService";
+
+
+const { t } = useI18n()
+definePageMeta({
+  layout: "blank",
+});
+
+const route = useRoute();
+const showPrivacyModal = ref(false);
+const showTermsModal = ref(false);
+const authStore = useAuthStore();
+const paymentsStore = usePaymentsStore();
+const enrollmentsStore = useEnrollmentsStore();
+const packagesStore = usePackagesStore();
+
+// ── Resolved data ─────────────────────────────────────────────────────────────
+// Store resolved enrollment from session storage
+interface StoredEnrollment {
+  id: string;
+  packageId: string;
+  packageName?: string;
+  price: number;
+  discountPrice: number;
+  userId: string;
+  status: string;
+  createdAt: string;
+  [key: string]: any;
+}
+
+const resolvedEnrollmentId = ref<string | null>(null);
+const resolvedEnrollment = ref<StoredEnrollment | null>(null);
+const resolvedAmount = ref<number>(0);
+const resolvedPackageName = ref<string>("");
+const errorMessage = ref<string | null>(null);
+const isResolvingEnrollment = ref<boolean>(false);
+
+const paymentMethods = computed(() => [
+  {
+    id: "va",
+    name: "Virtual Account (VA)",
+    description: "Transfer via BCA, Mandiri, BNI, or BRI virtual account",
+    icon: "i-lucide-building",
+    color: "blue" as const,
+  },
+  {
+    id: "qris",
+    name: "QRIS",
+    description: "Scan QR code with any e-wallet",
+    icon: "i-lucide-qr-code",
+    color: "green" as const,
+  },
+  {
+    id: "bank_transfer",
+    name: "Bank Transfer",
+    description: "Direct transfer from your bank account",
+    icon: "i-lucide-landmark",
+    color: "purple" as const,
+  },
+  {
+    id: "ewallet",
+    name: "E-Wallet",
+    description: "GoPay, OVO, DANA, or LinkAja",
+    icon: "i-lucide-wallet",
+    color: "orange" as const,
+  },
+]);
+
+const schema = computed(() => z.object({
+  paymentMethod: z.string().min(1, t('auth.choosePaymentMethod')),
+  email: z.string().email(t('validation.email')),
+  phone: z.string().min(10, t('validation.phone')),
+  privacy: z
+    .boolean()
+    .refine((val) => val === true, t('register.validation.termsRequired')),
+}));
+
+const formData = reactive({
+  paymentMethod: "va",
+  email: "",
+  phone: "",
+  privacy: false,
+});
+
+const activeUserId = computed(() => {
+  if (authStore.userId) return authStore.userId;
+  if (import.meta.client) {
+    const userCookie = useCookie<any>("user_data");
+    if (userCookie.value?.userId) return userCookie.value.userId;
+    const userStr = localStorage.getItem("user_data") || sessionStorage.getItem("dm_user");
+    if (userStr) {
+      try { return JSON.parse(userStr).userId; } catch {}
+    }
+  }
+  return null;
+});
+
+// Pre-fill form & resolve enrollment/package info on mount
+onMounted(async () => {
+  console.log("[PAYMENT] Page mounted, resolving enrollment...");
+  console.log("[PAYMENT] Route query:", route.query);
+  console.log("[PAYMENT] Active User ID:", activeUserId.value);
+
+  isResolvingEnrollment.value = true;
+
+  // Pre-fill contact info
+  if (authStore.user?.email) {
+    formData.email = authStore.user.email;
+  } else if (import.meta.client) {
+    const savedEmail = sessionStorage.getItem("dm_reg_email");
+    if (savedEmail) formData.email = savedEmail;
+  }
+
+  if (authStore.user?.phoneNumber) {
+    formData.phone = authStore.user.phoneNumber;
+  } else if (import.meta.client) {
+    const savedPhone = sessionStorage.getItem("dm_reg_phone");
+    if (savedPhone) formData.phone = savedPhone;
+  }
+
+  // Resolve enrollment ID: query param → sessionStorage
+  const enrollmentFromQuery = route.query.enrollment as string | undefined;
+  console.log("[PAYMENT] Enrollment from query:", enrollmentFromQuery);
+
+  if (enrollmentFromQuery) {
+    resolvedEnrollmentId.value = enrollmentFromQuery;
+    console.log("[PAYMENT] Set enrollment ID from query:", enrollmentFromQuery);
+  } else if (import.meta.client) {
+    const stored = sessionStorage.getItem("dm_enrollment_id");
+    console.log("[PAYMENT] Enrollment ID from session:", stored);
+    if (stored) resolvedEnrollmentId.value = stored;
+  }
+
+  // Resolve full enrollment from sessionStorage if valid and matching
+  if (import.meta.client) {
+    const storedEnrollment = sessionStorage.getItem("dm_enrollment");
+    console.log("[PAYMENT] Stored enrollment raw:", storedEnrollment);
+    if (storedEnrollment) {
+      try {
+        const parsed = JSON.parse(storedEnrollment) as StoredEnrollment;
+        console.log("[PAYMENT] Parsed enrollment from session:", parsed);
+
+        // Validate that stored enrollment matches the active enrollment ID & active user ID
+        const isMatchingQuery = !enrollmentFromQuery || parsed.id === enrollmentFromQuery;
+        const isMatchingUser = !activeUserId.value || !parsed.userId || parsed.userId === activeUserId.value;
+
+        if (isMatchingQuery && isMatchingUser) {
+          resolvedEnrollment.value = parsed;
+          if (!resolvedEnrollmentId.value) {
+            resolvedEnrollmentId.value = parsed.id;
+          }
+          resolvedAmount.value = parsed.totalPrice || parsed.price || parsed.discountPrice || 0;
+          resolvedPackageName.value = parsed.packageName || "Selected Package";
+          console.log("[PAYMENT] Valid session enrollment matched:", parsed.id);
+        } else {
+          console.warn("[PAYMENT] Session enrollment is stale/mismatched (stored:", parsed.id, "expected:", enrollmentFromQuery, "). Purging session storage.");
+          sessionStorage.removeItem("dm_enrollment");
+          sessionStorage.removeItem("dm_enrollment_id");
+          resolvedEnrollment.value = null;
+        }
+      } catch (e) {
+        console.error("[PAYMENT] Failed to parse stored enrollment:", e);
+        sessionStorage.removeItem("dm_enrollment");
+        sessionStorage.removeItem("dm_enrollment_id");
+      }
+    }
+  }
+
+  console.log("[PAYMENT] Resolved enrollment ID:", resolvedEnrollmentId.value);
+
+  // Fetch enrollment from API if not resolved or if missing details
+  if (resolvedEnrollmentId.value) {
+    if (!resolvedEnrollment.value) {
+      console.log("[PAYMENT] Fetching enrollment from API by ID:", resolvedEnrollmentId.value);
+      const response = await enrollmentService.fetchById(resolvedEnrollmentId.value);
+      console.log("[PAYMENT] Fetched enrollment response:", response);
+      const enrollment = response && typeof response === "object" && "enrollment" in response
+        ? (response as any).enrollment
+        : response;
+
+      if (enrollment && enrollment.id) {
+        // Validate user ownership if logged in
+        if (activeUserId.value && enrollment.userId && enrollment.userId !== activeUserId.value) {
+          console.error("[PAYMENT] Enrollment belongs to a different user!", enrollment.userId, "active:", activeUserId.value);
+          const toast = useToast();
+          toast.add({
+            title: t("register.errors.enrollmentError") || "Enrollment Error",
+            description: "This enrollment belongs to another account. Please select a plan for your account.",
+            color: "error",
+          });
+          if (import.meta.client) {
+            sessionStorage.removeItem("dm_enrollment");
+            sessionStorage.removeItem("dm_enrollment_id");
+          }
+          navigateTo("/auth/select-plan");
+          isResolvingEnrollment.value = false;
+          return;
+        }
+
+        resolvedAmount.value = enrollment.totalPrice || enrollment.price || enrollment.discountPrice || 0;
+        resolvedPackageName.value = enrollment.packageName || "Selected Package";
+        resolvedEnrollment.value = {
+          id: enrollment.id,
+          packageId: enrollment.packageId,
+          packageName: enrollment.packageName,
+          price: enrollment.price || enrollment.totalPrice,
+          totalPrice: enrollment.totalPrice,
+          discountPrice: enrollment.discountPrice,
+          userId: enrollment.userId,
+          status: enrollment.status,
+          createdAt: enrollment.createdAt,
+        };
+        if (import.meta.client) {
+          sessionStorage.setItem("dm_enrollment_id", enrollment.id);
+          sessionStorage.setItem("dm_enrollment", JSON.stringify(resolvedEnrollment.value));
+        }
+      } else {
+        console.error("[PAYMENT] Failed to fetch valid enrollment by ID from API");
+        const toast = useToast();
+        toast.add({
+          title: t("register.errors.enrollmentError") || "Enrollment Error",
+          description: "Invalid or expired enrollment. Please select a plan to proceed.",
+          color: "error",
+        });
+        if (import.meta.client) {
+          sessionStorage.removeItem("dm_enrollment");
+          sessionStorage.removeItem("dm_enrollment_id");
+        }
+        navigateTo("/auth/select-plan");
+        isResolvingEnrollment.value = false;
+        return;
+      }
+    }
+  } else {
+    // If no enrollment ID was found anywhere, show error and redirect to select plan
+    console.error("[PAYMENT] No enrollment ID found anywhere!");
+    const toast = useToast();
+    toast.add({
+      title: t("register.errors.enrollmentError") || "No Enrollment Found",
+      description: "Please select a plan to proceed to payment.",
+      color: "error",
+    });
+    navigateTo("/auth/select-plan");
+    isResolvingEnrollment.value = false;
+    return;
+  }
+
+  isResolvingEnrollment.value = false;
+});
+
+const loading = ref(false);
+
+async function onSubmit() {
+  loading.value = true;
+  errorMessage.value = null;
+
+  try {
+    // Wait for enrollment to be resolved if still loading
+    if (isResolvingEnrollment.value) {
+      console.log("[PAYMENT] Waiting for enrollment to be resolved...");
+      const maxWait = 10000; // 10 seconds
+      const startTime = Date.now();
+      while (isResolvingEnrollment.value && Date.now() - startTime < maxWait) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      console.log("[PAYMENT] After waiting - enrollment ID:", resolvedEnrollmentId.value);
+    }
+
+    if (!authStore.userId) {
+      errorMessage.value = "You must be logged in to complete payment.";
+      return;
+    }
+
+    if (!resolvedEnrollmentId.value) {
+      errorMessage.value = "No enrollment found. Please go back and select a plan.";
+      return;
+    }
+
+    const paymentMethodCode = mapMethodIdToCode(formData.paymentMethod);
+
+    // Build payment request with enrollment data
+    const paymentData: any = {
+      enrollmentId: resolvedEnrollmentId.value,
+      userId: authStore.userId,
+      amount: resolvedAmount.value,
+      paymentMethod: paymentMethodCode,
+    };
+
+    // Include full enrollment data only if valid and matching resolved ID
+    if (
+      resolvedEnrollment.value &&
+      resolvedEnrollment.value.id === resolvedEnrollmentId.value &&
+      (!resolvedEnrollment.value.userId || resolvedEnrollment.value.userId === authStore.userId)
+    ) {
+      paymentData.enrollment = resolvedEnrollment.value;
+    } else {
+      console.warn("[PAYMENT] Discarded mismatched enrollment payload before submission");
+    }
+
+    const payment = await paymentsStore.createPayment(paymentData);
+
+    if (payment) {
+      // Store order ID for status tracking
+      if (import.meta.client) {
+        sessionStorage.setItem("dm_order_id", payment.orderId);
+      }
+
+      // If payment is already success/paid (bypassed), redirect to status page directly with success status
+      if (payment.status === "success" || payment.status === "paid") {
+        navigateTo(`/auth/payment-status?status=success&orderId=${payment.orderId}&email=${formData.email}`);
+      } else if (payment.paymentUrl) {
+        window.location.href = payment.paymentUrl;
+      } else {
+        navigateTo(`/auth/payment-status?orderId=${payment.orderId}`);
+      }
+    } else {
+      errorMessage.value = paymentsStore.error || "Failed to create payment. Please try again.";
+    }
+  } finally {
+    loading.value = false;
+  }
+}
+
+
+</script>
+
+<template>
+  <div class="min-h-[calc(100vh-200px)] py-12 px-4 bg-muted/20">
+    <div class="max-w-2xl mx-auto">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <div class="flex items-center justify-center gap-2 mb-4">
+          <UIcon name="i-lucide-credit-card" class="size-8 text-warning" />
+          <span class="text-xl font-bold">{{ t('auth.paymentMethod') }}</span>
+        </div>
+        <h1 class="text-2xl font-bold">{{ t('auth.completePurchase') }}</h1>
+        <p class="text-muted mt-2">
+          <span v-if="resolvedPackageName">{{ resolvedPackageName }} - Rp {{ resolvedAmount.toLocaleString('id-ID') }}</span>
+          <span v-else class="text-muted italic">Loading package info…</span>
+        </p>
+      </div>
+
+      <UCard>
+        <UForm :schema="schema" :state="formData" class="space-y-6" @submit="onSubmit">
+          <!-- Payment Method Selection -->
+          <div>
+            <label class="block text-sm font-medium mb-4">{{ t('auth.choosePaymentMethod') }}</label>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <div v-for="method in paymentMethods" :key="method.id" class="relative">
+                <input
+                  :id="`method-${method.id}`"
+                  v-model="formData.paymentMethod"
+                  type="radio"
+                  :value="method.id"
+                  class="sr-only"
+                />
+                <label
+                  :for="`method-${method.id}`"
+                  class="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all"
+                  :class="
+                    formData.paymentMethod === method.id
+                      ? 'border-warning bg-warning/5'
+                      : 'border-default hover:border-muted'
+                  "
+                >
+                  <div
+                    class="p-2 rounded-lg shrink-0 mt-1"
+                    :class="`bg-${method.color}-500/10`"
+                  >
+                    <UIcon
+                      :name="method.icon"
+                      class="size-5"
+                      :class="`text-${method.color}-500`"
+                    />
+                  </div>
+                  <div class="flex-1">
+                    <p class="font-medium">{{ method.name }}</p>
+                    <p class="text-xs text-muted mt-1">{{ method.description }}</p>
+                  </div>
+                  <div
+                    v-if="formData.paymentMethod === method.id"
+                    class="p-1 rounded-full bg-warning"
+                  >
+                    <UIcon name="i-lucide-check" class="size-4 text-white" />
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Information -->
+          <div class="pt-4 border-t">
+            <div class="flex items-start justify-between mb-4">
+              <h3 class="font-medium">{{ t('auth.contactInfo') }}</h3>
+              <span class="text-xs text-muted flex items-center gap-1">
+                <UIcon name="i-lucide-info" class="size-3" />
+                {{ t('auth.fromRegistration') }}
+              </span>
+            </div>
+
+            <UFormField name="email" :label="t('auth.email')" required>
+              <UInput
+                v-model="formData.email"
+                type="email"
+                placeholder="your@email.com"
+                icon="i-lucide-mail"
+                size="lg"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField name="phone" :label="t('auth.whatsappPhone')" required class="mt-4">
+              <UInput
+                v-model="formData.phone"
+                placeholder="08123456789"
+                icon="i-lucide-phone"
+                size="lg"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UAlert icon="i-lucide-info" color="warning" class="mt-4">
+              <template #description>
+                {{ t('auth.paymentInstructionsNote') }}
+              </template>
+            </UAlert>
+          </div>
+
+          <!-- Terms -->
+          <UFormField name="privacy">
+            <UCheckbox v-model:model-value="formData.privacy" color="warning" required>
+              <template #label>
+                <span class="text-sm">
+                  {{ t('register.terms.agree') }}
+                  <UButton
+                    :label="t('register.terms.termsOfService')"
+                    color="warning"
+                    variant="ghost"
+                    class="underline mx-0 px-0 h-auto py-0 text-sm"
+                    @click="showTermsModal = true"
+                  />
+                  <UModal v-model:open="showTermsModal" :title="t('register.terms.termsOfService')">
+                    <template #body>
+                      <div class="prose dark:prose-invert max-w-none space-y-6">
+                        <p>
+                          Welcome to Drive Master Indonesia. These Terms of Service
+                          ("Terms") govern your access to and use of the website
+                          <NuxtLink to="/" class="text-warning hover:underline"
+                            >www.drivemaster.id</NuxtLink
+                          >
+                          and our driving school services. By accessing or using our
+                          services, you agree to be bound by these Terms.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">1. Services Provided</h2>
+                        <p>
+                          Drive Master Indonesia provides professional driving instruction
+                          services, including theoretical training and practical on-road
+                          sessions. We reserve the right to modify, suspend, or
+                          discontinue any part of the services at any time without prior
+                          notice.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">2. User Accounts</h2>
+                        <p>
+                          To access certain features of our platform, such as booking
+                          sessions, you must register for an account. You agree to:
+                        </p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>
+                            Provide accurate, current, and complete information during the
+                            registration process.
+                          </li>
+                          <li>
+                            Maintain the security of your password and accept all risks of
+                            unauthorized access to your account.
+                          </li>
+                          <li>
+                            Notify us immediately if you discover or suspect any security
+                            breaches related to our services.
+                          </li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">3. Fees and Payments</h2>
+                        <p>
+                          All prices for our driving packages are listed in Indonesian
+                          Rupiah (IDR). Payment obligations include:
+                        </p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>
+                            <strong>Payment Processing:</strong> Payments are processed
+                            securely via third-party gateways (e.g., Midtrans). We do not
+                            store your full financial credentials.
+                          </li>
+                          <li>
+                            <strong>Refund Policy:</strong> Requests for refunds are
+                            subject to our internal review and are typically only granted
+                            if requested at least 48 hours before the start of the first
+                            session.
+                          </li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">
+                          4. Scheduling and Cancellations
+                        </h2>
+                        <p>
+                          Efficient scheduling is key to our service quality. Our policy
+                          includes:
+                        </p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>
+                            <strong>Booking:</strong> Sessions must be booked at least 24
+                            hours in advance through the student dashboard.
+                          </li>
+                          <li>
+                            <strong>Rescheduling:</strong> You may reschedule a session
+                            through our platform at no extra cost if done at least 24
+                            hours before the scheduled time.
+                          </li>
+                          <li>
+                            <strong>No-Show:</strong> Failure to attend a scheduled
+                            session without prior notice will result in the session being
+                            marked as completed and non-refundable.
+                          </li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">5. Student Obligations</h2>
+                        <p>As a student of Drive Master Indonesia, you agree to:</p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>
+                            Possess a valid temporary or permanent driver's permit as
+                            required by local law.
+                          </li>
+                          <li>
+                            Follow the instructions of the assigned instructor at all
+                            times during practical sessions.
+                          </li>
+                          <li>
+                            Maintain a zero-tolerance policy regarding alcohol or drug use
+                            before or during training sessions.
+                          </li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">6. Limitation of Liability</h2>
+                        <p>
+                          To the maximum extent permitted by law, Drive Master Indonesia
+                          shall not be liable for any indirect, incidental, or
+                          consequential damages resulting from your use of our services or
+                          any interaction with our instructors. While we strive for
+                          absolute safety, practical driving involves inherent risks.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">7. Changes to Terms</h2>
+                        <p>
+                          We reserve the right to change or modify these Terms at any
+                          time. If we make changes, we will notify you by revising the
+                          date at the top of the policy or by posting a notice on our
+                          homepage. Your continued use of the services confirms your
+                          acceptance of the revised Terms.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">8. Contact Us</h2>
+                        <p>
+                          If you have any questions or concerns regarding these Terms,
+                          please reach out to us:
+                        </p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>
+                            By email:
+                            <a
+                              href="mailto:info@drivemaster.id"
+                              class="text-warning hover:underline"
+                              >info@drivemaster.id</a
+                            >
+                          </li>
+                          <li>By phone: +62 812-3456-7890</li>
+                        </ul>
+                      </div>
+                    </template>
+                  </UModal>
+                  {{ t('register.terms.and') }}
+                  <UButton
+                    :label="t('register.terms.privacyPolicy')"
+                    color="warning"
+                    variant="ghost"
+                    class="underline mx-0 px-0 h-auto py-0 text-sm"
+                    @click="showPrivacyModal = true"
+                  />
+                  <UModal v-model:open="showPrivacyModal" :title="t('register.terms.privacyPolicy')">
+                    <template #body>
+                      <div class="prose dark:prose-invert max-w-none space-y-6">
+                        <p>
+                          Welcome to Drive Master Indonesia. We are committed to
+                          protecting your privacy and ensuring you have a positive
+                          experience on our website and in using our services. This
+                          Privacy Policy outlines how we collect, use, disclose, and
+                          safeguard your information when you visit our website
+                          <NuxtLink to="/" class="text-warning hover:underline"
+                            >www.drivemaster.id</NuxtLink
+                          >
+                          and use our driving school services.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">1. Information We Collect</h2>
+                        <p>
+                          We may collect personal information that you voluntarily provide
+                          to us when you register for our services, make a purchase, or
+                          interact with our website. This includes:
+                        </p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>
+                            <strong>Personal Identification Information:</strong> Name,
+                            email address, phone number, physical address, date of birth,
+                            and driver's license details.
+                          </li>
+                          <li>
+                            <strong>Payment Information:</strong> Details required for
+                            processing payments, such as credit/debit card numbers
+                            (processed securely by third-party payment gateways like
+                            Midtrans).
+                          </li>
+                          <li>
+                            <strong>Usage Data:</strong> Information about how you access
+                            and use our website, including IP address, browser type, pages
+                            viewed, and time spent on pages.
+                          </li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">2. How We Use Your Information</h2>
+                        <p>
+                          The information we collect is used for various purposes,
+                          including:
+                        </p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>
+                            To provide and maintain our services, including scheduling
+                            driving lessons and managing your account.
+                          </li>
+                          <li>
+                            To process transactions and send you related information,
+                            including purchase confirmations and invoices.
+                          </li>
+                          <li>
+                            To improve our website and services based on your feedback and
+                            usage patterns.
+                          </li>
+                          <li>
+                            To send you marketing and promotional communications (if you
+                            have opted in).
+                          </li>
+                          <li>To comply with legal obligations and resolve disputes.</li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">
+                          3. Disclosure of Your Information
+                        </h2>
+                        <p>
+                          We may share your information with third parties in the
+                          following situations:
+                        </p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>
+                            <strong>Service Providers:</strong> With third-party vendors,
+                            consultants, and other service providers who perform services
+                            for us or on our behalf (e.g., payment processing, email
+                            delivery, hosting services).
+                          </li>
+                          <li>
+                            <strong>Legal Requirements:</strong> If required to do so by
+                            law or in response to valid requests by public authorities
+                            (e.g., a court order or government agency).
+                          </li>
+                          <li>
+                            <strong>Business Transfers:</strong> In connection with, or
+                            during negotiations of, any merger, sale of company assets,
+                            financing, or acquisition of all or a portion of our business
+                            to another company.
+                          </li>
+                        </ul>
+
+                        <h2 class="text-2xl font-bold">4. Data Security</h2>
+                        <p>
+                          We implement reasonable security measures to protect your
+                          personal information from unauthorized access, use, alteration,
+                          and disclosure. However, no method of transmission over the
+                          Internet or electronic storage is 100% secure, and we cannot
+                          guarantee absolute security.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">5. Your Data Protection Rights</h2>
+                        <p>
+                          Depending on your location, you may have the following rights
+                          regarding your personal data:
+                        </p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>
+                            The right to access, update, or delete the information we have
+                            on you.
+                          </li>
+                          <li>
+                            The right to object to our processing of your personal data.
+                          </li>
+                          <li>
+                            The right to request that we restrict the processing of your
+                            personal information.
+                          </li>
+                          <li>The right to data portability.</li>
+                          <li>The right to withdraw consent at any time.</li>
+                        </ul>
+                        <p>
+                          To exercise any of these rights, please contact us at
+                          <a
+                            href="mailto:info@drivemaster.id"
+                            class="text-warning hover:underline"
+                            >info@drivemaster.id</a
+                          >.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">
+                          6. Changes to This Privacy Policy
+                        </h2>
+                        <p>
+                          We may update our Privacy Policy from time to time. We will
+                          notify you of any changes by posting the new Privacy Policy on
+                          this page and updating the "Last Updated" date. You are advised
+                          to review this Privacy Policy periodically for any changes.
+                        </p>
+
+                        <h2 class="text-2xl font-bold">7. Contact Us</h2>
+                        <p>
+                          If you have any questions about this Privacy Policy, please
+                          contact us:
+                        </p>
+                        <ul class="list-disc list-inside ml-4">
+                          <li>
+                            By email:
+                            <a
+                              href="mailto:info@drivemaster.id"
+                              class="text-warning hover:underline"
+                              >info@drivemaster.id</a
+                            >
+                          </li>
+                          <li>By phone: +62 812-3456-7890</li>
+                        </ul>
+                      </div>
+                    </template>
+                  </UModal>
+                </span>
+              </template>
+            </UCheckbox>
+          </UFormField>
+
+          <!-- Error Message -->
+          <UAlert
+            v-if="errorMessage"
+            icon="i-lucide-alert-circle"
+            color="error"
+            :description="errorMessage"
+            class="mt-2"
+          />
+
+          <!-- Actions -->
+          <div class="flex gap-3 pt-4 border-t">
+            <NuxtLink to="/auth/select-plan" class="flex-1">
+              <UButton :label="t('auth.backToPackages')" color="neutral" variant="outline" block />
+            </NuxtLink>
+            <UButton
+              type="submit"
+              :label="t('auth.continueToPayment')"
+              trailingIcon="i-lucide-arrow-right"
+              :loading="loading"
+              block
+              class="flex-1"
+              color="warning"
+            />
+          </div>
+        </UForm>
+      </UCard>
+    </div>
+  </div>
+</template>

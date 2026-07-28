@@ -1,0 +1,21 @@
+meta {
+  name: Search Members
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{user_service_url}}/api/v1/members/search
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:query {
+  q: John
+  page: 1
+  limit: 10
+}

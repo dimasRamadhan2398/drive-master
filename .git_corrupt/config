@@ -1,0 +1,34 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
+	precomposeunicode = true
+[remote "origin"]
+	url = https://github.com/dimasRamadhan2398/drive-master.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "main"]
+	remote = origin
+	merge = refs/heads/main
+	vscode-merge-base = origin/main
+[branch "zeta-v2"]
+	vscode-merge-base = origin/main
+	remote = origin
+	merge = refs/heads/zeta-v2
+[branch "zeta-v3"]
+	vscode-merge-base = origin/zeta-v2
+	remote = origin
+	merge = refs/heads/zeta-v3
+[branch "zeta-v4"]
+	remote = origin
+	vscode-merge-base = origin/zeta-v3
+	merge = refs/heads/zeta-v4
+[branch "feature/blog-integration-3629095222744851241"]
+	vscode-merge-base = origin/zeta-v3
+	remote = origin
+	merge = refs/heads/feature/blog-integration-3629095222744851241
+[branch "zeta-dev"]
+	vscode-merge-base = origin/zeta-v3
+	remote = origin
+	merge = refs/heads/zeta-dev

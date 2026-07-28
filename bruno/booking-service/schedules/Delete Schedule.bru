@@ -1,0 +1,19 @@
+meta {
+  name: Delete Schedule
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{booking_service_url}}/api/v1/schedules/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}

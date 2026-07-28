@@ -1,0 +1,15 @@
+meta {
+  name: Get FAQ By ID
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{core_service_url}}/api/v1/articles/faq/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

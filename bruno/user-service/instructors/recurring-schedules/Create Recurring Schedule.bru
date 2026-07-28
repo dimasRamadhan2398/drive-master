@@ -1,0 +1,28 @@
+meta {
+  name: Create Recurring Schedule
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{user_service_url}}/api/v1/instructors/:id/recurring-schedules
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: {{instructor_id}}
+}
+
+body:json {
+  {
+    "day_of_week": 1,
+    "start_time": "09:00",
+    "end_time": "17:00",
+    "is_active": true
+  }
+}

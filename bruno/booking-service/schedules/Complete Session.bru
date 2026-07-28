@@ -1,0 +1,19 @@
+meta {
+  name: Complete Session
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{booking_service_url}}/api/v1/schedules/:id/complete
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}

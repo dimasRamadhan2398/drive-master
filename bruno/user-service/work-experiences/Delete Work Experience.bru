@@ -1,0 +1,19 @@
+meta {
+  name: Delete Work Experience
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{user_service_url}}/api/v1/work-experiences/:expId
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  expId: 1
+}

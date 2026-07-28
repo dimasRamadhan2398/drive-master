@@ -1,0 +1,230 @@
+package controllers
+
+import (
+	"net/http"
+	"strconv"
+
+	"booking-service/models/dto"
+	"booking-service/pkg/base"
+	"booking-service/services"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+)
+
+type SessionController struct {
+	sessionService services.ISessionService
+}
+
+func NewSessionController(sessionService services.ISessionService) ISessionController {
+	return &SessionController{sessionService: sessionService}
+}
+
+type ISessionController interface {
+	CreateSession(c *gin.Context)
+	GetSession(c *gin.Context)
+	ListSessions(c *gin.Context)
+	StartSession(c *gin.Context)
+	CompleteSession(c *gin.Context)
+	CancelSession(c *gin.Context)
+}
+
+// CreateSession godoc
+// @Summary Create a new session
+// @Description Creates a new session with the provided details
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param session body dto.CreateSessionRequest true "Session data"
+// @Success 201 {object} dto.SessionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /sessions [post]
+func (c *SessionController) CreateSession(ctx *gin.Context) {
+	var req dto.CreateSessionRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp, err := c.sessionService.CreateSession(ctx.Request.Context(), req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, resp)
+}
+
+// GetSession godoc
+// @Summary Get a session by ID
+// @Description Retrieves a session by its ID
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param id path int true "Session ID"
+// @Success 200 {object} dto.SessionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /sessions/{id} [get]
+func (c *SessionController) GetSession(ctx *gin.Context) {
+	id, err := base.GetUintIDFromPath(ctx, "id")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid session id"})
+		return
+	}
+
+	resp, err := c.sessionService.GetSession(ctx.Request.Context(), id)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+// ListSessions godoc
+// @Summary List all sessions
+// @Description Retrieves a paginated list of sessions
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} dto.SessionListResponse
+// @Failure 500 {object} map[string]string
+// @Router /sessions [get]
+func (c *SessionController) ListSessions(ctx *gin.Context) {
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	userIDStr := ctx.Query("userId")
+	if userIDStr == "" {
+		userIDStr = ctx.Query("studentId")
+	}
+
+	if userIDStr != "" {
+		parsedID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			return
+		}
+		resp, err := c.sessionService.ListUserSessions(ctx.Request.Context(), parsedID, page, limit)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusOK, resp)
+		return
+	}
+
+	resp, err := c.sessionService.ListSessions(ctx.Request.Context(), page, limit)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+// StartSession godoc
+// @Summary Start a session
+// @Description Starts a scheduled session
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param id path int true "Session ID"
+// @Success 200 {object} dto.SessionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Router /sessions/{id}/start [post]
+func (c *SessionController) StartSession(ctx *gin.Context) {
+	id, err := base.GetUintIDFromPath(ctx, "id")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid session id"})
+		return
+	}
+
+	resp, err := c.sessionService.StartSession(ctx.Request.Context(), id)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "session not found" {
+			status = http.StatusNotFound
+		} else if err.Error() == "session cannot be started: invalid status" {
+			status = http.StatusConflict
+		}
+		ctx.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+// CompleteSession godoc
+// @Summary Complete a session
+// @Description Completes an in-progress session
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param id path int true "Session ID"
+// @Success 200 {object} dto.SessionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Router /sessions/{id}/complete [post]
+func (c *SessionController) CompleteSession(ctx *gin.Context) {
+	id, err := base.GetUintIDFromPath(ctx, "id")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid session id"})
+		return
+	}
+
+	resp, err := c.sessionService.CompleteSession(ctx.Request.Context(), id)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "session not found" {
+			status = http.StatusNotFound
+		} else if err.Error() == "session cannot be completed: must be in progress" {
+			status = http.StatusConflict
+		}
+		ctx.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+// CancelSession godoc
+// @Summary Cancel a session
+// @Description Cancels a session
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param id path int true "Session ID"
+// @Success 200 {object} dto.SessionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Router /sessions/{id}/cancel [post]
+func (c *SessionController) CancelSession(ctx *gin.Context) {
+	id, err := base.GetUintIDFromPath(ctx, "id")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid session id"})
+		return
+	}
+
+	resp, err := c.sessionService.CancelSession(ctx.Request.Context(), id)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "session not found" {
+			status = http.StatusNotFound
+		} else if err.Error() == "session cannot be cancelled: already completed" ||
+			err.Error() == "session cannot be cancelled: already cancelled" {
+			status = http.StatusConflict
+		}
+		ctx.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}

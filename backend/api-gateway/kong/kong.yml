@@ -1,0 +1,409 @@
+_format_version: "3.0"
+_transform: true
+
+# Kong Configuration
+# All CORS handling is managed by Kong gateway using global cors plugin
+# Services do NOT have CORS middleware - Kong handles all CORS responses
+
+# ── Global plugins ────────────────────────────────────
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "http://localhost:3000"
+        - "http://localhost:3001"
+        - "https://drivemaster.id"
+        - "http://drivemaster.id"
+        - "http://203.194.114.20"
+        - "https://203.194.114.20"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+        - HEAD
+      headers:
+        - Accept
+        - Authorization
+        - Content-Type
+        - Origin
+        - X-Request-ID
+        - X-User-ID
+        - X-User-Role
+      exposed_headers:
+        - X-Request-ID
+        - Content-Length
+        - Authorization
+        - Content-Disposition
+        - Content-Type
+      credentials: true
+      max_age: 3600
+      preflight_continue: false
+
+# ── Upstreams ──────────────────────────────────────────
+upstreams:
+  - name: user-service-upstream
+    targets:
+      - target: user-service:8001
+        weight: 100
+
+  - name: core-service-upstream
+    targets:
+      - target: core-service:8002
+        weight: 100
+
+  - name: booking-service-upstream
+    targets:
+      - target: booking-service:8003
+        weight: 100
+
+  - name: payment-service-upstream
+    targets:
+      - target: payment-service:8004
+        weight: 100
+
+services:
+  # ========================
+  # User Service (Port 8001)
+  # ========================
+  - name: user-service
+    url: http://user-service-upstream
+    routes:
+      - name: user-auth-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/auth
+        protocols: [http, https]
+
+      - name: user-users-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/users
+        protocols: [http, https]
+
+      - name: user-members-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/members
+          - /api/v1/members/
+        protocols: [http, https]
+
+      - name: user-members-all-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/members/all
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: user-members-recent-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/members/recent
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: user-members-search-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/members/search
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: user-instructors-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/instructors
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: user-testimonials-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/testimonials
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: user-entitlements-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/entitlements
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: user-certificates-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/certificates
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: user-testimonials-all-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/testimonials/all
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+      
+      - name: user-dashboard-route
+        strip_path: false
+        preserve_host: false
+        paths: 
+        - /api/v1/dashboard/stats
+        - /api/v1/dashboard/certifications/stats
+        protocols: [http, https]
+        methods: [GET, OPTIONS]
+
+  - name: user-service-docs-service
+    url: http://user-service-upstream
+    routes:
+      - name: user-swagger-ui
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /swagger/user-service
+        protocols: [http, https]
+
+  # ========================
+  # Core Service (Port 8002)
+  # ========================
+  - name: core-service
+    url: http://core-service-upstream
+    routes:
+      - name: core-cars-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/cars
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: core-packages-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/packages
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: core-addons-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/addons
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: core-faq-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/articles/faq
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: core-blog-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/articles/blog
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: core-articles-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/articles
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: core-regions-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/regions
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: core-pages-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/pages
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: core-sales-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/admin/sales
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: core-analytics-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/admin/analytics
+        protocols: [http, https]
+        methods: [GET, OPTIONS]
+
+      - name: core-general-settings-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/general-settings
+        protocols: [http, https]
+        methods: [GET, PUT, OPTIONS]
+
+      - name: core-contact-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/contact
+        protocols: [http, https]
+        methods: [GET, POST, OPTIONS]
+
+      - name: core-analytics-sales-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/admin/sales
+        protocols: [http, https]
+        methods: [GET, OPTIONS]
+
+  - name: core-service-docs-service
+    url: http://core-service-upstream
+    routes:
+      - name: core-swagger-ui
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /swagger/core-service
+        protocols: [http, https]
+
+  # ========================
+  # Booking Service (Port 8003)
+  # ========================
+  - name: booking-service
+    url: http://booking-service-upstream
+    routes:
+      - name: booking-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/bookings
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: booking-certifications-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/certifications
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: booking-schedules-filter-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/schedules/filter
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: booking-schedules-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/schedules
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+      
+      - name: booking-sessions-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/sessions
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: booking-enrollments-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/enrollments
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+      
+      - name: booking-dashboard-route
+        strip_path: false
+        preserve_host: false
+        paths: 
+        - /api/v1/dashboard/sessions/stats
+        - /api/v1/dashboard/revenue/stats
+        protocols: [http, https]
+        methods: [GET, OPTIONS]
+
+  - name: booking-service-docs-service
+    url: http://booking-service-upstream
+    routes:
+      - name: booking-swagger-ui
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /swagger/booking-service
+        protocols: [http, https]
+
+  # ========================
+  # Payment Service (Port 8004)
+  # ========================
+  - name: payment-service
+    url: http://payment-service-upstream
+    routes:
+      - name: payment-transactions-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/transactions
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+      - name: payment-notifications-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /notifications
+        protocols: [http, https]
+
+      - name: payment-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/payments
+        protocols: [http, https]
+        methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+
+  - name: payment-service-docs-service
+    url: http://payment-service-upstream
+    routes:
+      - name: payment-swagger-ui
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /swagger/payment-service
+        protocols: [http, https]

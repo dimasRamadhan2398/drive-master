@@ -1,0 +1,21 @@
+meta {
+  name: Update Page
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{core_service_url}}/api/v1/pages/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "content": "Updated content..."
+  }
+}

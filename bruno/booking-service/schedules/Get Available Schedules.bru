@@ -1,0 +1,19 @@
+meta {
+  name: Get Available Schedules
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{booking_service_url}}/api/v1/schedules/available
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:query {
+  date: 2024-07-25
+}

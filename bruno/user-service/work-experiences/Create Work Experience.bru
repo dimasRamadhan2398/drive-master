@@ -1,0 +1,29 @@
+meta {
+  name: Create Work Experience
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{user_service_url}}/api/v1/instructors/:id/work-experiences
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: {{instructor_id}}
+}
+
+body:json {
+  {
+    "company": "Driving School ABC",
+    "position": "Senior Instructor",
+    "start_date": "2020-01-01",
+    "end_date": "2023-12-31",
+    "description": "Taught advanced driving techniques"
+  }
+}

@@ -70,17 +70,18 @@ const isSlotPast = (slotDateStr: string, slotTimeStr: string): boolean => {
 
   let timeStr = (slotTimeStr || "00:00").trim();
   if (timeStr.includes("-")) {
-    timeStr = timeStr.split("-")[0].trim();
+    timeStr = (timeStr.split("-")[0] ?? timeStr).trim();
   }
 
   const isPM = /pm/i.test(timeStr);
   const isAM = /am/i.test(timeStr);
   timeStr = timeStr.replace(/(am|pm)/i, "").trim();
 
-  const [year, month, day] = slotDateStr.split("-").map(Number);
+  const dateParts = slotDateStr.split("-").map(Number);
+  const [year, month, day] = [dateParts[0] ?? 0, dateParts[1] ?? 1, dateParts[2] ?? 1];
   const timeParts = timeStr.split(":");
-  let hours = Number(timeParts[0]) || 0;
-  const minutes = Number(timeParts[1]) || 0;
+  let hours = Number(timeParts[0] ?? 0) || 0;
+  const minutes = Number(timeParts[1] ?? 0) || 0;
 
   if (isPM && hours < 12) hours += 12;
   if (isAM && hours === 12) hours = 0;
@@ -189,11 +190,16 @@ const getInstructorName = (session: SessionResponse) => {
 };
 
 const getCarName = (session: SessionResponse) => {
+  if ((session as any).carName) return (session as any).carName;
+  if (session.carId) {
+    const vehicle = vehiclesStore.getVehicleById(session.carId);
+    if (vehicle) return `${vehicle.brand} ${vehicle.model}`;
+  }
   if (session.scheduleId) {
     const slot = globalSlots.value.find((s) => s.id === String(session.scheduleId));
-    if (slot) return slot.car;
+    if (slot && slot.car) return slot.car;
   }
-  return "BYD Atto 3";
+  return "BYD Atto 1";
 };
 
 const fetchSessions = async () => {

@@ -1,0 +1,15 @@
+meta {
+  name: Get Regencies By Province
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{core_service_url}}/api/v1/regions/provinces/:province/regencies
+  body: none
+  auth: none
+}
+
+params:path {
+  province: Jawa Barat
+}

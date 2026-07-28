@@ -1,0 +1,19 @@
+meta {
+  name: Get Payment Detail
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{payment_service_url}}/api/v1/payments/:id/details
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}

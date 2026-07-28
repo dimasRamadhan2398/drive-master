@@ -1,0 +1,27 @@
+meta {
+  name: Update Instructor Profile
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{user_service_url}}/api/v1/instructors/:id/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: {{instructor_id}}
+}
+
+body:json {
+  {
+    "bio": "Updated bio",
+    "license_number": "SIM-002",
+    "phone": "089876543210"
+  }
+}

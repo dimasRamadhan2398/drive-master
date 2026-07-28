@@ -1,0 +1,24 @@
+meta {
+  name: Use Session
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{user_service_url}}/api/v1/entitlements/members/:id/entitlements/:entId/use-session
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: {{member_id}}
+  entId: 1
+}
+
+body:json {
+  {}
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Delete FAQ
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{core_service_url}}/api/v1/articles/faq/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

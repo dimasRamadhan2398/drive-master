@@ -1,0 +1,11 @@
+meta {
+  name: Get Active AddOns
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{core_service_url}}/api/v1/addons/active
+  body: none
+  auth: none
+}

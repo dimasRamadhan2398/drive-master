@@ -1,0 +1,16 @@
+meta {
+  name: Get Monthly Sales
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{core_service_url}}/api/v1/admin/sales/analytics/monthly/:year/:month
+  body: none
+  auth: none
+}
+
+params:path {
+  year: 2024
+  month: 7
+}

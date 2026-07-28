@@ -1,0 +1,22 @@
+meta {
+  name: Login
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{user_service_url}}/api/v1/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "afifahrahmawati221@gmail.com",
+    "password": "password123"
+  }
+}
+
+vars:pre-request {
+  user_service_url: https://drivemaster.id
+}
