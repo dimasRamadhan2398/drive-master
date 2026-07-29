@@ -1,0 +1,22 @@
+meta {
+  name: Create Package
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{core_service_url}}/api/v1/packages/create
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Basic Package",
+    "description": "10 sessions driving course",
+    "price": 1500000,
+    "sessions": 10,
+    "duration_days": 30,
+    "type": "regular"
+  }
+}

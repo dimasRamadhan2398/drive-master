@@ -116,7 +116,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	// Initialize Kafka consumer
 	kafkaConsumer, err := pkgKafka.NewConsumer(pkgKafka.ConsumerConfig{
 		Brokers:  loadedConfig.Kafka.Brokers,
-		GroupID:  "payment-service-consumer",
+		GroupID:  getEnv("KAFKA_GROUP_ID", "payment-service-consumer"),
 		Topics:   []string{loadedConfig.Kafka.Topic},
 		Enabled:  loadedConfig.Kafka.Enabled,
 		Version:  "3.6.0",

@@ -17,6 +17,9 @@ const generalSettings = reactive({
   phone: "",
   fax: "",
   whatsApp: "",
+  instagram: "",
+  youtube: "",
+  mapDirection: "",
   address: "",
   hoursMonFri: "",
   hoursSatSun: "",
@@ -428,6 +431,9 @@ async function saveSettings() {
       phone: generalSettings.phone,
       fax: generalSettings.fax,
       whatsApp: generalSettings.whatsApp,
+      instagram: generalSettings.instagram,
+      youtube: generalSettings.youtube,
+      mapDirection: generalSettings.mapDirection,
       address: generalSettings.address,
       hoursMonFri: generalSettings.hoursMonFri,
       hoursSatSun: generalSettings.hoursSatSun,
@@ -469,6 +475,9 @@ async function fetchSettings() {
     generalSettings.phone = settings.phone;
     generalSettings.fax = settings.fax;
     generalSettings.whatsApp = settings.whatsApp;
+    generalSettings.instagram = settings.instagram || "";
+    generalSettings.youtube = settings.youtube || "";
+    generalSettings.mapDirection = settings.mapDirection || "";
     generalSettings.address = settings.address;
     generalSettings.hoursMonFri = settings.hoursMonFri;
     generalSettings.hoursSatSun = settings.hoursSatSun;
@@ -562,6 +571,31 @@ onMounted(() => {
                 class="w-full"
                 color="warning"
                 @update:model-value="generalSettings.promoEndDate = $event || null"
+              />
+            </UFormField>
+            <UFormField :label="t('admin.instagramUrl')">
+              <UInput
+                v-model="generalSettings.instagram"
+                icon="i-simple-icons-instagram"
+                class="w-full"
+                color="warning"
+              />
+            </UFormField>
+            <UFormField :label="t('admin.youtubeUrl')">
+              <UInput
+                v-model="generalSettings.youtube"
+                icon="i-simple-icons-youtube"
+                class="w-full"
+                color="warning"
+              />
+            </UFormField>
+            <UFormField :label="t('admin.mapDirection')">
+              <UInput
+                v-model="generalSettings.mapDirection"
+                icon="i-lucide-navigation"
+                class="w-full"
+                color="warning"
+                placeholder="https://maps.app.goo.gl/..."
               />
             </UFormField>
             <UFormField :label="t('profile.address')" class="md:col-span-2">

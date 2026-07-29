@@ -39,6 +39,7 @@ type IRepositoryRegistry interface {
 	GetGeneralSettings() IGeneralSettingsRepository
 	GetFAQ() IFAQRepository
 	GetPage() IPageRepository
+	GetContact() IContactRepository
 }
 
 // GetCache returns the cache repository
@@ -97,4 +98,9 @@ func (r *Registry) GetFAQ() IFAQRepository {
 // GetPage returns the Page repository
 func (r *Registry) GetPage() IPageRepository {
 	return NewPageRepository(r.baseRepo)
+}
+
+// GetContact returns the Contact repository
+func (r *Registry) GetContact() IContactRepository {
+	return NewContactRepository(r.baseRepo)
 }

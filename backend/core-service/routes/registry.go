@@ -32,6 +32,7 @@ func (r *Registry) Serve() {
 	r.GetSalesRoute().Run()
 	r.GetGeneralSettingsRoute().Run()
 	r.GetPageRoute().Run()
+	r.GetContactRoute().Run()
 }
 
 func (r *Registry) GetRegionRoute() IRegionRoute {
@@ -68,4 +69,8 @@ func (r *Registry) GetGeneralSettingsRoute() IGeneralSettingsRoute {
 
 func (r *Registry) GetPageRoute() IPageRoute {
 	return NewPageRoute(r.controller, r.group)
+}
+
+func (r *Registry) GetContactRoute() IContactRoute {
+	return NewContactRoute(r.controller, r.group)
 }

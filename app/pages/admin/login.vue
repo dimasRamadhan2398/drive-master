@@ -23,6 +23,7 @@ const state = reactive({
 
 const loading = ref(false)
 const error = ref<string | null>(null)
+const showPassword = ref(false)
 const authStore = useAuthStore()
 
 // Direct cookie access to ensure rehydration works
@@ -94,12 +95,24 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
         <UFormField name="password" :label="t('auth.password')">
           <UInput 
             v-model="state.password" 
-            type="password"
+            :type="showPassword ? 'text' : 'password'"
             :placeholder="t('auth.password')"
             icon="i-lucide-lock"
             size="lg"
             class="w-full"
-          />
+            :ui="{ trailing: 'pointer-events-auto' }"
+          >
+            <template #trailing>
+              <UButton
+                color="neutral"
+                variant="ghost"
+                :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                @click="showPassword = !showPassword"
+                size="sm"
+                class="p-1 hover:bg-transparent"
+              />
+            </template>
+          </UInput>
         </UFormField>
 
         <UButton type="submit" :label="t('admin.signInToAdmin')" color="warning" :loading="loading" block size="lg" />

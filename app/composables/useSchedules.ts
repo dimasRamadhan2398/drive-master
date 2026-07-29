@@ -9,6 +9,49 @@ export interface TimeSlot {
   status: "available" | "booked" | "in-progress" | "completed" | "blocked";
 }
 
+export function getAdjustedSlotTime(
+  dateStr: string,
+  inputTimeStr: string,
+): { time: string; rounded: boolean; originalTime: string } {
+  const originalTime = inputTimeStr || "08:00";
+  if (!dateStr) return { time: originalTime, rounded: false, originalTime };
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const todayStr = `${year}-${month}-${day}`;
+
+  // Only adjust if date is today (or in the past date)
+  if (dateStr > todayStr) {
+    return { time: originalTime, rounded: false, originalTime };
+  }
+
+  let timeStr = originalTime.trim();
+  if (timeStr.includes("-")) {
+    timeStr = timeStr.split("-")[0]?.trim() || timeStr;
+  }
+  const parts = timeStr.split(":").map(Number);
+  const inputH = parts[0] ?? 8;
+  const inputM = parts[1] ?? 0;
+
+  const currentH = now.getHours();
+  const currentM = now.getMinutes();
+
+  const inputTotalMins = inputH * 60 + inputM;
+  const currentTotalMins = currentH * 60 + currentM;
+
+  // If slot date is before today, or if date is today and input time <= current time
+  if (dateStr < todayStr || inputTotalMins <= currentTotalMins) {
+    let nextH = currentH + 1;
+    if (nextH > 23) nextH = 23;
+    const roundedTime = `${String(nextH).padStart(2, "0")}:00`;
+    return { time: roundedTime, rounded: true, originalTime };
+  }
+
+  return { time: originalTime, rounded: false, originalTime };
+}
+
 // PERUBAHAN: Fungsi generator sekarang menerima operatingHours agar datanya sinkron
 const generateMockData = (hours: any): TimeSlot[] => {
   const result: TimeSlot[] = [];

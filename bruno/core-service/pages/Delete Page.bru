@@ -1,0 +1,15 @@
+meta {
+  name: Delete Page
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{core_service_url}}/api/v1/pages/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

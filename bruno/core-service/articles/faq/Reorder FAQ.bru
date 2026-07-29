@@ -1,0 +1,21 @@
+meta {
+  name: Reorder FAQ
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{core_service_url}}/api/v1/articles/faq/:id/reorder
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "order": 2
+  }
+}

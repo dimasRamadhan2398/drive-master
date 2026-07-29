@@ -1,4 +1,5 @@
 import { defineNuxtConfig } from "nuxt/config";
+import react from "@vitejs/plugin-react";
 
 export default defineNuxtConfig({
   devtools: { enabled: true },
@@ -42,8 +43,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase:
-        process.env.NUXT_PUBLIC_API_BASE_URL ||
-        "https://api.drivemaster.id/api/v1",
+        process.env.NUXT_PUBLIC_API_BASE_URL || "https://drivemaster.id/api/v1",
       // userApiBase:
       //   process.env.NUXT_PUBLIC_USER_API_BASE ||
       //   (process.env.NUXT_PUBLIC_API_BASE_URL
@@ -60,7 +60,7 @@ export default defineNuxtConfig({
       //     ? process.env.NUXT_PUBLIC_API_BASE_URL + "/api/v1/bookings"
       //     : "http://localhost:8003/api/v1"),
       gaMeasurementId:
-        process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || "G-07PS1N5DZ5",
+        process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || "G-1SR8F1H6D9",
       gaPropertyId: process.env.NUXT_PUBLIC_GA_PROPERTY_ID || "G-539969879",
     },
   },
@@ -78,17 +78,26 @@ export default defineNuxtConfig({
     },
   },
   gtag: {
-    id: process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || "G-07PS1N5DZ5",
+    id: process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || "G-1SR8F1H6D9",
+    // Only send GA data in production — keeps dev traffic out of the dashboard
+    enabled: process.env.NODE_ENV === "production",
     config: {
       page_title: "Drive Master Indonesia - Premium Driving Academy",
       send_page_view: true,
     },
   },
   vite: {
+    plugins: [react()],
     server: {
       watch: {
         usePolling: true,
       },
+    },
+  },
+  nitro: {
+    prerender: {
+      failOnError: false,
+      ignore: ['/dashboard', '/admin'],
     },
   },
   compatibilityDate: "2026-04-07",

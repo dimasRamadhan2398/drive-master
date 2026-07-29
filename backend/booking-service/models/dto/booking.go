@@ -164,23 +164,34 @@ type CreateDrivingSessionRequest struct {
 }
 
 type DrivingSessionResponse struct {
-	ID            uint       `json:"id"`
-	EnrollmentID  uuid.UUID  `json:"enrollmentId"`
-	EntitlementID uuid.UUID  `json:"entitlementId"`
-	UserID        uuid.UUID  `json:"userId"`
-	InstructorID  uuid.UUID  `json:"instructorId"`
-	CarID         uuid.UUID  `json:"carId"`
-	ScheduleID    *uint      `json:"scheduleId"`
-	Date          string     `json:"date"`  // YYYY-MM-DD format
-	Time          string     `json:"time"` // HH:MM format
-	Duration      int        `json:"duration"`
-	Status        string     `json:"status"`
-	Area          string     `json:"area"`
-	Notes         string     `json:"notes"`
-	StartedAt     *time.Time `json:"startedAt"`
-	CompletedAt   *time.Time `json:"completedAt"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt"`
+	ID             uint       `json:"id"`
+	EnrollmentID   uuid.UUID  `json:"enrollmentId"`
+	EntitlementID  uuid.UUID  `json:"entitlementId"`
+	UserID         uuid.UUID  `json:"userId"`
+	InstructorID   uuid.UUID  `json:"instructorId"`
+	InstructorName string     `json:"instructorName,omitempty"`
+	CarID          uuid.UUID  `json:"carId"`
+	CarName        string     `json:"carName,omitempty"`
+	ScheduleID     *uint      `json:"scheduleId"`
+	Date           string     `json:"date"`  // YYYY-MM-DD format
+	Time           string     `json:"time"` // HH:MM format
+	Duration       int        `json:"duration"`
+	Status         string     `json:"status"`
+	Area           string     `json:"area"`
+	Notes          string     `json:"notes"`
+	StartedAt      *time.Time `json:"startedAt"`
+	CompletedAt    *time.Time `json:"completedAt"`
+	EndTime        *time.Time `json:"endTime"`
+	IsEndedByAdmin bool       `json:"isEndedByAdmin"`
+	Rating         *float64   `json:"rating"`
+	Feedback       string     `json:"feedback"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	UpdatedAt      time.Time  `json:"updatedAt"`
+}
+
+type RateSessionRequest struct {
+	Rating   float64 `json:"rating" binding:"required,min=1,max=5"`
+	Feedback string  `json:"feedback"`
 }
 
 type DrivingSessionListResponse struct {

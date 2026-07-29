@@ -1,0 +1,24 @@
+meta {
+  name: List Entitlements
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{user_service_url}}/api/v1/entitlements/members/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: {{member_id}}
+}
+
+params:query {
+  page: 1
+  limit: 10
+}

@@ -36,6 +36,9 @@ func (r *EntitlementRoute) Run() {
 		// Create new entitlement
 		group.POST("/members/:id", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().CreateEntitlement)
 
+		// Sync entitlement from booking (internal/direct HTTP sync)
+		group.POST("/sync", r.controller.GetEntitlementController().SyncEntitlement)
+
 		// Update entitlement
 		group.PUT("/members/:id/entitlements/:entId", r.authMiddleware.Authenticate(), r.controller.GetEntitlementController().UpdateEntitlement)
 

@@ -331,6 +331,8 @@ func (r *EventPublisher) PublishEnrollmentPaid(ctx context.Context, enrollmentID
 		Data: map[string]interface{}{
 			"enrollment_id":  enrollmentID,
 			"package_id":     packageID.String(),
+			"user_id":        userID,
+			"member_id":      userID,
 			"total_price":    totalPrice,
 			"total_sessions": totalSessions,
 			"package_name":   packageName,

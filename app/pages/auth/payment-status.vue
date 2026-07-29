@@ -22,9 +22,14 @@ const isFailed = computed(() => status.value === 'failed')
 
 let pollInterval: any = null
 
+import { paymentService } from '~/services/paymentService'
+
+const isCheckingStatus = ref(false)
+const isSimulating = ref(false)
+
 const pollStatus = async (oid: string) => {
   let attempts = 0
-  const maxAttempts = 6 // Poll for 12 seconds max
+  const maxAttempts = 15 // Poll for 30 seconds max
   
   const check = async () => {
     attempts++
@@ -47,6 +52,70 @@ const pollStatus = async (oid: string) => {
   
   if (status.value === 'pending') {
     pollInterval = setInterval(check, 2000)
+  }
+}
+
+const manualCheckStatus = async () => {
+  if (!orderId.value) return
+  isCheckingStatus.value = true
+  const toast = useToast()
+  try {
+    const res = await paymentsStore.checkPaymentStatus(orderId.value)
+    if (res === 'success' || res === 'paid') {
+      status.value = 'success'
+      toast.add({
+        title: 'Payment Confirmed!',
+        description: 'Your payment has been successfully processed.',
+        color: 'success'
+      })
+      setTimeout(() => {
+        navigateTo('/dashboard?just_paid=true')
+      }, 2000)
+    } else if (res === 'failed' || res === 'expired' || res === 'cancelled') {
+      status.value = 'failed'
+    } else {
+      toast.add({
+        title: 'Payment Still Pending',
+        description: 'Payment is still processing. Please try again in a few moments or click Simulate Payment.',
+        color: 'info'
+      })
+    }
+  } finally {
+    isCheckingStatus.value = false
+  }
+}
+
+const simulatePayment = async () => {
+  if (!orderId.value) return
+  isSimulating.value = true
+  const toast = useToast()
+  try {
+    const ok = await paymentService.simulate(orderId.value)
+    if (ok) {
+      status.value = 'success'
+      toast.add({
+        title: 'Payment Simulated Successfully!',
+        description: 'Payment marked as completed. Redirecting to dashboard...',
+        color: 'success'
+      })
+      setTimeout(() => {
+        navigateTo('/dashboard?just_paid=true')
+      }, 2000)
+    } else {
+      toast.add({
+        title: 'Simulation Failed',
+        description: 'Could not simulate payment. Please try refreshing status.',
+        color: 'error'
+      })
+    }
+  } catch (err: any) {
+    toast.add({
+      title: 'Simulation Error',
+      description: err?.message || 'Error simulating payment.',
+      color: 'error'
+    })
+  } finally {
+    isSimulating.value = false
   }
 }
 
@@ -278,14 +347,46 @@ const nextSteps = computed(() => ({
         <div>
           <h1 class="text-3xl font-bold">{{ t('auth.processingPayment') }}</h1>
           <p class="text-muted mt-2">
-            Please wait while we confirm your payment. This may take a few moments.
+            Please wait while we confirm your payment. Order ID: <span class="font-mono text-sm">{{ orderId }}</span>
           </p>
         </div>
 
-        <UCard>
+        <UCard class="space-y-3">
           <p class="text-sm text-muted">
             {{ t('auth.dontCloseWindow') }}
           </p>
+
+          <div class="space-y-2 pt-2">
+            <UButton 
+              label="Check Status / Refresh"
+              icon="i-lucide-rotate-cw"
+              block
+              color="primary"
+              :loading="isCheckingStatus"
+              @click="manualCheckStatus"
+            />
+
+            <UButton 
+              label="Simulate Payment Success"
+              icon="i-lucide-zap"
+              block
+              color="warning"
+              variant="soft"
+              :loading="isSimulating"
+              @click="simulatePayment"
+            />
+
+            <NuxtLink to="/dashboard">
+              <UButton 
+                label="Go to Dashboard"
+                icon="i-lucide-arrow-right"
+                block
+                color="neutral"
+                variant="outline"
+                class="mt-2"
+              />
+            </NuxtLink>
+          </div>
         </UCard>
       </div>
     </div>

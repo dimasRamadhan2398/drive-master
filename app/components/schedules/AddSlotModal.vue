@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
 import { useI18n } from "#imports";
+import { getAdjustedSlotTime } from "~/composables/useSchedules";
 
 const props = defineProps<{
   open: boolean;
@@ -42,13 +43,79 @@ const form = ref({
   instructorId: "",
 });
 
-watch(
-  () => props.open,
-  (open) => {
-    if (!open) {
-      form.value = { time: "08:00", duration: "60", carId: "", instructorId: "" };
+const timeOptions = computed(() => {
+  const allOpts: Array<{ label: string; value: string }> = [];
+  for (let h = 6; h <= 22; h++) {
+    const hh = String(h).padStart(2, "0");
+    allOpts.push({ label: `${hh}:00`, value: `${hh}:00` });
+    if (h < 22) {
+      allOpts.push({ label: `${hh}:30`, value: `${hh}:30` });
     }
   }
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const todayStr = `${year}-${month}-${day}`;
+
+  const currentH = now.getHours();
+  const currentM = now.getMinutes();
+  const currentTotalMins = currentH * 60 + currentM;
+
+  let filteredOpts = allOpts;
+
+  if (props.date === todayStr) {
+    filteredOpts = allOpts.filter((opt) => {
+      const [h, m] = opt.value.split(":").map(Number);
+      const optMins = (h ?? 0) * 60 + (m ?? 0);
+      return optMins > currentTotalMins;
+    });
+  }
+
+  if (form.value.time && !filteredOpts.some((o) => o.value === form.value.time)) {
+    const [fh, fm] = form.value.time.split(":").map(Number);
+    const formMins = (fh ?? 0) * 60 + (fm ?? 0);
+    if (props.date !== todayStr || formMins > currentTotalMins) {
+      filteredOpts.push({ label: form.value.time, value: form.value.time });
+      filteredOpts.sort((a, b) => a.value.localeCompare(b.value));
+    }
+  }
+
+  return filteredOpts;
+});
+
+function checkAndAdjustTime(notify: boolean = true) {
+  if (!form.value.time) return;
+  const { time: adjustedTime, rounded, originalTime } = getAdjustedSlotTime(props.date, form.value.time);
+  if (rounded && adjustedTime !== originalTime) {
+    form.value.time = adjustedTime;
+    if (notify) {
+      toast.add({
+        title: "Time Slot Rounded",
+        description: `Selected time (${originalTime}) has already passed today. Automatically rounded to ${adjustedTime}.`,
+        color: "info",
+        icon: "i-lucide-clock",
+      });
+    }
+  }
+}
+
+watch(
+  () => [props.open, props.date],
+  ([open]) => {
+    if (open) {
+      const { time: adjustedTime } = getAdjustedSlotTime(props.date, "08:00");
+      let selectedTime = adjustedTime;
+      if (timeOptions.value.length > 0 && !timeOptions.value.some((o) => o.value === selectedTime)) {
+        selectedTime = timeOptions.value[0]?.value || adjustedTime;
+      }
+      form.value = { time: selectedTime, duration: "60", carId: "", instructorId: "" };
+    } else {
+      form.value = { time: "08:00", duration: "60", carId: "", instructorId: "" };
+    }
+  },
+  { immediate: true }
 );
 
 function handleClose() {
@@ -60,6 +127,9 @@ function handleSave() {
     toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
     return;
   }
+
+  // Ensure time hasn't passed before saving
+  checkAndAdjustTime(true);
 
   const {
     start,
@@ -132,9 +202,10 @@ function handleSave() {
                 >
               </div>
             </template>
-            <UInput
-              type="time"
+            <USelect
               v-model="form.time"
+              :items="timeOptions"
+              @change="checkAndAdjustTime(true)"
               :disabled="operatingHours.isClosed"
               class="w-full"
             />

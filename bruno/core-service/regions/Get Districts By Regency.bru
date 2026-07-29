@@ -1,0 +1,15 @@
+meta {
+  name: Get Districts By Regency
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{core_service_url}}/api/v1/regions/regencies/:regency/districts
+  body: none
+  auth: none
+}
+
+params:path {
+  regency: Bogor
+}

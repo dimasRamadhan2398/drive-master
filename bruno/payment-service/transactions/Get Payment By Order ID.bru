@@ -1,0 +1,19 @@
+meta {
+  name: Get Payment By Order ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{payment_service_url}}/api/v1/payments/order/:orderId
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  orderId: ORD-001
+}

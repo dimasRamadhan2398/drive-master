@@ -997,7 +997,7 @@ onMounted(async () => {
               />
             </NuxtLink>
             <NuxtLink
-              to="https://maps.app.goo.gl/RpSdkpjs4RZg2ZY77"
+              :to="generalSettings?.mapDirection || 'https://maps.app.goo.gl/qGngC2sF4G3jt8Vs8'"
               target="_blank"
               class="flex-1"
             >

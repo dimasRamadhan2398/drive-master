@@ -197,7 +197,7 @@
     "sessions": "Sessions",
     "choosePlan": "Choose This Plan",
     "perMonth": "per month",
-    "duration": "Package Duration",
+    "duration": "Session Duration",
     "freeTrial": "Free Trial",
     "simA": "SIM A",
     "features": {
@@ -278,7 +278,7 @@
       "send": "Send Message",
       "sending": "Sending...",
       "success": "Message Sent!",
-      "successDesc": "Thank you for reaching out. We'll get back to you within 24 hours.",
+      "successDesc": "Thank you for contacting us. We will reply to your message shortly.",
       "error": "An error occurred. Please try again."
     },
     "social": {
@@ -385,6 +385,7 @@
     "completed": "Completed",
     "cancelled": "Cancelled",
     "confirmed": "Confirmed",
+    "passed": "Passed",
     "noData": "No data available",
     "processing": "Processing",
     "ready": "Ready",
@@ -459,7 +460,10 @@
     "rescheduleSuccess": "Rescheduled!",
     "rescheduleSuccessDesc": "Your session has been successfully updated.",
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "noSessionsFound": "No sessions found on this date",
+    "nightAddonRequired": "Night Add-on Required",
+    "nightAddonRequiredDesc": "This time slot is in the night shift (18:00+). Your active package plan does not include the Night Session add-on."
   },
   "history": {
     "title": "Training History",
@@ -662,6 +666,7 @@
     "content": "Content",
     "contents": "Contents",
     "testimonials": "Testimonials",
+    "inquiries": "Inquiries",
     "analytics": "Analytics",
     "settings": "Settings",
     "addNew": "Add New",
@@ -717,6 +722,9 @@
     "businessName": "Business Name",
     "whatsappNumber": "WhatsApp Number",
     "promoEndDate": "Promo End Date",
+    "instagramUrl": "Instagram URL",
+    "youtubeUrl": "YouTube URL",
+    "mapDirection": "Google Maps Directions URL",
     "mondayFriday": "Monday - Friday",
     "saturdaySunday": "Saturday & Sunday",
     "nightShift": "Night Shift",
@@ -1074,6 +1082,87 @@
       "title": "Ready to Start?",
       "description": "Book a free consultation or view our package options to begin your EV driving journey.",
       "whatsapp": "WhatsApp Consultation"
+    },
+    "programs": {
+      "headline": "Training Programs",
+      "title": "Choose Your Learning Path",
+      "description": "We offer a variety of courses tailored to different skill levels and learning objectives.",
+      "beginner": {
+        "title": "Beginner Course",
+        "desc": "Foundation course for complete beginners. Learn the fundamentals of driving in our premium electric vehicles.",
+        "f1": "Vehicle controls introduction",
+        "f2": "Basic maneuvering & steering",
+        "f3": "Traffic rules & sign interpretation",
+        "f4": "Parking techniques (parallel & reverse)",
+        "f5": "Final practical assessment"
+      },
+      "defensive": {
+        "title": "Defensive Driving",
+        "desc": "Take your skills to the next level with advanced techniques and hazard anticipation scenarios.",
+        "f1": "Hazard identification & perception",
+        "f2": "Defensive driving techniques",
+        "f3": "Night driving mastery",
+        "f4": "Weather condition driving",
+        "f5": "Emergency handling procedures"
+      },
+      "evSpecialist": {
+        "title": "EV Specialist Course",
+        "desc": "Comprehensive training focused on electric vehicle specific features and best practices.",
+        "f1": "Regenerative braking mastery",
+        "f2": "One-pedal driving technique",
+        "f3": "Battery management basics",
+        "f4": "Charging station protocols",
+        "f5": "EV maintenance awareness"
+      },
+      "refresher": {
+        "title": "Refresher Course",
+        "desc": "Perfect for licensed drivers who want to brush up their skills or transition to EV driving.",
+        "f1": "Skills assessment",
+        "f2": "Personalized training plan",
+        "f3": "Updated traffic regulations",
+        "f4": "EV adaptation for manual drivers",
+        "f5": "Confidence building sessions"
+      }
+    },
+    "methodology": {
+      "headline": "How We Teach",
+      "title": "Our Training Methodology",
+      "description": "A structured approach that combines theory, simulation, and practical experience.",
+      "theory": {
+        "title": "Theory Learning",
+        "desc": "Comprehensive digital materials covering traffic regulations, road safety, and EV-specific knowledge."
+      },
+      "simulator": {
+        "title": "Simulator Training",
+        "desc": "Practice in our advanced driving simulators before hitting the real road."
+      },
+      "practical": {
+        "title": "Practical Sessions",
+        "desc": "Hands-on training in our premium electric vehicles with experienced instructors."
+      },
+      "assessment": {
+        "title": "Assessment & Certification",
+        "desc": "Comprehensive evaluation and digital certificate upon successful completion."
+      }
+    },
+    "fleet": {
+      "headline": "Premium Fleet",
+      "title": "Learn in the Best Electric Vehicles",
+      "description": "Our fleet consists of premium electric vehicles equipped with dual-control systems for safe learning.",
+      "tesla": {
+        "title": "Tesla Model 3",
+        "desc": "Experience the future of driving with Tesla's revolutionary autopilot features and instant torque delivery.",
+        "b1": "Autopilot",
+        "b2": "Dual Motor",
+        "b3": "Dual Control"
+      },
+      "byd": {
+        "title": "BYD Atto 3",
+        "desc": "A compact SUV perfect for urban driving lessons with excellent visibility and responsive handling.",
+        "b1": "SUV",
+        "b2": "Urban Friendly",
+        "b3": "Dual Control"
+      }
     }
   }
 }

@@ -1,9 +1,11 @@
+const path = require("path");
+
 module.exports = {
   apps: [
     {
       name: "user-service",
-      script: "./backend/user-service/bin/user-service",
-      cwd: "/var/www/drive",
+      script: "./bin/user-service",
+      cwd: path.join(__dirname, "backend/user-service"),
       args: "serve",
       instances: 1,
       autorestart: true,
@@ -19,18 +21,19 @@ module.exports = {
         REDIS_PORT: 6379,
         REDIS_PASSWORD: "",
         KAFKA_BROKERS: "127.0.0.1:9092",
-        KAFKA_ENABLED: "true",
+        KAFKA_ENABLED: "false",
         KAFKA_TOPIC: "user.events",
         KAFKA_GROUP_ID: "user-service-consumer",
-        CONFIG_PATH: "./backend/user-service/pkg/config/config.yaml",
+        CONFIG_PATH: "./pkg/config/config.yaml",
         RUN_MIGRATIONS: "true",
-        RUN_SEEDERS: "true"
+        RUN_SEEDERS: "false",
+        BOOKING_KAFKA_TOPIC: "booking.events"
       }
     },
     {
       name: "core-service",
-      script: "./backend/core-service/bin/core-service",
-      cwd: "/var/www/drive",
+      script: "./bin/core-service",
+      cwd: path.join(__dirname, "backend/core-service"),
       args: "serve",
       instances: 1,
       autorestart: true,
@@ -46,19 +49,19 @@ module.exports = {
         REDIS_PORT: 6379,
         REDIS_PASSWORD: "",
         KAFKA_BROKERS: "127.0.0.1:9092",
-        KAFKA_ENABLED: "true",
+        KAFKA_ENABLED: "false",
         KAFKA_TOPIC: "core.events",
         KAFKA_GROUP_ID: "core-service-consumer",
-        CONFIG_PATH: "./backend/core-service/pkg/config/config.yaml",
+        CONFIG_PATH: "./pkg/config/config.yaml",
         RUN_MIGRATIONS: "true",
-        RUN_SEEDERS: "true",
+        RUN_SEEDERS: "false",
         GIN_MODE: "release"
       }
     },
     {
       name: "booking-service",
-      script: "./backend/booking-service/bin/booking-service",
-      cwd: "/var/www/drive",
+      script: "./bin/booking-service",
+      cwd: path.join(__dirname, "backend/booking-service"),
       args: "serve",
       instances: 1,
       autorestart: true,
@@ -74,20 +77,21 @@ module.exports = {
         REDIS_PORT: 6379,
         REDIS_PASSWORD: "",
         KAFKA_BROKERS: "127.0.0.1:9092",
-        KAFKA_ENABLED: "true",
+        KAFKA_ENABLED: "false",
         KAFKA_TOPIC: "booking.events",
         KAFKA_GROUP_ID: "booking-service-consumer",
-        CONFIG_PATH: "./backend/booking-service/pkg/config/config.yaml",
+        CONFIG_PATH: "./pkg/config/config.yaml",
         RUN_MIGRATIONS: "true",
-        RUN_SEEDERS: "true",
+        RUN_SEEDERS: "false",
         USER_SERVICE_URL: "http://127.0.0.1:8001",
-        CORE_SERVICE_URL: "http://127.0.0.1:8002"
+        CORE_SERVICE_URL: "http://127.0.0.1:8002",
+        PAYMENT_KAFKA_TOPIC: "payment.events"
       }
     },
     {
       name: "payment-service",
-      script: "./backend/payment-service/bin/payment-service",
-      cwd: "/var/www/drive",
+      script: "./bin/payment-service",
+      cwd: path.join(__dirname, "backend/payment-service"),
       args: "serve",
       instances: 1,
       autorestart: true,
@@ -103,39 +107,47 @@ module.exports = {
         REDIS_PORT: 6379,
         REDIS_PASSWORD: "",
         KAFKA_BROKERS: "127.0.0.1:9092",
-        KAFKA_ENABLED: "true",
+        KAFKA_ENABLED: "false",
         KAFKA_TOPIC: "payment.events",
-        CONFIG_PATH: "./backend/payment-service/pkg/config/config.yaml",
+        KAFKA_GROUP_ID: "payment-service-consumer",
+        CONFIG_PATH: "./pkg/config/config.yaml",
         RUN_MIGRATIONS: "true",
-        RUN_SEEDERS: "true",
+        RUN_SEEDERS: "false",
         PAYMENT_GATEWAY: "pakasir",
+        PAKASIR_SLUG: "drive-master-indonesia-dev",
+        PAKASIR_API_KEY: "vJBTSyuJxhwp9Yc8A28EhM84GSOMDRh9",
+        PAKASIR_FRONTEND_URL: "https://drivemaster.id",
         DOKU_CLIENT_ID: "BRN-0226-1782972609555",
         DOKU_SECRET_KEY: "SK-OdJ7OYT6G5nGW2HLs0b6",
         DOKU_BASE_URL: "https://api.doku.com",
         DOKU_NOTIFICATION_URL: "https://drivemaster.id/api/v1/payments/doku/notification",
-        DOKU_FRONTEND_URL: "https://drivemaster.id"
+        DOKU_FRONTEND_URL: "https://drivemaster.id",
+        BOOKING_SERVICE_URL: "http://127.0.0.1:8003",
+        CORE_SERVICE_URL: "http://127.0.0.1:8002",
+        USER_SERVICE_URL: "http://127.0.0.1:8001"
       }
     },
     {
       name: "api-gateway",
-      script: "./backend/api-gateway/bin/api-gateway",
-      cwd: "/var/www/drive",
+      script: "./bin/api-gateway",
+      cwd: path.join(__dirname, "backend/api-gateway"),
       instances: 1,
       autorestart: true,
       watch: false,
       env: {
         SERVER_PORT: 8088,
         SERVER_MODE: "release",
-        CONFIG_PATH: "./backend/api-gateway/pkg/config/config.yaml",
+        CONFIG_PATH: "./pkg/config/config.yaml",
         USER_SERVICE_URL: "http://127.0.0.1:8001",
         CORE_SERVICE_URL: "http://127.0.0.1:8002",
-        BOOKING_SERVICE_URL: "http://127.0.0.1:8003"
+        BOOKING_SERVICE_URL: "http://127.0.0.1:8003",
+        PAYMENT_SERVICE_URL: "http://127.0.0.1:8004"
       }
     },
     {
       name: "drive-frontend",
-      script: "./frontend/.output/server/index.mjs",
-      cwd: "/var/www/drive",
+      script: "./.output/server/index.mjs",
+      cwd: __dirname,
       instances: 1,
       autorestart: true,
       watch: false,
@@ -148,7 +160,7 @@ module.exports = {
         NUXT_PUBLIC_CORE_API_BASE: "https://drivemaster.id/api/v1/core",
         NUXT_PUBLIC_BOOKING_API_BASE: "https://drivemaster.id/api/v1/bookings",
         NUXT_PUBLIC_MODE: "prod",
-        NUXT_PUBLIC_GA_MEASUREMENT_ID: "G-07PS1N5DZ5",
+        NUXT_PUBLIC_GA_MEASUREMENT_ID: "G-1SR8F1H6D9",
         NUXT_PUBLIC_GA_PROPERTY_ID: "G-539969879"
       }
     }

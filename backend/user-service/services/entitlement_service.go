@@ -22,7 +22,7 @@ type IEntitlementService interface {
 	GetEntitlementByID(ctx context.Context, entitlementID uuid.UUID) (*dto.EntitlementResponse, error)
 	ListEntitlements(ctx context.Context, memberID uuid.UUID, page, limit int) (*dto.EntitlementListResponse, error)
 	UseSession(ctx context.Context, memberID, entitlementID uuid.UUID, input dto.UseSessionInput) (*dto.EntitlementResponse, error)
-	SyncEntitlementFromBooking(ctx context.Context, memberID, bookingID uuid.UUID, packageID uuid.UUID, packageName string, totalSessions int) (*dto.EntitlementResponse, error)
+	SyncEntitlementFromBooking(ctx context.Context, memberID, bookingID uuid.UUID, packageID uuid.UUID, packageName string, totalSessions int, isNightSession, isWeekendSession bool) (*dto.EntitlementResponse, error)
 	CalculateTotalAvailableSessions(ctx context.Context, memberID uuid.UUID) (int, error)
 	FindSessionsStatsByMemberIDs(ctx context.Context, memberIDs []uuid.UUID) (map[uuid.UUID][]models.Entitlement, error)
 }
@@ -54,7 +54,7 @@ func NewEntitlementService(
 func (s *EntitlementService) CreateEntitlement(ctx context.Context, memberID uuid.UUID, input dto.CreateEntitlementInput) (*dto.EntitlementResponse, error) {
 	// Check if entitlement already exists for this booking
 	existing, err := s.entitlementRepo.FindByBookingID(ctx, input.BookingID)
-	if err == nil && existing != nil {
+	if err == nil && existing != nil && existing.ID != uuid.Nil {
 		return nil, fmt.Errorf("entitlement already exists for booking %s", input.BookingID)
 	}
 
@@ -64,18 +64,20 @@ func (s *EntitlementService) CreateEntitlement(ctx context.Context, memberID uui
 	}
 
 	entitlement := &models.Entitlement{
-		ID:            uuid.New(),
-		MemberID:      memberID,
-		BookingID:     input.BookingID,
-		PackageID:     input.PackageID,
-		PackageName:   input.PackageName,
-		TotalSessions: input.TotalSessions,
-		Remaining:     input.TotalSessions,
-		UsedSessions:  0,
-		StartDate:     startDate,
-		Status:        models.EntitlementStatusActive,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		ID:               uuid.New(),
+		MemberID:         memberID,
+		BookingID:        input.BookingID,
+		PackageID:        input.PackageID,
+		PackageName:      input.PackageName,
+		IsNightSession:   input.IsNightSession,
+		IsWeekendSession: input.IsWeekendSession,
+		TotalSessions:    input.TotalSessions,
+		Remaining:        input.TotalSessions,
+		UsedSessions:     0,
+		StartDate:        startDate,
+		Status:           models.EntitlementStatusActive,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 
 	if input.EndDate != "" {
@@ -237,6 +239,12 @@ func (s *EntitlementService) UseSession(ctx context.Context, memberID, entitleme
 		}
 	}
 
+	// Update member profile sessions completed
+	if profile, err := s.memberRepo.FindByUserID(ctx, memberID); err == nil && profile != nil {
+		profile.SessionsCompleted = profile.SessionsCompleted + 1
+		_ = s.memberRepo.Update(ctx, profile)
+	}
+
 	// Update member profile total available sessions
 	if err := s.updateMemberProfileTotalSessions(ctx, memberID); err != nil {
 		fmt.Printf("failed to update member profile total sessions: %v\n", err)
@@ -245,19 +253,21 @@ func (s *EntitlementService) UseSession(ctx context.Context, memberID, entitleme
 	return toEntitlementResponse(entitlement), nil
 }
 
-func (s *EntitlementService) SyncEntitlementFromBooking(ctx context.Context, memberID, bookingID uuid.UUID, packageID uuid.UUID, packageName string, totalSessions int) (*dto.EntitlementResponse, error) {
+func (s *EntitlementService) SyncEntitlementFromBooking(ctx context.Context, memberID, bookingID uuid.UUID, packageID uuid.UUID, packageName string, totalSessions int, isNightSession, isWeekendSession bool) (*dto.EntitlementResponse, error) {
 	// Check if already exists
 	existing, err := s.entitlementRepo.FindByBookingID(ctx, bookingID)
-	if err == nil && existing != nil {
+	if err == nil && existing != nil && existing.ID != uuid.Nil {
 		return toEntitlementResponse(existing), nil
 	}
 
 	input := dto.CreateEntitlementInput{
-		BookingID:     bookingID,
-		PackageID:     packageID,
-		PackageName:   packageName,
-		TotalSessions: totalSessions,
-		StartDate:     time.Now().Format("2006-01-02"),
+		BookingID:        bookingID,
+		PackageID:        packageID,
+		PackageName:      packageName,
+		TotalSessions:    totalSessions,
+		IsNightSession:   isNightSession,
+		IsWeekendSession: isWeekendSession,
+		StartDate:        time.Now().Format("2006-01-02"),
 	}
 
 	return s.CreateEntitlement(ctx, memberID, input)
@@ -297,18 +307,20 @@ func (s *EntitlementService) updateMemberProfileTotalSessions(ctx context.Contex
 
 func toEntitlementResponse(ent *models.Entitlement) *dto.EntitlementResponse {
 	resp := &dto.EntitlementResponse{
-		ID:            ent.ID,
-		MemberID:      ent.MemberID,
-		BookingID:     ent.BookingID,
-		PackageID:     ent.PackageID,
-		PackageName:   ent.PackageName,
-		TotalSessions: ent.TotalSessions,
-		Remaining:     ent.Remaining,
-		UsedSessions:  ent.UsedSessions,
-		StartDate:     ent.StartDate.Format("2006-01-02"),
-		Status:        string(ent.Status),
-		CreatedAt:     ent.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:     ent.UpdatedAt.Format(time.RFC3339),
+		ID:               ent.ID,
+		MemberID:         ent.MemberID,
+		BookingID:        ent.BookingID,
+		PackageID:        ent.PackageID,
+		PackageName:      ent.PackageName,
+		IsNightSession:   ent.IsNightSession,
+		IsWeekendSession: ent.IsWeekendSession,
+		TotalSessions:    ent.TotalSessions,
+		Remaining:        ent.Remaining,
+		UsedSessions:     ent.UsedSessions,
+		StartDate:        ent.StartDate.Format("2006-01-02"),
+		Status:           string(ent.Status),
+		CreatedAt:        ent.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:        ent.UpdatedAt.Format(time.RFC3339),
 	}
 
 	if ent.EndDate != nil {

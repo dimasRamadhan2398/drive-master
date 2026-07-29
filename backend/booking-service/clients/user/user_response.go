@@ -54,6 +54,8 @@ type EntitlementInfo struct {
 	BookingID         uuid.UUID `json:"bookingId"`
 	PackageID         string    `json:"packageId"`
 	PackageName       string    `json:"packageName"`
+	IsNightSession    bool      `json:"isNightSession"`
+	IsWeekendSession  bool      `json:"isWeekendSession"`
 	TotalSessions     int       `json:"totalSessions"`
 	RemainingSessions int       `json:"remaining"`
 	UsedSessions      int       `json:"usedSessions"`

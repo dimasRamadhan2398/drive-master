@@ -1,3 +1,30 @@
+# Build stage
+FROM golang:1.25-alpine AS builder
+
+WORKDIR /app
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
+
+# Set Go proxy to direct (bypass proxy issues)
+# ENV GOPROXY=https://proxy.golang.org,https://goproxy.io,direct
+# ENV GOSUMDB=sum.golang.org
+# ENV CGO_ENABLED=0
+# ENV GOOS=linux
+
+# Copy go.mod and go.sum files for both user-service and core-service (needed for local replace directive)
+COPY user-service/go.mod user-service/go.sum ./user-service/
+COPY core-service/go.mod core-service/go.sum ./core-service/
+
+WORKDIR /app/user-service
+RUN go mod download
+
+WORKDIR /app
+COPY user-service/ ./user-service/
+COPY core-service/ ./core-service/
+
+WORKDIR /app/user-service
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o user-service ./cmd
+
 # Runtime stage
 FROM alpine:3.19
 
@@ -9,10 +36,9 @@ WORKDIR /app
 # Create non-root user for security
 RUN addgroup -g 1000 appgroup && adduser -u 1000 -G appgroup -s /bin/sh -D appuser
 
-# Copy pre-compiled binary and config
-COPY user-service .
-RUN chmod +x user-service
-COPY pkg/config/config.yaml ./pkg/config/config.yaml
+# Copy binary and config
+COPY --from=builder /app/user-service/user-service .
+COPY --from=builder /app/user-service/pkg/config/config.yaml ./pkg/config/config.yaml
 
 # Set config path environment variable
 ENV CONFIG_PATH=./pkg/config/config.yaml

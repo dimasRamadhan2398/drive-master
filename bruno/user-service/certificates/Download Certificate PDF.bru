@@ -1,0 +1,19 @@
+meta {
+  name: Download Certificate PDF
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{user_service_url}}/api/v1/certificates/:id/pdf
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}

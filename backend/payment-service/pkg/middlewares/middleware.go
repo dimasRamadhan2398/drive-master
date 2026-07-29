@@ -153,9 +153,15 @@ func (m *AuthMiddleware) AuthorizeAdmin() gin.HandlerFunc {
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
+		origin := c.Request.Header.Get("Origin")
+		if origin != "" {
+			c.Header("Access-Control-Allow-Origin", origin)
+		} else {
+			c.Header("Access-Control-Allow-Origin", "*")
+		}
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Request-ID, X-Service-Name")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Request-ID, X-Service-Name, X-Api-Key, X-Request-At")
+		c.Header("Access-Control-Allow-Credentials", "true")
 		c.Header("Access-Control-Expose-Headers", "Content-Length, Content-Type")
 
 		if c.Request.Method == "OPTIONS" {

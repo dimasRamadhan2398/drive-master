@@ -1,0 +1,19 @@
+meta {
+  name: List User Payments
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{booking_service_url}}/api/v1/payments/user/:userId
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  userId: {{user_id}}
+}

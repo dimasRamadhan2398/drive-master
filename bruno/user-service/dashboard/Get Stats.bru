@@ -1,0 +1,15 @@
+meta {
+  name: Get Stats
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{user_service_url}}/api/v1/dashboard/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}

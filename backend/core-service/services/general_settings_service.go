@@ -77,6 +77,15 @@ func (s *GeneralSettingsService) UpdateSettings(ctx context.Context, req *dto.Up
 	if req.WhatsApp != nil {
 		settings.WhatsApp = *req.WhatsApp
 	}
+	if req.Instagram != nil {
+		settings.Instagram = *req.Instagram
+	}
+	if req.Youtube != nil {
+		settings.Youtube = *req.Youtube
+	}
+	if req.MapDirection != nil {
+		settings.MapDirection = *req.MapDirection
+	}
 	if req.Address != nil {
 		settings.Address = *req.Address
 	}

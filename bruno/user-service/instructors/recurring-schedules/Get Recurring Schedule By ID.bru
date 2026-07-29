@@ -1,0 +1,16 @@
+meta {
+  name: Get Recurring Schedule By ID
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{user_service_url}}/api/v1/instructors/:id/recurring-schedules/:scheduleId
+  body: none
+  auth: none
+}
+
+params:path {
+  id: {{instructor_id}}
+  scheduleId: 1
+}

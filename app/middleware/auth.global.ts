@@ -121,12 +121,14 @@ export default defineNuxtRouteMiddleware(async (to: any) => {
       await authStore.fetchMemberProfile();
     }
 
-    // Check if member has entitlements (purchased a package)
+    // Check if member has entitlements (purchased a package) or has completed sessions
     const hasEntitlements =
-      authStore.memberProfile?.entitlements &&
-      authStore.memberProfile.entitlements.length > 0;
+      (authStore.memberProfile?.entitlements &&
+        authStore.memberProfile.entitlements.length > 0) ||
+      (authStore.memberProfile?.sessionsCompleted &&
+        authStore.memberProfile.sessionsCompleted > 0);
 
-    // Redirect to onboarding if no entitlements
+    // Redirect to onboarding if no entitlements and no completed sessions
     if (!hasEntitlements) {
       return navigateTo("/auth/onboarding");
     }

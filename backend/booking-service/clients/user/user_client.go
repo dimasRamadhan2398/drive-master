@@ -21,6 +21,9 @@ type IUserClient interface {
 	GetUserByID(ctx context.Context, userID uuid.UUID) (*UserInfo, error)
 	GetEntitlement(ctx context.Context, memberID, entitlementID uuid.UUID) (*EntitlementInfo, error)
 	GetMemberEntitlements(ctx context.Context, memberID uuid.UUID) ([]EntitlementInfo, error)
+	CreateEntitlement(ctx context.Context, memberID uuid.UUID, input CreateEntitlementInput) error
+	UseSession(ctx context.Context, memberID, entitlementID uuid.UUID) error
+	RateInstructor(ctx context.Context, instructorID uuid.UUID, rating float64) error
 }
 
 // UserClient implements IUserClient
@@ -349,4 +352,123 @@ func (c *UserClient) GetMemberEntitlements(ctx context.Context, memberID uuid.UU
 	}
 
 	return list.Data, nil
+}
+
+// CreateEntitlementInput is used for POST /members/:id/entitlements
+type CreateEntitlementInput struct {
+	BookingID        uuid.UUID `json:"bookingId"`
+	PackageID        uuid.UUID `json:"packageId"`
+	PackageName      string    `json:"packageName"`
+	TotalSessions    int       `json:"totalSessions"`
+	IsNightSession   bool      `json:"isNightSession"`
+	IsWeekendSession bool      `json:"isWeekendSession"`
+	StartDate        string    `json:"startDate"`
+	EndDate          string    `json:"endDate,omitempty"`
+}
+
+// CreateEntitlement creates a new entitlement in user-service
+func (c *UserClient) CreateEntitlement(ctx context.Context, memberID uuid.UUID, input CreateEntitlementInput) error {
+	url := fmt.Sprintf("%s/api/v1/entitlements/members/%s", c.baseURL, memberID.String())
+
+	bodyBytes, err := json.Marshal(input)
+	if err != nil {
+		return fmt.Errorf("failed to marshal create entitlement input: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	token, err := c.generateServiceToken()
+	if err != nil {
+		return fmt.Errorf("failed to generate service token: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to call user-service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("user-service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// UseSession decrements remaining sessions and increments used sessions for a member entitlement
+func (c *UserClient) UseSession(ctx context.Context, memberID, entitlementID uuid.UUID) error {
+	url := fmt.Sprintf("%s/api/v1/entitlements/members/%s/entitlements/%s/use-session", c.baseURL, memberID.String(), entitlementID.String())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer([]byte("{}")))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	token, err := c.generateServiceToken()
+	if err != nil {
+		return fmt.Errorf("failed to generate service token: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to call user-service use-session: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("user-service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// RateInstructor sends a session rating for an instructor to update their average rating
+func (c *UserClient) RateInstructor(ctx context.Context, instructorID uuid.UUID, rating float64) error {
+	url := fmt.Sprintf("%s/api/v1/instructors/%s/rate", c.baseURL, instructorID.String())
+
+	bodyData := map[string]interface{}{"rating": rating}
+	jsonData, err := json.Marshal(bodyData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal rate payload: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	token, err := c.generateServiceToken()
+	if err != nil {
+		return fmt.Errorf("failed to generate service token: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to call user-service rate instructor: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("user-service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }

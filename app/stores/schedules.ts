@@ -44,10 +44,7 @@ export const mapScheduleToSlot = (
     id: String(schedule.id), // Ensure ID is always a string
     date: schedule.date,
     time: schedule.time,
-    duration:
-      schedule.duration >= 60
-        ? `${Math.floor(schedule.duration / 60)}h ${schedule.duration % 60 > 0 ? `${schedule.duration % 60}m` : ""}`.trim()
-        : `${schedule.duration} min`,
+    duration: `${schedule.duration || 60} min`,
     car: "carName" in schedule ? schedule.carName : "",
     carId: "carId" in schedule ? schedule.carId : "",
     instructor: "instructorName" in schedule ? schedule.instructorName : "",
@@ -108,6 +105,8 @@ const getInitialSlots = (): ScheduleSlot[] => {
       instructor: "Mr. Ahmad",
       student: null,
       status: "available",
+      carId: "",
+      instructorId: ""
     },
     {
       id: "2",
@@ -118,6 +117,8 @@ const getInitialSlots = (): ScheduleSlot[] => {
       instructor: "Mr. Ahmad",
       student: "John Doe",
       status: "booked",
+            carId: "",
+      instructorId: ""
     },
     {
       id: "3",
@@ -128,6 +129,8 @@ const getInitialSlots = (): ScheduleSlot[] => {
       instructor: "Ms. Sari",
       student: "Sarah Putri",
       status: "in-progress",
+            carId: "",
+      instructorId: ""
     },
     {
       id: "4",
@@ -138,6 +141,8 @@ const getInitialSlots = (): ScheduleSlot[] => {
       instructor: "Mr. Budi",
       student: null,
       status: "blocked",
+            carId: "",
+      instructorId: ""
     },
   ];
 };
@@ -251,6 +256,7 @@ export const useSchedulesStore = defineStore("schedules", {
         const result = await scheduleService.fetchFiltered(queryParams);
 
         this.slots = result.schedules.map(mapScheduleToSlot);
+        this.isInitialized = true;
         this.pagination = {
           page: result.page,
           limit: result.limit,
@@ -263,6 +269,7 @@ export const useSchedulesStore = defineStore("schedules", {
         console.error("Error fetching schedules:", err);
         // Fallback to sample data
         this.slots = [...getInitialSlots()];
+        this.isInitialized = true;
       } finally {
         this.isLoading = false;
       }
@@ -279,12 +286,14 @@ export const useSchedulesStore = defineStore("schedules", {
         });
 
         this.slots = result.schedules.map(mapScheduleToSlot);
+        this.isInitialized = true;
       } catch (err) {
         this.error =
           err instanceof Error ? err.message : "Failed to fetch schedules";
         console.error("Error fetching schedules:", err);
         // Fallback to sample data filtered by date
         this.slots = getInitialSlots().filter((s) => s.date === date);
+        this.isInitialized = true;
       } finally {
         this.isLoading = false;
       }
@@ -300,6 +309,7 @@ export const useSchedulesStore = defineStore("schedules", {
         console.log('[SchedulesStore] fetchByDate - Raw schedules:', schedules);
         console.log('[SchedulesStore] First schedule status:', schedules[0]?.status);
         this.slots = schedules.map(mapScheduleToSlot);
+        this.isInitialized = true;
         console.log('[SchedulesStore] Mapped slots:', this.slots.map(s => ({ id: s.id, status: s.status })));
       } catch (err) {
         this.error =
@@ -309,6 +319,7 @@ export const useSchedulesStore = defineStore("schedules", {
         console.error("Error fetching schedules by date:", err);
         // Fallback to sample data
         this.slots = [...getInitialSlots()];
+        this.isInitialized = true;
       } finally {
         this.isLoading = false;
       }
@@ -480,13 +491,12 @@ export const useSchedulesStore = defineStore("schedules", {
       try {
         const success = await scheduleService.delete(id);
         if (success) {
-          this.slots = this.slots.filter((s) => s.id !== id);
+          this.slots = this.slots.filter((s) => String(s.id) !== String(id));
         }
         return success;
-      } catch {
-        // Fallback to local delete
-        this.slots = this.slots.filter((s) => s.id !== id);
-        return true;
+      } catch (err) {
+        console.error("Error deleting slot:", err);
+        throw err;
       }
     },
 

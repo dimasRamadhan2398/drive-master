@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 	"time"
 
@@ -194,35 +193,27 @@ func (s *AnalyticsService) GetFunnelReport(ctx context.Context) ([]GAFunnelStep,
 
 func (s *AnalyticsService) generateMockOverview(startDate, endDate string) []GAOverview {
 	var results []GAOverview
-	// Parsir tanggal mulai & akhir untuk menghasilkan range data (default 30 hari terakhir)
 	days := 30
 	now := time.Now()
 
-	// Mulai dari 30 hari yang lalu hingga hari ini
 	for i := days; i >= 0; i-- {
 		t := now.AddDate(0, 0, -i)
 		dateStr := t.Format("2006-01-02")
-		
-		// generate realistic fluctuating data
-		r := rand.New(rand.NewSource(t.UnixNano()))
-		users := int64(150 + r.Intn(100))
-		pvs := users * int64(2 + r.Intn(3))
 
 		results = append(results, GAOverview{
 			Date:      dateStr,
-			Users:     users,
-			PageViews: pvs,
+			Users:     0,
+			PageViews: 0,
 		})
 	}
 	return results
 }
 
 func (s *AnalyticsService) generateMockFunnel() []GAFunnelStep {
-	// Simulated conversion numbers
 	return []GAFunnelStep{
-		{EventName: "page_view", Count: 1450},
-		{EventName: "view_item", Count: 920},
-		{EventName: "begin_checkout", Count: 310},
-		{EventName: "purchase", Count: 120},
+		{EventName: "page_view", Count: 0},
+		{EventName: "view_item", Count: 0},
+		{EventName: "begin_checkout", Count: 0},
+		{EventName: "purchase", Count: 0},
 	}
 }

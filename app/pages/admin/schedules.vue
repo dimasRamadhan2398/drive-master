@@ -1,19 +1,25 @@
 <script setup lang="ts">
-import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
-import { ref, computed, onMounted, watch } from "vue";
-import { useRoute, navigateTo } from "nuxt/app";
+import { useToast, useInstructorsStore, useVehiclesStore, useSchedulesStore, useI18n, useLocale, useSettings } from "#imports";
+import { ref, computed, onMounted } from "vue";
+import type { ScheduleSlot } from "~/stores/schedules";
+import { useRoute, navigateTo } from "#imports";
 import AddSlotModal from "~/components/schedules/AddSlotModal.vue";
 import EditSlotModal from "~/components/schedules/EditSlotModal.vue";
+import ManualBookingModal from "~/components/schedules/ManualBookingModal.vue";
 
-const { t } = useI18n()
+const { t } = useI18n();
+const { locale } = useLocale();
 definePageMeta({ layout: "admin" });
 
 const route = useRoute();
 const toast = useToast();
 const instructorsStore = useInstructorsStore();
+const vehiclesStore = useVehiclesStore();
 const schedulesStore = useSchedulesStore();
 const studentNameToBook = computed(() => route.query.studentName as string | undefined);
 const showAddSlotModal = ref(false);
+const showManualBookingModal = ref(false);
+const selectedBookingSlotId = ref("");
 const selectedDate = ref(new Date());
 
 // FIX: Define localDateStr to format the selected date
@@ -28,21 +34,16 @@ const localDateStr = computed(() => {
 const filterInstructor = ref("All Instructors");
 const filterVehicle = ref("All Vehicles");
 
-const { toggleSlotStatus: _toggleSlotStatus, deleteSlot: _deleteSlot } = useSchedules();
-
 // Use store's slots for display
 const timeSlots = computed(() => {
-  if (schedulesStore.isInitialized) {
-    return schedulesStore.slots;
-  }
-  return [];
+  return schedulesStore.slots;
 });
 
 const instructors = computed(() => {
   return instructorsStore.instructors.map((value) => {
     return {
       label: value.name,
-      value: value.name, // Use name for comparison in filteredSlots
+      value: value.userId,
     };
   });
 });
@@ -51,7 +52,13 @@ const instructorOptions = computed(() => [
   { label: "All Instructors", value: "All Instructors" },
   ...instructors.value,
 ]);
-const vehicles = ["BYD Atto 1"];
+
+const vehicleOptionsList = computed(() => {
+  return vehiclesStore.vehicles.map((v) => ({
+    label: `${v.brand} ${v.model}`,
+    value: v.id,
+  }));
+});
 
 // FITUR BARU: Sinkronisasi jam operasional dari settings
 const { operatingHours } = useSettings();
@@ -80,17 +87,75 @@ const currentDayOperatingHours = computed(() => {
   };
 });
 
+const isSlotPast = (slotDateStr: string, slotTimeStr: string): boolean => {
+  if (!slotDateStr) return false;
+
+  let timeStr = (slotTimeStr || "00:00").trim();
+  if (timeStr.includes("-")) {
+    timeStr = (timeStr.split("-")[0] ?? timeStr).trim();
+  }
+
+  const isPM = /pm/i.test(timeStr);
+  const isAM = /am/i.test(timeStr);
+  timeStr = timeStr.replace(/(am|pm)/i, "").trim();
+
+  const dateParts = slotDateStr.split("-").map(Number);
+  const [year, month, day] = [dateParts[0] ?? 0, dateParts[1] ?? 1, dateParts[2] ?? 1];
+  const timeParts = timeStr.split(":");
+  let hours = Number(timeParts[0] ?? 0) || 0;
+  const minutes = Number(timeParts[1] ?? 0) || 0;
+
+  if (isPM && hours < 12) hours += 12;
+  if (isAM && hours === 12) hours = 0;
+
+  const slotDateTime = new Date(year, month - 1, day, hours, minutes, 0);
+  return slotDateTime.getTime() < Date.now();
+};
+
+const adminCalendarDays = computed(() => {
+  const year = selectedDate.value.getFullYear();
+  const month = selectedDate.value.getMonth();
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const emptyDays = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const days = [];
+  for (let i = 0; i < emptyDays; i++) {
+    days.push({ day: null, hasSlots: false });
+  }
+
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+    const hasSlots = timeSlots.value.some((s) => s.date === dateStr);
+    days.push({
+      day: i,
+      hasSlots,
+    });
+  }
+
+  return days;
+});
+
 const filteredSlots = computed(() => {
   const dateStr = localDateStr.value; // FIX: Menggunakan localDateStr
-  return timeSlots.value.filter((slot) => {
-    const matchDate = slot.date === dateStr;
-    const matchInst =
-      filterInstructor.value === "All Instructors" ||
-      slot.instructor === filterInstructor.value;
-    const matchVeh =
-      filterVehicle.value === "All Vehicles" || slot.car === filterVehicle.value;
-    return matchDate && matchInst && matchVeh;
-  });
+  return timeSlots.value
+    .filter((slot) => {
+      const matchDate = slot.date === dateStr;
+      const matchInst =
+        filterInstructor.value === "All Instructors" ||
+        slot.instructorId === filterInstructor.value ||
+        slot.instructor === filterInstructor.value;
+      const matchVeh =
+        filterVehicle.value === "All Vehicles" ||
+        slot.carId === filterVehicle.value ||
+        slot.car === filterVehicle.value;
+      return matchDate && matchInst && matchVeh;
+    })
+    .map((slot) => ({
+      ...slot,
+      isPast: isSlotPast(slot.date, slot.time),
+    }));
 });
 
 function changeDay(offset: number) {
@@ -99,28 +164,49 @@ function changeDay(offset: number) {
   selectedDate.value = nextDate;
 }
 
-function toggleSlotStatus(slotId: string) {
-  schedulesStore.updateSlotStatus(
-    slotId,
-    timeSlots.value.find((s) => s.id === slotId)?.status === "blocked"
-      ? "available"
-      : "blocked"
-  );
-  const slot = timeSlots.value.find((s) => s.id === slotId);
-  if (slot?.status === "blocked") {
-    toast.add({ title: "Slot Blocked", color: "warning", icon: "i-lucide-lock" });
-  } else {
+async function toggleSlotStatus(slotId: string) {
+  const currentSlot = timeSlots.value.find((s) => s.id === slotId);
+  if (!currentSlot) return;
+
+  if (isSlotPast(currentSlot.date, currentSlot.time)) {
     toast.add({
-      title: `Slot is now ${slot?.status}`,
-      color: "success",
-      icon: "i-lucide-check",
+      title: t("common.error"),
+      description: "Tidak dapat mengubah status slot waktu yang sudah terlewat.",
+      color: "error",
     });
+    return;
+  }
+
+  const newStatus = currentSlot.status === "blocked" ? "available" : "blocked";
+  const success = await schedulesStore.updateSlot(slotId, { status: newStatus });
+
+  if (success) {
+    if (newStatus === "blocked") {
+      toast.add({ title: "Slot Blocked", color: "warning", icon: "i-lucide-lock" });
+    } else {
+      toast.add({
+        title: `Slot is now ${newStatus}`,
+        color: "success",
+        icon: "i-lucide-check",
+      });
+    }
   }
 }
 
-function deleteSlot(slotId: string) {
-  schedulesStore.deleteSlot(slotId);
-  toast.add({ title: "Slot Deleted", color: "error", icon: "i-lucide-trash" });
+async function deleteSlot(slotId: string) {
+  if (confirm("Are you sure you want to delete this slot?")) {
+    try {
+      const success = await schedulesStore.deleteSlot(slotId);
+      if (success) {
+        toast.add({ title: "Slot Deleted", description: "Schedule slot has been removed", color: "success", icon: "i-lucide-trash" });
+      } else {
+        toast.add({ title: "Delete Failed", description: "Could not delete this slot", color: "error" });
+      }
+    } catch (err: any) {
+      const msg = err?.data?.message || err?.data?.error || err?.message || "Failed to delete slot";
+      toast.add({ title: "Delete Failed", description: msg, color: "error" });
+    }
+  }
 }
 
 // FITUR BARU: Logika In-Progress Session
@@ -133,61 +219,77 @@ const isToday = computed(() => {
   return localDateStr.value === todayStr;
 });
 
-function startSession(slotId: string) {
+async function startSession(slotId: string) {
   if (
     confirm('Apakah kursus sudah mau jalan? Sesi akan berubah menjadi "In Progress".')
   ) {
-    schedulesStore.updateSlotStatus(slotId, "in-progress");
-    toast.add({
-      title: "Session Started",
-      description: "Driving session is now in progress.",
-      color: "warning",
-      icon: "i-lucide-play",
-    });
-  }
-}
-
-function completeSession(slotId: string) {
-  if (confirm('Apakah kursus sudah selesai? Sesi akan ditandai sebagai "Completed".')) {
-    schedulesStore.updateSlotStatus(slotId, "completed");
-    toast.add({
-      title: "Session Completed",
-      description: "Driving session has been finished.",
-      color: "neutral",
-      icon: "i-lucide-check-circle",
-    });
-  }
-}
-
-function handleManualBooking(slotId: string) {
-  const studentName = studentNameToBook.value
-    ? decodeURIComponent(studentNameToBook.value)
-    : null;
-  if (studentName) {
-    schedulesStore.bookSlotLocal(slotId, studentName);
-    toast.add({
-      title: "Slot Booked",
-      description: `Berhasil booking untuk ${studentName}`,
-      color: "success",
-    });
-    // Kembali ke halaman schedule tanpa query untuk membersihkan state
-    navigateTo("/admin/schedules");
-  } else {
-    const name = prompt("Masukkan nama siswa untuk booking manual:", "Siswa Manual");
-    if (name) {
-      schedulesStore.bookSlotLocal(slotId, name);
+    const success = await schedulesStore.startSession(slotId);
+    if (success) {
       toast.add({
-        title: "Slot Booked",
-        description: `Berhasil booking untuk ${name}`,
-        color: "success",
+        title: "Session Started",
+        description: "Driving session is now in progress.",
+        color: "warning",
+        icon: "i-lucide-play",
       });
     }
   }
 }
 
+async function completeSession(slotId: string) {
+  if (confirm('Apakah kursus sudah selesai? Sesi akan ditandai sebagai "Completed".')) {
+    const success = await schedulesStore.completeSession(slotId);
+    if (success) {
+      toast.add({
+        title: "Session Completed",
+        description: "Driving session has been finished.",
+        color: "neutral",
+        icon: "i-lucide-check-circle",
+      });
+    }
+  }
+}
+
+function handleManualBooking(slotId: string) {
+  const slot = timeSlots.value.find((s) => s.id === slotId);
+  if (slot && isSlotPast(slot.date, slot.time)) {
+    toast.add({
+      title: t("common.error"),
+      description: "Tidak dapat melakukan booking manual untuk slot waktu yang sudah terlewat.",
+      color: "error",
+    });
+    return;
+  }
+  selectedBookingSlotId.value = slotId;
+  showManualBookingModal.value = true;
+}
+
 function handleSlotClick(slot: any) {
   if (studentNameToBook.value && slot.status === "available") {
+    if (slot.isPast || isSlotPast(slot.date, slot.time)) {
+      toast.add({
+        title: t("common.error"),
+        description: "Slot waktu ini sudah terlewat dan tidak dapat dibooking.",
+        color: "error",
+      });
+      return;
+    }
     const studentName = decodeURIComponent(studentNameToBook.value as string);
+    const targetStudent = studentsStore.allStudents.find(
+      (s) => s.name.toLowerCase() === studentName.toLowerCase()
+    );
+    if (slot.time >= operatingHours.value.nightStart) {
+      const hasNight = targetStudent?.entitlements?.some(
+        (e: any) => e.status === "active" && e.remaining > 0 && (e.isNightSession || /night|malam/i.test(e.packageName || ""))
+      );
+      if (!hasNight) {
+        toast.add({
+          title: "Booking Restricted",
+          description: `Slot ${slot.time} is in the night shift (18:00+). ${studentName} does not have the Night Session add-on.`,
+          color: "error",
+        });
+        return;
+      }
+    }
     schedulesStore.bookSlotLocal(slot.id, studentName);
     toast.add({
       title: "Slot Booked",
@@ -200,27 +302,33 @@ function handleSlotClick(slot: any) {
   }
 }
 
-function cancelBooking(slotId: string) {
+async function cancelBooking(slotId: string) {
   if (confirm("Batalkan booking dan kembalikan slot menjadi Available?")) {
-    schedulesStore.cancelBookingLocal(slotId);
-    toast.add({
-      title: "Booking Cancelled",
-      description: "Slot is now available again.",
-      color: "neutral",
-    });
+    const success = await schedulesStore.cancelBooking(slotId);
+    if (success) {
+      toast.add({
+        title: "Booking Cancelled",
+        description: "Slot is now available again.",
+        color: "neutral",
+      });
+    }
   }
 }
 
 // FITUR BARU: Add Slot State & Logic
-function handleAddSlot(form: {
+async function handleAddSlot(form: {
   date?: string;
   time: string;
   duration: string;
-  car: string;
-  instructor: string;
+  carId: string;
+  instructorId: string;
 }) {
-  if (!form.time || !form.car || !form.instructor) {
-    toast.add({ title: t('common.error'), description: "Please fill all fields", color: "error" });
+  if (!form.time || !form.carId || !form.instructorId) {
+    toast.add({
+      title: t("common.error"),
+      description: "Please fill all fields",
+      color: "error",
+    });
     return;
   }
 
@@ -234,7 +342,7 @@ function handleAddSlot(form: {
   } = currentDayOperatingHours.value;
   if (isClosed) {
     toast.add({
-      title: t('common.error'),
+      title: t("common.error"),
       description: "Business is closed on this day",
       color: "error",
     });
@@ -247,21 +355,19 @@ function handleAddSlot(form: {
   if (!isDayShift && !isNightShift) {
     let msg = `Time must be between ${start} - ${end}`;
     if (nightEnabled) msg += ` or ${nightStart} - ${nightEnd}`;
-    toast.add({ title: t('common.error'), description: msg, color: "error" });
+    toast.add({ title: t("common.error"), description: msg, color: "error" });
     return;
   }
 
   const id = Date.now().toString();
-  schedulesStore.addSlot({
-    id,
+  await schedulesStore.createSlot({
     date: form.date ?? localDateStr.value,
     time: form.time,
-    duration: form.duration + " min",
-    car: form.car,
-    instructor: form.instructor,
-    student: null,
-    status: "available",
+    duration: parseInt(form.duration),
+    carId: form.carId,
+    instructorId: form.instructorId,
   });
+  await fetchAdminSchedules();
 
   toast.add({ title: "New Slot Added", color: "success", icon: "i-lucide-check" });
   showAddSlotModal.value = false;
@@ -271,28 +377,36 @@ function handleAddSlot(form: {
 const showEditSlotModal = ref(false);
 const selectedEditSlot = ref<any>(null);
 
-function openEditModal(slot: any) {
+function openEditModal(slot: ScheduleSlot & { isPast?: boolean }) {
   if (slot.status !== "available") {
     toast.add({
-      title: t('common.error'),
-      description: "Hanya slot dengan status Available yang bisa diedit",
+      title: t("common.error"),
+      description: "Slot yang sudah di-book atau tidak tersedia tidak dapat diedit.",
       color: "error",
     });
     return;
   }
-  selectedEditSlot.value = slot;
+  selectedEditSlot.value = {
+    ...slot,
+    car: slot.carId,
+    instructor: slot.instructorId
+  };
   showEditSlotModal.value = true;
 }
 
-function handleEditSlot(updated: {
+async function handleEditSlot(updated: {
   id: string;
   time: string;
   duration: string;
-  car: string;
-  instructor: string;
+  carId: string;
+  instructorId: string;
 }) {
-  if (!updated.time || !updated.car || !updated.instructor) {
-    toast.add({ title: t('common.error'), description: "Please fill all fields", color: "error" });
+  if (!updated.time || !updated.carId || !updated.instructorId) {
+    toast.add({
+      title: t("common.error"),
+      description: "Please fill all fields",
+      color: "error",
+    });
     return;
   }
 
@@ -306,7 +420,7 @@ function handleEditSlot(updated: {
   } = currentDayOperatingHours.value;
   if (isClosed) {
     toast.add({
-      title: t('common.error'),
+      title: t("common.error"),
       description: "Business is closed on this day",
       color: "error",
     });
@@ -320,56 +434,77 @@ function handleEditSlot(updated: {
   if (!isDayShift && !isNightShift) {
     let msg = `Time must be between ${start} - ${end}`;
     if (nightEnabled) msg += ` or ${nightStart} - ${nightEnd}`;
-    toast.add({ title: t('common.error'), description: msg, color: "error" });
+    toast.add({ title: t("common.error"), description: msg, color: "error" });
     return;
   }
 
-  schedulesStore.editSlot(updated.id, {
+  const durMins = parseInt(updated.duration.replace(/[^0-9]/g, "")) || 60;
+
+  await schedulesStore.updateSlot(updated.id, {
     time: updated.time,
-    duration: updated.duration + " min",
-    car: updated.car,
-    instructor: updated.instructor,
+    duration: durMins > 0 ? durMins : 60,
+    carId: updated.carId,
+    instructorId: updated.instructorId,
   });
 
   toast.add({ title: "Slot Updated", color: "success", icon: "i-lucide-check" });
   showEditSlotModal.value = false;
 }
 
-// Re-fetch from backend whenever the selected date changes
-watch(localDateStr, (dateStr) => {
-  schedulesStore.fetchSchedulesByDate(dateStr);
-});
+const isLoadingAdminSchedules = ref(false);
+
+const fetchAdminSchedules = async () => {
+  const date = selectedDate.value;
+  const year = date.getFullYear();
+  const month = date.getMonth(); // 0-11
+
+  // Start of month: YYYY-MM-01
+  const startDayStr = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+
+  // End of month
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const endDayStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+  try {
+    isLoadingAdminSchedules.value = true;
+    await schedulesStore.fetchSchedules({
+      startDate: startDayStr,
+      endDate: endDayStr,
+      limit: 500, // retrieve all slots for the month
+    });
+  } catch (err) {
+    console.error("Failed to fetch admin schedules:", err);
+  } finally {
+    isLoadingAdminSchedules.value = false;
+  }
+};
+
+watch(
+  () => [selectedDate.value.getFullYear(), selectedDate.value.getMonth()],
+  async () => {
+    await fetchAdminSchedules();
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   instructorsStore.fetchInstructors();
-  // Fetch schedules for the currently selected date on load
-  schedulesStore.fetchSchedulesByDate(localDateStr.value);
+  vehiclesStore.fetchVehicles();
 });
+
+// Debug: Watch for slot changes
+watch(
+  () => schedulesStore.slots,
+  (newSlots) => {
+    console.log('[AdminSchedules] slots changed:', newSlots.map(s => ({ id: s.id, status: s.status })));
+  },
+  { deep: true }
+);
 </script>
 
 <template>
   <UDashboardPanel>
     <template #header>
-      <UAlert
-        v-if="studentNameToBook"
-        icon="i-lucide-user-check"
-        color="info"
-        variant="subtle"
-        class="m-4"
-        :title="t('dashboard.bookingMode')"
-      >
-        <template #description>
-          <span
-                    >{{ t('admin.selectStudent').replace('Pilih Murid', 'Pilih slot untuk') }} <strong>{{ decodeURIComponent(studentNameToBook) }}</strong>.
-            <UButton
-              variant="link"
-              :padded="false"
-              @click="navigateTo('/admin/schedules')"
-              >{{ t('schedule.cancel') }}</UButton
-            ></span
-          >
-        </template>
-      </UAlert>
       <UDashboardNavbar :title="t('admin.schedules')">
         <template #right>
           <UButton
@@ -383,7 +518,7 @@ onMounted(() => {
             v-model:open="showAddSlotModal"
             :date="localDateStr"
             :instructors="instructors"
-            :vehicles="vehicles"
+            :vehicles="vehicleOptionsList"
             :operatingHours="currentDayOperatingHours"
             @saved="handleAddSlot"
           />
@@ -403,7 +538,7 @@ onMounted(() => {
               class="relative flex items-center justify-center min-w-[160px] hover:bg-gray-100 rounded py-1 transition-colors cursor-pointer"
             >
               <span class="font-medium text-center pointer-events-none">{{
-                selectedDate.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', {
+                selectedDate.toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
                   month: "long",
                   day: "numeric",
                   year: "numeric",
@@ -445,6 +580,30 @@ onMounted(() => {
 
     <template #body>
       <div class="p-6 space-y-6">
+        <!-- Booking Mode Banner Alert -->
+        <UAlert
+          v-if="studentNameToBook"
+          icon="i-lucide-user-check"
+          color="info"
+          variant="subtle"
+          :title="t('dashboard.bookingMode')"
+        >
+          <template #description>
+            <div class="flex items-center justify-between gap-2 mt-1">
+              <span>
+                {{ t("admin.selectStudent").replace("Pilih Murid", "Pilih slot untuk") }}
+                <strong>{{ decodeURIComponent(studentNameToBook || '') }}</strong>.
+              </span>
+              <UButton
+                variant="link"
+                color="error"
+                :padded="false"
+                @click="navigateTo('/admin/schedules')"
+                >{{ t("schedule.cancel") }}</UButton
+              >
+            </div>
+          </template>
+        </UAlert>
         <!-- Stats -->
         <!-- <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <UCard>
@@ -520,7 +679,7 @@ onMounted(() => {
           <UCard>
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">{{ t('schedule.selectDate') }}</h2>
+                <h2 class="font-semibold">{{ t("schedule.selectDate") }}</h2>
                 <div class="flex items-center gap-1">
                   <UButton
                     icon="i-lucide-chevron-left"
@@ -530,10 +689,13 @@ onMounted(() => {
                     @click="changeDay(-1)"
                   />
                   <span class="text-sm font-medium">{{
-                    selectedDate.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', {
-                      month: "long",
-                      year: "numeric",
-                    })
+                    selectedDate.toLocaleDateString(
+                      locale === "id" ? "id-ID" : "en-US",
+                      {
+                        month: "long",
+                        year: "numeric",
+                      }
+                    )
                   }}</span>
                   <UButton
                     icon="i-lucide-chevron-right"
@@ -548,7 +710,9 @@ onMounted(() => {
             <!-- Simple custom calendar grid -->
             <div class="grid grid-cols-7 gap-1 mb-2">
               <div
-                v-for="day in (locale === 'id' ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'])"
+                v-for="day in locale === 'id'
+                  ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+                  : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']"
                 :key="day"
                 class="text-center text-xs font-bold text-muted py-2"
               >
@@ -556,21 +720,30 @@ onMounted(() => {
               </div>
             </div>
             <div class="grid grid-cols-7 gap-1">
-              <div></div>
-              <div></div>
-              <button
-                v-for="d in 30"
-                :key="d"
-                :class="[
-                  'w-full aspect-square rounded-full text-sm font-medium transition-all flex items-center justify-center',
-                  selectedDate.getDate() === d
-                    ? 'bg-primary text-white shadow-md'
-                    : 'hover:bg-muted/50 cursor-pointer',
-                ]"
-                @click="selectedDate = new Date(2026, selectedDate.getMonth(), d)"
+              <div
+                v-for="(item, idx) in adminCalendarDays"
+                :key="idx"
+                class="w-full aspect-square flex items-center justify-center"
               >
-                {{ d }}
-              </button>
+                <button
+                  v-if="item.day !== null"
+                  :class="[
+                    'w-full h-full rounded-lg text-sm font-medium transition-all cursor-pointer flex items-center justify-center relative',
+                    selectedDate.getDate() === item.day
+                      ? 'bg-primary text-white shadow-md'
+                      : item.hasSlots
+                      ? 'hover:bg-primary/10 text-primary-600 dark:text-primary-400 font-semibold'
+                      : 'hover:bg-muted/50 text-gray-700 dark:text-gray-300',
+                  ]"
+                  @click="selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), item.day)"
+                >
+                  {{ item.day }}
+                  <span
+                    v-if="item.hasSlots && selectedDate.getDate() !== item.day"
+                    class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-primary"
+                  ></span>
+                </button>
+              </div>
             </div>
           </UCard>
 
@@ -578,12 +751,24 @@ onMounted(() => {
           <UCard class="lg:col-span-2">
             <template #header>
               <div class="flex items-center justify-between">
-                <h2 class="font-semibold">{{ t('schedule.availableSlots') }}</h2>
+                <h2 class="font-semibold">{{ t("schedule.availableSlots") }}</h2>
                 <div class="flex gap-2">
-                  <UBadge :label="t('common.available')" color="success" variant="subtle" />
+                  <UBadge
+                    :label="t('common.available')"
+                    color="success"
+                    variant="subtle"
+                  />
                   <UBadge :label="t('home.booked')" color="info" variant="subtle" />
-                  <UBadge :label="t('common.completed')" color="neutral" variant="subtle" />
-                  <UBadge :label="t('admin.blockSlot').replace('Blokir ', '')" color="error" variant="subtle" />
+                  <UBadge
+                    :label="t('common.completed')"
+                    color="neutral"
+                    variant="subtle"
+                  />
+                  <UBadge
+                    :label="t('admin.blockSlot').replace('Blokir ', '')"
+                    color="error"
+                    variant="subtle"
+                  />
                 </div>
               </div>
             </template>
@@ -594,14 +779,16 @@ onMounted(() => {
                 :key="slot.id"
                 class="p-4 rounded-lg border border-default hover:shadow-md transition-shadow"
                 :class="{
-                  'border-l-4 border-l-primary': slot.status === 'available',
+                  'border-l-4 border-l-primary': slot.status === 'available' && !slot.isPast,
+                  'border-l-4 border-l-neutral-400 bg-neutral-500/10 opacity-60': slot.isPast && slot.status === 'available',
                   'border-l-4 border-l-info bg-info/5': slot.status === 'booked',
                   'border-l-4 border-l-amber-500': slot.status === 'in-progress',
                   'border-l-4 border-l-neutral-500 bg-neutral-500/5':
                     slot.status === 'completed',
                   'border-l-4 border-l-red-500 opacity-60': slot.status === 'blocked',
                   'cursor-pointer hover:bg-primary/5':
-                    studentNameToBook && slot.status === 'available',
+                    studentNameToBook && slot.status === 'available' && !slot.isPast,
+                  'cursor-not-allowed': slot.isPast,
                 }"
                 @click="handleSlotClick(slot)"
               >
@@ -690,7 +877,9 @@ onMounted(() => {
                     <UBadge
                       class="hidden sm:flex"
                       :label="
-                        slot.status === 'available'
+                        slot.isPast && slot.status === 'available'
+                          ? (t('common.passed') || 'Passed')
+                          : slot.status === 'available'
                           ? t('common.available')
                           : slot.status === 'booked'
                           ? t('home.booked')
@@ -701,7 +890,9 @@ onMounted(() => {
                           : 'Blocked'
                       "
                       :color="
-                        slot.status === 'available'
+                        slot.isPast && slot.status === 'available'
+                          ? 'neutral'
+                          : slot.status === 'available'
                           ? 'primary'
                           : slot.status === 'booked'
                           ? 'info'
@@ -718,7 +909,9 @@ onMounted(() => {
                         [
                           {
                             label:
-                              slot.status === 'blocked' ? t('admin.unblockSlot') : t('admin.blockSlot'),
+                              slot.status === 'blocked'
+                                ? t('admin.unblockSlot')
+                                : t('admin.blockSlot'),
                             icon:
                               slot.status === 'blocked'
                                 ? 'i-lucide-unlock'
@@ -726,19 +919,23 @@ onMounted(() => {
                             onSelect: () => toggleSlotStatus(slot.id),
                             disabled:
                               slot.status === 'in-progress' ||
-                              slot.status === 'completed',
+                              slot.status === 'completed' ||
+                              slot.isPast,
                           },
                           {
-                            label: t('admin.addNew').replace('Tambah Baru', 'Booking Manual'),
+                            label: t('admin.addNew').replace(
+                              'Tambah Baru',
+                              'Booking Manual'
+                            ),
                             icon: 'i-lucide-user-plus',
                             onSelect: () => handleManualBooking(slot.id),
-                            disabled: slot.status !== 'available',
+                            disabled: slot.status !== 'available' || slot.isPast,
                           },
                           {
                             label: t('common.edit') + ' Slot',
                             icon: 'i-lucide-pencil',
                             onSelect: () => openEditModal(slot),
-                            disabled: slot.status !== 'available',
+                            disabled: slot.status !== 'available' || slot.isPast,
                           },
                         ],
                         [
@@ -793,7 +990,7 @@ onMounted(() => {
                   class="size-10 text-muted mx-auto mb-3"
                 />
                 <p class="text-muted font-medium">
-                  {{ t('blog.noArticles').replace('artikel', 'slot') }}.
+                  {{ t("schedule.noSessionsFound") }}.
                 </p>
               </div>
             </div>
@@ -805,9 +1002,15 @@ onMounted(() => {
         v-model:open="showEditSlotModal"
         :initialSlot="selectedEditSlot"
         :instructors="instructors"
-        :vehicles="vehicles"
+        :vehicles="vehicleOptionsList"
         :operatingHours="currentDayOperatingHours"
         @saved="handleEditSlot"
+      />
+
+      <ManualBookingModal
+        v-model:open="showManualBookingModal"
+        :slotId="selectedBookingSlotId"
+        @booked="schedulesStore.fetchByDate(localDateStr)"
       />
     </template>
   </UDashboardPanel>

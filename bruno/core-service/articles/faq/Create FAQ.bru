@@ -1,0 +1,19 @@
+meta {
+  name: Create FAQ
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{core_service_url}}/api/v1/articles/faq
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "question": "What is included in the package?",
+    "answer": "The package includes theory and practice sessions.",
+    "is_active": true
+  }
+}

@@ -1,7 +1,7 @@
 import { useAuthStore } from '~/stores/auth';
 
 // Middleware to redirect already authenticated users away from login pages
-export default defineNuxtRouteMiddleware((to) => {
+export default defineNuxtRouteMiddleware(async (to) => {
   // Only apply to non-admin auth pages
   const authPages = ['/auth/login', '/auth/register'];
   if (!authPages.includes(to.path)) {
@@ -36,5 +36,22 @@ export default defineNuxtRouteMiddleware((to) => {
   if (authStore.userRole?.toLowerCase().includes('admin')) {
     return navigateTo('/admin');
   }
-  return navigateTo('/dashboard');
+
+  // Check if student has entitlements before deciding where to redirect
+  if (!authStore.memberProfile) {
+    await authStore.fetchMemberProfile();
+  }
+
+  const hasEntitlements =
+    (authStore.memberProfile?.entitlements &&
+      authStore.memberProfile.entitlements.length > 0) ||
+    (authStore.memberProfile?.sessionsCompleted &&
+      authStore.memberProfile.sessionsCompleted > 0);
+
+  if (hasEntitlements) {
+    return navigateTo('/dashboard');
+  }
+
+  // No entitlements or completed sessions — send to onboarding
+  return navigateTo('/auth/onboarding');
 });

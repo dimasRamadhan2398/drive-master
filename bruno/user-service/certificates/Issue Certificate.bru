@@ -1,0 +1,23 @@
+meta {
+  name: Issue Certificate
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{user_service_url}}/api/v1/certificates
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+body:json {
+  {
+    "member_id": "{{member_id}}",
+    "enrollment_id": 1,
+    "issued_date": "2024-01-01"
+  }
+}

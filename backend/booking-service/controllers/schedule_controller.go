@@ -7,6 +7,7 @@ import (
 
 	"booking-service/models/dto"
 	"booking-service/pkg/base"
+	"booking-service/pkg/response"
 	"booking-service/services"
 
 	"github.com/gin-gonic/gin"
@@ -271,23 +272,23 @@ func (c *ScheduleController) GetAvailableSchedules(ctx *gin.Context) {
 func (c *ScheduleController) BookSlot(ctx *gin.Context) {
 	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
+		response.BadRequest(ctx, "invalid schedule id")
 		return
 	}
 
 	var req dto.BookSlotRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(ctx, err.Error())
 		return
 	}
 
 	resp, err := c.scheduleService.BookSlot(ctx.Request.Context(), id, req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.BadRequest(ctx, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, resp)
+	response.OK(ctx, "Slot booked successfully", resp)
 }
 
 // CancelBooking godoc
@@ -304,16 +305,16 @@ func (c *ScheduleController) BookSlot(ctx *gin.Context) {
 func (c *ScheduleController) CancelBooking(ctx *gin.Context) {
 	id, err := base.GetUintIDFromPath(ctx, "id")
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule id"})
+		response.BadRequest(ctx, "invalid schedule id")
 		return
 	}
 
 	if err := c.scheduleService.CancelBooking(ctx.Request.Context(), id); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.BadRequest(ctx, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "booking cancelled"})
+	response.OK(ctx, "Booking cancelled successfully", gin.H{"message": "booking cancelled"})
 }
 
 // StartSession godoc

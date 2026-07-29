@@ -1,0 +1,20 @@
+meta {
+  name: Create Sale
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{core_service_url}}/api/v1/admin/sales
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_id": "{{user_id}}",
+    "package_id": 1,
+    "amount": 1500000,
+    "source": "website"
+  }
+}

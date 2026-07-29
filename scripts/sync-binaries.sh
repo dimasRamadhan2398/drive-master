@@ -10,7 +10,7 @@ TARGET_PATH="/var/www/drive"
 
 chmod 600 deploy_key
 
-SSH_OPTS="-i deploy_key -o StrictHostKeyChecking=no -o IPQoS=none -o ControlMaster=auto -o ControlPath=./ssh-control-%r@%h:%p -o ControlPersist=10m"
+SSH_OPTS="-i deploy_key -o StrictHostKeyChecking=no -o IPQoS=none"
 
 # 1. Sync root configs
 echo "Syncing root configs..."
@@ -37,9 +37,5 @@ rsync -avz \
   --exclude="docker-compose.yml" \
   --exclude="entrypoint.sh" \
   -e "ssh $SSH_OPTS" ./backend/ "$SSH_TARGET":"$TARGET_PATH"/backend/
-
-# Close control socket
-ssh $SSH_OPTS -O exit "$SSH_TARGET" 2>/dev/null || true
-rm -f ./ssh-control-* 2>/dev/null || true
 
 echo "=== Syncing completed! ==="

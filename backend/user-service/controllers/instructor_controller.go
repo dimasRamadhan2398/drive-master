@@ -11,6 +11,7 @@ import (
 	"user-service/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type InstructorController struct {
@@ -36,6 +37,7 @@ type IInstructorController interface {
 	UploadBase64Media(ctx *gin.Context)
 	GetMediaMetadata(ctx *gin.Context)
 	GetAllInstructorsWithRecurringSchedules(ctx *gin.Context)
+	RateInstructor(ctx *gin.Context)
 }
 
 func NewInstructorController(
@@ -651,4 +653,38 @@ func (c *InstructorController) GetAllInstructorsWithRecurringSchedules(ctx *gin.
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Instructors with recurring schedules retrieved successfully", result)
+}
+
+// RateInstructor godoc
+// @Summary Rate an instructor
+// @Description Updates instructor average rating based on a new session rating
+// @Tags instructors
+// @Accept json
+// @Produce json
+// @Param id path string true "Instructor User ID"
+// @Param rating body map[string]float64 true "Rating data"
+// @Success 200 {object} map[string]string
+// @Router /instructors/{id}/rate [post]
+func (c *InstructorController) RateInstructor(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	instructorID, err := uuid.Parse(idStr)
+	if err != nil {
+		responseRes.BadRequest(ctx, "invalid instructor id")
+		return
+	}
+
+	var req struct {
+		Rating float64 `json:"rating" binding:"required"`
+	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		responseRes.BadRequest(ctx, err.Error())
+		return
+	}
+
+	if err := c.instructorService.RateInstructor(ctx.Request.Context(), instructorID, req.Rating); err != nil {
+		responseRes.InternalServerError(ctx, err.Error())
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Instructor rated successfully", nil)
 }

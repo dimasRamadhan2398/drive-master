@@ -140,12 +140,14 @@ type CertificationStatsResponse struct {
 
 // CreateEntitlementInput is used for POST /members/:id/entitlements
 type CreateEntitlementInput struct {
-	BookingID     uuid.UUID `json:"bookingId" binding:"required"`
-	PackageID     uuid.UUID `json:"packageId" binding:"required"`
-	PackageName   string    `json:"packageName" binding:"required,min=2,max=255"`
-	TotalSessions int       `json:"totalSessions" binding:"required,min=1"`
-	StartDate     string    `json:"startDate" binding:"required"` // Format: YYYY-MM-DD
-	EndDate       string    `json:"endDate"`                      // Format: YYYY-MM-DD (optional)
+	BookingID        uuid.UUID `json:"bookingId" binding:"required"`
+	PackageID        uuid.UUID `json:"packageId" binding:"required"`
+	PackageName      string    `json:"packageName" binding:"required,min=2,max=255"`
+	TotalSessions    int       `json:"totalSessions" binding:"required,min=1"`
+	IsNightSession   bool      `json:"isNightSession"`
+	IsWeekendSession bool      `json:"isWeekendSession"`
+	StartDate        string    `json:"startDate" binding:"required"` // Format: YYYY-MM-DD
+	EndDate          string    `json:"endDate"`                      // Format: YYYY-MM-DD (optional)
 }
 
 // UpdateEntitlementInput is used for PUT /members/:id/entitlements/:entId
@@ -162,19 +164,21 @@ type UseSessionInput struct {
 
 // EntitlementResponse represents an entitlement in API responses
 type EntitlementResponse struct {
-	ID            uuid.UUID `json:"id"`
-	MemberID      uuid.UUID `json:"memberId"`
-	BookingID     uuid.UUID `json:"bookingId"`
-	PackageID     uuid.UUID `json:"packageId"`
-	PackageName   string    `json:"packageName"`
-	TotalSessions int       `json:"totalSessions"`
-	Remaining     int       `json:"remaining"`
-	UsedSessions  int       `json:"usedSessions"`
-	StartDate     string    `json:"startDate"`
-	EndDate       *string   `json:"endDate,omitempty"`
-	Status        string    `json:"status"`
-	CreatedAt     string    `json:"createdAt"`
-	UpdatedAt     string    `json:"updatedAt"`
+	ID               uuid.UUID `json:"id"`
+	MemberID         uuid.UUID `json:"memberId"`
+	BookingID        uuid.UUID `json:"bookingId"`
+	PackageID        uuid.UUID `json:"packageId"`
+	PackageName      string    `json:"packageName"`
+	IsNightSession   bool      `json:"isNightSession"`
+	IsWeekendSession bool      `json:"isWeekendSession"`
+	TotalSessions    int       `json:"totalSessions"`
+	Remaining        int       `json:"remaining"`
+	UsedSessions     int       `json:"usedSessions"`
+	StartDate        string    `json:"startDate"`
+	EndDate          *string   `json:"endDate,omitempty"`
+	Status           string    `json:"status"`
+	CreatedAt        string    `json:"createdAt"`
+	UpdatedAt        string    `json:"updatedAt"`
 }
 
 // CreateInstructorWithUserRequest is used for POST /instructors/register

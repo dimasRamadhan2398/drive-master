@@ -16,6 +16,9 @@ type GeneralSettings struct {
 	Phone        string `json:"phone" gorm:"size:50"`
 	Fax          string `json:"fax" gorm:"size:50"`
 	WhatsApp     string `json:"whatsApp" gorm:"size:50"`
+	Instagram    string `json:"instagram" gorm:"size:255"`
+	Youtube      string `json:"youtube" gorm:"size:255"`
+	MapDirection string `json:"mapDirection" gorm:"size:512"`
 
 	// Address
 	Address string `json:"address" gorm:"type:text"`

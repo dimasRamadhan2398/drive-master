@@ -99,9 +99,12 @@ type DokuConfig struct {
 }
 
 type PakasirConfig struct {
+	Environment string `mapstructure:"environment" yaml:"environment"`
 	Slug        string `mapstructure:"slug" yaml:"slug"`
 	APIKey      string `mapstructure:"api_key" yaml:"api_key"`
 	BaseURL     string `mapstructure:"base_url" yaml:"base_url"`
+	WebhookURL  string `mapstructure:"webhook_url" yaml:"webhook_url"`
+	FrontendURL string `mapstructure:"frontend_url" yaml:"frontend_url"`
 }
 
 var AppCfg *Config
@@ -174,9 +177,11 @@ func setDefaults() {
 	viper.SetDefault("doku.frontend_url", "http://localhost:3001")
 
 	// Pakasir
+	viper.SetDefault("pakasir.environment", "sandbox")
 	viper.SetDefault("pakasir.slug", "")
 	viper.SetDefault("pakasir.api_key", "")
 	viper.SetDefault("pakasir.base_url", "https://app.pakasir.com")
+	viper.SetDefault("pakasir.webhook_url", "")
 }
 
 func Load(path string) (*Config, error) {
@@ -208,6 +213,7 @@ func Load(path string) (*Config, error) {
 	// Kafka env overrides
 	_ = viper.BindEnv("kafka.brokers", "KAFKA_BROKERS")
 	_ = viper.BindEnv("kafka.enabled", "KAFKA_ENABLED")
+	_ = viper.BindEnv("kafka.topic", "KAFKA_TOPIC")
 
 	// JWT env overrides
 	_ = viper.BindEnv("jwt.secret", "JWT_SECRET")
@@ -234,9 +240,12 @@ func Load(path string) (*Config, error) {
 	_ = viper.BindEnv("doku.payment_due_date", "DOKU_PAYMENT_DUE_DATE")
 	_ = viper.BindEnv("doku.frontend_url", "DOKU_FRONTEND_URL")
 
+	_ = viper.BindEnv("pakasir.environment", "PAKASIR_ENVIRONMENT")
 	_ = viper.BindEnv("pakasir.slug", "PAKASIR_SLUG")
 	_ = viper.BindEnv("pakasir.api_key", "PAKASIR_API_KEY")
 	_ = viper.BindEnv("pakasir.base_url", "PAKASIR_BASE_URL")
+	_ = viper.BindEnv("pakasir.webhook_url", "PAKASIR_WEBHOOK_URL")
+	_ = viper.BindEnv("pakasir.frontend_url", "PAKASIR_FRONTEND_URL")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

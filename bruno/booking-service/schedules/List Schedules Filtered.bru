@@ -1,0 +1,16 @@
+meta {
+  name: List Schedules Filtered
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{booking_service_url}}/api/v1/schedules/filter
+  body: none
+  auth: none
+}
+
+params:query {
+  instructor_id: {{instructor_id}}
+  date: 2024-07-25
+}

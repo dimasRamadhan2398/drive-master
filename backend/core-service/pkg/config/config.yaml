@@ -63,7 +63,7 @@ app:
   base_path: /var/www/drive/backend/core-service
 
 analytics:
-  ga_measurement_id: G-07PS1N5DZ5
+  ga_measurement_id: G-1SR8F1H6D9
   ga_property_id: G-539969879
   ga_credentials_file: /var/www/drive/backend/core-service/analytics/ga_credentials.json
 

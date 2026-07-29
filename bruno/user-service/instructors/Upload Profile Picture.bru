@@ -1,0 +1,23 @@
+meta {
+  name: Upload Profile Picture
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{user_service_url}}/api/v1/instructors/:id/media/upload
+  body: multipart-form
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: {{instructor_id}}
+}
+
+body:multipart-form {
+  file: @file()
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Increment View Count
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{core_service_url}}/api/v1/articles/:id/view
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

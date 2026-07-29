@@ -10,6 +10,9 @@ export interface GeneralSettings {
   phone: string;
   fax: string;
   whatsApp: string;
+  instagram: string;
+  youtube: string;
+  mapDirection: string;
   address: string;
   hoursMonFri: string;
   hoursSatSun: string;
@@ -28,6 +31,9 @@ export interface UpdateGeneralSettingsData {
   phone?: string;
   fax?: string;
   whatsApp?: string;
+  instagram?: string;
+  youtube?: string;
+  mapDirection?: string;
   address?: string;
   hoursMonFri?: string;
   hoursSatSun?: string;

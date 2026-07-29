@@ -21,7 +21,6 @@ type SendEmailRequest struct {
 	BCC         []EmailAddress    `json:"bcc,omitempty"`
 	Attachments []EmailAttachment `json:"attachments,omitempty"`
 	CustomVariables  map[string]string `json:"custom_variables,omitempty"`
-	Tags        []string          `json:"tags,omitempty"`
 }
 
 type SendEmailResponse struct {

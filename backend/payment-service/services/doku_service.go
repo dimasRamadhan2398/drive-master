@@ -265,3 +265,7 @@ func (s *DokuService) VerifyNotification(headers map[string]string, rawBody []by
 		RawPayload:        webhookData,
 	}, nil
 }
+
+func (s *DokuService) SimulatePayment(orderID string, amount float64) error {
+	return nil
+}

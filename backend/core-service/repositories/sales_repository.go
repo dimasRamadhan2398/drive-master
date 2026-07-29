@@ -73,8 +73,7 @@ func (r *SalesRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.S
 // FindByIDWithItems finds a sale by ID with items preloaded
 func (r *SalesRepository) FindByIDWithItems(ctx context.Context, id uuid.UUID) (*models.Sale, error) {
 	var sale models.Sale
-	opts := base.NewQueryOptions().WithPreloads("Items")
-	if err := r.BaseRepository.FindOne(ctx, &sale, "id = ?", id, opts); err != nil {
+	if err := r.DB.WithContext(ctx).Preload("Items").Where("id = ?", id).First(&sale).Error; err != nil {
 		return nil, err
 	}
 	return &sale, nil

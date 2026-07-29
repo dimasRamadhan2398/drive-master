@@ -1,0 +1,15 @@
+meta {
+  name: Get Instructor Profile
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{user_service_url}}/api/v1/instructors/:id/profile
+  body: none
+  auth: none
+}
+
+params:path {
+  id: {{instructor_id}}
+}

@@ -20,6 +20,7 @@ func RunGeneralSettingsSeeder(db *gorm.DB) error {
 		Address:         "Jl. Sudirman No. 123, Jakarta Selatan",
 		HoursMonFri:     "08:00 - 17:00",
 		HoursSatSun:     "09:00 - 15:00",
+		MapDirection:    "https://maps.app.goo.gl/qGngC2sF4G3jt8Vs8",
 		HoursNightShift: "19:00 - 22:00",
 		NotifyEmail:     true,
 		NotifySMS:       false,

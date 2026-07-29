@@ -84,6 +84,9 @@ func (r *EntitlementRepository) FindByMemberAndID(ctx context.Context, memberID,
 	}); err != nil {
 		return nil, err
 	}
+	if entitlement.ID == uuid.Nil {
+		return nil, nil
+	}
 	return &entitlement, nil
 }
 
@@ -96,6 +99,9 @@ func (r *EntitlementRepository) FindByBookingID(ctx context.Context, bookingID u
 		Limit: 1,
 	}); err != nil {
 		return nil, err
+	}
+	if entitlement.ID == uuid.Nil {
+		return nil, nil
 	}
 	return &entitlement, nil
 }

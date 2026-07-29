@@ -72,29 +72,27 @@ func (s *MailtrapEmailService) SendEmail(ctx context.Context, input dto.SendEmai
 	}
 
 	type mailtrapRequest struct {
-		To              []dto.EmailAddress    `json:"to"`
-		From            dto.EmailAddress      `json:"from"`
-		Subject         string                `json:"subject"`
-		Text            string                `json:"text,omitempty"`
-		HTML            string                `json:"html,omitempty"`
-		CC              []dto.EmailAddress    `json:"cc,omitempty"`
-		BCC             []dto.EmailAddress    `json:"bcc,omitempty"`
-		Attachments     []dto.EmailAttachment `json:"attachments,omitempty"`
+		To          []dto.EmailAddress    `json:"to"`
+		From        dto.EmailAddress      `json:"from"`
+		Subject     string                `json:"subject"`
+		Text        string                `json:"text,omitempty"`
+		HTML        string                `json:"html,omitempty"`
+		CC          []dto.EmailAddress    `json:"cc,omitempty"`
+		BCC         []dto.EmailAddress    `json:"bcc,omitempty"`
+		Attachments []dto.EmailAttachment `json:"attachments,omitempty"`
 		CustomVariables map[string]string     `json:"custom_variables,omitempty"`
-		Tags            []string              `json:"tags,omitempty"`
 	}
 
 	reqBody := mailtrapRequest{
-		To:              toRecipients,
-		From:            dto.EmailAddress{Email: s.fromEmail, Name: s.fromName},
-		Subject:         input.Subject,
-		Text:            input.Text,
-		HTML:            input.HTML,
-		CC:              ccRecipients,
-		BCC:             bccRecipients,
-		Attachments:     input.Attachments,
-		CustomVariables: input.CustomVariables,
-		Tags:            input.Tags,
+		To:          toRecipients,
+		From:        dto.EmailAddress{Email: s.fromEmail, Name: s.fromName},
+		Subject:     input.Subject,
+		Text:        input.Text,
+		HTML:        input.HTML,
+		CC:          ccRecipients,
+		BCC:         bccRecipients,
+		Attachments: input.Attachments,
+		CustomVariables:  input.CustomVariables,
 	}
 
 	jsonBody, err := json.Marshal(reqBody)

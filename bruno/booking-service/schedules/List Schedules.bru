@@ -1,0 +1,19 @@
+meta {
+  name: List Schedules
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{booking_service_url}}/api/v1/schedules/all
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+vars:pre-request {
+  booking_service_url: https://api-dev.drivemaster.id
+}

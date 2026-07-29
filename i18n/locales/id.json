@@ -197,7 +197,7 @@
     "sessions": "Sesi",
     "choosePlan": "Pilih Paket Ini",
     "perMonth": "per bulan",
-    "duration": "Durasi Paket",
+    "duration": "Durasi Sesi",
     "freeTrial": "Percobaan Gratis",
     "simA": "SIM A",
     "features": {
@@ -278,7 +278,7 @@
       "send": "Kirim Pesan",
       "sending": "Mengirim...",
       "success": "Pesan Terkirim!",
-      "successDesc": "Terima kasih telah menghubungi kami. Kami akan kembali kepada Anda dalam waktu 24 jam.",
+      "successDesc": "Terima kasih telah menghubungi kami. Kami akan membalas pesan anda segera.",
       "error": "Terjadi kesalahan. Silakan coba lagi."
     },
     "social": {
@@ -385,6 +385,7 @@
     "completed": "Selesai",
     "cancelled": "Dibatalkan",
     "confirmed": "Dikonfirmasi",
+    "passed": "Telah Lewat",
     "noData": "Tidak ada data tersedia",
     "processing": "Sedang Diproses",
     "ready": "Siap",
@@ -459,7 +460,10 @@
     "rescheduleSuccess": "Jadwal Diubah!",
     "rescheduleSuccessDesc": "Sesi Anda telah berhasil diperbarui.",
     "cancel": "Batal",
-    "confirm": "Konfirmasi"
+    "confirm": "Konfirmasi",
+    "noSessionsFound": "Tidak ada slot pada tanggal ini",
+    "nightAddonRequired": "Perlu Add-on Sesi Malam",
+    "nightAddonRequiredDesc": "Slot waktu ini berada pada jam malam (18:00+). Paket aktif Anda tidak mencakup add-on Sesi Malam."
   },
   "history": {
     "title": "Riwayat Pelatihan",
@@ -662,6 +666,7 @@
     "content": "Konten",
     "contents": "Konten",
     "testimonials": "Testimoni",
+    "inquiries": "Pesan Kontak",
     "analytics": "Analitik",
     "settings": "Pengaturan",
     "addNew": "Tambah Baru",
@@ -717,6 +722,9 @@
     "businessName": "Nama Bisnis",
     "whatsappNumber": "Nomor WhatsApp",
     "promoEndDate": "Tanggal Berakhir Promo",
+    "instagramUrl": "URL Instagram",
+    "youtubeUrl": "URL YouTube",
+    "mapDirection": "URL Petunjuk Arah Google Maps",
     "mondayFriday": "Senin - Jumat",
     "saturdaySunday": "Sabtu & Minggu",
     "nightShift": "Sesi Malam",
@@ -1074,6 +1082,87 @@
       "title": "Siap untuk Memulai?",
       "description": "Pesan konsultasi gratis atau lihat pilihan paket kami untuk memulai perjalanan mengemudi EV Anda.",
       "whatsapp": "Konsultasi WhatsApp"
+    },
+    "programs": {
+      "headline": "Program Pelatihan",
+      "title": "Pilih Jalur Belajar Anda",
+      "description": "Kami menawarkan berbagai program yang disesuaikan dengan tingkat keahlian dan tujuan belajar Anda.",
+      "beginner": {
+        "title": "Kursus Pemula",
+        "desc": "Kursus dasar untuk pemula. Pelajari dasar-dasar mengemudi dengan kendaraan listrik premium kami.",
+        "f1": "Pengenalan kontrol kendaraan",
+        "f2": "Maneuver & kemudi dasar",
+        "f3": "Aturan lalu lintas & rambu",
+        "f4": "Teknik parkir (paralel & mundur)",
+        "f5": "Evaluasi praktis akhir"
+      },
+      "defensive": {
+        "title": "Mengemudi Defensif",
+        "desc": "Tingkatkan keahlian Anda dengan teknik tingkat lanjut dan skenario antisipasi bahaya.",
+        "f1": "Identifikasi & persepsi bahaya",
+        "f2": "Teknik mengemudi defensif",
+        "f3": "Penguasaan mengemudi malam hari",
+        "f4": "Mengemudi di berbagai kondisi cuaca",
+        "f5": "Prosedur penanganan darurat"
+      },
+      "evSpecialist": {
+        "title": "Kursus Spesialis EV",
+        "desc": "Pelatihan komprehensif yang berfokus pada fitur khusus kendaraan listrik dan praktik terbaik.",
+        "f1": "Penguasaan regenerative braking",
+        "f2": "Teknik one-pedal driving",
+        "f3": "Dasar-dasar manajemen baterai",
+        "f4": "Protokol stasiun pengisian daya",
+        "f5": "Kesadaran perawatan EV"
+      },
+      "refresher": {
+        "title": "Kursus Penyegaran",
+        "desc": "Sangat cocok untuk pengemudi berlisensi yang ingin memoles keahlian mereka atau beralih ke EV.",
+        "f1": "Penilaian keahlian",
+        "f2": "Rencana pelatihan yang dipersonalisasi",
+        "f3": "Peraturan lalu lintas terbaru",
+        "f4": "Adaptasi EV untuk pengemudi mobil manual",
+        "f5": "Sesi membangun rasa percaya diri"
+      }
+    },
+    "methodology": {
+      "headline": "Cara Kami Mengajar",
+      "title": "Metodologi Pelatihan Kami",
+      "description": "Pendekatan terstruktur yang menggabungkan teori, simulasi, dan pengalaman praktis.",
+      "theory": {
+        "title": "Pembelajaran Teori",
+        "desc": "Materi digital komprehensif yang mencakup peraturan lalu lintas, keselamatan jalan, dan pengetahuan khusus EV."
+      },
+      "simulator": {
+        "title": "Pelatihan Simulator",
+        "desc": "Latihan di simulator mengemudi canggih kami sebelum turun langsung ke jalan."
+      },
+      "practical": {
+        "title": "Sesi Praktis",
+        "desc": "Pelatihan langsung di kendaraan listrik premium kami dengan instruktur berpengalaman."
+      },
+      "assessment": {
+        "title": "Evaluasi & Sertifikasi",
+        "desc": "Evaluasi komprehensif dan sertifikat digital setelah berhasil menyelesaikan kursus."
+      }
+    },
+    "fleet": {
+      "headline": "Armada Premium",
+      "title": "Belajar dengan Kendaraan Listrik Terbaik",
+      "description": "Armada kami terdiri dari kendaraan listrik premium yang dilengkapi dengan sistem kontrol ganda untuk pembelajaran yang aman.",
+      "tesla": {
+        "title": "Tesla Model 3",
+        "desc": "Rasakan masa depan mengemudi dengan fitur autopilot revolusioner dari Tesla dan penyaluran torsi instan.",
+        "b1": "Autopilot",
+        "b2": "Dual Motor",
+        "b3": "Kontrol Ganda"
+      },
+      "byd": {
+        "title": "BYD Atto 3",
+        "desc": "SUV ringkas yang sempurna untuk latihan mengemudi di perkotaan dengan visibilitas luar biasa dan penanganan responsif.",
+        "b1": "SUV",
+        "b2": "Ramah Perkotaan",
+        "b3": "Kontrol Ganda"
+      }
     }
   }
 }

@@ -590,3 +590,7 @@ func (s *MidtransService) VerifyNotification(headers map[string]string, rawBody 
 		RawPayload:        payload,
 	}, nil
 }
+
+func (s *MidtransService) SimulatePayment(orderID string, amount float64) error {
+	return nil
+}

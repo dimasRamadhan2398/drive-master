@@ -1,0 +1,22 @@
+meta {
+  name: Update Testimonial
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{user_service_url}}/api/v1/testimonials/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "content": "Updated review content",
+    "rating": 5
+  }
+}

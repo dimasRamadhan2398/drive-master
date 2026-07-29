@@ -1,0 +1,21 @@
+meta {
+  name: Update Sale Status
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{core_service_url}}/api/v1/admin/sales/:id/status
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "status": "completed"
+  }
+}

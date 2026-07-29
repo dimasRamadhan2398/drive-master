@@ -26,5 +26,6 @@ type IPaymentGatewayService interface {
 	CreateCheckout(orderID string, amount float64, packageName, customerName, customerEmail string) (*CheckoutResponse, error)
 	GetTransactionStatus(orderID string) (models.PaymentStatus, error)
 	VerifyNotification(headers map[string]string, rawBody []byte) (*NotificationPayload, error)
+	SimulatePayment(orderID string, amount float64) error
 	GetName() string
 }

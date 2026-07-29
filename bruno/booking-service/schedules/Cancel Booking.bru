@@ -1,0 +1,19 @@
+meta {
+  name: Cancel Booking
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{booking_service_url}}/api/v1/schedules/:id/cancel
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}

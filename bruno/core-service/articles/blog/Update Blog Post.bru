@@ -1,0 +1,22 @@
+meta {
+  name: Update Blog Post
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{core_service_url}}/api/v1/articles/blog/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "title": "Updated Title",
+    "content": "Updated content..."
+  }
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Get Entitlement By ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{user_service_url}}/api/v1/entitlements/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}

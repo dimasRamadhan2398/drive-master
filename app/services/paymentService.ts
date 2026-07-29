@@ -266,4 +266,24 @@ export const paymentService = {
       return null;
     }
   },
+
+  // Simulate payment (sandbox / dev)
+  async simulate(orderId: string): Promise<boolean> {
+    const { booking } = useApiClients();
+    try {
+      await booking(`/payments/order/${orderId}/simulate`, {
+        method: "POST",
+      });
+      return true;
+    } catch {
+      try {
+        await booking(`/payments/${orderId}/simulate`, {
+          method: "POST",
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  },
 };

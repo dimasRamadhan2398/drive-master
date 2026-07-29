@@ -1,0 +1,15 @@
+meta {
+  name: Get Coverage Areas
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{user_service_url}}/api/v1/instructors/:id/coverage-areas
+  body: none
+  auth: none
+}
+
+params:path {
+  id: {{instructor_id}}
+}

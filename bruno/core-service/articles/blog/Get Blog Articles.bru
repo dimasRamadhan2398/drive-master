@@ -1,0 +1,16 @@
+meta {
+  name: Get Blog Articles
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{core_service_url}}/api/v1/articles/blog
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  limit: 10
+}

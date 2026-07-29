@@ -19,13 +19,14 @@ module.exports = {
         REDIS_PORT: 6379,
         REDIS_PASSWORD: "",
         REDIS_DB: "1",
-        KAFKA_BROKERS: "127.0.0.1:9093",
+        KAFKA_BROKERS: "127.0.0.1:9092",
         KAFKA_ENABLED: "true",
         KAFKA_TOPIC: "dev.user.events",
         KAFKA_GROUP_ID: "dev-user-service-consumer",
         CONFIG_PATH: "./backend/user-service/pkg/config/config.yaml",
         RUN_MIGRATIONS: "true",
-        RUN_SEEDERS: "true"
+        RUN_SEEDERS: "true",
+        BOOKING_KAFKA_TOPIC: "dev.booking.events"
       }
     },
     {
@@ -47,7 +48,7 @@ module.exports = {
         REDIS_PORT: 6379,
         REDIS_PASSWORD: "",
         REDIS_DB: "1",
-        KAFKA_BROKERS: "127.0.0.1:9093",
+        KAFKA_BROKERS: "127.0.0.1:9092",
         KAFKA_ENABLED: "true",
         KAFKA_TOPIC: "dev.core.events",
         KAFKA_GROUP_ID: "dev-core-service-consumer",
@@ -76,7 +77,7 @@ module.exports = {
         REDIS_PORT: 6379,
         REDIS_PASSWORD: "",
         REDIS_DB: "1",
-        KAFKA_BROKERS: "127.0.0.1:9093",
+        KAFKA_BROKERS: "127.0.0.1:9092",
         KAFKA_ENABLED: "true",
         KAFKA_TOPIC: "dev.booking.events",
         KAFKA_GROUP_ID: "dev-booking-service-consumer",
@@ -84,7 +85,8 @@ module.exports = {
         RUN_MIGRATIONS: "true",
         RUN_SEEDERS: "true",
         USER_SERVICE_URL: "http://127.0.0.1:9001",
-        CORE_SERVICE_URL: "http://127.0.0.1:9002"
+        CORE_SERVICE_URL: "http://127.0.0.1:9002",
+        PAYMENT_KAFKA_TOPIC: "dev.payment.events"
       }
     },
     {
@@ -106,18 +108,25 @@ module.exports = {
         REDIS_PORT: 6379,
         REDIS_PASSWORD: "",
         REDIS_DB: "1",
-        KAFKA_BROKERS: "127.0.0.1:9093",
+        KAFKA_BROKERS: "127.0.0.1:9092",
         KAFKA_ENABLED: "true",
         KAFKA_TOPIC: "dev.payment.events",
+        KAFKA_GROUP_ID: "dev-payment-service-consumer",
         CONFIG_PATH: "./backend/payment-service/pkg/config/config.yaml",
         RUN_MIGRATIONS: "true",
         RUN_SEEDERS: "true",
         PAYMENT_GATEWAY: "pakasir",
+        PAKASIR_SLUG: "drive-master-indonesia-dev",
+        PAKASIR_API_KEY: "vJBTSyuJxhwp9Yc8A28EhM84GSOMDRh9",
+        PAKASIR_FRONTEND_URL: "https://dev.drivemaster.id",
         DOKU_CLIENT_ID: "BRN-0236-1782979927158",
         DOKU_SECRET_KEY: "SK-FX43zADxdeDIOLEJ8dff",
         DOKU_BASE_URL: "https://api-sandbox.doku.com",
         DOKU_NOTIFICATION_URL: "http://localhost:8088/api/v1/payments/doku/notification",
-        DOKU_FRONTEND_URL: "http://localhost:3000"
+        DOKU_FRONTEND_URL: "http://localhost:3000",
+        BOOKING_SERVICE_URL: "http://127.0.0.1:9003",
+        CORE_SERVICE_URL: "http://127.0.0.1:9002",
+        USER_SERVICE_URL: "http://127.0.0.1:9001"
       }
     },
     {
@@ -133,7 +142,8 @@ module.exports = {
         CONFIG_PATH: "./backend/api-gateway/pkg/config/config.yaml",
         USER_SERVICE_URL: "http://127.0.0.1:9001",
         CORE_SERVICE_URL: "http://127.0.0.1:9002",
-        BOOKING_SERVICE_URL: "http://127.0.0.1:9003"
+        BOOKING_SERVICE_URL: "http://127.0.0.1:9003",
+        PAYMENT_SERVICE_URL: "http://127.0.0.1:9004"
       }
     },
     {
@@ -152,7 +162,7 @@ module.exports = {
         NUXT_PUBLIC_CORE_API_BASE: "https://api-dev.drivemaster.id/api/v1/core",
         NUXT_PUBLIC_BOOKING_API_BASE: "https://api-dev.drivemaster.id/api/v1/bookings",
         NUXT_PUBLIC_MODE: "dev",
-        NUXT_PUBLIC_GA_MEASUREMENT_ID: "G-07PS1N5DZ5",
+        NUXT_PUBLIC_GA_MEASUREMENT_ID: "G-1SR8F1H6D9",
         NUXT_PUBLIC_GA_PROPERTY_ID: "G-539969879"
       }
     }

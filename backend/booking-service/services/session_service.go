@@ -1,11 +1,13 @@
 package services
 
 import (
+	cClient "booking-service/clients/core"
 	uClient "booking-service/clients/user"
 	"context"
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,9 +27,12 @@ type ISessionService interface {
 	GetStats(ctx context.Context) (*dto.SessionStatsResponse, error)
 	StartSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	CompleteSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
+	AdminCompleteSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	CancelSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	ListUserSessions(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.SessionListResponse, error)
 	ListInstructorSessions(ctx context.Context, instructorID uuid.UUID, page, limit int) (*dto.SessionListResponse, error)
+	RateSession(ctx context.Context, id uint, rating float64, feedback string) (*dto.SessionResponse, error)
+	AutoStartScheduledSessions(ctx context.Context) error
 	AutoCompleteOngoingSessions(ctx context.Context) error
 }
 
@@ -37,6 +42,7 @@ type SessionService struct {
 	enrollmentRepo  repositories.IEnrollmentRepository
 	eventPublisher  kafka.IEventPublisher
 	userClient      uClient.IUserClient
+	coreClient      cClient.ICoreClient
 	db              *gorm.DB
 }
 
@@ -74,6 +80,7 @@ func NewSessionServiceWithAllDeps(
 	enrollmentRepo repositories.IEnrollmentRepository,
 	eventPublisher kafka.IEventPublisher,
 	userClient uClient.IUserClient,
+	coreClient cClient.ICoreClient,
 	db *gorm.DB,
 ) ISessionService {
 	return &SessionService{
@@ -82,6 +89,7 @@ func NewSessionServiceWithAllDeps(
 		enrollmentRepo:  enrollmentRepo,
 		eventPublisher:  eventPublisher,
 		userClient:      userClient,
+		coreClient:      coreClient,
 		db:              db,
 	}
 }
@@ -144,8 +152,44 @@ func (s *SessionService) ListUserSessions(ctx context.Context, userID uuid.UUID,
 	}
 
 	total := int64(len(sessions))
-
 	resp := s.sessionRepo.ToListResponse(sessions, total, page, limit)
+
+	// Enrich with car name and instructor name if coreClient is available
+	if s.coreClient != nil && len(resp.Data) > 0 {
+		// Collect unique car IDs
+		carIDs := make(map[uuid.UUID]struct{})
+		for _, item := range resp.Data {
+			if item.CarID != uuid.Nil {
+				carIDs[item.CarID] = struct{}{}
+			}
+		}
+
+		// Fetch car info concurrently
+		carMap := make(map[uuid.UUID]string)
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		for carID := range carIDs {
+			wg.Add(1)
+			go func(id uuid.UUID) {
+				defer wg.Done()
+				info, ferr := s.coreClient.GetCarByID(ctx, id)
+				if ferr == nil && info != nil {
+					mu.Lock()
+					carMap[id] = info.Brand + " " + info.Model
+					mu.Unlock()
+				}
+			}(carID)
+		}
+		wg.Wait()
+
+		// Apply enriched names
+		for i := range resp.Data {
+			if name, ok := carMap[resp.Data[i].CarID]; ok {
+				resp.Data[i].CarName = name
+			}
+		}
+	}
+
 	return &resp, nil
 }
 
@@ -308,6 +352,13 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 		}
 	}
 
+	// Synchronously call user-service via HTTP to decrement remaining sessions & increment usedSessions
+	if session.EntitlementID != uuid.Nil && session.UserID != uuid.Nil && s.userClient != nil {
+		if err := s.userClient.UseSession(ctx, session.UserID, session.EntitlementID); err != nil {
+			log.Printf("Warning: failed to decrement entitlement in user-service via direct HTTP: %v", err)
+		}
+	}
+
 	// Publish Kafka event for session completion (for external services like core-service)
 	if s.eventPublisher != nil {
 		var packageID uuid.UUID
@@ -323,7 +374,10 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 		if session.EntitlementID != uuid.Nil {
 			entitlement, err := s.userClient.GetEntitlement(ctx, session.UserID, session.EntitlementID)
 			if err == nil && entitlement != nil {
-				sessionsRemaining = entitlement.RemainingSessions
+				sessionsRemaining = entitlement.RemainingSessions - 1
+				if sessionsRemaining < 0 {
+					sessionsRemaining = 0
+				}
 			}
 		}
 
@@ -340,6 +394,109 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 	}
 
 	// Reload session
+	session, err = s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := s.sessionRepo.ToResponse(session)
+	return &resp, nil
+}
+
+// AdminCompleteSession force-completes a session on behalf of the admin.
+// Unlike CompleteSession it does NOT require the session to be in_progress,
+// sets is_ended_by_admin=true and end_time so the auto-scheduler never reverts it.
+func (s *SessionService) AdminCompleteSession(ctx context.Context, id uint) (*dto.SessionResponse, error) {
+	// Load session
+	session, err := s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("session not found")
+		}
+		return nil, err
+	}
+
+	if session.Status == "cancelled" {
+		return nil, errors.New("cannot complete a cancelled session")
+	}
+	if session.Status == "completed" && session.IsEndedByAdmin {
+		// Already admin-completed, nothing to do – return current state
+		resp := s.sessionRepo.ToResponse(session)
+		return &resp, nil
+	}
+
+	// Update associated schedule to completed
+	if session.ScheduleID != nil {
+		_ = s.scheduleRepo.UpdateStatus(ctx, *session.ScheduleID, dto.ScheduleStatusCompleted)
+	}
+
+	endTime := time.Now()
+	if err := s.sessionRepo.ForceCompleteByAdmin(ctx, id, endTime); err != nil {
+		return nil, err
+	}
+
+	// Synchronously call user-service via HTTP to decrement remaining sessions & increment usedSessions
+	if session.EntitlementID != uuid.Nil && session.UserID != uuid.Nil && s.userClient != nil {
+		if err := s.userClient.UseSession(ctx, session.UserID, session.EntitlementID); err != nil {
+			log.Printf("Warning: failed to decrement entitlement in user-service via direct HTTP: %v", err)
+		}
+	}
+
+	// Publish Kafka event so external services get notified
+	if s.eventPublisher != nil {
+		var packageID uuid.UUID
+		if session.EnrollmentID != uuid.Nil && s.enrollmentRepo != nil {
+			enrollment, ferr := s.enrollmentRepo.FindByID(ctx, session.EnrollmentID)
+			if ferr == nil && enrollment != nil {
+				packageID = enrollment.PackageID
+			}
+		}
+		_ = s.eventPublisher.PublishSessionCompletedWithEnrollment(
+			ctx,
+			id,
+			session.EntitlementID,
+			session.EnrollmentID,
+			session.UserID,
+			packageID,
+			1,
+			0,
+		)
+	}
+
+	// Reload and return
+	session, err = s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	resp := s.sessionRepo.ToResponse(session)
+	return &resp, nil
+}
+
+// RateSession rates a completed driving session and updates the instructor's average score
+func (s *SessionService) RateSession(ctx context.Context, id uint, rating float64, feedback string) (*dto.SessionResponse, error) {
+	session, err := s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("session not found")
+		}
+		return nil, err
+	}
+
+	if session.Status != "completed" {
+		return nil, errors.New("cannot rate a session that is not completed")
+	}
+
+	if err := s.sessionRepo.RateSession(ctx, id, rating, feedback); err != nil {
+		return nil, err
+	}
+
+	// Update instructor rating via userClient
+	if s.userClient != nil && session.InstructorID != uuid.Nil {
+		if err := s.userClient.RateInstructor(ctx, session.InstructorID, rating); err != nil {
+			log.Printf("Warning: failed to update instructor rating in user-service: %v", err)
+		}
+	}
+
 	session, err = s.sessionRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -391,37 +548,190 @@ func (s *SessionService) CancelSession(ctx context.Context, id uint) (*dto.Sessi
 	return &resp, nil
 }
 
-func (s *SessionService) AutoCompleteOngoingSessions(ctx context.Context) error {
-	// Find all sessions that are in progress
-	sessions, err := s.sessionRepo.FindByStatus(ctx, "in_progress")
-	if err != nil {
-		return err
+func parseDurationMinutes(duration int) time.Duration {
+	if duration <= 0 {
+		return 60 * time.Minute
 	}
+	if duration <= 10 {
+		return time.Duration(duration * 60) * time.Minute
+	}
+	return time.Duration(duration) * time.Minute
+}
 
-	now := time.Now()
-	for _, session := range sessions {
-		// Parse session start date and time
-		dateStr := fmt.Sprintf("%s %s", session.Date.Format("2006-01-02"), session.Time)
-		// Assume server/database time zone matches local time zone of lessons
-		startTime, err := time.ParseInLocation("2006-01-02 15:04", dateStr, time.Local)
-		if err != nil {
-			startTime, _ = time.Parse("2006-01-02 15:04", dateStr)
-		}
+func (s *SessionService) AutoStartScheduledSessions(ctx context.Context) error {
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		loc = time.Local
+	}
+	now := time.Now().In(loc)
 
-		endTime := startTime.Add(time.Duration(session.Duration) * time.Minute)
-
-		// If session reaches end time, complete it
-		if now.After(endTime) {
-			log.Printf("[SessionMonitor] Session ID %d of user %s reached end time %s (duration %d mins). Completing session...",
-				session.ID, session.UserID, endTime.Format("15:04"), session.Duration)
-
-			_, err := s.CompleteSession(ctx, session.ID)
+	// 1. Process scheduled sessions
+	sessions, err := s.sessionRepo.FindByStatus(ctx, "scheduled")
+	if err == nil {
+		for _, session := range sessions {
+			dateStr := fmt.Sprintf("%s %s", session.Date.Format("2006-01-02"), session.Time)
+			startTime, err := time.ParseInLocation("2006-01-02 15:04", dateStr, loc)
 			if err != nil {
-				log.Printf("[SessionMonitor] Failed to auto-complete session ID %d: %v", session.ID, err)
-			} else {
-				log.Printf("[SessionMonitor] Successfully completed session ID %d", session.ID)
+				startTime, _ = time.Parse("2006-01-02 15:04", dateStr)
+			}
+
+			dur := parseDurationMinutes(session.Duration)
+			endTime := startTime.Add(dur)
+
+			if now.After(startTime) || now.Equal(startTime) {
+				if now.Before(endTime) {
+					log.Printf("[SessionMonitor] Session ID %d of user %s reached start time %s. Auto-starting...",
+						session.ID, session.UserID, startTime.Format("15:04"))
+
+					_, startErr := s.StartSession(ctx, session.ID)
+					if startErr != nil {
+						log.Printf("[SessionMonitor] Failed to auto-start session ID %d: %v", session.ID, startErr)
+					} else {
+						log.Printf("[SessionMonitor] Successfully auto-started session ID %d", session.ID)
+					}
+				} else {
+					log.Printf("[SessionMonitor] Session ID %d past end time %s. Starting and completing...",
+						session.ID, endTime.Format("15:04"))
+					_, _ = s.StartSession(ctx, session.ID)
+					_, _ = s.CompleteSession(ctx, session.ID)
+				}
 			}
 		}
 	}
+
+	// 2. Process all schedules for status updates based on time and student booking
+	schedules, err := s.scheduleRepo.FindAll(ctx)
+	if err == nil {
+		for _, sched := range schedules {
+			dateStr := fmt.Sprintf("%s %s", sched.Date.Format("2006-01-02"), sched.Time)
+			startTime, err := time.ParseInLocation("2006-01-02 15:04", dateStr, loc)
+			if err != nil {
+				startTime, _ = time.Parse("2006-01-02 15:04", dateStr)
+			}
+			dur := parseDurationMinutes(sched.Duration)
+			endTime := startTime.Add(dur)
+
+			hasStudent := sched.UserID != nil
+
+			// Case 1: Current time is WITHIN the slot window (e.g., 11:00-12:00 at 11:01 AM)
+			if (now.After(startTime) || now.Equal(startTime)) && now.Before(endTime) {
+				if hasStudent {
+					// Student booked: set to in-progress
+					sess, sessErr := s.sessionRepo.FindByScheduleID(ctx, sched.ID)
+					if sessErr == nil && sess != nil {
+						// Never revert a session that was explicitly ended by an admin
+						if sess.IsEndedByAdmin {
+							continue
+						}
+						if sess.Status == "scheduled" {
+							_, _ = s.StartSession(ctx, sess.ID)
+						} else if sess.Status == "completed" {
+							// Only revert to in_progress if NOT admin-ended
+							if !sess.IsEndedByAdmin {
+								_ = s.sessionRepo.UpdateStatus(ctx, sess.ID, "in_progress")
+							}
+						}
+					}
+					if sched.Status != dto.ScheduleStatusInProgress {
+						_ = s.scheduleRepo.UpdateStatus(ctx, sched.ID, dto.ScheduleStatusInProgress)
+						log.Printf("[ScheduleMonitor] Slot ID %d (has student) started -> in-progress", sched.ID)
+					}
+				} else {
+					// No student booked: mark as blocked (passed/expired unbooked slot)
+					if sched.Status == dto.ScheduleStatusAvailable {
+						_ = s.scheduleRepo.UpdateStatus(ctx, sched.ID, dto.ScheduleStatusBlocked)
+						log.Printf("[ScheduleMonitor] Slot ID %d (no student) started -> blocked (passed)", sched.ID)
+					}
+				}
+			} else if now.After(endTime) || now.Equal(endTime) {
+				// Case 2: Current time is AFTER end time (e.g. 12:00 PM or later)
+				if hasStudent {
+					// Student booked: complete the session & schedule
+					sess, sessErr := s.sessionRepo.FindByScheduleID(ctx, sched.ID)
+					if sessErr == nil && sess != nil {
+						if sess.Status != "completed" {
+							_, _ = s.CompleteSession(ctx, sess.ID)
+						}
+					}
+					if sched.Status != dto.ScheduleStatusCompleted {
+						_ = s.scheduleRepo.UpdateStatus(ctx, sched.ID, dto.ScheduleStatusCompleted)
+						log.Printf("[ScheduleMonitor] Slot ID %d (has student) reached end time -> completed", sched.ID)
+					}
+				} else {
+					// No student booked: mark as blocked (passed/expired unbooked slot)
+					if sched.Status == dto.ScheduleStatusAvailable {
+						_ = s.scheduleRepo.UpdateStatus(ctx, sched.ID, dto.ScheduleStatusBlocked)
+						log.Printf("[ScheduleMonitor] Slot ID %d (no student) reached end time -> blocked (passed)", sched.ID)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *SessionService) AutoCompleteOngoingSessions(ctx context.Context) error {
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		loc = time.Local
+	}
+	now := time.Now().In(loc)
+
+	// 1. Process in-progress sessions
+	sessions, err := s.sessionRepo.FindByStatus(ctx, "in_progress")
+	if err == nil {
+		for _, session := range sessions {
+			dateStr := fmt.Sprintf("%s %s", session.Date.Format("2006-01-02"), session.Time)
+			startTime, err := time.ParseInLocation("2006-01-02 15:04", dateStr, loc)
+			if err != nil {
+				startTime, _ = time.Parse("2006-01-02 15:04", dateStr)
+			}
+
+			dur := parseDurationMinutes(session.Duration)
+			endTime := startTime.Add(dur)
+
+			if now.After(endTime) || now.Equal(endTime) {
+				log.Printf("[SessionMonitor] Session ID %d of user %s reached end time %s. Completing session...",
+					session.ID, session.UserID, endTime.Format("15:04"))
+
+				_, err := s.CompleteSession(ctx, session.ID)
+				if err != nil {
+					log.Printf("[SessionMonitor] Failed to auto-complete session ID %d: %v", session.ID, err)
+				} else {
+					log.Printf("[SessionMonitor] Successfully completed session ID %d", session.ID)
+				}
+			}
+		}
+	}
+
+	// 2. Process in-progress schedules directly
+	schedules, err := s.scheduleRepo.FindAll(ctx)
+	if err == nil {
+		for _, sched := range schedules {
+			if sched.Status == dto.ScheduleStatusInProgress {
+				dateStr := fmt.Sprintf("%s %s", sched.Date.Format("2006-01-02"), sched.Time)
+				startTime, err := time.ParseInLocation("2006-01-02 15:04", dateStr, loc)
+				if err != nil {
+					startTime, _ = time.Parse("2006-01-02 15:04", dateStr)
+				}
+				dur := parseDurationMinutes(sched.Duration)
+				endTime := startTime.Add(dur)
+
+				if now.After(endTime) || now.Equal(endTime) {
+					sess, sessErr := s.sessionRepo.FindByScheduleID(ctx, sched.ID)
+					if sessErr == nil && sess != nil && sess.Status != "completed" {
+						_, _ = s.CompleteSession(ctx, sess.ID)
+					}
+					if err := s.scheduleRepo.UpdateStatus(ctx, sched.ID, dto.ScheduleStatusCompleted); err != nil {
+						log.Printf("[ScheduleMonitor] Failed to update in-progress schedule ID %d to completed: %v", sched.ID, err)
+					} else {
+						log.Printf("[ScheduleMonitor] Auto-updated schedule ID %d to completed", sched.ID)
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }

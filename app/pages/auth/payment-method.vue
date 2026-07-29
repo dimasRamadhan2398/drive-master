@@ -17,6 +17,10 @@ const authStore = useAuthStore();
 const paymentsStore = usePaymentsStore();
 const enrollmentsStore = useEnrollmentsStore();
 const packagesStore = usePackagesStore();
+const settingsStore = useSettingsStore();
+
+const contactEmail = computed(() => settingsStore.generalSettings?.email || "info@drivemaster.id");
+const contactPhone = computed(() => settingsStore.generalSettings?.phone || settingsStore.generalSettings?.whatsApp || "+62 812-3456-7890");
 
 // ── Resolved data ─────────────────────────────────────────────────────────────
 // Store resolved enrollment from session storage
@@ -86,11 +90,27 @@ const formData = reactive({
   privacy: false,
 });
 
+const activeUserId = computed(() => {
+  if (authStore.userId) return authStore.userId;
+  if (import.meta.client) {
+    const userCookie = useCookie<any>("user_data");
+    if (userCookie.value?.userId) return userCookie.value.userId;
+    const userStr = localStorage.getItem("user_data") || sessionStorage.getItem("dm_user");
+    if (userStr) {
+      try { return JSON.parse(userStr).userId; } catch {}
+    }
+  }
+  return null;
+});
+
 // Pre-fill form & resolve enrollment/package info on mount
 onMounted(async () => {
-  console.log("[PAYMENT] Page mounted, resolving enrollment...");
+  if (!settingsStore.generalSettings) {
+    settingsStore.fetchGeneralSettings().catch(() => {});
+  }
+  console.log("[PAYMENT] Component mounted, route query:", route.query);
   console.log("[PAYMENT] Route query:", route.query);
-  console.log("[PAYMENT] Session storage keys:", Object.keys(sessionStorage || {}));
+  console.log("[PAYMENT] Active User ID:", activeUserId.value);
 
   isResolvingEnrollment.value = true;
 
@@ -122,46 +142,74 @@ onMounted(async () => {
     if (stored) resolvedEnrollmentId.value = stored;
   }
 
-  // Resolve full enrollment from sessionStorage first (preferred)
+  // Resolve full enrollment from sessionStorage if valid and matching
   if (import.meta.client) {
     const storedEnrollment = sessionStorage.getItem("dm_enrollment");
     console.log("[PAYMENT] Stored enrollment raw:", storedEnrollment);
     if (storedEnrollment) {
       try {
         const parsed = JSON.parse(storedEnrollment) as StoredEnrollment;
-        console.log("[PAYMENT] Parsed enrollment:", parsed);
-        resolvedEnrollment.value = parsed;
-        // Use enrollment ID from stored object if not already set
-        if (!resolvedEnrollmentId.value) {
-          resolvedEnrollmentId.value = parsed.id;
-          console.log("[PAYMENT] Set enrollment ID from parsed:", parsed.id);
+        console.log("[PAYMENT] Parsed enrollment from session:", parsed);
+
+        // Validate that stored enrollment matches the active enrollment ID & active user ID
+        const isMatchingQuery = !enrollmentFromQuery || parsed.id === enrollmentFromQuery;
+        const isMatchingUser = !activeUserId.value || !parsed.userId || parsed.userId === activeUserId.value;
+
+        if (isMatchingQuery && isMatchingUser) {
+          resolvedEnrollment.value = parsed;
+          if (!resolvedEnrollmentId.value) {
+            resolvedEnrollmentId.value = parsed.id;
+          }
+          resolvedAmount.value = parsed.totalPrice || parsed.price || parsed.discountPrice || 0;
+          resolvedPackageName.value = parsed.packageName || "Selected Package";
+          console.log("[PAYMENT] Valid session enrollment matched:", parsed.id);
+        } else {
+          console.warn("[PAYMENT] Session enrollment is stale/mismatched (stored:", parsed.id, "expected:", enrollmentFromQuery, "). Purging session storage.");
+          sessionStorage.removeItem("dm_enrollment");
+          sessionStorage.removeItem("dm_enrollment_id");
+          resolvedEnrollment.value = null;
         }
-        // Use stored enrollment data for amount and package name
-        resolvedAmount.value = parsed.totalPrice || parsed.price || parsed.discountPrice || 0;
-        resolvedPackageName.value = parsed.packageName || "Selected Package";
       } catch (e) {
         console.error("[PAYMENT] Failed to parse stored enrollment:", e);
+        sessionStorage.removeItem("dm_enrollment");
+        sessionStorage.removeItem("dm_enrollment_id");
       }
     }
   }
 
   console.log("[PAYMENT] Resolved enrollment ID:", resolvedEnrollmentId.value);
-  console.log("[PAYMENT] Resolved enrollment object:", resolvedEnrollment.value);
 
-  // Fetch enrollment to get amount & package name (if not already resolved from session)
+  // Fetch enrollment from API if not resolved or if missing details
   if (resolvedEnrollmentId.value) {
     if (!resolvedEnrollment.value) {
-      console.log("[PAYMENT] Fetching enrollment by ID:", resolvedEnrollmentId.value);
+      console.log("[PAYMENT] Fetching enrollment from API by ID:", resolvedEnrollmentId.value);
       const response = await enrollmentService.fetchById(resolvedEnrollmentId.value);
       console.log("[PAYMENT] Fetched enrollment response:", response);
       const enrollment = response && typeof response === "object" && "enrollment" in response
         ? (response as any).enrollment
         : response;
 
-      if (enrollment) {
+      if (enrollment && enrollment.id) {
+        // Validate user ownership if logged in
+        if (activeUserId.value && enrollment.userId && enrollment.userId !== activeUserId.value) {
+          console.error("[PAYMENT] Enrollment belongs to a different user!", enrollment.userId, "active:", activeUserId.value);
+          const toast = useToast();
+          toast.add({
+            title: t("register.errors.enrollmentError") || "Enrollment Error",
+            description: "This enrollment belongs to another account. Please select a plan for your account.",
+            color: "error",
+          });
+          if (import.meta.client) {
+            sessionStorage.removeItem("dm_enrollment");
+            sessionStorage.removeItem("dm_enrollment_id");
+          }
+          navigateTo("/auth/select-plan");
+          isResolvingEnrollment.value = false;
+          return;
+        }
+
         resolvedAmount.value = enrollment.totalPrice || enrollment.price || enrollment.discountPrice || 0;
         resolvedPackageName.value = enrollment.packageName || "Selected Package";
-        // Also store it for reference
         resolvedEnrollment.value = {
           id: enrollment.id,
           packageId: enrollment.packageId,
@@ -173,15 +221,26 @@ onMounted(async () => {
           status: enrollment.status,
           createdAt: enrollment.createdAt,
         };
-        // Update sessionStorage with full enrollment
         if (import.meta.client) {
+          sessionStorage.setItem("dm_enrollment_id", enrollment.id);
           sessionStorage.setItem("dm_enrollment", JSON.stringify(resolvedEnrollment.value));
         }
       } else {
-        console.error("[PAYMENT] Failed to fetch enrollment by ID");
+        console.error("[PAYMENT] Failed to fetch valid enrollment by ID from API");
+        const toast = useToast();
+        toast.add({
+          title: t("register.errors.enrollmentError") || "Enrollment Error",
+          description: "Invalid or expired enrollment. Please select a plan to proceed.",
+          color: "error",
+        });
+        if (import.meta.client) {
+          sessionStorage.removeItem("dm_enrollment");
+          sessionStorage.removeItem("dm_enrollment_id");
+        }
+        navigateTo("/auth/select-plan");
+        isResolvingEnrollment.value = false;
+        return;
       }
-    } else {
-      console.log("[PAYMENT] Skipping fetch - enrollment already resolved from session");
     }
   } else {
     // If no enrollment ID was found anywhere, show error and redirect to select plan
@@ -210,7 +269,6 @@ async function onSubmit() {
     // Wait for enrollment to be resolved if still loading
     if (isResolvingEnrollment.value) {
       console.log("[PAYMENT] Waiting for enrollment to be resolved...");
-      // Poll until resolved or timeout
       const maxWait = 10000; // 10 seconds
       const startTime = Date.now();
       while (isResolvingEnrollment.value && Date.now() - startTime < maxWait) {
@@ -239,9 +297,15 @@ async function onSubmit() {
       paymentMethod: paymentMethodCode,
     };
 
-    // Include full enrollment data if available
-    if (resolvedEnrollment.value) {
+    // Include full enrollment data only if valid and matching resolved ID
+    if (
+      resolvedEnrollment.value &&
+      resolvedEnrollment.value.id === resolvedEnrollmentId.value &&
+      (!resolvedEnrollment.value.userId || resolvedEnrollment.value.userId === authStore.userId)
+    ) {
       paymentData.enrollment = resolvedEnrollment.value;
+    } else {
+      console.warn("[PAYMENT] Discarded mismatched enrollment payload before submission");
     }
 
     const payment = await paymentsStore.createPayment(paymentData);
@@ -252,8 +316,10 @@ async function onSubmit() {
         sessionStorage.setItem("dm_order_id", payment.orderId);
       }
 
-      // If Midtrans returns a redirect URL, navigate there
-      if (payment.paymentUrl) {
+      // If payment is already success/paid (bypassed), redirect to status page directly with success status
+      if (payment.status === "success" || payment.status === "paid") {
+        navigateTo(`/auth/payment-status?status=success&orderId=${payment.orderId}&email=${formData.email}`);
+      } else if (payment.paymentUrl) {
         window.location.href = payment.paymentUrl;
       } else {
         navigateTo(`/auth/payment-status?orderId=${payment.orderId}`);
@@ -513,12 +579,12 @@ async function onSubmit() {
                           <li>
                             By email:
                             <a
-                              href="mailto:info@drivemaster.id"
+                              :href="'mailto:' + contactEmail"
                               class="text-warning hover:underline"
-                              >info@drivemaster.id</a
+                              >{{ contactEmail }}</a
                             >
                           </li>
-                          <li>By phone: +62 812-3456-7890</li>
+                          <li>By phone: {{ contactPhone }}</li>
                         </ul>
                       </div>
                     </template>
@@ -655,9 +721,9 @@ async function onSubmit() {
                         <p>
                           To exercise any of these rights, please contact us at
                           <a
-                            href="mailto:info@drivemaster.id"
+                            :href="'mailto:' + contactEmail"
                             class="text-warning hover:underline"
-                            >info@drivemaster.id</a
+                            >{{ contactEmail }}</a
                           >.
                         </p>
 
@@ -680,12 +746,12 @@ async function onSubmit() {
                           <li>
                             By email:
                             <a
-                              href="mailto:info@drivemaster.id"
+                              :href="'mailto:' + contactEmail"
                               class="text-warning hover:underline"
-                              >info@drivemaster.id</a
+                              >{{ contactEmail }}</a
                             >
                           </li>
-                          <li>By phone: +62 812-3456-7890</li>
+                          <li>By phone: {{ contactPhone }}</li>
                         </ul>
                       </div>
                     </template>

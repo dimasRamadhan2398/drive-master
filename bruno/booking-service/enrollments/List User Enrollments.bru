@@ -1,0 +1,19 @@
+meta {
+  name: List User Enrollments
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{booking_service_url}}/api/v1/enrollments/user/:userId
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  userId: {{user_id}}
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Create Entitlement
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{user_service_url}}/api/v1/entitlements/members/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: {{member_id}}
+}
+
+body:json {
+  {
+    "package_id": 1,
+    "total_sessions": 10
+  }
+}

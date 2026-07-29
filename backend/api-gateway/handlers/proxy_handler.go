@@ -31,8 +31,7 @@ func NewProxyHandler(cfg *config.Config) *ProxyHandler {
 		return u
 	}
 
-	// Payment service runs on port 8004 — not in config struct, use env or default
-	paymentURL := parse("http://127.0.0.1:8004")
+	paymentURL := parse(cfg.Services.PaymentServiceURL)
 
 	return &ProxyHandler{
 		userServiceURL:    parse(cfg.Services.UserServiceURL),

@@ -31,6 +31,8 @@ type ISessionRepository interface {
 	StartSession(ctx context.Context, id uint, startedAt time.Time) error
 	CompleteSession(ctx context.Context, id uint, completedAt time.Time) error
 	CompleteSessionTx(tx *gorm.DB, id uint, completedAt time.Time) error
+	ForceCompleteByAdmin(ctx context.Context, id uint, endTime time.Time) error
+	RateSession(ctx context.Context, id uint, rating float64, feedback string) error
 	CancelSession(ctx context.Context, id uint) error
 	GetStats(ctx context.Context) (*SessionStats, error)
 	AnonymizeByUserID(ctx context.Context, userID uuid.UUID, anonymizedAt time.Time) error
@@ -173,16 +175,34 @@ func (r *SessionRepository) StartSession(ctx context.Context, id uint, startedAt
 
 func (r *SessionRepository) CompleteSession(ctx context.Context, id uint, completedAt time.Time) error {
 	return r.BaseRepository.Exec(
-		"UPDATE driving_sessions SET status = 'completed', completed_at = ?, updated_at = ? WHERE id = ?",
-		completedAt, time.Now(), id,
+		"UPDATE driving_sessions SET status = 'completed', completed_at = ?, end_time = ?, updated_at = ? WHERE id = ?",
+		completedAt, completedAt, time.Now(), id,
 	)
 }
 
 func (r *SessionRepository) CompleteSessionTx(tx *gorm.DB, id uint, completedAt time.Time) error {
 	return tx.Exec(
-		"UPDATE driving_sessions SET status = 'completed', completed_at = ?, updated_at = ? WHERE id = ?",
-		completedAt, time.Now(), id,
+		"UPDATE driving_sessions SET status = 'completed', completed_at = ?, end_time = ?, updated_at = ? WHERE id = ?",
+		completedAt, completedAt, time.Now(), id,
 	).Error
+}
+
+// ForceCompleteByAdmin marks a session as completed by an admin.
+// It sets is_ended_by_admin=true and end_time so that auto-schedulers
+// will not revert this session back to in_progress or re-complete it.
+func (r *SessionRepository) ForceCompleteByAdmin(ctx context.Context, id uint, endTime time.Time) error {
+	return r.BaseRepository.Exec(
+		"UPDATE driving_sessions SET status = 'completed', completed_at = ?, end_time = ?, is_ended_by_admin = true, updated_at = ? WHERE id = ?",
+		endTime, endTime, time.Now(), id,
+	)
+}
+
+// RateSession records student rating and feedback for a session
+func (r *SessionRepository) RateSession(ctx context.Context, id uint, rating float64, feedback string) error {
+	return r.BaseRepository.Exec(
+		"UPDATE driving_sessions SET rating = ?, feedback = ?, updated_at = ? WHERE id = ?",
+		rating, feedback, time.Now(), id,
+	)
 }
 
 // SessionStats holds session statistics
@@ -261,23 +281,27 @@ func (r *SessionRepository) CountAll(ctx context.Context) (int64, error) {
 // ToResponse converts a DrivingSession model to DrivingSessionResponse DTO
 func (r *SessionRepository) ToResponse(session *models.DrivingSession) dto.DrivingSessionResponse {
 	return dto.DrivingSessionResponse{
-		ID:            session.ID,
-		EnrollmentID:  session.EnrollmentID,
-		EntitlementID: session.EntitlementID,
-		UserID:        session.UserID,
-		InstructorID:  session.InstructorID,
-		CarID:         session.CarID,
-		ScheduleID:    session.ScheduleID,
-		Date:          session.Date.Format("2006-01-02"),
-		Time:          session.Time,
-		Duration:      session.Duration,
-		Status:        session.Status,
-		Area:          session.Area,
-		Notes:         session.Notes,
-		StartedAt:     session.StartedAt,
-		CompletedAt:   session.CompletedAt,
-		CreatedAt:     session.CreatedAt,
-		UpdatedAt:     session.UpdatedAt,
+		ID:             session.ID,
+		EnrollmentID:   session.EnrollmentID,
+		EntitlementID:  session.EntitlementID,
+		UserID:         session.UserID,
+		InstructorID:   session.InstructorID,
+		CarID:          session.CarID,
+		ScheduleID:     session.ScheduleID,
+		Date:           session.Date.Format("2006-01-02"),
+		Time:           session.Time,
+		Duration:       session.Duration,
+		Status:         session.Status,
+		Area:           session.Area,
+		Notes:          session.Notes,
+		StartedAt:      session.StartedAt,
+		CompletedAt:    session.CompletedAt,
+		EndTime:        session.EndTime,
+		IsEndedByAdmin: session.IsEndedByAdmin,
+		Rating:         session.Rating,
+		Feedback:       session.Feedback,
+		CreatedAt:      session.CreatedAt,
+		UpdatedAt:      session.UpdatedAt,
 	}
 }
 

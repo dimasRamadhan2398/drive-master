@@ -1,0 +1,26 @@
+meta {
+  name: Book Slot
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{booking_service_url}}/api/v1/schedules/:id/book
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "user_id": "{{user_id}}",
+    "enrollment_id": 1
+  }
+}

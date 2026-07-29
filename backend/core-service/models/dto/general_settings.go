@@ -17,6 +17,9 @@ type UpdateGeneralSettingsRequest struct {
 	Phone        *string `json:"phone"`
 	Fax          *string `json:"fax"`
 	WhatsApp     *string `json:"whatsApp"`
+	Instagram    *string `json:"instagram"`
+	Youtube      *string `json:"youtube"`
+	MapDirection *string `json:"mapDirection"`
 
 	// Address
 	Address *string `json:"address"`
@@ -43,6 +46,9 @@ type GeneralSettingsResponse struct {
 	Phone       string    `json:"phone"`
 	Fax         string    `json:"fax"`
 	WhatsApp    string    `json:"whatsApp"`
+	Instagram   string    `json:"instagram"`
+	Youtube     string    `json:"youtube"`
+	MapDirection string   `json:"mapDirection"`
 	Address     string    `json:"address"`
 	HoursMonFri string    `json:"hoursMonFri"`
 	HoursSatSun string    `json:"hoursSatSun"`
@@ -67,6 +73,9 @@ func ToGeneralSettingsResponse(settings *models.GeneralSettings) GeneralSettings
 		Phone:        settings.Phone,
 		Fax:          settings.Fax,
 		WhatsApp:     settings.WhatsApp,
+		Instagram:    settings.Instagram,
+		Youtube:      settings.Youtube,
+		MapDirection: settings.MapDirection,
 		Address:      settings.Address,
 		HoursMonFri:  settings.HoursMonFri,
 		HoursSatSun:  settings.HoursSatSun,

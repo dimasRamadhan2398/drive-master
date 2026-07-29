@@ -270,6 +270,14 @@ services:
         protocols: [http, https]
         methods: [GET, PUT, OPTIONS]
 
+      - name: core-contact-route
+        strip_path: false
+        preserve_host: false
+        paths:
+          - /api/v1/contact
+        protocols: [http, https]
+        methods: [GET, POST, OPTIONS]
+
       - name: core-analytics-sales-route
         strip_path: false
         preserve_host: false

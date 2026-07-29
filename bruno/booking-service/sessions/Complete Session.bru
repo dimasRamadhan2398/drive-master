@@ -1,0 +1,15 @@
+meta {
+  name: Complete Session
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{booking_service_url}}/api/v1/sessions/:id/complete
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

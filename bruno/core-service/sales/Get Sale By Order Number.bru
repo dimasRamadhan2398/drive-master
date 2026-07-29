@@ -1,0 +1,15 @@
+meta {
+  name: Get Sale By Order Number
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{core_service_url}}/api/v1/admin/sales/order/:orderNumber
+  body: none
+  auth: none
+}
+
+params:path {
+  orderNumber: ORD-001
+}

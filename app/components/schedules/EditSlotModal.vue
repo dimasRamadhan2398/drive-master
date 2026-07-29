@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { useToast } from "@nuxt/ui/runtime/composables/useToast.js";
+import { getAdjustedSlotTime } from "~/composables/useSchedules";
 
 const props = defineProps<{
   open: boolean;
@@ -27,27 +28,87 @@ const toast = useToast();
 
 const form = ref({ id: "", time: "08:00", duration: "60", carId: "", instructorId: "" });
 
-watch(
-  () => props.initialSlot,
-  (s) => {
-    if (s) {
-      form.value.id = s.id ?? "";
-      form.value.time = s.time ?? "08:00";
-      form.value.duration = (s.duration || "60").toString().replace(" min", "");
-      form.value.carId = s.carId ?? "";
-      form.value.instructorId = s.instructorId ?? "";
+const timeOptions = computed(() => {
+  const allOpts: Array<{ label: string; value: string }> = [];
+  for (let h = 6; h <= 22; h++) {
+    const hh = String(h).padStart(2, "0");
+    allOpts.push({ label: `${hh}:00`, value: `${hh}:00` });
+    if (h < 22) {
+      allOpts.push({ label: `${hh}:30`, value: `${hh}:30` });
     }
-  },
-  { immediate: true },
-);
+  }
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const todayStr = `${year}-${month}-${day}`;
+
+  const currentH = now.getHours();
+  const currentM = now.getMinutes();
+  const currentTotalMins = currentH * 60 + currentM;
+
+  const targetDate = props.initialSlot?.date || "";
+
+  let filteredOpts = allOpts;
+
+  if (targetDate === todayStr) {
+    filteredOpts = allOpts.filter((opt) => {
+      const [h, m] = opt.value.split(":").map(Number);
+      const optMins = (h ?? 0) * 60 + (m ?? 0);
+      return optMins > currentTotalMins;
+    });
+  }
+
+  if (form.value.time && !filteredOpts.some((o) => o.value === form.value.time)) {
+    const [fh, fm] = form.value.time.split(":").map(Number);
+    const formMins = (fh ?? 0) * 60 + (fm ?? 0);
+    if (targetDate !== todayStr || formMins > currentTotalMins) {
+      filteredOpts.push({ label: form.value.time, value: form.value.time });
+      filteredOpts.sort((a, b) => a.value.localeCompare(b.value));
+    }
+  }
+
+  return filteredOpts;
+});
+
+function checkAndAdjustTime(notify: boolean = true) {
+  if (!form.value.time || !props.initialSlot?.date) return;
+  const { time: adjustedTime, rounded, originalTime } = getAdjustedSlotTime(props.initialSlot.date, form.value.time);
+  if (rounded && adjustedTime !== originalTime) {
+    form.value.time = adjustedTime;
+    if (notify) {
+      toast.add({
+        title: "Time Slot Rounded",
+        description: `Selected time (${originalTime}) has already passed today. Automatically rounded to ${adjustedTime}.`,
+        color: "info",
+        icon: "i-lucide-clock",
+      });
+    }
+  }
+}
 
 watch(
-  () => props.open,
-  (open) => {
-    if (!open) {
+  () => [props.open, props.initialSlot],
+  ([open, s]) => {
+    if (open && s) {
+      const rawTime = s.time ?? "08:00";
+      const slotDate = s.date ?? "";
+      const { time: adjustedTime } = getAdjustedSlotTime(slotDate, rawTime);
+      let selectedTime = adjustedTime;
+      if (timeOptions.value.length > 0 && !timeOptions.value.some((o) => o.value === selectedTime)) {
+        selectedTime = timeOptions.value[0]?.value || adjustedTime;
+      }
+      form.value.id = s.id ?? "";
+      form.value.time = selectedTime;
+      form.value.duration = "60";
+      form.value.carId = s.carId ?? s.car ?? "";
+      form.value.instructorId = s.instructorId ?? s.instructor ?? "";
+    } else if (!open) {
       form.value = { id: "", time: "08:00", duration: "60", carId: "", instructorId: "" };
     }
   },
+  { immediate: true, deep: true }
 );
 
 function handleClose() {
@@ -59,6 +120,8 @@ function handleSave() {
     toast.add({ title: "Error", description: "Please fill all fields", color: "error" });
     return;
   }
+
+  checkAndAdjustTime(true);
 
   const {
     start,
@@ -105,7 +168,7 @@ function handleSave() {
                 <span v-if="operatingHours.nightEnabled">Night: {{ operatingHours.nightStart }}-{{ operatingHours.nightEnd }}</span>
               </div>
             </template>
-            <UInput type="time" v-model="form.time" :disabled="operatingHours.isClosed" class="w-full" />
+            <USelect v-model="form.time" :items="timeOptions" @change="checkAndAdjustTime(true)" :disabled="operatingHours.isClosed" class="w-full" />
           </UFormField>
           <UFormField :label="t('admin.package.duration')">
             <USelect :items="[{ label: '60 minutes', value: '60' }]" v-model="form.duration" disabled class="w-full" />

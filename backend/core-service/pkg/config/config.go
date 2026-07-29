@@ -152,7 +152,7 @@ func setDefaults(){
 	viper.SetDefault("email.smtp_password", "4f4bc1b03a1d70")
 	viper.SetDefault("email.from_name",     "Drive Master Indonesia")
 
-	viper.SetDefault("analytics.ga_measurement_id", "G-07PS1N5DZ5")
+	viper.SetDefault("analytics.ga_measurement_id", "G-1SR8F1H6D9")
 	viper.SetDefault("analytics.ga_property_id", "G-539969879")
 	viper.SetDefault("analytics.ga_credentials_file", "/app/analytics/ga_credentials.json")
 

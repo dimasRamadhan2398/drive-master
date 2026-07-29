@@ -1,0 +1,21 @@
+meta {
+  name: Update Status
+  type: http
+  seq: 9
+}
+
+patch {
+  url: {{user_service_url}}/api/v1/testimonials/:id/status
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "status": "published"
+  }
+}

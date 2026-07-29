@@ -1,0 +1,21 @@
+meta {
+  name: Update AddOn
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{core_service_url}}/api/v1/addons/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "price": 300000
+  }
+}

@@ -39,7 +39,7 @@ const contactMethods = computed(() => [
     title: t('contact.trainingCenter'),
     description: settingsStore.generalSettings?.address ?? t('home.address'),
     icon: 'i-lucide-map-pin',
-    action: { label: t('contact.getDirections'), to: 'https://maps.app.goo.gl/RpSdkpjs4RZg2ZY77', target: '_blank' }
+    action: { label: t('contact.getDirections'), to: settingsStore.generalSettings?.mapDirection || 'https://maps.app.goo.gl/qGngC2sF4G3jt8Vs8', target: '_blank' }
   },
   {
     title: t('contact.whatsappSupport'),
@@ -70,24 +70,42 @@ const form = reactive({
 
 const isSubmitting = ref(false)
 const toast = useToast()
+const api = useApi()
 
 async function handleSubmit() {
   isSubmitting.value = true
-  // Mock API call
-  await new Promise(resolve => setTimeout(resolve, 1500))
-  
-  toast.add({
-    title: t('contact.form.success'),
-    description: t('contact.form.successDesc'),
-    color: 'success',
-    icon: 'i-lucide-check-circle'
-  })
-  
-  form.name = ''
-  form.email = ''
-  form.subject = ''
-  form.message = ''
-  isSubmitting.value = false
+  try {
+    await api('/contact', {
+      method: 'POST',
+      body: {
+        name: form.name,
+        email: form.email,
+        subject: form.subject,
+        message: form.message
+      }
+    })
+    
+    toast.add({
+      title: t('contact.form.success'),
+      description: t('contact.form.successDesc'),
+      color: 'success',
+      icon: 'i-lucide-check-circle'
+    })
+    
+    form.name = ''
+    form.email = ''
+    form.subject = ''
+    form.message = ''
+  } catch (error) {
+    toast.add({
+      title: t('common.error'),
+      description: 'Failed to send message. Please try again.',
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const subjects = computed(() => [
@@ -193,8 +211,26 @@ const subjects = computed(() => [
       class="bg-muted/30"
     >
       <div class="flex flex-wrap justify-center gap-6">
-        <UButton icon="i-simple-icons-instagram" label="Instagram" color="neutral" variant="outline" size="lg" />
-        <UButton icon="i-simple-icons-youtube" label="YouTube" color="neutral" variant="outline" size="lg" />
+        <UButton
+          v-if="settingsStore.generalSettings?.instagram"
+          icon="i-simple-icons-instagram"
+          label="Instagram"
+          color="neutral"
+          variant="outline"
+          size="lg"
+          :to="settingsStore.generalSettings.instagram"
+          target="_blank"
+        />
+        <UButton
+          v-if="settingsStore.generalSettings?.youtube"
+          icon="i-simple-icons-youtube"
+          label="YouTube"
+          color="neutral"
+          variant="outline"
+          size="lg"
+          :to="settingsStore.generalSettings.youtube"
+          target="_blank"
+        />
         <UButton icon="i-simple-icons-tiktok" label="TikTok" color="neutral" variant="outline" size="lg" />
         <UButton icon="i-simple-icons-facebook" label="Facebook" color="neutral" variant="outline" size="lg" />
       </div>

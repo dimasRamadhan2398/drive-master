@@ -214,10 +214,13 @@ export const testimonialService = {
     }
   },
 
-  async toggleFeatured(id: string): Promise<boolean> {
+  async toggleFeatured(id: string, isFeatured: boolean): Promise<boolean> {
     const { core } = useApiClients();
     try {
-      await core(`/testimonials/${id}/toggle-featured`, { method: "PATCH" });
+      await core(`/testimonials/${id}/featured`, { 
+        method: "PUT",
+        body: { isFeatured } 
+      });
       return true;
     } catch {
       return false;

@@ -69,9 +69,9 @@ sed -i 's/listeners=PLAINTEXT:\/\/0.0.0.0:9092/listeners=PLAINTEXT:\/\/0.0.0.0:9
 sed -i 's/#listeners=PLAINTEXT:\/\/:9092/listeners=PLAINTEXT:\/\/0.0.0.0:9093/g' /opt/kafka/config/server-dev.properties
 
 if grep -q "advertised.listeners" /opt/kafka/config/server-dev.properties; then
-  sed -i 's|advertised.listeners=.*|advertised.listeners=PLAINTEXT://localhost:9093|g' /opt/kafka/config/server-dev.properties
+  sed -i 's|#*advertised.listeners=.*|advertised.listeners=PLAINTEXT://127.0.0.1:9093|g' /opt/kafka/config/server-dev.properties
 else
-  echo "advertised.listeners=PLAINTEXT://localhost:9093" >> /opt/kafka/config/server-dev.properties
+  echo "advertised.listeners=PLAINTEXT://127.0.0.1:9093" >> /opt/kafka/config/server-dev.properties
 fi
 
 sed -i 's/zookeeper.connect=localhost:2181/zookeeper.connect=localhost:2182/g' /opt/kafka/config/server-dev.properties

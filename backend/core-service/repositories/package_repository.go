@@ -47,8 +47,7 @@ func (r *PackageRepository) FindByID(ctx context.Context, id uuid.UUID) (*models
 // FindByIDWithBenefits finds a package by ID with benefits preloaded
 func (r *PackageRepository) FindByIDWithBenefits(ctx context.Context, id uuid.UUID) (*models.Package, error) {
 	var pkg models.Package
-	opts := base.NewQueryOptions().WithPreloads("Benefits")
-	if err := r.BaseRepository.FindOne(ctx, &pkg, "id = ?", id, opts); err != nil {
+	if err := r.DB.WithContext(ctx).Preload("Benefits").Where("id = ?", id).First(&pkg).Error; err != nil {
 		return nil, err
 	}
 	return &pkg, nil

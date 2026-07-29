@@ -1,0 +1,60 @@
+2026/07/28 11:40:49 Starting Booking Service on 0.0.0.0:8003
+2026/07/28 11:40:49 Running database migrations...
+
+2026/07/28 11:40:49 [31;1m/Users/a/Projects/drive-master/backend/booking-service/cmd/cli/serve.go:305 [35;1mERROR: syntax error at or near "user_id" (SQLSTATE 42601)
+[0m[33m[18.543ms] [34;1m[rows:0][0m ALTER TABLE enrollments DROP COLUMN id, user_id, package_id
+2026/07/28 11:40:50 Database migrations completed successfully
+{"level":"info","ts":1785213650.3604732,"caller":"cli/serve.go:356","msg":"Kafka consumer is disabled, skipping initialization"}
+2026/07/28 11:40:50 Schedule generator started with cron: 5 0 * * *
+2026/07/28 11:40:50 Schedule generator started with cron: 5 0 * * * (generating 7 days ahead)
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+2026/07/28 11:40:50 Session auto start/completion monitor started (checking every 30 seconds)
+[GIN-debug] GET    /health                   --> booking-service/cmd/cli.runServe.func4 (4 handlers)
+[GIN-debug] GET    /swagger/*any             --> github.com/swaggo/gin-swagger.CustomWrapHandler.func1 (4 handlers)
+[GIN-debug] GET    /api/v1/sessions          --> booking-service/controllers.ISessionController.ListSessions-fm (4 handlers)
+[GIN-debug] POST   /api/v1/sessions          --> booking-service/controllers.ISessionController.CreateSession-fm (4 handlers)
+[GIN-debug] GET    /api/v1/sessions/:id      --> booking-service/controllers.ISessionController.GetSession-fm (4 handlers)
+[GIN-debug] POST   /api/v1/sessions/:id/start --> booking-service/controllers.ISessionController.StartSession-fm (4 handlers)
+[GIN-debug] POST   /api/v1/sessions/:id/complete --> booking-service/controllers.ISessionController.CompleteSession-fm (4 handlers)
+[GIN-debug] POST   /api/v1/sessions/:id/cancel --> booking-service/controllers.ISessionController.CancelSession-fm (4 handlers)
+[GIN-debug] GET    /api/v1/enrollments       --> booking-service/controllers.IEnrollmentController.ListEnrollments-fm (5 handlers)
+[GIN-debug] POST   /api/v1/enrollments       --> booking-service/controllers.IEnrollmentController.CreateEnrollment-fm (5 handlers)
+[GIN-debug] GET    /api/v1/enrollments/:id   --> booking-service/controllers.IEnrollmentController.GetEnrollment-fm (5 handlers)
+[GIN-debug] PUT    /api/v1/enrollments/:id   --> booking-service/controllers.IEnrollmentController.UpdateEnrollment-fm (5 handlers)
+[GIN-debug] POST   /api/v1/enrollments/:id/cancel --> booking-service/controllers.IEnrollmentController.CancelEnrollment-fm (5 handlers)
+[GIN-debug] POST   /api/v1/enrollments/:id/pay --> booking-service/controllers.IEnrollmentController.MarkAsPaid-fm (5 handlers)
+[GIN-debug] GET    /api/v1/enrollments/user/:userId --> booking-service/controllers.IEnrollmentController.ListUserEnrollments-fm (5 handlers)
+[GIN-debug] GET    /api/v1/schedules/all     --> booking-service/controllers.IScheduleController.ListSchedules-fm (5 handlers)
+[GIN-debug] POST   /api/v1/schedules/create  --> booking-service/controllers.IScheduleController.CreateSchedule-fm (5 handlers)
+[GIN-debug] GET    /api/v1/schedules/filter  --> booking-service/controllers.IScheduleController.ListSchedulesFiltered-fm (4 handlers)
+[GIN-debug] GET    /api/v1/schedules/available --> booking-service/controllers.IScheduleController.GetAvailableSchedules-fm (5 handlers)
+[GIN-debug] GET    /api/v1/schedules/stats   --> booking-service/controllers.IScheduleController.GetScheduleStats-fm (5 handlers)
+[GIN-debug] GET    /api/v1/schedules/:id     --> booking-service/controllers.IScheduleController.GetSchedule-fm (5 handlers)
+[GIN-debug] PUT    /api/v1/schedules/:id     --> booking-service/controllers.IScheduleController.UpdateSchedule-fm (5 handlers)
+[GIN-debug] DELETE /api/v1/schedules/:id     --> booking-service/controllers.IScheduleController.DeleteSchedule-fm (5 handlers)
+[GIN-debug] POST   /api/v1/schedules/:id/book --> booking-service/controllers.IScheduleController.BookSlot-fm (5 handlers)
+[GIN-debug] POST   /api/v1/schedules/:id/cancel --> booking-service/controllers.IScheduleController.CancelBooking-fm (5 handlers)
+[GIN-debug] POST   /api/v1/schedules/:id/start --> booking-service/controllers.IScheduleController.StartSession-fm (5 handlers)
+[GIN-debug] POST   /api/v1/schedules/:id/complete --> booking-service/controllers.IScheduleController.CompleteSession-fm (5 handlers)
+2026/07/28 11:40:50 [DashboardRoute] Registered routes under /api/v1/dashboard:
+2026/07/28 11:40:50   GET /api/v1/dashboard/sessions/stats
+2026/07/28 11:40:50   GET /api/v1/dashboard/revenue/stats
+[GIN-debug] GET    /api/v1/dashboard/sessions/stats --> booking-service/controllers.IDashboardController.GetSessionStats-fm (5 handlers)
+[GIN-debug] GET    /api/v1/dashboard/revenue/stats --> booking-service/controllers.IDashboardController.GetRevenueStats-fm (5 handlers)
+[GIN-debug] POST   /api/v1/payments/callback --> booking-service/controllers.IPaymentController.HandleCallback-fm (4 handlers)
+[GIN-debug] POST   /api/v1/payments          --> booking-service/controllers.IPaymentController.CreatePayment-fm (5 handlers)
+[GIN-debug] GET    /api/v1/payments          --> booking-service/controllers.IPaymentController.ListPayments-fm (5 handlers)
+[GIN-debug] GET    /api/v1/payments/:id      --> booking-service/controllers.IPaymentController.GetPayment-fm (5 handlers)
+[GIN-debug] GET    /api/v1/payments/order/:orderId --> booking-service/controllers.IPaymentController.GetPaymentByOrderID-fm (5 handlers)
+[GIN-debug] GET    /api/v1/payments/order/:orderId/detail --> booking-service/controllers.IPaymentController.GetPaymentDetail-fm (5 handlers)
+[GIN-debug] GET    /api/v1/payments/user/:userId --> booking-service/controllers.IPaymentController.ListUserPayments-fm (5 handlers)
+[GIN-debug] POST   /api/v1/payments/order/:orderId/cancel --> booking-service/controllers.IPaymentController.CancelPayment-fm (5 handlers)
+2026/07/28 11:40:50 Booking Service listening on 0.0.0.0:8003
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on 0.0.0.0:8003
+[GIN-debug] [ERROR] listen tcp 0.0.0.0:8003: bind: address already in use
+2026/07/28 11:40:50 Failed to start server: listen tcp 0.0.0.0:8003: bind: address already in use

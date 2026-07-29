@@ -26,6 +26,7 @@ const state = reactive({
 
 const loading = ref(false);
 const error = ref<string | null>(null);
+const showPassword = ref(false);
 
 // Direct cookie access to ensure rehydration works
 const authToken = useCookie("auth_token");
@@ -62,15 +63,16 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
     if (authStore.userRole?.toLowerCase().includes("admin")) {
       navigateTo("/admin");
     } else {
-      // Check if student has entitlements (has purchased a package)
+      // Check if student has entitlements (has purchased a package) or has completed sessions
       const profile = await authStore.fetchMemberProfile();
       const hasEntitlements =
-        profile?.entitlements && profile.entitlements.length > 0;
+        (profile?.entitlements && profile.entitlements.length > 0) ||
+        (profile?.sessionsCompleted && profile.sessionsCompleted > 0);
 
       if (hasEntitlements) {
         navigateTo("/dashboard");
       } else {
-        // Redirect to onboarding if no entitlements
+        // Redirect to onboarding if no entitlements and no completed sessions
         navigateTo("/auth/onboarding");
       }
     }
@@ -113,12 +115,24 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
         <UFormField name="password" :label="t('auth.password')">
           <UInput
             v-model="state.password"
-            type="password"
+            :type="showPassword ? 'text' : 'password'"
             :placeholder="t('auth.password')"
             icon="i-lucide-lock"
             size="lg"
             class="w-full"
-          />
+            :ui="{ trailing: 'pointer-events-auto' }"
+          >
+            <template #trailing>
+              <UButton
+                color="neutral"
+                variant="ghost"
+                :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                @click="showPassword = !showPassword"
+                size="sm"
+                class="p-1 hover:bg-transparent"
+              />
+            </template>
+          </UInput>
         </UFormField>
 
         <div class="flex items-center justify-between">

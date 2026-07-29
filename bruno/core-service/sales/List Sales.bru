@@ -1,0 +1,16 @@
+meta {
+  name: List Sales
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{core_service_url}}/api/v1/admin/sales
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  limit: 10
+}

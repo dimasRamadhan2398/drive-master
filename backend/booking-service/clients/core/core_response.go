@@ -33,11 +33,22 @@ type PackageResponse struct {
 	Price           float64   `json:"price"`
 	DiscountPrice   float64   `json:"discountPrice"`
 	Sessions        int       `json:"sessions"`        // Number of sessions included
+	TotalSessions   int       `json:"totalSessions"`   // JSON field returned by core-service
 	Duration        int       `json:"duration"`        // Duration per session in minutes
 	ValidityDays    int       `json:"validityDays"`   // Validity period in days
 	IsActive        bool      `json:"isActive"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+func (p *PackageResponse) GetSessions() int {
+	if p.TotalSessions > 0 {
+		return p.TotalSessions
+	}
+	if p.Sessions > 0 {
+		return p.Sessions
+	}
+	return 0
 }
 
 // AddOnResponse represents an add-on from core-service

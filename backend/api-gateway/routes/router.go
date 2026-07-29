@@ -26,9 +26,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		public.GET("/catalog", proxy.ToCatalogService)
 		public.GET("/catalog/*path", proxy.ToCatalogService)
 
-		// general settings (public — used by frontend on load)
-		public.GET("/general-settings", proxy.ToCoreServiceDirect)
-		public.GET("/general-settings/*path", proxy.ToCoreServiceDirect)
+
 
 		// auth endpoints (login, register, forgot password, confirm reset, OTP, refresh)
 		public.Any("/auth", proxy.ToUserServiceDirect)
@@ -42,6 +40,18 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	// ── MIXED routes — conditional JWT ───────────────────────
 	mixed := r.Group("/api/v1")
 	{
+		// contact — POST is public for inquiries submission, GET requires admin authentication
+		mixed.Any("/contact", func(c *gin.Context) {
+			if c.Request.Method == http.MethodPost {
+				proxy.ToCoreServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			auth.RequireRole("admin")(c)
+			if !c.IsAborted() {
+				proxy.ToCoreServiceDirect(c)
+			}
+		})
 		// users — JWT required, proxies directly to user-service
 		mixed.Any("/users", func(c *gin.Context) {
 			auth.Authenticate()(c)
@@ -179,9 +189,10 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		})
 		mixed.Any("/payments/*path", func(c *gin.Context) {
 			path := c.Param("path")
-			isWebhook := (path == "/notification" || path == "/doku/notification" ||
-				strings.HasPrefix(path, "/doku/notify")) && c.Request.Method == http.MethodPost
-			if isWebhook {
+			isBypassAuth := path == "/notification" || path == "/doku/notification" ||
+				strings.HasPrefix(path, "/doku/notify") || strings.HasPrefix(path, "/pakasir") ||
+				strings.HasSuffix(path, "/simulate") || path == "/callback"
+			if isBypassAuth {
 				proxy.ToPaymentService(c)
 				return
 			}
@@ -232,6 +243,52 @@ func Register(r *gin.Engine, cfg *config.Config) {
 			auth.Authenticate()(c)
 			if !c.IsAborted() {
 				proxy.ToBookingServiceDirect(c)
+			}
+		})
+
+		// pages — GET is public, write ops require auth
+		mixed.Any("/pages", func(c *gin.Context) {
+			if c.Request.Method == http.MethodGet {
+				proxy.ToCoreServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			if !c.IsAborted() {
+				proxy.ToCoreServiceDirect(c)
+			}
+		})
+		mixed.Any("/pages/*path", func(c *gin.Context) {
+			if c.Request.Method == http.MethodGet {
+				proxy.ToCoreServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			if !c.IsAborted() {
+				proxy.ToCoreServiceDirect(c)
+			}
+		})
+
+		// general settings — GET is public, write ops require admin role
+		mixed.Any("/general-settings", func(c *gin.Context) {
+			if c.Request.Method == http.MethodGet {
+				proxy.ToCoreServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			auth.RequireRole("admin")(c)
+			if !c.IsAborted() {
+				proxy.ToCoreServiceDirect(c)
+			}
+		})
+		mixed.Any("/general-settings/*path", func(c *gin.Context) {
+			if c.Request.Method == http.MethodGet {
+				proxy.ToCoreServiceDirect(c)
+				return
+			}
+			auth.Authenticate()(c)
+			auth.RequireRole("admin")(c)
+			if !c.IsAborted() {
+				proxy.ToCoreServiceDirect(c)
 			}
 		})
 	}

@@ -30,6 +30,7 @@ type ServicesConfig struct {
 	UserServiceURL    string `mapstructure:"user_service_url" yaml:"user_service_url"`
 	CoreServiceURL    string `mapstructure:"core_service_url" yaml:"core_service_url"`
 	BookingServiceURL string `mapstructure:"booking_service_url" yaml:"booking_service_url"`
+	PaymentServiceURL string `mapstructure:"payment_service_url" yaml:"payment_service_url"`
 }
 
 type RateLimiterConfig struct {
@@ -58,6 +59,7 @@ func setDefaults() {
 	viper.SetDefault("services.user_service_url", "http://localhost:8001")
 	viper.SetDefault("services.core_service_url", "http://localhost:8002")
 	viper.SetDefault("services.booking_service_url", "http://localhost:8003")
+	viper.SetDefault("services.payment_service_url", "http://localhost:8004")
 
 	// Rate Limiter
 	viper.SetDefault("rate_limiter.max", 100)
@@ -93,6 +95,7 @@ func Load(path string) (*Config, error) {
 	_ = viper.BindEnv("services.user_service_url", "USER_SERVICE_URL")
 	_ = viper.BindEnv("services.core_service_url", "CORE_SERVICE_URL")
 	_ = viper.BindEnv("services.booking_service_url", "BOOKING_SERVICE_URL")
+	_ = viper.BindEnv("services.payment_service_url", "PAYMENT_SERVICE_URL")
 
 	// Rate limiter env overrides
 	_ = viper.BindEnv("rate_limiter.max", "RATE_LIMITER_MAX")

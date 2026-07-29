@@ -25,6 +25,7 @@ type IEntitlementController interface {
 	DeleteEntitlement(ctx *gin.Context)
 	ListEntitlements(ctx *gin.Context)
 	UseSession(ctx *gin.Context)
+	SyncEntitlement(ctx *gin.Context)
 }
 
 func NewEntitlementController(entitlementService services.IEntitlementService) IEntitlementController {
@@ -254,6 +255,63 @@ func (c *EntitlementController) UseSession(ctx *gin.Context) {
 	}
 
 	responseRes.Success(ctx, http.StatusOK, "Session used successfully", resp)
+}
+
+func (c *EntitlementController) SyncEntitlement(ctx *gin.Context) {
+	var input struct {
+		MemberID         string `json:"member_id"`
+		BookingID         string `json:"booking_id"`
+		PackageID         string `json:"package_id"`
+		PackageName       string `json:"package_name"`
+		TotalSessions     int    `json:"total_sessions"`
+		IsNightSession   bool   `json:"is_night_session"`
+		IsWeekendSession bool   `json:"is_weekend_session"`
+	}
+
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	memberID, err := uuid.Parse(input.MemberID)
+	if err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	bookingID, err := uuid.Parse(input.BookingID)
+	if err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	packageID, err := uuid.Parse(input.PackageID)
+	if err != nil {
+		packageID = uuid.Nil
+	}
+
+	totalSessions := input.TotalSessions
+	if totalSessions <= 0 {
+		totalSessions = 10
+	}
+
+	resp, err := c.entitlementService.SyncEntitlementFromBooking(
+		ctx.Request.Context(),
+		memberID,
+		bookingID,
+		packageID,
+		input.PackageName,
+		totalSessions,
+		input.IsNightSession,
+		input.IsWeekendSession,
+	)
+
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusOK, "Entitlement synced successfully", resp)
 }
 
 // parseUUID parses a UUID from a path parameter

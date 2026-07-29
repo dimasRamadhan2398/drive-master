@@ -8,7 +8,24 @@ const { t, locale, locales, setLocale } = useI18n()
 const { pages } = useContent()
 const { user, isLoggedIn, logout } = useAuth()
 const { switchLocale } = useLocale()
-const { waLink, fetchGeneralSettings } = useSettings()
+const { waLink, generalSettings, fetchGeneralSettings } = useSettings()
+
+const instagramLink = computed(() => {
+  const url = generalSettings.value?.instagram
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  if (url.startsWith('instagram.com') || url.startsWith('www.instagram.com')) return `https://${url}`
+  const handle = url.startsWith('@') ? url.slice(1) : url
+  return `https://instagram.com/${handle}`
+})
+
+const youtubeLink = computed(() => {
+  const url = generalSettings.value?.youtube
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  if (url.startsWith('youtube.com') || url.startsWith('www.youtube.com') || url.startsWith('youtu.be')) return `https://${url}`
+  return `https://youtube.com/${url}`
+})
 
 onMounted(() => {
   fetchGeneralSettings()
@@ -187,9 +204,32 @@ const currentLanguage = computed(() => {
       <template #right>
         <div class="flex flex-col lg:items-end gap-2 items-center">
           <div class="flex items-center gap-2">
-            <UButton icon="i-simple-icons-instagram" color="warning" variant="ghost" to="#" target="_blank" aria-label="Instagram" />
-            <UButton icon="i-simple-icons-whatsapp" color="warning" variant="ghost" :to="waLink" target="_blank" aria-label="WhatsApp" />
-            <UButton icon="i-simple-icons-youtube" color="warning" variant="ghost" to="#" target="_blank" aria-label="YouTube" />
+            <UButton
+              v-if="instagramLink"
+              icon="i-simple-icons-instagram"
+              color="warning"
+              variant="ghost"
+              :to="instagramLink"
+              target="_blank"
+              aria-label="Instagram"
+            />
+            <UButton
+              icon="i-simple-icons-whatsapp"
+              color="warning"
+              variant="ghost"
+              :to="waLink"
+              target="_blank"
+              aria-label="WhatsApp"
+            />
+            <UButton
+              v-if="youtubeLink"
+              icon="i-simple-icons-youtube"
+              color="warning"
+              variant="ghost"
+              :to="youtubeLink"
+              target="_blank"
+              aria-label="YouTube"
+            />
           </div>
           <p class="text-muted text-sm">
             {{ t('footer.copyright', { year: new Date().getFullYear() }) }}

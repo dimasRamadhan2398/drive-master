@@ -241,9 +241,11 @@ export const useTestimonialsStore = defineStore("testimonials", {
 
     async toggleFeatured(id: string) {
       try {
-        var response = await testimonialService.toggleFeatured(id);
         const testimonial = this.testimonials.find((t) => t.id === id);
-        if (testimonial) {
+        if (!testimonial) return null;
+        
+        var response = await testimonialService.toggleFeatured(id, !testimonial.isFeatured);
+        if (response) {
           testimonial.isFeatured = !testimonial.isFeatured;
           testimonial.updatedAt = new Date().toISOString();
           return testimonial.isFeatured;

@@ -1,0 +1,20 @@
+meta {
+  name: Create Page
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{core_service_url}}/api/v1/pages
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "About Us",
+    "slug": "about",
+    "content": "Page content here...",
+    "status": "published"
+  }
+}

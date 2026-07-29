@@ -1,0 +1,27 @@
+meta {
+  name: Update Entitlement
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{user_service_url}}/api/v1/entitlements/members/:id/entitlements/:entId
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  id: {{member_id}}
+  entId: 1
+}
+
+body:json {
+  {
+    "total_sessions": 15,
+    "remaining_sessions": 12
+  }
+}

@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"booking-service/models"
@@ -55,6 +57,9 @@ func (r *TransactionRepository) CreateWithItems(ctx context.Context, tx *models.
 		// Create items with transaction ID
 		for i := range items {
 			items[i].TransactionID = tx.ID
+			if items[i].ID == uuid.Nil {
+				items[i].ID = uuid.New()
+			}
 			if err := dbTx.Create(&items[i]).Error; err != nil {
 				return err
 			}
@@ -76,11 +81,11 @@ func (r *TransactionRepository) FindByID(ctx context.Context, id uuid.UUID) (*mo
 // FindByEnrollmentID finds a transaction by enrollment ID with items
 func (r *TransactionRepository) FindByEnrollmentID(ctx context.Context, enrollmentID uuid.UUID) (*models.Transaction, error) {
 	var tx models.Transaction
-	opts := base.NewQueryOptions().
-		WithPreloads("Items").
-		WithWhere(map[string]any{"enrollment_id": enrollmentID})
-	if err := r.BaseRepository.FindOne(&tx, "enrollment_id = ?", enrollmentID, opts); err != nil {
-		return nil, err
+	if err := r.db.Preload("Items").Where("enrollment_id = ?", enrollmentID).First(&tx).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.ErrNotFound
+		}
+		return nil, fmt.Errorf("%w: %v", apperrors.ErrDatabase, err)
 	}
 	return &tx, nil
 }

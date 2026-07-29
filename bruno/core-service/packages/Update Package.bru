@@ -1,0 +1,22 @@
+meta {
+  name: Update Package
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{core_service_url}}/api/v1/packages/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "price": 1800000,
+    "sessions": 12
+  }
+}

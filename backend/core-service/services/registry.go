@@ -89,6 +89,7 @@ type IServiceRegistry interface {
 	GetFAQService() IFAQService
 	GetMediaService() IMediaService
 	GetPageService() IPageService
+	GetContactService() IContactService
 }
 
 func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPublisher *kafka.EventPublisher) IServiceRegistry {
@@ -103,4 +104,9 @@ func NewServiceRegistry(repoRegistry repositories.IRepositoryRegistry, eventPubl
 // GetPageService returns the Page service
 func (r *Registry) GetPageService() IPageService {
 	return NewPageService(r.repoRegistry.GetPage(), r.GetMediaService())
+}
+
+// GetContactService returns the Contact service
+func (r *Registry) GetContactService() IContactService {
+	return NewContactService(r.repoRegistry.GetContact())
 }

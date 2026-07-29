@@ -45,6 +45,11 @@ const navItems = computed(() => [
     to: "/admin/testimonials",
   },
   {
+    label: t("admin.inquiries"),
+    icon: "i-lucide-inbox",
+    to: "/admin/inquiries",
+  },
+  {
     label: t("admin.analytics"),
     icon: "i-lucide-bar-chart-3",
     to: "/admin/analytics",

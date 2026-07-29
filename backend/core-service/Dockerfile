@@ -1,3 +1,18 @@
+# Build stage
+FROM golang:1.25-alpine AS builder
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+# Copy source
+COPY . .
+
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o core-service ./cmd
+
 # Runtime stage
 FROM alpine:3.19
 
@@ -6,21 +21,20 @@ RUN apk --no-cache add ca-certificates tzdata dumb-init
 
 WORKDIR /app
 
-# Copy pre-compiled binary
-COPY core-service .
-RUN chmod +x core-service
+# Copy binary from builder
+COPY --from=builder /app/core-service .
 
 # Copy config file
-COPY pkg/config/config.yaml ./pkg/config/config.yaml
+COPY --from=builder /app/pkg/config/config.yaml ./pkg/config/config.yaml
 
 # Create analytics directory for credentials file
 RUN mkdir -p /app/analytics
 
 # Copy database reference files (CSV for seeders)
-COPY database/refs ./database/refs
+COPY --from=builder /app/database/refs ./database/refs
 
 # Copy analytics folder (including ga_credentials.json) to /app/analytics
-COPY app/analytics ./analytics
+COPY --from=builder /app/app/analytics ./analytics
 
 # Environment variables
 ENV CONFIG_PATH=./pkg/config/config.yaml

@@ -1,5 +1,5 @@
 # Kong API Gateway Dockerfile
-FROM kong:3.5.0
+FROM kong:3.5.0-alpine
 
 # Copy Kong declarative configuration
 COPY kong/kong.yml /etc/kong/declarative/kong.yml

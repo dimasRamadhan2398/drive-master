@@ -16,12 +16,35 @@ const { t } = useI18n();
 const toast = useToast();
 const studentsStore = useStudentsStore();
 const schedulesStore = useSchedulesStore();
+const { operatingHours } = useSettings();
 
 // selectedStudent holds the entire selected item { value, label, student }
 const selectedStudent = ref<any>(null);
 const notes = ref("");
 const isSubmitting = ref(false);
 const isLoadingStudents = ref(false);
+
+const currentSlot = computed(() => {
+  if (!props.slotId) return null;
+  return schedulesStore.slots.find((s) => String(s.id) === String(props.slotId)) || null;
+});
+
+const isNightSlot = computed(() => {
+  if (!currentSlot.value?.time) return false;
+  const slotTime = currentSlot.value.time;
+  const nightStart = operatingHours.value?.nightStart || "18:00";
+  return slotTime >= nightStart;
+});
+
+function studentHasNightAccess(student: any): boolean {
+  if (!student?.entitlements) return false;
+  return student.entitlements.some((e: any) => {
+    if (e.status !== "active" || e.remaining <= 0) return false;
+    if (e.isNightSession) return true;
+    if (e.packageName && /night|malam/i.test(e.packageName)) return true;
+    return false;
+  });
+}
 
 // Check if student has available sessions (active entitlements with remaining > 0)
 function hasAvailableSessions(student: any) {
@@ -31,10 +54,14 @@ function hasAvailableSessions(student: any) {
   );
 }
 
-// Format students for USelectMenu - filter out students with no sessions
+// Format students for USelectMenu - filter out students with no sessions & filter for night session access if night slot
 const studentItems = computed(() => {
   return studentsStore.allStudents
-    .filter((s) => hasAvailableSessions(s))
+    .filter((s) => {
+      if (!hasAvailableSessions(s)) return false;
+      if (isNightSlot.value && !studentHasNightAccess(s)) return false;
+      return true;
+    })
     .map((s) => ({
       value: s.id,
       label: s.name,
@@ -60,15 +87,25 @@ function getActiveEntitlements(student: any) {
   );
 }
 
-// Get the primary entitlement (first one or the one with most remaining sessions)
+// Get the primary entitlement (newest active entitlement of the student)
 function getPrimaryEntitlement(student: any) {
   const active = getActiveEntitlements(student);
   if (active.length === 0) return null;
-  if (active.length === 1) return active[0];
-  return active.reduce(
-    (prev: any, curr: any) =>
-      curr.remaining > prev.remaining ? curr : prev
-  );
+
+  // Sort active entitlements by newest first (createdAt / startDate descending)
+  const sorted = active.slice().sort((a: any, b: any) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : (a.startDate ? new Date(a.startDate).getTime() : 0);
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : (b.startDate ? new Date(b.startDate).getTime() : 0);
+    return timeB - timeA;
+  });
+
+  // If booking a night slot, prefer the newest active entitlement that supports night sessions
+  if (isNightSlot.value) {
+    const nightEnt = sorted.find((e: any) => e.isNightSession || (e.packageName && /night|malam/i.test(e.packageName)));
+    if (nightEnt) return nightEnt;
+  }
+
+  return sorted[0];
 }
 
 // Check if student has multiple active entitlements
@@ -113,6 +150,15 @@ async function handleBook() {
     toast.add({
       title: "Validation Error",
       description: "Please select a student",
+      color: "error",
+    });
+    return;
+  }
+
+  if (isNightSlot.value && !studentHasNightAccess(studentData)) {
+    toast.add({
+      title: "Booking Restricted",
+      description: "This time slot is in the night shift (18:00+). Selected student does not have the Night Session add-on.",
       color: "error",
     });
     return;
@@ -307,6 +353,16 @@ async function handleBook() {
           </div>
         </div>
 
+        <!-- Night Session Restriction Alert -->
+        <UAlert
+          v-if="isNightSlot && selectedStudentData && !studentHasNightAccess(selectedStudentData)"
+          color="warning"
+          variant="soft"
+          icon="i-lucide-moon"
+          title="Night Session Restricted"
+          description="This time slot is in the night shift. Selected student does not have the Night Session add-on."
+        />
+
         <UFormField label="Notes">
           <UTextarea v-model="notes" placeholder="Add booking notes..." class="w-full" />
         </UFormField>
@@ -325,7 +381,7 @@ async function handleBook() {
           icon="i-lucide-calendar-check"
           color="warning"
           :loading="isSubmitting"
-          :disabled="!selectedStudentData"
+          :disabled="!selectedStudentData || (isNightSlot && !studentHasNightAccess(selectedStudentData))"
           @click="handleBook"
         />
       </div>

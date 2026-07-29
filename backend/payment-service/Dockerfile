@@ -8,12 +8,13 @@ RUN apk add --no-cache git ca-certificates tzdata
 # Copy go mod files
 COPY go.mod go.sum ./
 
-# Copy vendor and source
-COPY vendor ./vendor
+RUN go mod download
+
+# Copy source
 COPY . .
 
-# Build the binary (using vendor)
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -ldflags="-w -s" -o payment-service ./cmd
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o payment-service ./cmd
 
 # Runtime stage
 FROM alpine:3.19

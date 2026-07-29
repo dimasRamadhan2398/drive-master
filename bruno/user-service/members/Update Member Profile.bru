@@ -1,0 +1,27 @@
+meta {
+  name: Update Member Profile
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{user_service_url}}/api/v1/members/:userId/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+params:path {
+  userId: {{user_id}}
+}
+
+body:json {
+  {
+    "name": "Updated Name",
+    "phone": "089876543210",
+    "address": "Jl. Example No. 1"
+  }
+}

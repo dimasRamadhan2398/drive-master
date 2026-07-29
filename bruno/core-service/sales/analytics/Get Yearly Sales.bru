@@ -1,0 +1,15 @@
+meta {
+  name: Get Yearly Sales
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{core_service_url}}/api/v1/admin/sales/analytics/yearly/:year
+  body: none
+  auth: none
+}
+
+params:path {
+  year: 2024
+}

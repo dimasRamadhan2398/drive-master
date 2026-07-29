@@ -46,6 +46,9 @@ func Migrate(db *gorm.DB) error {
 
 		// Page tables
 		&models.Page{},
+
+		// Contact Inquiries
+		&models.ContactInquiry{},
 	)
 	if err != nil {
 		return err

@@ -1,0 +1,20 @@
+meta {
+  name: Update Settings
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{core_service_url}}/api/v1/general-settings
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "company_name": "Drive Master",
+    "phone": "0812345678",
+    "email": "info@drivemaster.com",
+    "address": "Jl. Example No.1, Jakarta"
+  }
+}
