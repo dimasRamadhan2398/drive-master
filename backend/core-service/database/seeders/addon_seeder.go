@@ -12,18 +12,6 @@ import (
 func RunAddonSeeder(db *gorm.DB) error {
 	addons := []models.AddOn{
 		{
-			ID:          uuid.MustParse("00000000-0000-0000-0000-000000000001"),
-			Title:       "Extra Session",
-			Description: "Additional training session",
-			Price:       350000,
-			Sessions:    1,
-			Status:      models.AddOnStatusActive,
-			ImageURL:    "",
-			SortOrder:   1,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		},
-		{
 			ID:          uuid.MustParse("22222222-2222-2222-2222-222222222201"),
 			Title:       "Extra Session",
 			Description: "Additional driving session to enhance your skills. Each purchase adds 1 extra session to your package.",
@@ -59,22 +47,12 @@ func RunAddonSeeder(db *gorm.DB) error {
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 		},
-		{
-			ID:          uuid.MustParse("22222222-2222-2222-2222-222222222204"),
-			Title:       "Extended Session (2 Hours)",
-			Description: "Upgrade your regular session to 2 hours for more practice time.",
-			Price:       500000,
-			Sessions:    0,
-			Status:      models.AddOnStatusActive,
-			ImageURL:    "",
-			SortOrder:   4,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		},
 	}
 
-	// Create or update all addons
+	// Create or update seeded addons
+	var seedIDs []uuid.UUID
 	for _, a := range addons {
+		seedIDs = append(seedIDs, a.ID)
 		var existing models.AddOn
 		if err := db.Where("id = ?", a.ID).First(&existing).Error; err == nil {
 			existing.Title = a.Title
@@ -92,6 +70,11 @@ func RunAddonSeeder(db *gorm.DB) error {
 				return err
 			}
 		}
+	}
+
+	// Delete any addons not in the seed list (like Extended Session or duplicates)
+	if err := db.Where("id NOT IN ?", seedIDs).Delete(&models.AddOn{}).Error; err != nil {
+		return err
 	}
 
 	return nil
