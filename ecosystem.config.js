@@ -146,8 +146,8 @@ module.exports = {
     },
     {
       name: "drive-frontend",
-      script: "./.output/server/index.mjs",
-      cwd: __dirname,
+      script: "./frontend/.output/server/index.mjs",
+      cwd: "/var/www/drive",
       instances: 1,
       autorestart: true,
       watch: false,
