@@ -366,7 +366,7 @@ const getTodayDate = (): string => {
 export const usePackagesStore = defineStore("packages", {
   state: (): PackagesState => ({
     packages: [],
-    addons: initialAddons,
+    addons: [],
     isLoading: false,
     isAddLoading: false,
     error: null,
