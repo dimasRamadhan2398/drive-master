@@ -32,6 +32,7 @@ const currentMonthShortStr = computed(() => {
 
 const schedulesStore = useSchedulesStore();
 const globalSlots = computed(() => schedulesStore.slots);
+const authStore = useAuthStore();
 
 const isLoadingCalendar = ref(false);
 
@@ -90,6 +91,41 @@ const isSlotPast = (slotDateStr: string, slotTimeStr: string): boolean => {
   return slotDateTime.getTime() < Date.now();
 };
 
+// Helper function to check if a slot's time is in the night shift (>= 18:00)
+const getSlotHour = (slotTimeStr: string): number => {
+  if (!slotTimeStr) return 0;
+  let timeStr = slotTimeStr.trim();
+  if (timeStr.includes("-")) {
+    timeStr = (timeStr.split("-")[0] ?? timeStr).trim();
+  }
+  const isPM = /pm/i.test(timeStr);
+  const isAM = /am/i.test(timeStr);
+  timeStr = timeStr.replace(/(am|pm)/i, "").trim();
+
+  const timeParts = timeStr.split(":");
+  let hours = Number(timeParts[0] ?? 0) || 0;
+  if (isPM && hours < 12) hours += 12;
+  if (isAM && hours === 12) hours = 0;
+  return hours;
+};
+
+const isNightSlot = (slotTimeStr: string): boolean => {
+  const hours = getSlotHour(slotTimeStr);
+  return hours >= 18;
+};
+
+const userHasNightAccess = computed(() => {
+  const entitlements = authStore.memberEntitlements || [];
+  if (entitlements.length === 0) return false;
+
+  return entitlements.some((e) => {
+    const isActive = e.status === "active";
+    const hasRemaining = e.remaining === undefined || e.remaining > 0;
+    const isNight = e.isNightSession || /night|malam/i.test(e.packageName || "");
+    return isActive && hasRemaining && isNight;
+  });
+});
+
 // FITUR BARU: Kalender merender hari secara dinamis berdasarkan bulan yang sedang dipilih
 const calendarDays = computed(() => {
   const year = currentDate.value.getFullYear();
@@ -115,10 +151,16 @@ const calendarDays = computed(() => {
       2,
       "0"
     )}`;
-    // Periksa apakah ada slot available di tanggal ini yang belum terlewat
-    const isAvailable = globalSlots.value.some(
-      (s) => s.date === dateStr && s.status === "available" && !isSlotPast(s.date, s.time)
-    );
+    // Periksa apakah ada slot available di tanggal ini yang belum terlewat & berhak diambil
+    const isAvailable = globalSlots.value.some((s) => {
+      if (s.date !== dateStr || s.status !== "available" || isSlotPast(s.date, s.time)) {
+        return false;
+      }
+      if (isNightSlot(s.time) && !userHasNightAccess.value) {
+        return false;
+      }
+      return true;
+    });
 
     days.push({
       day: i,
@@ -147,17 +189,23 @@ const availableSlots = computed(() => {
     .filter((slot) => slot.date === dateStr)
     .map((slot) => {
       const past = isSlotPast(slot.date, slot.time);
+      const isNight = isNightSlot(slot.time);
+      const nightForbidden = isNight && !userHasNightAccess.value;
+      const isAvailable = slot.status === "available" && !past && !nightForbidden;
+
       return {
         ...slot,
         isPast: past,
-        available: slot.status === "available" && !past,
+        isNight,
+        nightForbidden,
+        available: isAvailable,
       };
     });
 });
 
 
 
-const authStore = useAuthStore();
+
 
 const userSessionsList = ref<SessionResponse[]>([]);
 const isLoadingSessions = ref(false);
@@ -166,7 +214,15 @@ const itemsPerPage = ref(4); // 4 sessions per page
 const totalSessions = ref(0);
 
 const activeEntitlement = computed(() => {
-  return authStore.memberEntitlements.find(e => e.status === "active") || authStore.memberEntitlements[0];
+  const active = authStore.memberEntitlements.filter(e => e.status === "active" && (e.remaining === undefined || e.remaining > 0));
+  if (active.length === 0) {
+    return authStore.memberEntitlements.find(e => e.status === "active") || authStore.memberEntitlements[0];
+  }
+  return active.slice().sort((a: any, b: any) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : (a.startDate ? new Date(a.startDate).getTime() : 0);
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : (b.startDate ? new Date(b.startDate).getTime() : 0);
+    return timeB - timeA;
+  })[0];
 });
 
 const formatDate = (dateStr: string) => {
@@ -272,10 +328,16 @@ const rescheduleAvailableSlots = computed(() => {
     .filter((slot) => slot.date === dateStr)
     .map((slot) => {
       const past = isSlotPast(slot.date, slot.time);
+      const isNight = isNightSlot(slot.time);
+      const nightForbidden = isNight && !userHasNightAccess.value;
+      const isAvailable = slot.status === "available" && !past && !nightForbidden;
+
       return {
         ...slot,
         isPast: past,
-        available: slot.status === "available" && !past,
+        isNight,
+        nightForbidden,
+        available: isAvailable,
       };
     });
 });
@@ -300,6 +362,14 @@ async function confirmReschedule() {
   const newSlot = rescheduleSlotDetails.value;
   const session = sessionToReschedule.value;
   if (newSlot && session) {
+    if (isNightSlot(newSlot.time) && !userHasNightAccess.value) {
+      toast.add({
+        title: t("schedule.nightAddonRequired"),
+        description: t("schedule.nightAddonRequiredDesc"),
+        color: "warning",
+      });
+      return;
+    }
     try {
       // 1. Cancel the old slot if it has a scheduleId
       if (session.scheduleId) {
@@ -334,11 +404,16 @@ async function confirmReschedule() {
         description: t("schedule.rescheduleSuccessDesc"),
         color: "success",
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to reschedule session:", err);
+      const description =
+        err?.data?.message ||
+        err?.data?.error?.message ||
+        err?.message ||
+        "Failed to reschedule session. Please try again.";
       toast.add({
-        title: "Error",
-        description: "Failed to reschedule session. Please try again.",
+        title: "Reschedule Failed",
+        description,
         color: "error",
       });
     }
@@ -386,8 +461,108 @@ async function confirmCancel() {
 
 function selectSlot(slotId: string) {
   const slot = globalSlots.value.find((s) => s.id === slotId);
-  if (slot?.status === "available" && !isSlotPast(slot.date, slot.time)) {
+  if (!slot) return;
+
+  if (isNightSlot(slot.time) && !userHasNightAccess.value) {
+    toast.add({
+      title: t("schedule.nightAddonRequired"),
+      description: t("schedule.nightAddonRequiredDesc"),
+      color: "warning",
+    });
+    return;
+  }
+
+  // Check if student already has a session overlapping with this slot on the same date
+  const isOverlapping = userSessionsList.value.some((sess) => {
+    if (sess.status === "cancelled") return false;
+    if (sess.date === slot.date) {
+      const [sH, sM] = (sess.time || "00:00").split(":").map(Number);
+      const [tH, tM] = (slot.time || "00:00").split(":").map(Number);
+      const sessStart = sH * 60 + sM;
+      const sessEnd = sessStart + (sess.duration || 60);
+      const targetStart = tH * 60 + tM;
+      const targetEnd = targetStart + 60;
+      return Math.max(targetStart, sessStart) < Math.min(targetEnd, sessEnd);
+    }
+    return false;
+  });
+
+  if (isOverlapping) {
+    toast.add({
+      title: "Jadwal Bertabrakan",
+      description: `Anda sudah memiliki sesi di jam ini pada tanggal ${slot.date}. Silakan pilih slot di luar rentang jam tersebut.`,
+      color: "error",
+    });
+    return;
+  }
+
+  if (slot.status === "available" && !isSlotPast(slot.date, slot.time)) {
     selectedSlot.value = slotId;
+  }
+}
+
+function selectRescheduleSlot(slotId: string) {
+  const slot = globalSlots.value.find((s) => s.id === slotId);
+  if (!slot) return;
+
+  if (isNightSlot(slot.time) && !userHasNightAccess.value) {
+    toast.add({
+      title: t("schedule.nightAddonRequired"),
+      description: t("schedule.nightAddonRequiredDesc"),
+      color: "warning",
+    });
+    return;
+  }
+
+  if (slot.status === "available" && !isSlotPast(slot.date, slot.time)) {
+    rescheduleSlot.value = slotId;
+  }
+}
+
+// Rating state and methods
+const showRateModal = ref(false);
+const sessionToRate = ref<any>(null);
+const ratingValue = ref(5);
+const ratingFeedback = ref("");
+const isSubmittingRating = ref(false);
+
+function openRateModal(session: any) {
+  sessionToRate.value = session;
+  ratingValue.value = session.rating || 5;
+  ratingFeedback.value = session.feedback || "";
+  showRateModal.value = true;
+}
+
+async function submitRating() {
+  if (!sessionToRate.value) return;
+  try {
+    isSubmittingRating.value = true;
+    const { booking } = useApiClients();
+    await booking(`/sessions/${sessionToRate.value.id}/rate`, {
+      method: "POST",
+      body: {
+        rating: ratingValue.value,
+        feedback: ratingFeedback.value,
+      },
+    });
+
+    toast.add({
+      title: "Rating Terkirim",
+      description: "Terima kasih atas penilaian Anda terhadap instructor!",
+      color: "success",
+    });
+
+    showRateModal.value = false;
+    await fetchSessions();
+  } catch (err: any) {
+    console.error("Failed to submit rating:", err);
+    toast.add({
+      title: "Gagal Mengirim Rating",
+      description: err?.data?.error || err?.message || "Gagal mengirim rating",
+      color: "error",
+    });
+  } finally {
+    isSubmittingRating.value = false;
   }
 }
 
@@ -395,6 +570,15 @@ async function confirmBooking() {
   if (selectedSlot.value && selectedSlotDetails.value) {
     const bookedSlotId = selectedSlot.value;
     const bookedSlotDetails = selectedSlotDetails.value;
+
+    if (isNightSlot(bookedSlotDetails.time) && !userHasNightAccess.value) {
+      toast.add({
+        title: t("schedule.nightAddonRequired"),
+        description: t("schedule.nightAddonRequiredDesc"),
+        color: "warning",
+      });
+      return;
+    }
 
     if (!authStore.userId) {
       toast.add({ title: "Error", description: "User not authenticated", color: "error" });
@@ -440,11 +624,16 @@ async function confirmBooking() {
         color: "success",
       });
       selectedSlot.value = null;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to book session:", err);
+      const description =
+        err?.data?.message ||
+        err?.data?.error?.message ||
+        err?.message ||
+        "The time slot might have just been taken. Please choose another slot.";
       toast.add({
         title: "Booking Failed",
-        description: "The time slot might have just been taken. Please choose another slot.",
+        description,
         color: "error",
       });
     }
@@ -554,6 +743,23 @@ async function confirmBooking() {
                       size="md"
                       icon="i-lucide-x"
                       @click="openCancelModal(session)"
+                    />
+                  </div>
+                </template>
+                <template #footer v-else-if="session.status === 'completed'">
+                  <div class="flex items-center justify-between w-full">
+                    <div v-if="session.rating" class="flex items-center gap-1.5 text-amber-500 font-semibold text-sm">
+                      <UIcon name="i-lucide-star" class="size-4 fill-amber-500" />
+                      <span>Rating: {{ Number(session.rating).toFixed(1) }} / 5.0</span>
+                    </div>
+                    <UButton
+                      v-else
+                      label="Beri Rating Instructor"
+                      variant="subtle"
+                      color="warning"
+                      size="md"
+                      icon="i-lucide-star"
+                      @click="openRateModal(session)"
                     />
                   </div>
                 </template>
@@ -695,15 +901,41 @@ async function confirmBooking() {
                         class="size-5"
                       />
                       <div>
-                        <span class="font-semibold">{{ slot.time }}</span>
+                        <div class="flex items-center gap-2">
+                          <span class="font-semibold">{{ slot.time }}</span>
+                          <UBadge
+                            v-if="slot.isNight"
+                            label="Night"
+                            color="warning"
+                            variant="subtle"
+                            size="xs"
+                            icon="i-lucide-moon"
+                          />
+                        </div>
                         <p class="text-md text-muted">
                           {{ slot.instructor }} - {{ slot.car }}
                         </p>
                       </div>
                     </div>
                     <UBadge
-                      :label="slot.isPast ? (t('common.passed') || 'Passed') : slot.available ? t('common.available') : t('home.booked')"
-                      :color="slot.isPast ? 'neutral' : slot.available ? 'success' : 'error'"
+                      :label="
+                        slot.isPast
+                          ? (t('common.passed') || 'Passed')
+                          : slot.nightForbidden
+                          ? t('schedule.nightAddonRequired')
+                          : slot.available
+                          ? t('common.available')
+                          : t('home.booked')
+                      "
+                      :color="
+                        slot.isPast
+                          ? 'neutral'
+                          : slot.nightForbidden
+                          ? 'warning'
+                          : slot.available
+                          ? 'success'
+                          : 'error'
+                      "
                       variant="subtle"
                       size="md"
                     />
@@ -847,15 +1079,41 @@ async function confirmBooking() {
                         : 'border-default hover:border-primary',
                       !slot.available ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
                     ]"
-                    @click="slot.available && (rescheduleSlot = slot.id)"
+                    @click="selectRescheduleSlot(slot.id)"
                   >
                     <div>
-                      <div class="font-bold">{{ slot.time }}</div>
+                      <div class="flex items-center gap-1.5 font-bold">
+                        <span>{{ slot.time }}</span>
+                        <UBadge
+                          v-if="slot.isNight"
+                          label="Night"
+                          color="warning"
+                          variant="subtle"
+                          size="xs"
+                          icon="i-lucide-moon"
+                        />
+                      </div>
                       <div class="text-xs text-muted">{{ slot.instructor }}</div>
                     </div>
                     <UBadge
-                      :label="slot.isPast ? (t('common.passed') || 'Passed') : slot.available ? t('common.available') : t('home.booked')"
-                      :color="slot.isPast ? 'neutral' : slot.available ? 'success' : 'error'"
+                      :label="
+                        slot.isPast
+                          ? (t('common.passed') || 'Passed')
+                          : slot.nightForbidden
+                          ? t('schedule.nightAddonRequired')
+                          : slot.available
+                          ? t('common.available')
+                          : t('home.booked')
+                      "
+                      :color="
+                        slot.isPast
+                          ? 'neutral'
+                          : slot.nightForbidden
+                          ? 'warning'
+                          : slot.available
+                          ? 'success'
+                          : 'error'
+                      "
                       variant="subtle"
                       size="xs"
                     />
@@ -916,6 +1174,69 @@ async function confirmBooking() {
                 color="error"
                 class="flex-1"
                 @click="confirmCancel"
+              />
+            </div>
+          </template>
+        </UModal>
+
+        <!-- Rating Modal -->
+        <UModal
+          v-model:open="showRateModal"
+          title="Beri Rating & Review Instructor"
+        >
+          <template #body>
+            <div class="space-y-4">
+              <p class="text-sm text-muted">
+                Bagaimana pengalaman latihan mengemudi Anda bersama instructor pada sesi ini?
+              </p>
+
+              <!-- Star Rating Input -->
+              <div class="flex flex-col items-center gap-2 py-3 bg-amber-500/5 rounded-xl border border-amber-500/20">
+                <div class="flex items-center gap-2">
+                  <button
+                    v-for="star in 5"
+                    :key="star"
+                    type="button"
+                    class="p-1 transition-transform hover:scale-125 focus:outline-none cursor-pointer"
+                    @click="ratingValue = star"
+                  >
+                    <UIcon
+                      name="i-lucide-star"
+                      :class="[
+                        'size-8 transition-colors',
+                        star <= ratingValue ? 'text-amber-500 fill-amber-500' : 'text-gray-300 dark:text-gray-600'
+                      ]"
+                    />
+                  </button>
+                </div>
+                <p class="font-bold text-amber-600 dark:text-amber-400 text-lg">{{ ratingValue }} / 5 Bintang</p>
+              </div>
+
+              <!-- Feedback Input -->
+              <UFormField label="Ulasan & Feedback (Opsional)">
+                <UTextarea
+                  v-model="ratingFeedback"
+                  placeholder="Tuliskan masukan atau ulasan Anda mengenai sesi latihan ini..."
+                  rows="3"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+          </template>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton
+                label="Batal"
+                variant="ghost"
+                color="neutral"
+                @click="showRateModal = false"
+              />
+              <UButton
+                label="Kirim Rating"
+                color="warning"
+                icon="i-lucide-send"
+                :loading="isSubmittingRating"
+                @click="submitRating"
               />
             </div>
           </template>

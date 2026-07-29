@@ -59,6 +59,7 @@ func (u *InstructorRoute) Run() {
 	group.GET("/:id/profile", u.controller.GetInstructorController().GetInstructorProfile)
 	group.PUT("/:id/profile", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().UpdateInstructorProfile)
 	group.DELETE("/:id", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().DeleteInstructor)
+	group.POST("/:id/rate", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().RateInstructor)
 
 	// Media routes with instructor user ID
 	group.POST("/:id/media/upload", u.authMiddleware.Authenticate(), u.controller.GetInstructorController().UploadProfilePic)

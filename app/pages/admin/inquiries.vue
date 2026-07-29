@@ -86,6 +86,14 @@ function getRowItem(row: any): Inquiry {
   return row?.original ? row.original : row;
 }
 
+function replyViaEmail(email: string, subject: string = "") {
+  if (!email) return;
+  const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent("Re: " + (subject || "Inquiry"))}`;
+  if (import.meta.client) {
+    window.location.href = mailtoUrl;
+  }
+}
+
 onMounted(() => {
   fetchInquiries();
 });
@@ -125,10 +133,18 @@ onMounted(() => {
             </template>
 
             <template #email-cell="{ row }">
-              <a :href="'mailto:' + getRowItem(row).email" class="text-primary hover:underline">{{ getRowItem(row).email }}</a>
+              <a
+                :href="'mailto:' + getRowItem(row).email + '?subject=Re: ' + encodeURIComponent(getRowItem(row).subject || '')"
+                @click.prevent="replyViaEmail(getRowItem(row).email, getRowItem(row).subject)"
+                class="text-primary hover:underline cursor-pointer"
+              >{{ getRowItem(row).email }}</a>
             </template>
             <template #email-data="{ row }">
-              <a :href="'mailto:' + getRowItem(row).email" class="text-primary hover:underline">{{ getRowItem(row).email }}</a>
+              <a
+                :href="'mailto:' + getRowItem(row).email + '?subject=Re: ' + encodeURIComponent(getRowItem(row).subject || '')"
+                @click.prevent="replyViaEmail(getRowItem(row).email, getRowItem(row).subject)"
+                class="text-primary hover:underline cursor-pointer"
+              >{{ getRowItem(row).email }}</a>
             </template>
 
             <template #subject-cell="{ row }">
@@ -187,7 +203,11 @@ onMounted(() => {
             <div class="flex items-center justify-between pb-4 border-b border-default">
               <div>
                 <h3 class="font-semibold text-lg">{{ selectedInquiry.name }}</h3>
-                <a :href="'mailto:' + selectedInquiry.email" class="text-sm text-primary">{{ selectedInquiry.email }}</a>
+                <a
+                  :href="'mailto:' + selectedInquiry.email + '?subject=Re: ' + encodeURIComponent(selectedInquiry.subject || '')"
+                  @click.prevent="replyViaEmail(selectedInquiry.email, selectedInquiry.subject)"
+                  class="text-sm text-primary hover:underline cursor-pointer"
+                >{{ selectedInquiry.email }}</a>
               </div>
               <span class="text-xs text-muted">{{ formatDate(selectedInquiry.createdAt) }}</span>
             </div>
@@ -203,10 +223,10 @@ onMounted(() => {
             </div>
             <div class="flex justify-end gap-2 pt-4 border-t border-default">
               <UButton
-                :href="'mailto:' + selectedInquiry.email + '?subject=Re: ' + encodeURIComponent(selectedInquiry.subject)"
                 icon="i-lucide-mail"
                 color="primary"
                 label="Reply via Email"
+                @click="replyViaEmail(selectedInquiry.email, selectedInquiry.subject)"
               />
               <UButton
                 color="neutral"

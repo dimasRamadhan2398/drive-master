@@ -27,9 +27,11 @@ type ISessionService interface {
 	GetStats(ctx context.Context) (*dto.SessionStatsResponse, error)
 	StartSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	CompleteSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
+	AdminCompleteSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	CancelSession(ctx context.Context, id uint) (*dto.SessionResponse, error)
 	ListUserSessions(ctx context.Context, userID uuid.UUID, page, limit int) (*dto.SessionListResponse, error)
 	ListInstructorSessions(ctx context.Context, instructorID uuid.UUID, page, limit int) (*dto.SessionListResponse, error)
+	RateSession(ctx context.Context, id uint, rating float64, feedback string) (*dto.SessionResponse, error)
 	AutoStartScheduledSessions(ctx context.Context) error
 	AutoCompleteOngoingSessions(ctx context.Context) error
 }
@@ -350,6 +352,13 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 		}
 	}
 
+	// Synchronously call user-service via HTTP to decrement remaining sessions & increment usedSessions
+	if session.EntitlementID != uuid.Nil && session.UserID != uuid.Nil && s.userClient != nil {
+		if err := s.userClient.UseSession(ctx, session.UserID, session.EntitlementID); err != nil {
+			log.Printf("Warning: failed to decrement entitlement in user-service via direct HTTP: %v", err)
+		}
+	}
+
 	// Publish Kafka event for session completion (for external services like core-service)
 	if s.eventPublisher != nil {
 		var packageID uuid.UUID
@@ -385,6 +394,109 @@ func (s *SessionService) CompleteSession(ctx context.Context, id uint) (*dto.Ses
 	}
 
 	// Reload session
+	session, err = s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := s.sessionRepo.ToResponse(session)
+	return &resp, nil
+}
+
+// AdminCompleteSession force-completes a session on behalf of the admin.
+// Unlike CompleteSession it does NOT require the session to be in_progress,
+// sets is_ended_by_admin=true and end_time so the auto-scheduler never reverts it.
+func (s *SessionService) AdminCompleteSession(ctx context.Context, id uint) (*dto.SessionResponse, error) {
+	// Load session
+	session, err := s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("session not found")
+		}
+		return nil, err
+	}
+
+	if session.Status == "cancelled" {
+		return nil, errors.New("cannot complete a cancelled session")
+	}
+	if session.Status == "completed" && session.IsEndedByAdmin {
+		// Already admin-completed, nothing to do – return current state
+		resp := s.sessionRepo.ToResponse(session)
+		return &resp, nil
+	}
+
+	// Update associated schedule to completed
+	if session.ScheduleID != nil {
+		_ = s.scheduleRepo.UpdateStatus(ctx, *session.ScheduleID, dto.ScheduleStatusCompleted)
+	}
+
+	endTime := time.Now()
+	if err := s.sessionRepo.ForceCompleteByAdmin(ctx, id, endTime); err != nil {
+		return nil, err
+	}
+
+	// Synchronously call user-service via HTTP to decrement remaining sessions & increment usedSessions
+	if session.EntitlementID != uuid.Nil && session.UserID != uuid.Nil && s.userClient != nil {
+		if err := s.userClient.UseSession(ctx, session.UserID, session.EntitlementID); err != nil {
+			log.Printf("Warning: failed to decrement entitlement in user-service via direct HTTP: %v", err)
+		}
+	}
+
+	// Publish Kafka event so external services get notified
+	if s.eventPublisher != nil {
+		var packageID uuid.UUID
+		if session.EnrollmentID != uuid.Nil && s.enrollmentRepo != nil {
+			enrollment, ferr := s.enrollmentRepo.FindByID(ctx, session.EnrollmentID)
+			if ferr == nil && enrollment != nil {
+				packageID = enrollment.PackageID
+			}
+		}
+		_ = s.eventPublisher.PublishSessionCompletedWithEnrollment(
+			ctx,
+			id,
+			session.EntitlementID,
+			session.EnrollmentID,
+			session.UserID,
+			packageID,
+			1,
+			0,
+		)
+	}
+
+	// Reload and return
+	session, err = s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	resp := s.sessionRepo.ToResponse(session)
+	return &resp, nil
+}
+
+// RateSession rates a completed driving session and updates the instructor's average score
+func (s *SessionService) RateSession(ctx context.Context, id uint, rating float64, feedback string) (*dto.SessionResponse, error) {
+	session, err := s.sessionRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("session not found")
+		}
+		return nil, err
+	}
+
+	if session.Status != "completed" {
+		return nil, errors.New("cannot rate a session that is not completed")
+	}
+
+	if err := s.sessionRepo.RateSession(ctx, id, rating, feedback); err != nil {
+		return nil, err
+	}
+
+	// Update instructor rating via userClient
+	if s.userClient != nil && session.InstructorID != uuid.Nil {
+		if err := s.userClient.RateInstructor(ctx, session.InstructorID, rating); err != nil {
+			log.Printf("Warning: failed to update instructor rating in user-service: %v", err)
+		}
+	}
+
 	session, err = s.sessionRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -507,10 +619,17 @@ func (s *SessionService) AutoStartScheduledSessions(ctx context.Context) error {
 					// Student booked: set to in-progress
 					sess, sessErr := s.sessionRepo.FindByScheduleID(ctx, sched.ID)
 					if sessErr == nil && sess != nil {
+						// Never revert a session that was explicitly ended by an admin
+						if sess.IsEndedByAdmin {
+							continue
+						}
 						if sess.Status == "scheduled" {
 							_, _ = s.StartSession(ctx, sess.ID)
 						} else if sess.Status == "completed" {
-							_ = s.sessionRepo.UpdateStatus(ctx, sess.ID, "in_progress")
+							// Only revert to in_progress if NOT admin-ended
+							if !sess.IsEndedByAdmin {
+								_ = s.sessionRepo.UpdateStatus(ctx, sess.ID, "in_progress")
+							}
 						}
 					}
 					if sched.Status != dto.ScheduleStatusInProgress {

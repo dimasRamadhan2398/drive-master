@@ -387,12 +387,13 @@ export const scheduleService = {
 
   // DELETE /schedules/:id - Delete schedule
   async delete(id: string): Promise<boolean> {
-    const { user } = useApiClients();
+    const { booking } = useApiClients();
     try {
-      await user(`/schedules/${id}`, { method: "DELETE" });
+      await booking(`/schedules/${id}`, { method: "DELETE" });
       return true;
-    } catch {
-      return false;
+    } catch (err) {
+      console.error("Failed to delete schedule:", err);
+      throw err;
     }
   },
 
@@ -401,34 +402,26 @@ export const scheduleService = {
   // POST /schedules/:id/book - Book a slot
   async bookSlot(id: string, data: BookSlotData): Promise<Schedule | null> {
     const { user, extractData } = useApiClients();
-    try {
-      const response = await user<ApiResponse<Schedule>>(
-        `/schedules/${id}/book`,
-        {
-          method: "POST",
-          body: data,
-        },
-      );
-      return extractData(response);
-    } catch {
-      return null;
-    }
+    const response = await user<ApiResponse<Schedule>>(
+      `/schedules/${id}/book`,
+      {
+        method: "POST",
+        body: data,
+      },
+    );
+    return extractData(response);
   },
 
   // POST /schedules/:id/cancel - Cancel booking
   async cancelBooking(id: string): Promise<Schedule | null> {
     const { user, extractData } = useApiClients();
-    try {
-      const response = await user<ApiResponse<Schedule>>(
-        `/schedules/${id}/cancel`,
-        {
-          method: "POST",
-        },
-      );
-      return extractData(response);
-    } catch {
-      return null;
-    }
+    const response = await user<ApiResponse<Schedule>>(
+      `/schedules/${id}/cancel`,
+      {
+        method: "POST",
+      },
+    );
+    return extractData(response);
   },
 
   // ==================== UTILITY METHODS ====================
@@ -511,6 +504,8 @@ export interface SessionResponse {
   status: string;
   area?: string;
   notes?: string;
+  carName?: string;
+  instructorName?: string;
   startedAt?: string;
   completedAt?: string;
   createdAt: string;

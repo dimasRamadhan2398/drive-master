@@ -77,6 +77,10 @@ type DrivingSession struct {
 	AnonymizedAt  *time.Time `json:"anonymizedAt" gorm:"index"`       // when user was deleted
 	StartedAt     *time.Time `json:"startedAt"`  // when the session actually started
 	CompletedAt   *time.Time `json:"completedAt"` // when the session was completed
+	EndTime       *time.Time `json:"endTime"`     // explicit end time set by admin; empty until session ends
+	IsEndedByAdmin bool      `json:"isEndedByAdmin" gorm:"default:false"` // true when admin force-completes
+	Rating        *float64   `json:"rating" gorm:"type:decimal(2,1)"`    // star rating (1.0 to 5.0)
+	Feedback      string     `json:"feedback" gorm:"type:text"`          // student review feedback
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 }

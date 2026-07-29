@@ -37,6 +37,7 @@ func Success(c *gin.Context, statusCode int, message string, data interface{}) {
 func Error(c *gin.Context, statusCode int, code string, message string, details string) {
 	c.JSON(statusCode, Response{
 		Success: false,
+		Message: message,
 		Error: &ErrorDetail{
 			Code:    code,
 			Message: message,

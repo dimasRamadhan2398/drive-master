@@ -181,8 +181,17 @@ type DrivingSessionResponse struct {
 	Notes          string     `json:"notes"`
 	StartedAt      *time.Time `json:"startedAt"`
 	CompletedAt    *time.Time `json:"completedAt"`
+	EndTime        *time.Time `json:"endTime"`
+	IsEndedByAdmin bool       `json:"isEndedByAdmin"`
+	Rating         *float64   `json:"rating"`
+	Feedback       string     `json:"feedback"`
 	CreatedAt      time.Time  `json:"createdAt"`
 	UpdatedAt      time.Time  `json:"updatedAt"`
+}
+
+type RateSessionRequest struct {
+	Rating   float64 `json:"rating" binding:"required,min=1,max=5"`
+	Feedback string  `json:"feedback"`
 }
 
 type DrivingSessionListResponse struct {

@@ -17,6 +17,10 @@ const authStore = useAuthStore();
 const paymentsStore = usePaymentsStore();
 const enrollmentsStore = useEnrollmentsStore();
 const packagesStore = usePackagesStore();
+const settingsStore = useSettingsStore();
+
+const contactEmail = computed(() => settingsStore.generalSettings?.email || "info@drivemaster.id");
+const contactPhone = computed(() => settingsStore.generalSettings?.phone || settingsStore.generalSettings?.whatsApp || "+62 812-3456-7890");
 
 // ── Resolved data ─────────────────────────────────────────────────────────────
 // Store resolved enrollment from session storage
@@ -101,7 +105,10 @@ const activeUserId = computed(() => {
 
 // Pre-fill form & resolve enrollment/package info on mount
 onMounted(async () => {
-  console.log("[PAYMENT] Page mounted, resolving enrollment...");
+  if (!settingsStore.generalSettings) {
+    settingsStore.fetchGeneralSettings().catch(() => {});
+  }
+  console.log("[PAYMENT] Component mounted, route query:", route.query);
   console.log("[PAYMENT] Route query:", route.query);
   console.log("[PAYMENT] Active User ID:", activeUserId.value);
 
@@ -572,12 +579,12 @@ async function onSubmit() {
                           <li>
                             By email:
                             <a
-                              href="mailto:info@drivemaster.id"
+                              :href="'mailto:' + contactEmail"
                               class="text-warning hover:underline"
-                              >info@drivemaster.id</a
+                              >{{ contactEmail }}</a
                             >
                           </li>
-                          <li>By phone: +62 812-3456-7890</li>
+                          <li>By phone: {{ contactPhone }}</li>
                         </ul>
                       </div>
                     </template>
@@ -714,9 +721,9 @@ async function onSubmit() {
                         <p>
                           To exercise any of these rights, please contact us at
                           <a
-                            href="mailto:info@drivemaster.id"
+                            :href="'mailto:' + contactEmail"
                             class="text-warning hover:underline"
-                            >info@drivemaster.id</a
+                            >{{ contactEmail }}</a
                           >.
                         </p>
 
@@ -739,12 +746,12 @@ async function onSubmit() {
                           <li>
                             By email:
                             <a
-                              href="mailto:info@drivemaster.id"
+                              :href="'mailto:' + contactEmail"
                               class="text-warning hover:underline"
-                              >info@drivemaster.id</a
+                              >{{ contactEmail }}</a
                             >
                           </li>
-                          <li>By phone: +62 812-3456-7890</li>
+                          <li>By phone: {{ contactPhone }}</li>
                         </ul>
                       </div>
                     </template>

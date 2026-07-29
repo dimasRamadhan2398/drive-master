@@ -259,11 +259,13 @@ func (c *EntitlementController) UseSession(ctx *gin.Context) {
 
 func (c *EntitlementController) SyncEntitlement(ctx *gin.Context) {
 	var input struct {
-		MemberID      string `json:"member_id"`
-		BookingID     string `json:"booking_id"`
-		PackageID     string `json:"package_id"`
-		PackageName   string `json:"package_name"`
-		TotalSessions int    `json:"total_sessions"`
+		MemberID         string `json:"member_id"`
+		BookingID         string `json:"booking_id"`
+		PackageID         string `json:"package_id"`
+		PackageName       string `json:"package_name"`
+		TotalSessions     int    `json:"total_sessions"`
+		IsNightSession   bool   `json:"is_night_session"`
+		IsWeekendSession bool   `json:"is_weekend_session"`
 	}
 
 	if err := ctx.ShouldBindJSON(&input); err != nil {
@@ -300,6 +302,8 @@ func (c *EntitlementController) SyncEntitlement(ctx *gin.Context) {
 		packageID,
 		input.PackageName,
 		totalSessions,
+		input.IsNightSession,
+		input.IsWeekendSession,
 	)
 
 	if err != nil {

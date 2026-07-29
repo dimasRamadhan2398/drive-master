@@ -25,6 +25,7 @@ type IInstructorService interface {
 	UpdateInstructorPhotoURL(ctx context.Context, userID uuid.UUID, photoURL string) error
 	DeleteInstructorProfile(ctx context.Context, userID uuid.UUID) error
 	CreateInstructorWithUser(ctx context.Context, req dto.CreateInstructorWithUserRequest) (*dto.CreateInstructorWithUserResponse, error)
+	RateInstructor(ctx context.Context, instructorID uuid.UUID, rating float64) error
 }
 
 type InstructorService struct {
@@ -411,4 +412,21 @@ func (s *InstructorService) isUsernameExist(ctx context.Context, username string
 // sendOTPEmail sends an OTP email to the user
 func (s *InstructorService) sendOTPEmail(ctx context.Context, email string) error {
 	return s.emailService.SendOTPEmail(ctx, email, "")
+}
+
+// RateInstructor updates an instructor's average rating based on a new session rating
+func (s *InstructorService) RateInstructor(ctx context.Context, instructorID uuid.UUID, rating float64) error {
+	profile, err := s.instructorRepo.FindInstructorProfileByUserID(ctx, instructorID)
+	if err != nil {
+		return fmt.Errorf("instructor profile not found: %w", err)
+	}
+
+	oldSessions := profile.SessionsCompleted
+	if oldSessions <= 0 {
+		profile.AverageRating = rating
+	} else {
+		profile.AverageRating = ((profile.AverageRating * float64(oldSessions)) + rating) / float64(oldSessions + 1)
+	}
+
+	return s.instructorRepo.UpdateInstructorProfile(ctx, profile)
 }

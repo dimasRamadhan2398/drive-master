@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { scheduleService } from '~/services/scheduleService'
 import type { SessionResponse } from '~/services/scheduleService'
 
@@ -26,11 +26,34 @@ const fetchDashboardData = async (userId: string) => {
 }
 
 // ── Fetch / refresh on mount ─────────────────────────────────────────────────
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+
+const refreshDashboard = async () => {
+  if (!authStore.userId) return
+  // Re-fetch schedules first so slot statuses are up-to-date
+  await schedulesStore.fetchSchedules({ studentId: authStore.userId, limit: 100 })
+  // Re-fetch member profile (contains up-to-date usedSessions / remaining from user-service)
+  await authStore.fetchMemberProfile()
+  // Re-fetch session history
+  try {
+    const response = await scheduleService.fetchSessions({ studentId: authStore.userId, limit: 10 })
+    userSessionsList.value = response.data || []
+  } catch (err) {
+    console.error('Failed to refresh user sessions:', err)
+  }
+}
+
 onMounted(async () => {
   await authStore.fetchMemberProfile()
   if (authStore.userId) {
     await fetchDashboardData(authStore.userId)
   }
+  // Poll every 30 s so completed-session count stays live without needing SSE
+  refreshTimer = setInterval(refreshDashboard, 30_000)
+})
+
+onUnmounted(() => {
+  if (refreshTimer) clearInterval(refreshTimer)
 })
 
 // Watch for userId change in case it loads asynchronously
@@ -39,6 +62,24 @@ watch(() => authStore.userId, async (newUserId) => {
     await fetchDashboardData(newUserId)
   }
 })
+
+// Immediate reactive refresh: if any slot transitions to 'completed' while the
+// student is on the dashboard (e.g. admin finishes a session and the store is
+// updated via a separate admin poll), re-fetch right away without waiting for
+// the 30-second timer.
+watch(
+  () => schedulesStore.slots.map(s => s.status),
+  async (newStatuses, oldStatuses) => {
+    const hadNewCompleted = newStatuses.some(
+      (s, i) => s === 'completed' && oldStatuses?.[i] !== 'completed'
+    )
+    if (hadNewCompleted && authStore.userId) {
+      await authStore.fetchMemberProfile()
+      const response = await scheduleService.fetchSessions({ studentId: authStore.userId, limit: 10 })
+      userSessionsList.value = response.data || []
+    }
+  }
+)
 
 // ── Derived profile data ──────────────────────────────────────────────────────
 const profile = computed(() => authStore.memberProfile)
@@ -318,7 +359,7 @@ const quickActions = computed(() => {
             <template #header>
               <div class="flex items-center justify-between">
                 <h2 class="font-semibold">{{ t('dashboard.nextSession') }}</h2>
-                <UBadge v-if="nextSession" :label="nextSession.status === 'in-progress' ? t('dashboard.inProgress') : t('dashboard.confirmed')" :color="nextSession.status === 'in-progress' ? 'warning' : 'success'" variant="subtle" />
+                <UBadge v-if="nextSession" :label="nextSession.status === 'in-progress' ? t('history.in-progress') : t('dashboard.confirmed')" :color="nextSession.status === 'in-progress' ? 'warning' : 'success'" variant="subtle" />
               </div>
             </template>
 

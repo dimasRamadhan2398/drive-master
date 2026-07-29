@@ -195,8 +195,14 @@ func (s *ScheduleService) DeleteSchedule(ctx context.Context, id uint) error {
 		return err
 	}
 
-	if schedule.Status != dto.ScheduleStatusAvailable {
-		return errors.New("cannot delete a non-available schedule")
+	if schedule.Status == dto.ScheduleStatusBooked || schedule.Status == dto.ScheduleStatusInProgress {
+		return errors.New("cannot delete a slot that is currently booked or in progress")
+	}
+
+	// Clean up associated driving session if present
+	session, sessErr := s.sessionRepo.FindByScheduleID(ctx, id)
+	if sessErr == nil && session != nil {
+		_ = s.sessionRepo.Delete(ctx, session)
 	}
 
 	return s.scheduleRepo.Delete(ctx, schedule)
@@ -408,6 +414,43 @@ func (s *ScheduleService) BookSlot(ctx context.Context, slotID uint, req dto.Boo
 		return nil, errors.New("entitlement has expired")
 	}
 
+	// Check if this slot is in the night shift (starts at or after 18:00)
+	parts := strings.Split(schedule.Time, ":")
+	if len(parts) >= 2 {
+		h, _ := strconv.Atoi(parts[0])
+		if h >= 18 {
+			hasNightAccess := entitlement.IsNightSession ||
+				strings.Contains(strings.ToLower(entitlement.PackageName), "night") ||
+				strings.Contains(strings.ToLower(entitlement.PackageName), "malam")
+			if !hasNightAccess {
+				return nil, errors.New("this session is in the night shift. Selected entitlement does not have a Night Session add-on")
+			}
+		}
+	}
+
+	// Overlap Check: Ensure student has no existing active session on the same date that overlaps with this slot's time range
+	userSessions, err := s.sessionRepo.FindByUserID(ctx, req.UserID)
+	if err == nil {
+		targetStart, targetEnd, errParse := parseSlotTimeRange(schedule.Date, schedule.Time, schedule.Duration)
+		if errParse == nil {
+			for _, sess := range userSessions {
+				if sess.Status == "cancelled" {
+					continue
+				}
+				if sess.Date.Format("2006-01-02") == schedule.Date.Format("2006-01-02") {
+					sessStart, sessEnd, errSess := parseSlotTimeRange(sess.Date, sess.Time, sess.Duration)
+					if errSess == nil {
+						// Overlap condition: max(targetStart, sessStart) < min(targetEnd, sessEnd)
+						if maxTime(targetStart, sessStart).Before(minTime(targetEnd, sessEnd)) {
+							return nil, fmt.Errorf("you already have a session scheduled (%s - %s) on this date. Overlapping bookings are not allowed",
+								sessStart.Format("15:04"), sessEnd.Format("15:04"))
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Book the slot
 	if err := s.scheduleRepo.BookSlot(ctx, slotID, req.UserID, entitlement.BookingID); err != nil {
 		return nil, err
@@ -488,7 +531,7 @@ func (s *ScheduleService) CompleteSession(ctx context.Context, slotID uint) (*dt
 		return nil, errors.New("booked session not found for this schedule")
 	}
 
-	if _, err := s.sessionService.CompleteSession(ctx, session.ID); err != nil {
+	if _, err := s.sessionService.AdminCompleteSession(ctx, session.ID); err != nil {
 		return nil, err
 	}
 
@@ -635,4 +678,38 @@ func (s *ScheduleService) enrichSchedule(ctx context.Context, schedule *dto.Sche
 		return nil, fmt.Errorf("failed to enrich schedule")
 	}
 	return &enriched[0], nil
+}
+
+func parseSlotTimeRange(date time.Time, timeStr string, durationMinutes int) (time.Time, time.Time, error) {
+	if timeStr == "" {
+		return time.Time{}, time.Time{}, errors.New("empty time")
+	}
+	t := strings.TrimSpace(timeStr)
+	if strings.Contains(t, "-") {
+		t = strings.TrimSpace(strings.Split(t, "-")[0])
+	}
+	dateStr := fmt.Sprintf("%s %s", date.Format("2006-01-02"), t)
+	startTime, err := time.Parse("2006-01-02 15:04", dateStr)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	if durationMinutes <= 0 {
+		durationMinutes = 60
+	}
+	endTime := startTime.Add(time.Duration(durationMinutes) * time.Minute)
+	return startTime, endTime, nil
+}
+
+func maxTime(t1, t2 time.Time) time.Time {
+	if t1.After(t2) {
+		return t1
+	}
+	return t2
+}
+
+func minTime(t1, t2 time.Time) time.Time {
+	if t1.Before(t2) {
+		return t1
+	}
+	return t2
 }

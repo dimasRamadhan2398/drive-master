@@ -197,7 +197,7 @@
     "sessions": "Sessions",
     "choosePlan": "Choose This Plan",
     "perMonth": "per month",
-    "duration": "Package Duration",
+    "duration": "Session Duration",
     "freeTrial": "Free Trial",
     "simA": "SIM A",
     "features": {
@@ -460,7 +460,10 @@
     "rescheduleSuccess": "Rescheduled!",
     "rescheduleSuccessDesc": "Your session has been successfully updated.",
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "noSessionsFound": "No sessions found on this date",
+    "nightAddonRequired": "Night Add-on Required",
+    "nightAddonRequiredDesc": "This time slot is in the night shift (18:00+). Your active package plan does not include the Night Session add-on."
   },
   "history": {
     "title": "Training History",

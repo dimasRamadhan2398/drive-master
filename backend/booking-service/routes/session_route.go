@@ -29,6 +29,7 @@ func (r *SessionRoute) Run() {
 		sessions.GET("/:id", r.controller.GetSessionController().GetSession)
 		sessions.POST("/:id/start", r.controller.GetSessionController().StartSession)
 		sessions.POST("/:id/complete", r.controller.GetSessionController().CompleteSession)
+		sessions.POST("/:id/rate", r.controller.GetSessionController().RateSession)
 		sessions.POST("/:id/cancel", r.controller.GetSessionController().CancelSession)
 	}
 }

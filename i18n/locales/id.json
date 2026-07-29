@@ -197,7 +197,7 @@
     "sessions": "Sesi",
     "choosePlan": "Pilih Paket Ini",
     "perMonth": "per bulan",
-    "duration": "Durasi Paket",
+    "duration": "Durasi Sesi",
     "freeTrial": "Percobaan Gratis",
     "simA": "SIM A",
     "features": {
@@ -460,7 +460,10 @@
     "rescheduleSuccess": "Jadwal Diubah!",
     "rescheduleSuccessDesc": "Sesi Anda telah berhasil diperbarui.",
     "cancel": "Batal",
-    "confirm": "Konfirmasi"
+    "confirm": "Konfirmasi",
+    "noSessionsFound": "Tidak ada slot pada tanggal ini",
+    "nightAddonRequired": "Perlu Add-on Sesi Malam",
+    "nightAddonRequiredDesc": "Slot waktu ini berada pada jam malam (18:00+). Paket aktif Anda tidak mencakup add-on Sesi Malam."
   },
   "history": {
     "title": "Riwayat Pelatihan",

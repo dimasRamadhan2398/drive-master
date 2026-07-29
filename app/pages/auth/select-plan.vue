@@ -263,7 +263,7 @@ const freeTrialInfo = computed(() => [
           <UIcon name="i-lucide-package" class="size-8 text-warning" />
           <span class="text-xl font-bold">{{ t("packages.heroTitle") }}</span>
         </div>
-        <h1 class="text-3xl md:text-4xl font-bold">{{ t("packages.subtitle") }}</h1>
+        <h1 class="text-3xl md:text-4xl font-bold">{{ t("packages.title") }}</h1>
         <p class="text-muted mt-3 max-w-2xl mx-auto">
           {{ t("packages.subtitle") }}
         </p>
@@ -636,10 +636,6 @@ const freeTrialInfo = computed(() => [
                 block
               />
             </div>
-
-            <p class="text-xs text-muted">
-              {{ t("packages.paymentSecuredNote") }}
-            </p>
           </div>
         </UCard>
       </div>

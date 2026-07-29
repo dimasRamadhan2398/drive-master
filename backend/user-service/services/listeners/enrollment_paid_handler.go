@@ -12,7 +12,7 @@ import (
 
 // EntitlementServiceInterface defines the entitlement service methods needed by the enrollment paid handler
 type EntitlementServiceInterface interface {
-	SyncEntitlementFromBooking(ctx context.Context, memberID, bookingID uuid.UUID, packageID uuid.UUID, packageName string, totalSessions int) (*dto.EntitlementResponse, error)
+	SyncEntitlementFromBooking(ctx context.Context, memberID, bookingID uuid.UUID, packageID uuid.UUID, packageName string, totalSessions int, isNightSession, isWeekendSession bool) (*dto.EntitlementResponse, error)
 }
 
 // EnrollmentPaidHandler listens for enrollment.paid events from booking-service
@@ -148,9 +148,18 @@ func (h *EnrollmentPaidHandler) HandleEvent(ctx context.Context, event *pkgKafka
 		log.Printf("[WARN] EnrollmentPaidHandler: package_name not provided in event, using placeholder: %s", packageName)
 	}
 
-	// Create the entitlement
-	log.Printf("[INFO] Creating entitlement for member %s, enrollment %s, package %s (%d sessions)",
-		memberID, enrollmentID, packageName, totalSessions)
+	isNightSession := false
+	if v, ok := event.Data["is_night_session"]; ok {
+		if b, ok := v.(bool); ok {
+			isNightSession = b
+		}
+	}
+	isWeekendSession := false
+	if v, ok := event.Data["is_weekend_session"]; ok {
+		if b, ok := v.(bool); ok {
+			isWeekendSession = b
+		}
+	}
 
 	resp, err := h.entitlementService.SyncEntitlementFromBooking(
 		ctx,
@@ -159,14 +168,16 @@ func (h *EnrollmentPaidHandler) HandleEvent(ctx context.Context, event *pkgKafka
 		packageID,
 		packageName,
 		totalSessions,
+		isNightSession,
+		isWeekendSession,
 	)
 
 	if err != nil {
 		return fmt.Errorf("failed to create entitlement: %w", err)
 	}
 
-	log.Printf("[INFO] Entitlement created successfully: %s (remaining: %d)",
-		resp.ID, resp.Remaining)
+	log.Printf("[INFO] Entitlement created successfully: %s (remaining: %d, night: %t, weekend: %t)",
+		resp.ID, resp.Remaining, resp.IsNightSession, resp.IsWeekendSession)
 
 	return nil
 }

@@ -105,6 +105,8 @@ const getInitialSlots = (): ScheduleSlot[] => {
       instructor: "Mr. Ahmad",
       student: null,
       status: "available",
+      carId: "",
+      instructorId: ""
     },
     {
       id: "2",
@@ -115,6 +117,8 @@ const getInitialSlots = (): ScheduleSlot[] => {
       instructor: "Mr. Ahmad",
       student: "John Doe",
       status: "booked",
+            carId: "",
+      instructorId: ""
     },
     {
       id: "3",
@@ -125,6 +129,8 @@ const getInitialSlots = (): ScheduleSlot[] => {
       instructor: "Ms. Sari",
       student: "Sarah Putri",
       status: "in-progress",
+            carId: "",
+      instructorId: ""
     },
     {
       id: "4",
@@ -135,6 +141,8 @@ const getInitialSlots = (): ScheduleSlot[] => {
       instructor: "Mr. Budi",
       student: null,
       status: "blocked",
+            carId: "",
+      instructorId: ""
     },
   ];
 };
@@ -483,13 +491,12 @@ export const useSchedulesStore = defineStore("schedules", {
       try {
         const success = await scheduleService.delete(id);
         if (success) {
-          this.slots = this.slots.filter((s) => s.id !== id);
+          this.slots = this.slots.filter((s) => String(s.id) !== String(id));
         }
         return success;
-      } catch {
-        // Fallback to local delete
-        this.slots = this.slots.filter((s) => s.id !== id);
-        return true;
+      } catch (err) {
+        console.error("Error deleting slot:", err);
+        throw err;
       }
     },
 

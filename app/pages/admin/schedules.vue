@@ -195,9 +195,16 @@ async function toggleSlotStatus(slotId: string) {
 
 async function deleteSlot(slotId: string) {
   if (confirm("Are you sure you want to delete this slot?")) {
-    const success = await schedulesStore.deleteSlot(slotId);
-    if (success) {
-      toast.add({ title: "Slot Deleted", color: "error", icon: "i-lucide-trash" });
+    try {
+      const success = await schedulesStore.deleteSlot(slotId);
+      if (success) {
+        toast.add({ title: "Slot Deleted", description: "Schedule slot has been removed", color: "success", icon: "i-lucide-trash" });
+      } else {
+        toast.add({ title: "Delete Failed", description: "Could not delete this slot", color: "error" });
+      }
+    } catch (err: any) {
+      const msg = err?.data?.message || err?.data?.error || err?.message || "Failed to delete slot";
+      toast.add({ title: "Delete Failed", description: msg, color: "error" });
     }
   }
 }
@@ -267,6 +274,22 @@ function handleSlotClick(slot: any) {
       return;
     }
     const studentName = decodeURIComponent(studentNameToBook.value as string);
+    const targetStudent = studentsStore.allStudents.find(
+      (s) => s.name.toLowerCase() === studentName.toLowerCase()
+    );
+    if (slot.time >= operatingHours.value.nightStart) {
+      const hasNight = targetStudent?.entitlements?.some(
+        (e: any) => e.status === "active" && e.remaining > 0 && (e.isNightSession || /night|malam/i.test(e.packageName || ""))
+      );
+      if (!hasNight) {
+        toast.add({
+          title: "Booking Restricted",
+          description: `Slot ${slot.time} is in the night shift (18:00+). ${studentName} does not have the Night Session add-on.`,
+          color: "error",
+        });
+        return;
+      }
+    }
     schedulesStore.bookSlotLocal(slot.id, studentName);
     toast.add({
       title: "Slot Booked",
@@ -482,28 +505,6 @@ watch(
 <template>
   <UDashboardPanel>
     <template #header>
-      <UAlert
-        v-if="studentNameToBook"
-        icon="i-lucide-user-check"
-        color="info"
-        variant="subtle"
-        class="m-4"
-        :title="t('dashboard.bookingMode')"
-      >
-        <template #description>
-          <span
-            >{{ t("admin.selectStudent").replace("Pilih Murid", "Pilih slot untuk") }}
-            <strong>{{ decodeURIComponent(studentNameToBook || '') }}</strong
-            >.
-            <UButton
-              variant="link"
-              :padded="false"
-              @click="navigateTo('/admin/schedules')"
-              >{{ t("schedule.cancel") }}</UButton
-            ></span
-          >
-        </template>
-      </UAlert>
       <UDashboardNavbar :title="t('admin.schedules')">
         <template #right>
           <UButton
@@ -579,6 +580,30 @@ watch(
 
     <template #body>
       <div class="p-6 space-y-6">
+        <!-- Booking Mode Banner Alert -->
+        <UAlert
+          v-if="studentNameToBook"
+          icon="i-lucide-user-check"
+          color="info"
+          variant="subtle"
+          :title="t('dashboard.bookingMode')"
+        >
+          <template #description>
+            <div class="flex items-center justify-between gap-2 mt-1">
+              <span>
+                {{ t("admin.selectStudent").replace("Pilih Murid", "Pilih slot untuk") }}
+                <strong>{{ decodeURIComponent(studentNameToBook || '') }}</strong>.
+              </span>
+              <UButton
+                variant="link"
+                color="error"
+                :padded="false"
+                @click="navigateTo('/admin/schedules')"
+                >{{ t("schedule.cancel") }}</UButton
+              >
+            </div>
+          </template>
+        </UAlert>
         <!-- Stats -->
         <!-- <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <UCard>
@@ -965,7 +990,7 @@ watch(
                   class="size-10 text-muted mx-auto mb-3"
                 />
                 <p class="text-muted font-medium">
-                  {{ t("blog.noArticles").replace("artikel", "slot") }}.
+                  {{ t("schedule.noSessionsFound") }}.
                 </p>
               </div>
             </div>

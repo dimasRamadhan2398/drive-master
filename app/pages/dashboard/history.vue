@@ -68,7 +68,9 @@ const fetchHistory = async () => {
         topic: s.notes || "Training Session",
         status: s.status,
         notes: s.notes || "",
-        rating: 5
+        rating: s.rating || null,
+        feedback: s.feedback || "",
+        rawSession: s,
       };
     });
   } catch (err) {
@@ -77,6 +79,63 @@ const fetchHistory = async () => {
     isLoading.value = false;
   }
 };
+
+const toast = useToast();
+
+// Average rating computation for completed sessions
+const averageRating = computed(() => {
+  const ratedSessions = trainingHistory.value.filter((s) => s.status === 'completed' && s.rating);
+  if (ratedSessions.length === 0) return "0.0";
+  const sum = ratedSessions.reduce((acc, s) => acc + Number(s.rating), 0);
+  return (sum / ratedSessions.length).toFixed(1);
+});
+
+// Rating modal state and functions
+const showRateModal = ref(false);
+const sessionToRate = ref<any>(null);
+const ratingValue = ref(5);
+const ratingFeedback = ref("");
+const isSubmittingRating = ref(false);
+
+function openRateModal(session: any) {
+  sessionToRate.value = session;
+  ratingValue.value = session.rating || 5;
+  ratingFeedback.value = session.feedback || "";
+  showRateModal.value = true;
+}
+
+async function submitRating() {
+  if (!sessionToRate.value) return;
+  try {
+    isSubmittingRating.value = true;
+    const { booking } = useApiClients();
+    await booking(`/sessions/${sessionToRate.value.id}/rate`, {
+      method: "POST",
+      body: {
+        rating: ratingValue.value,
+        feedback: ratingFeedback.value,
+      },
+    });
+
+    toast.add({
+      title: "Rating Terkirim",
+      description: "Terima kasih atas penilaian Anda terhadap instructor!",
+      color: "success",
+    });
+
+    showRateModal.value = false;
+    await fetchHistory();
+  } catch (err: any) {
+    console.error("Failed to submit rating:", err);
+    toast.add({
+      title: "Gagal Mengirim Rating",
+      description: err?.data?.error || err?.message || "Gagal mengirim rating",
+      color: "error",
+    });
+  } finally {
+    isSubmittingRating.value = false;
+  }
+}
 
 onMounted(async () => {
   if (instructorsStore.instructors.length === 0) {
@@ -175,17 +234,17 @@ const openDetails = (session: any) => {
          </UCard>
 
 
-         <UCard>
-           <div class="flex items-center gap-4">
-             <div class="p-3 rounded-xl bg-amber-500/10">
-               <UIcon name="i-lucide-star" class="size-6 text-amber-500" />
-             </div>
-             <div>
-               <p class="text-2xl font-bold">4.5</p>
-               <p class="text-sm text-muted">{{ t('history.averageRating') }}</p>
-             </div>
-           </div>
-         </UCard>
+          <UCard>
+            <div class="flex items-center gap-4">
+              <div class="p-3 rounded-xl bg-amber-500/10">
+                <UIcon name="i-lucide-star" class="size-6 text-amber-500" />
+              </div>
+              <div>
+                <p class="text-2xl font-bold">{{ averageRating }}</p>
+                <p class="text-sm text-muted">{{ t('history.averageRating') }}</p>
+              </div>
+            </div>
+          </UCard>
        </div>
 
 
@@ -236,24 +295,30 @@ const openDetails = (session: any) => {
                </div>
 
 
-               <div class="flex items-center gap-2 lg:flex-col lg:items-end">
-                 <div class="flex gap-0.5">
-                   <UIcon
-                     v-for="i in 5"
-                     :key="i"
-                     name="i-lucide-star"
-                     :class="i <= session.rating ? 'text-amber-500 fill-amber-500' : 'text-muted'"
-                     class="size-4"
+                <div class="flex items-center gap-2 lg:flex-col lg:items-end">
+                  <div v-if="session.status === 'completed'">
+                    <div v-if="session.rating" class="flex items-center gap-1 text-amber-500 font-semibold text-sm">
+                      <UIcon name="i-lucide-star" class="size-4 fill-amber-500" />
+                      <span>{{ Number(session.rating).toFixed(1) }} / 5.0</span>
+                    </div>
+                    <UButton
+                      v-else
+                      label="Beri Rating"
+                      variant="subtle"
+                      color="warning"
+                      size="xs"
+                      icon="i-lucide-star"
+                      @click.stop="openRateModal(session)"
+                    />
+                  </div>
+                  <UButton
+                    :label="t('history.viewDetails')"
+                    variant="ghost"
+                    size="xs"
+                    icon="i-lucide-eye"
+                    @click="openDetails(session)"
                   />
-                 </div>
-                 <UButton
-                   :label="t('history.viewDetails')"
-                   variant="ghost"
-                   size="xs"
-                   icon="i-lucide-eye"
-                   @click="openDetails(session)"
-                />
-               </div>
+                </div>
              </div>
 
 
@@ -333,19 +398,39 @@ const openDetails = (session: any) => {
                </p>
              </div>
              <div class="space-y-1">
-               <p class="text-xs text-muted uppercase font-bold tracking-wider">{{ t('instructors.rating') }}</p>
-               <div class="flex gap-1 mt-1">
-                 <UIcon
-                   v-for="i in 5"
-                   :key="i"
-                   name="i-lucide-star"
-                   :class="i <= selectedSession.rating ? 'text-amber-500 fill-amber-500' : 'text-muted'"
-                   class="size-4"
-                />
-               </div>
-             </div>
+                <p class="text-xs text-muted uppercase font-bold tracking-wider">{{ t('instructors.rating') }}</p>
+                <div v-if="selectedSession.status === 'completed'">
+                  <div v-if="selectedSession.rating" class="flex items-center gap-1.5 text-amber-500 font-semibold text-sm mt-1">
+                    <div class="flex gap-0.5">
+                      <UIcon
+                        v-for="i in 5"
+                        :key="i"
+                        name="i-lucide-star"
+                        :class="i <= selectedSession.rating ? 'text-amber-500 fill-amber-500' : 'text-muted'"
+                        class="size-4"
+                      />
+                    </div>
+                    <span>({{ Number(selectedSession.rating).toFixed(1) }})</span>
+                  </div>
+                  <UButton
+                    v-else
+                    label="Beri Rating Instructor"
+                    variant="subtle"
+                    color="warning"
+                    size="xs"
+                    icon="i-lucide-star"
+                    class="mt-1"
+                    @click="openRateModal(selectedSession); isModalOpen = false;"
+                  />
+                </div>
+                <p v-else class="text-sm text-muted">-</p>
+              </div>
            </div>
 
+           <div v-if="selectedSession.feedback" class="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+             <p class="text-xs text-amber-600 dark:text-amber-400 uppercase font-bold tracking-wider mb-1">Ulasan Anda</p>
+             <p class="text-sm leading-relaxed">{{ selectedSession.feedback }}</p>
+           </div>
 
            <div v-if="selectedSession.notes" class="p-4 rounded-xl bg-muted/30 border border-default">
              <p class="text-xs text-muted uppercase font-bold tracking-wider mb-2">{{ t('history.instructorNotes') }}</p>
@@ -356,5 +441,68 @@ const openDetails = (session: any) => {
        </UCard>
      </template>
    </UModal>
+
+    <!-- Rating Modal -->
+    <UModal
+      v-model:open="showRateModal"
+      title="Beri Rating & Review Instructor"
+    >
+      <template #body>
+        <div class="space-y-4">
+          <p class="text-sm text-muted">
+            Bagaimana pengalaman latihan mengemudi Anda bersama instructor pada sesi ini?
+          </p>
+
+          <!-- Star Rating Input -->
+          <div class="flex flex-col items-center gap-2 py-3 bg-amber-500/5 rounded-xl border border-amber-500/20">
+            <div class="flex items-center gap-2">
+              <button
+                v-for="star in 5"
+                :key="star"
+                type="button"
+                class="p-1 transition-transform hover:scale-125 focus:outline-none cursor-pointer"
+                @click="ratingValue = star"
+              >
+                <UIcon
+                  name="i-lucide-star"
+                  :class="[
+                    'size-8 transition-colors',
+                    star <= ratingValue ? 'text-amber-500 fill-amber-500' : 'text-gray-300 dark:text-gray-600'
+                  ]"
+                />
+              </button>
+            </div>
+            <p class="font-bold text-amber-600 dark:text-amber-400 text-lg">{{ ratingValue }} / 5 Bintang</p>
+          </div>
+
+          <!-- Feedback Input -->
+          <UFormField label="Ulasan & Feedback (Opsional)">
+            <UTextarea
+              v-model="ratingFeedback"
+              placeholder="Tuliskan masukan atau ulasan Anda mengenai sesi latihan ini..."
+              rows="3"
+              class="w-full"
+            />
+          </UFormField>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UButton
+            label="Batal"
+            variant="ghost"
+            color="neutral"
+            @click="showRateModal = false"
+          />
+          <UButton
+            label="Kirim Rating"
+            color="warning"
+            icon="i-lucide-send"
+            :loading="isSubmittingRating"
+            @click="submitRating"
+          />
+        </div>
+      </template>
+    </UModal>
  </ClientOnly>
 </template>

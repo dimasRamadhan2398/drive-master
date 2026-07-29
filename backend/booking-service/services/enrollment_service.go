@@ -433,6 +433,26 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 				}
 			}
 		}
+		// Calculate extra sessions and addons from transaction
+		isNightSession := false
+		isWeekendSession := false
+		extraSessions := 0
+		if s.transactionSvc != nil {
+			tx, err := s.transactionSvc.GetTransactionByEnrollmentID(ctx, enrollment.ID)
+			if err == nil && tx != nil {
+				for _, item := range tx.Items {
+					if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222201") {
+						extraSessions += item.Sessions * item.Quantity
+					} else if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222202") {
+						isNightSession = true
+					} else if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222203") {
+						isWeekendSession = true
+					}
+				}
+			}
+		}
+		totalSessions += extraSessions
+
 		if totalSessions <= 0 {
 			totalSessions = 6 // Fallback default sessions count
 		}
@@ -441,11 +461,13 @@ func (s *EnrollmentService) MarkAsPaid(ctx context.Context, id uuid.UUID, totalP
 		}
 
 		entInput := uClient.CreateEntitlementInput{
-			BookingID:     enrollment.ID,
-			PackageID:     enrollment.PackageID,
-			PackageName:   pkgName,
-			TotalSessions: totalSessions,
-			StartDate:     time.Now().Format("2006-01-02"),
+			BookingID:        enrollment.ID,
+			PackageID:        enrollment.PackageID,
+			PackageName:      pkgName,
+			TotalSessions:    totalSessions,
+			IsNightSession:   isNightSession,
+			IsWeekendSession: isWeekendSession,
+			StartDate:        time.Now().Format("2006-01-02"),
 		}
 		if err := s.userClient.CreateEntitlement(ctx, enrollment.UserID, entInput); err != nil {
 			fmt.Printf("[MarkAsPaid] Failed to create entitlement in user-service: %v\n", err)
@@ -480,7 +502,9 @@ func (s *EnrollmentService) syncEntitlementForPaidEnrollment(ctx context.Context
 		pkgName = "Driving Package"
 	}
 
-	// Calculate extra sessions from transaction
+	// Calculate extra sessions and addons from transaction
+	isNightSession := false
+	isWeekendSession := false
 	extraSessions := 0
 	if s.transactionSvc != nil {
 		tx, err := s.transactionSvc.GetTransactionByEnrollmentID(ctx, enrollment.ID)
@@ -488,6 +512,10 @@ func (s *EnrollmentService) syncEntitlementForPaidEnrollment(ctx context.Context
 			for _, item := range tx.Items {
 				if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222201") {
 					extraSessions += item.Sessions * item.Quantity
+				} else if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222202") {
+					isNightSession = true
+				} else if item.ItemID == uuid.MustParse("22222222-2222-2222-2222-222222222203") {
+					isWeekendSession = true
 				}
 			}
 		}
@@ -498,10 +526,13 @@ func (s *EnrollmentService) syncEntitlementForPaidEnrollment(ctx context.Context
 		totalSessions = 6 // Fallback default sessions count
 	}
 
-	fmt.Printf("[MarkAsPaid] Enrollment %s already paid — syncing entitlement (sessions=%d, pkg=%s)\n", enrollment.ID.String(), totalSessions, pkgName)
+	fmt.Printf("[MarkAsPaid] Enrollment %s already paid — syncing entitlement (sessions=%d, pkg=%s, night=%t, weekend=%t)\n", 
+		enrollment.ID.String(), totalSessions, pkgName, isNightSession, isWeekendSession)
 
 	// Publish enrollment.paid event if event publisher is available
 	if s.eventPublisher != nil {
+		// Include is_night_session and is_weekend_session in extra fields if possible (or keep custom PublishEnrollmentPaid)
+		// We'll pass standard fields first
 		_ = s.eventPublisher.PublishEnrollmentPaid(ctx, enrollment.ID.String(), enrollment.UserID.String(), enrollment.PackageID, totalPrice, totalSessions, pkgName)
 	}
 
@@ -512,11 +543,13 @@ func (s *EnrollmentService) syncEntitlementForPaidEnrollment(ctx context.Context
 	}
 	syncUrl := fmt.Sprintf("%s/api/v1/entitlements/sync", userServiceURL)
 	syncBody, _ := json.Marshal(map[string]interface{}{
-		"member_id":      enrollment.UserID.String(),
-		"booking_id":     enrollment.ID.String(),
-		"package_id":     enrollment.PackageID.String(),
-		"package_name":   pkgName,
-		"total_sessions": totalSessions,
+		"member_id":          enrollment.UserID.String(),
+		"booking_id":         enrollment.ID.String(),
+		"package_id":         enrollment.PackageID.String(),
+		"package_name":       pkgName,
+		"total_sessions":     totalSessions,
+		"is_night_session":   isNightSession,
+		"is_weekend_session": isWeekendSession,
 	})
 	syncReq, syncErr := http.NewRequest("POST", syncUrl, bytes.NewBuffer(syncBody))
 	if syncErr == nil {

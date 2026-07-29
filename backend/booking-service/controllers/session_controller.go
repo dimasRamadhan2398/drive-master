@@ -26,6 +26,7 @@ type ISessionController interface {
 	ListSessions(c *gin.Context)
 	StartSession(c *gin.Context)
 	CompleteSession(c *gin.Context)
+	RateSession(c *gin.Context)
 	CancelSession(c *gin.Context)
 }
 
@@ -223,6 +224,39 @@ func (c *SessionController) CancelSession(ctx *gin.Context) {
 			status = http.StatusConflict
 		}
 		ctx.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+// RateSession godoc
+// @Summary Rate a completed session
+// @Description Rates a completed session (1 to 5 stars) and provides feedback
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param id path int true "Session ID"
+// @Param request body dto.RateSessionRequest true "Rating request"
+// @Success 200 {object} dto.SessionResponse
+// @Failure 400 {object} map[string]string
+// @Router /sessions/{id}/rate [post]
+func (c *SessionController) RateSession(ctx *gin.Context) {
+	id, err := base.GetUintIDFromPath(ctx, "id")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid session id"})
+		return
+	}
+
+	var req dto.RateSessionRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp, err := c.sessionService.RateSession(ctx.Request.Context(), id, req.Rating, req.Feedback)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
