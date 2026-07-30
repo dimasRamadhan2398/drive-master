@@ -32,6 +32,7 @@ func (m *MemberRoute) Run() {
 	log.Printf("  PUT /api/v1/members/:userId/profile")
 	log.Printf("  GET /api/v1/members/:userId/certificates")
 	log.Printf("  GET /api/v1/members/:userId/certificates/:certId/download")
+	log.Printf("  POST /api/v1/members")
 
 	group.GET("/all", func(c *gin.Context) {
 		log.Printf("[MemberRoute] GET /api/v1/members/all called - Path: %s, Query: %v", c.Request.URL.Path, c.Request.URL.Query())
@@ -47,5 +48,6 @@ func (m *MemberRoute) Run() {
 	group.GET("/search", m.authMiddleware.Authenticate(), m.controller.GetMemberController().SearchMembersWithPagination)
 	group.GET("/:userId/certificates", m.authMiddleware.Authenticate(), m.controller.GetMemberController().GetMemberCertificates)
 	group.GET("/:userId/certificates/:certId/download", m.authMiddleware.Authenticate(), m.controller.GetMemberController().DownloadMemberCertificate)
+	group.POST("", m.authMiddleware.AuthorizeAdmin(), m.controller.GetMemberController().CreateMember)
 
 }

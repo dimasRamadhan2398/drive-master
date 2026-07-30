@@ -4,6 +4,7 @@ import { scheduleService } from '~/services/scheduleService'
 import type { SessionResponse } from '~/services/scheduleService'
 
 const { t } = useI18n()
+const { waLink } = useSettings()
 definePageMeta({ layout: 'dashboard' })
 
 const authStore = useAuthStore()
@@ -258,7 +259,7 @@ const quickActions = computed(() => {
   return [
     firstAction,
     { label: t('dashboard.viewHistory'), icon: 'i-lucide-history', to: '/dashboard/history', color: 'neutral' as const },
-    { label: t('dashboard.getSupport'), icon: 'i-simple-icons-whatsapp', to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', external: true, color: 'primary' as const }
+    { label: t('dashboard.getSupport'), icon: 'i-simple-icons-whatsapp', to: waLink.value, external: true, color: 'primary' as const }
   ] as Array<{ label: string; icon: string; to: string; color: 'warning' | 'neutral' | 'primary'; external?: boolean }>
 })
 </script>

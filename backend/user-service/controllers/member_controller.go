@@ -50,6 +50,7 @@ type IMemberController interface {
 	SearchMembersWithPagination(ctx *gin.Context)
 	GetMemberCertificates(ctx *gin.Context)
 	DownloadMemberCertificate(ctx *gin.Context)
+	CreateMember(ctx *gin.Context)
 }
 
 // @Summary Get Member Profile
@@ -303,4 +304,70 @@ func (m *MemberController) DownloadMemberCertificate(ctx *gin.Context) {
 	ctx.Header("Content-Disposition", "attachment; filename="+filename)
 	ctx.Header("Content-Type", "application/pdf")
 	ctx.Data(http.StatusOK, "application/pdf", pdfData)
+}
+
+// CreateMember creates a new member (student) manually (admin only)
+func (m *MemberController) CreateMember(ctx *gin.Context) {
+	var input struct {
+		Email       string `json:"email" binding:"required,email"`
+		FirstName   string `json:"firstName" binding:"required"`
+		LastName    string `json:"lastName"`
+		PhoneNumber string `json:"phoneNumber"`
+		Password    string `json:"password" binding:"required"`
+		DateOfBirth string `json:"dateOfBirth"`
+		Address     string `json:"address"`
+	}
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		responseRes.ErrorFromAppError(ctx, apperrors.ErrBadRequest)
+		return
+	}
+
+	// Find the member role
+	role, err := m.roleService.GetRoleByName(ctx.Request.Context(), "member")
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	dob := input.DateOfBirth
+	if dob == "" {
+		dob = "2000-01-01" // Default date of birth
+	}
+
+	registerReq := dto.RegisterRequest{
+		FirstName:       input.FirstName,
+		LastName:        input.LastName,
+		Username:        input.Email, // Use email as username
+		Password:        input.Password,
+		ConfirmPassword: input.Password,
+		Email:           input.Email,
+		PhoneNumber:     input.PhoneNumber,
+		DateOfBirth:     dob,
+		RoleID:          role.ID,
+	}
+
+	registerResp, err := m.authService.Register(ctx.Request.Context(), &registerReq)
+	if err != nil {
+		responseRes.ErrorFromGeneric(ctx, err)
+		return
+	}
+
+	// Update address if provided
+	if input.Address != "" {
+		userModel, err := m.userService.GetUserByID(ctx.Request.Context(), registerResp.User.UserID)
+		if err == nil {
+			userModel.Address = input.Address
+			_ = m.userService.UpdateUser(ctx.Request.Context(), userModel)
+		}
+	}
+
+	// Fetch complete user with profiles to return to the frontend
+	createdUser, err := m.userService.GetUserByIDWithProfiles(ctx.Request.Context(), registerResp.User.UserID)
+	if err != nil {
+		// Fallback to returning basic user info if load fails
+		responseRes.Success(ctx, http.StatusCreated, "Member created successfully", registerResp.User)
+		return
+	}
+
+	responseRes.Success(ctx, http.StatusCreated, "Member created successfully", createdUser)
 }

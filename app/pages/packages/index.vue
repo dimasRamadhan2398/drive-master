@@ -21,6 +21,23 @@ const packagesStore = usePackagesStore();
 
 const { promoEndDate, waLink, fetchGeneralSettings } = useSettings();
 
+const ctaLinks = computed(() => [
+  {
+    label: t('packages.registerNow'),
+    to: '/auth/register',
+    color: 'warning' as const,
+    icon: 'i-lucide-user-plus',
+  },
+  {
+    label: t('packages.cta.contactUs'),
+    to: waLink.value,
+    color: 'primary' as const,
+    variant: 'outline' as const,
+    icon: 'i-simple-icons-whatsapp',
+    external: true,
+  },
+]);
+
 const packagePlans = computed(() => packagesStore.activePackages);
 
 const isPromoActive = computed(() => {
@@ -335,22 +352,7 @@ onMounted(async () => {
     <UPageCTA
       :title="t('packages.cta.title')"
       :description="t('packages.cta.description')"
-      :links="[
-        {
-          label: t('packages.registerNow'),
-          to: '/auth/register',
-          color: 'warning',
-          icon: 'i-lucide-user-plus',
-        },
-        {
-          label: t('packages.cta.contactUs'),
-          to: waLink.value,
-          color: 'primary',
-          variant: 'outline',
-          icon: 'i-simple-icons-whatsapp',
-          external: true,
-        },
-      ]"
+      :links="ctaLinks"
     />
   </div>
 </template>

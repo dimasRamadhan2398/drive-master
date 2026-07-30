@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 
 const { t } = useI18n()
+const { waLink } = useSettings()
 definePageMeta({ layout: 'dashboard' })
 
 // Onboarding modal state - would check if user has completed profile
@@ -70,7 +71,7 @@ const recentActivity = computed(() => [
 const quickActions = computed(() => [
   { label: t('dashboard.bookSession'), icon: 'i-lucide-calendar-plus', to: '/dashboard/schedule', color: 'primary' as const },
   { label: t('dashboard.viewHistory'), icon: 'i-lucide-history', to: '/dashboard/history', color: 'neutral' as const },
-  { label: t('dashboard.getSupport'), icon: 'i-simple-icons-whatsapp', to: 'https://wa.me/6281234567890', external: true, color: 'neutral' as const }
+  { label: t('dashboard.getSupport'), icon: 'i-simple-icons-whatsapp', to: waLink.value, external: true, color: 'neutral' as const }
 ])
 </script>
 

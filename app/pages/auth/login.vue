@@ -5,6 +5,7 @@ import { reactive, ref, onMounted } from "vue";
 import { useAuthStore } from "~/stores/auth";
 
 const { t } = useI18n()
+const { waLink } = useSettings()
 
 definePageMeta({
   layout: "blank",
@@ -167,7 +168,7 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
           <USeparator :label="t('auth.orContinueWith').split(' ').pop()" />
 
           <NuxtLink
-            to="https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20perlu%20bantuan%20di%20website%20ketika...."
+            :to="waLink"
             target="_blank"
             class="block"
           >

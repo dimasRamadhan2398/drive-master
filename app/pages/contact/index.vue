@@ -12,16 +12,7 @@ useSeoMeta({
 })
 
 const settingsStore = useSettingsStore()
-
-onMounted(() => {
-  settingsStore.fetchGeneralSettings()
-})
-
-const waLink = computed(() => {
-  const number = settingsStore.generalSettings?.whatsApp?.replace(/\D/g, '') ?? '628119124848'
-  const normalized = number.startsWith('0') ? `62${number.slice(1)}` : number
-  return `https://wa.me/${normalized}?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi`
-})
+const { waLink } = useSettings()
 
 const operatingHoursStr = computed(() => {
   const s = settingsStore.generalSettings
