@@ -636,11 +636,11 @@ func (h *UserDeletedHandler) GetEventTypes() []EventType {
 
 // EnrollmentPaidHandler handles enrollment.paid events to increment package count in core-service
 type EnrollmentPaidHandler struct {
-	incrementPackageCount func(ctx context.Context, packageID uint) error
+	incrementPackageCount func(ctx context.Context, packageID uuid.UUID) error
 }
 
 // NewEnrollmentPaidHandler creates a new enrollment paid handler
-func NewEnrollmentPaidHandler(incrementPackageCount func(ctx context.Context, packageID uint) error) *EnrollmentPaidHandler {
+func NewEnrollmentPaidHandler(incrementPackageCount func(ctx context.Context, packageID uuid.UUID) error) *EnrollmentPaidHandler {
 	return &EnrollmentPaidHandler{incrementPackageCount: incrementPackageCount}
 }
 
@@ -660,25 +660,14 @@ func (h *EnrollmentPaidHandler) HandleEvent(ctx context.Context, event *Event) e
 		return fmt.Errorf("missing package_id in enrollment.paid event")
 	}
 
-	// Handle string type (from UUID)
-	var packageID uint
+	var packageID uuid.UUID
 	switch v := packageIDData.(type) {
 	case string:
-		// Parse UUID string to get a numeric identifier
-		// For now, use hash or extract part of UUID
-		// In a real scenario, core-service should provide the numeric ID
 		parsedUUID, err := uuid.Parse(v)
 		if err != nil {
 			return fmt.Errorf("invalid package_id UUID: %w", err)
 		}
-		// Convert UUID bytes to uint (simple approach)
-		packageID = uint(parsedUUID[0])<<24 | uint(parsedUUID[1])<<16 | uint(parsedUUID[2])<<8 | uint(parsedUUID[3])
-	case float64:
-		packageID = uint(v)
-	case int:
-		packageID = uint(v)
-	case uint:
-		packageID = v
+		packageID = parsedUUID
 	default:
 		return fmt.Errorf("invalid package_id type: %T", packageIDData)
 	}

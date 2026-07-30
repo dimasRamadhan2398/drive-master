@@ -46,6 +46,8 @@ kafka:
   topic: "service-logs" # Default topic for producer (legacy)
   topics: # Topics to consume
     - "user-events"
+    - "booking.events"
+    - "booking-events"
     - "car-events"
     - "package-events"
     - "article-events"

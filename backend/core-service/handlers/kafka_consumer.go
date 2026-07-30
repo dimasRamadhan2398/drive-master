@@ -142,6 +142,11 @@ func (k *KafkaConsumer) handleMessage(ctx context.Context, msg kafkago.Message) 
 		if err = json.Unmarshal(msg.Value, &event); err == nil {
 			err = k.eventService.HandlePackageDeleted(ctx, event)
 		}
+	case pkgkafka.EventEnrollmentPaid:
+		var event models.EnrollmentPaidEvent
+		if err = json.Unmarshal(msg.Value, &event); err == nil {
+			err = k.eventService.HandleEnrollmentPaid(ctx, event)
+		}
 
 	// Article events
 	case pkgkafka.EventArticleCreated:

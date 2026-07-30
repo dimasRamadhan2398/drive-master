@@ -31,5 +31,6 @@ func (r *PackageRoute) Run() {
 		packages.PUT("/:id", r.controller.GetPackageController().UpdatePackage)
 		packages.DELETE("/:id", r.controller.GetPackageController().DeletePackage)
 		packages.PUT("/toggle-status/:id", r.controller.GetPackageController().ToggleStatusPackage)
+		packages.POST("/:id/increment-count", r.controller.GetPackageController().IncrementCount)
 	}
 }

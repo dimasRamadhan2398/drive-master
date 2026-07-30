@@ -317,12 +317,13 @@ async function onSubmit() {
       }
 
       // If payment is already success/paid (bypassed), redirect to status page directly with success status
+      const planParam = resolvedPackageName.value ? `&plan=${encodeURIComponent(resolvedPackageName.value)}` : "";
       if (payment.status === "success" || payment.status === "paid") {
-        navigateTo(`/auth/payment-status?status=success&orderId=${payment.orderId}&email=${formData.email}`);
+        navigateTo(`/auth/payment-status?status=success&orderId=${payment.orderId}&email=${formData.email}${planParam}`);
       } else if (payment.paymentUrl) {
         window.location.href = payment.paymentUrl;
       } else {
-        navigateTo(`/auth/payment-status?orderId=${payment.orderId}`);
+        navigateTo(`/auth/payment-status?orderId=${payment.orderId}${planParam}`);
       }
     } else {
       errorMessage.value = paymentsStore.error || "Failed to create payment. Please try again.";
@@ -354,7 +355,7 @@ async function onSubmit() {
       <UCard>
         <UForm :schema="schema" :state="formData" class="space-y-6" @submit="onSubmit">
           <!-- Payment Method Selection -->
-          <div>
+          <!-- <div>
             <label class="block text-sm font-medium mb-4">{{ t('auth.choosePaymentMethod') }}</label>
             <div class="grid sm:grid-cols-2 gap-3">
               <div v-for="method in paymentMethods" :key="method.id" class="relative">
@@ -397,7 +398,7 @@ async function onSubmit() {
                 </label>
               </div>
             </div>
-          </div>
+          </div> -->
 
           <!-- Contact Information -->
           <div class="pt-4 border-t">

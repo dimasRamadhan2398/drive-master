@@ -21,6 +21,7 @@ type IPackageService interface {
 	DeletePackage(ctx context.Context, pkg *models.Package) error
 	CountPackages(ctx context.Context) (int64, error)
 	ToggleStatusPackage(ctx context.Context, id uuid.UUID) (*models.Package, error)
+	IncrementStudentCount(ctx context.Context, id uuid.UUID) error
 }
 
 type PackageService struct {
@@ -127,4 +128,9 @@ func (s *PackageService) ToggleStatusPackage(ctx context.Context, id uuid.UUID) 
 	}
 
 	return pkg, nil
+}
+
+// IncrementStudentCount increments the student count for a package
+func (s *PackageService) IncrementStudentCount(ctx context.Context, id uuid.UUID) error {
+	return s.packageRepo.IncrementStudentCount(ctx, id)
 }

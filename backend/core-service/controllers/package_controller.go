@@ -26,6 +26,7 @@ type IPackageController interface {
 	UpdatePackage(ctx *gin.Context)
 	DeletePackage(ctx *gin.Context)
 	ToggleStatusPackage(ctx *gin.Context)
+	IncrementCount(ctx *gin.Context)
 }
 
 // NewPackageController creates a new package controller
@@ -348,4 +349,26 @@ func (c *PackageController) DeletePackage(ctx *gin.Context) {
 	}
 
 	response.OK(ctx, "Package deleted successfully", nil)
+}
+
+// IncrementCount handles POST /api/v1/packages/:id/increment-count
+func (c *PackageController) IncrementCount(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	if idParam == "" {
+		response.BadRequest(ctx, "Package ID is required")
+		return
+	}
+
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		response.BadRequest(ctx, "Invalid package ID format")
+		return
+	}
+
+	if err := c.packageService.IncrementStudentCount(ctx.Request.Context(), id); err != nil {
+		response.InternalServerError(ctx, "Failed to increment package student count: "+err.Error())
+		return
+	}
+
+	response.OK(ctx, "Package student count incremented successfully", nil)
 }

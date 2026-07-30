@@ -6,6 +6,7 @@ import (
 	"core-service/pkg/base"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type IPackageRepository interface {
@@ -20,6 +21,7 @@ type IPackageRepository interface {
 	Delete(ctx context.Context, pkg *models.Package) error
 	Count(ctx context.Context) (int64, error)
 	ToggleStatus(ctx context.Context, id uuid.UUID) (*models.Package, error)
+	IncrementStudentCount(ctx context.Context, id uuid.UUID) error
 }
 
 type PackageRepository struct {
@@ -143,4 +145,9 @@ func (r *PackageRepository) ToggleStatus(ctx context.Context, id uuid.UUID) (*mo
 	}
 
 	return &pkg, nil
+}
+
+// IncrementStudentCount increments the student count for a package atomically
+func (r *PackageRepository) IncrementStudentCount(ctx context.Context, id uuid.UUID) error {
+	return r.DB.WithContext(ctx).Model(&models.Package{}).Where("id = ?", id).UpdateColumn("student_count", gorm.Expr("student_count + ?", 1)).Error
 }

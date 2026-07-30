@@ -18,6 +18,7 @@ const (
 	EventPackageCreated = "package.created"
 	EventPackageUpdated = "package.updated"
 	EventPackageDeleted = "package.deleted"
+	EventEnrollmentPaid = "enrollment.paid"
 
 	// ========== ARTICLE EVENTS ==========
 	EventArticleCreated   = "article.created"
