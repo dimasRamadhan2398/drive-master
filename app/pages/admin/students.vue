@@ -56,21 +56,21 @@ function getActiveEntitlementProgress(student: Student) {
   const active = student.entitlements.find((e) => e.status === "active");
   if (!active || !active.totalSessions) return 0;
 
-  const remaining = Number(active.remaining ?? 0);
+  const completed = Number(active.usedSessions ?? 0);
   const total = Number(active.totalSessions);
 
-  if (total <= 0 || isNaN(remaining) || isNaN(total)) return 0;
+  if (total <= 0 || isNaN(completed) || isNaN(total)) return 0;
 
-  const progress = Math.round((remaining / total) * 100);
+  const progress = Math.round((completed / total) * 100);
   return isNaN(progress) || !isFinite(progress) ? 0 : Math.min(100, Math.max(0, progress));
 }
 
 function getActiveEntitlementSessions(student: Student) {
-  if (!student || !student.entitlements) return { remaining: 0, total: 0 };
+  if (!student || !student.entitlements) return { completed: 0, total: 0 };
   const active = student.entitlements.find((e) => e.status === "active");
-  if (!active) return { remaining: 0, total: 0 };
+  if (!active) return { completed: 0, total: 0 };
   return { 
-    remaining: active.remaining ?? 0, 
+    completed: active.usedSessions ?? 0, 
     total: active.totalSessions ?? 0 
   };
 }
@@ -455,7 +455,7 @@ onMounted(() => {
                     <div class="w-32">
                       <div class="flex justify-between text-md mb-1">
                         <span
-                          >{{ student._sessions.remaining }}/{{
+                          >{{ student._sessions.completed }}/{{
                             student._sessions.total
                           }}</span
                         >
