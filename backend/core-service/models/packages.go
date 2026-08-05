@@ -56,6 +56,7 @@ type Package struct {
 	Highlight       bool            `json:"highlight" gorm:"default:false"`           // Whether package is highlighted
 	Status          PackageStatus   `json:"status" gorm:"size:20;not null;default:'active'"`
 	ImageURL        string          `json:"imageUrl" gorm:"size:500"`                // Package image URL
+	StudentCount    int             `json:"studentCount" gorm:"default:0"`           // Number of students who bought package
 	Benefits        []PackageBenefit `json:"benefits,omitempty" gorm:"-"`           // Excluded from auto-migrate, managed separately
 	CreatedAt       time.Time       `json:"createdAt"`
 	UpdatedAt       time.Time       `json:"updatedAt"`

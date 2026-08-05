@@ -19,7 +19,7 @@ type ICoreClient interface {
 	GetCars(ctx context.Context, page, limit int) (*dto.PagedData[CarResponse], error)
 	GetCarByID(ctx context.Context, carID uuid.UUID) (*CarInfo, error)
 	GetSalesOverview(ctx context.Context, startDate, endDate string) (*SalesOverviewResponse, error)
-	IncrementPackageCount(ctx context.Context, packageID uint) error
+	IncrementPackageCount(ctx context.Context, packageID uuid.UUID) error
 	GetPackageByID(ctx context.Context, packageID uuid.UUID) (*PackageResponse, error)
 	GetAddOnByID(ctx context.Context, addOnID uuid.UUID) (*AddOnResponse, error)
 	CreateSale(ctx context.Context, req CreateSaleRequest) error
@@ -183,8 +183,8 @@ func (c *CoreClient) GetSalesOverview(ctx context.Context, startDate, endDate st
 }
 
 // IncrementPackageCount increments the enrollment count for a package in core-service
-func (c *CoreClient) IncrementPackageCount(ctx context.Context, packageID uint) error {
-	url := fmt.Sprintf("%s/api/v1/packages/%d/increment-count", c.baseURL, packageID)
+func (c *CoreClient) IncrementPackageCount(ctx context.Context, packageID uuid.UUID) error {
+	url := fmt.Sprintf("%s/api/v1/packages/%s/increment-count", c.baseURL, packageID.String())
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {

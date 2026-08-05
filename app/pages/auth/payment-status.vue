@@ -13,9 +13,10 @@ const paymentsStore = usePaymentsStore()
 
 const status = ref(route.query.status as string || 'pending')
 const email = ref(route.query.email as string || '')
-const plan = ref(route.query.plan as string || 'standard')
+const plan = ref(route.query.plan as string || '')
 const orderId = ref(route.query.orderId as string || '')
 const enrollmentId = ref<string | null>(null)
+const sessionPlanName = ref<string>('')
 
 const isSuccess = computed(() => status.value === 'success' || status.value === 'paid')
 const isFailed = computed(() => status.value === 'failed')
@@ -23,6 +24,7 @@ const isFailed = computed(() => status.value === 'failed')
 let pollInterval: any = null
 
 import { paymentService } from '~/services/paymentService'
+import { enrollmentService } from '~/services/enrollmentService'
 
 const isCheckingStatus = ref(false)
 const isSimulating = ref(false)
@@ -34,7 +36,7 @@ const pollStatus = async (oid: string) => {
   const check = async () => {
     attempts++
     const res = await paymentsStore.checkPaymentStatus(oid)
-    if (res === 'success' || res === 'paid') {
+    if (res === 'paid') {
       status.value = 'success'
       if (pollInterval) clearInterval(pollInterval)
       setTimeout(() => {
@@ -61,7 +63,7 @@ const manualCheckStatus = async () => {
   const toast = useToast()
   try {
     const res = await paymentsStore.checkPaymentStatus(orderId.value)
-    if (res === 'success' || res === 'paid') {
+    if (res === 'paid') {
       status.value = 'success'
       toast.add({
         title: 'Payment Confirmed!',
@@ -122,6 +124,19 @@ const simulatePayment = async () => {
 onMounted(() => {
   if (import.meta.client) {
     enrollmentId.value = sessionStorage.getItem("dm_enrollment_id") || null
+    
+    // Attempt to resolve package name from sessionStorage enrollment
+    const storedEnrollment = sessionStorage.getItem("dm_enrollment")
+    if (storedEnrollment) {
+      try {
+        const parsed = JSON.parse(storedEnrollment)
+        if (parsed && parsed.packageName) {
+          sessionPlanName.value = parsed.packageName
+        }
+      } catch (e) {
+        console.error("Failed to parse stored enrollment:", e)
+      }
+    }
   }
 
   // Resolve orderId from sessionStorage fallback if not in query
@@ -137,6 +152,18 @@ onMounted(() => {
         if (import.meta.client) {
           sessionStorage.setItem("dm_enrollment_id", payment.enrollmentId)
         }
+        
+        // Fetch the enrollment to get the package name
+        enrollmentService.fetchById(payment.enrollmentId).then((response) => {
+          const enrollment = response && typeof response === "object" && "enrollment" in response
+            ? (response as any).enrollment
+            : response;
+          if (enrollment && enrollment.packageName) {
+            sessionPlanName.value = enrollment.packageName
+          }
+        }).catch((e) => {
+          console.error("Failed to fetch enrollment details:", e)
+        })
       }
     })
     pollStatus(orderId.value)
@@ -158,6 +185,19 @@ const packageNames = {
   standard: 'Standard Package (10 sessions)',
   pro: 'Pro Package (15 sessions)'
 }
+
+const resolvedPlanName = computed(() => {
+  if (plan.value) {
+    if (!['starter', 'standard', 'pro'].includes(plan.value)) {
+      return plan.value
+    }
+    return packageNames[plan.value as keyof typeof packageNames] || plan.value
+  }
+  if (sessionPlanName.value) {
+    return sessionPlanName.value
+  }
+  return 'Standard Package (10 sessions)'
+})
 
 const nextSteps = computed(() => ({
   success: [
@@ -192,7 +232,7 @@ const nextSteps = computed(() => ({
         <div>
           <h1 class="text-3xl font-bold">{{ t('auth.paymentSuccessful') }}</h1>
           <p class="text-muted mt-2">
-            {{ t('auth.paymentConfirmed', { plan: packageNames[plan as keyof typeof packageNames] || 'Standard Package' }) }}
+            {{ t('auth.paymentConfirmed', { plan: resolvedPlanName }) }}
           </p>
         </div>
 

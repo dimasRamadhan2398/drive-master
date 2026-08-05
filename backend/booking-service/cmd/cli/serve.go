@@ -404,7 +404,7 @@ func initKafkaConsumer(anonymizationService services.IUserAnonymizationService, 
 
 	// Create and register the enrollment paid handler
 	if coreClient != nil {
-		enrollmentPaidHandler := kafka.NewEnrollmentPaidHandler(func(ctx context.Context, packageID uint) error {
+		enrollmentPaidHandler := kafka.NewEnrollmentPaidHandler(func(ctx context.Context, packageID uuid.UUID) error {
 			return coreClient.IncrementPackageCount(ctx, packageID)
 		})
 		eventPublisher.RegisterHandler(enrollmentPaidHandler)

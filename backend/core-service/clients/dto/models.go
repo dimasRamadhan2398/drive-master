@@ -133,6 +133,7 @@ type PackageResponse struct {
 	DiscountPrice   float64         `json:"discountPrice"`
 	DurationMinutes int              `json:"durationMinutes"`
 	TotalSessions   int              `json:"totalSessions"`
+	StudentCount    int              `json:"studentCount"`
 	Status          PackageStatus   `json:"status"`
 	ImageURL        string           `json:"imageUrl"`
 	Benefits        []BenefitResponse `json:"benefits,omitempty"`

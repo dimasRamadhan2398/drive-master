@@ -8,6 +8,8 @@ import (
 
 	"core-service/models"
 	"core-service/repositories"
+
+	"github.com/google/uuid"
 )
 
 type IEventService interface {
@@ -25,6 +27,7 @@ type IEventService interface {
 	HandlePackageCreated(ctx context.Context, event models.PackageCreatedEvent) error
 	HandlePackageUpdated(ctx context.Context, event models.PackageUpdatedEvent) error
 	HandlePackageDeleted(ctx context.Context, event models.PackageDeletedEvent) error
+	HandleEnrollmentPaid(ctx context.Context, event models.EnrollmentPaidEvent) error
 
 	// Article events (consumed by other services like search, notification)
 	HandleArticleCreated(ctx context.Context, event models.ArticleCreatedEvent) error
@@ -43,14 +46,16 @@ type IEventService interface {
 }
 
 type EventService struct {
-	eventRepo repositories.IEventRepository
-	cacheRepo repositories.ICacheRepository
+	eventRepo   repositories.IEventRepository
+	cacheRepo   repositories.ICacheRepository
+	packageRepo repositories.IPackageRepository
 }
 
-func NewEventService(eventRepo repositories.IEventRepository, cacheRepo repositories.ICacheRepository) IEventService {
+func NewEventService(eventRepo repositories.IEventRepository, cacheRepo repositories.ICacheRepository, packageRepo repositories.IPackageRepository) IEventService {
 	return &EventService{
-		eventRepo: eventRepo,
-		cacheRepo: cacheRepo,
+		eventRepo:   eventRepo,
+		cacheRepo:   cacheRepo,
+		packageRepo: packageRepo,
 	}
 }
 
@@ -191,6 +196,39 @@ func (s *EventService) HandlePackageDeleted(ctx context.Context, event models.Pa
 	}
 
 	return s.storeProcessedEvent(ctx, "package.deleted", event)
+}
+
+// HandleEnrollmentPaid handles enrollment.paid events to increment package student count
+func (s *EventService) HandleEnrollmentPaid(ctx context.Context, event models.EnrollmentPaidEvent) error {
+	packageIDStr := event.PackageID
+	if packageIDStr == "" && event.Data != nil {
+		if v, ok := event.Data["package_id"].(string); ok {
+			packageIDStr = v
+		}
+	}
+
+	log.Printf("[EventService] Processing enrollment.paid for packageId=%s", packageIDStr)
+
+	if packageIDStr == "" {
+		log.Printf("[EventService] missing package_id in enrollment.paid event")
+		return nil
+	}
+
+	packageID, err := uuid.Parse(packageIDStr)
+	if err != nil {
+		log.Printf("[EventService] invalid package_id UUID format: %s", packageIDStr)
+		return nil
+	}
+
+	if s.packageRepo != nil {
+		if err := s.packageRepo.IncrementStudentCount(ctx, packageID); err != nil {
+			log.Printf("[EventService] Failed to increment student count for package %s: %v", packageID, err)
+			return err
+		}
+		log.Printf("[EventService] Successfully incremented student count for package %s", packageID)
+	}
+
+	return s.storeProcessedEvent(ctx, "enrollment.paid", event)
 }
 
 // HandleArticleCreated handles article.created events

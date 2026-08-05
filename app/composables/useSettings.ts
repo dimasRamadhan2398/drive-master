@@ -37,12 +37,16 @@ export const useSettings = () => {
 
   const promoEndDate = useCookie("promo-end-date", { default: () => "2026-05-31T23:59:59" });
 
-  // Computed WA link built from general settings whatsApp field
-  const waLink = computed(() => {
-    const number = settingsStore.generalSettings?.whatsApp?.replace(/\D/g, "") ?? "628119124848";
+  const getWaLink = (customText?: string) => {
+    const rawNumber = settingsStore.generalSettings?.whatsApp || settingsStore.generalSettings?.phone || "628119124848";
+    const number = rawNumber.replace(/\D/g, "");
     const normalized = number.startsWith("0") ? `62${number.slice(1)}` : number;
-    return `https://wa.me/${normalized}?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi`;
-  });
+    const text = customText ? encodeURIComponent(customText) : "Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi";
+    return `https://wa.me/${normalized}?text=${text}`;
+  };
+
+  // Computed WA link built from general settings whatsApp field
+  const waLink = computed(() => getWaLink());
 
   // Computed address from general settings
   const address = computed(() => settingsStore.generalSettings?.address ?? null);
@@ -52,6 +56,7 @@ export const useSettings = () => {
     promoEndDate,
     generalSettings: computed(() => settingsStore.generalSettings),
     waLink,
+    getWaLink,
     address,
     fetchGeneralSettings: () => settingsStore.fetchGeneralSettings(),
   };

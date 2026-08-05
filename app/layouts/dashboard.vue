@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
 const { t } = useI18n()
+const { waLink } = useSettings()
 const authStore = useAuthStore()
 const toast = useToast()
 
@@ -71,7 +72,7 @@ async function handleLogout() {
 const userMenuItems = computed(() => [
   [
     { label: t('profile.title'), icon: 'i-lucide-settings', to: '/dashboard/profile' },
-    { label: t('common.helpSupport'), icon: 'i-lucide-help-circle', to: 'https://wa.me/6281234567890', external: true }
+    { label: t('common.helpSupport'), icon: 'i-lucide-help-circle', to: waLink.value, external: true }
   ],
   [
     { label: t('auth.logout'), icon: 'i-lucide-log-out', onClick: handleLogout }

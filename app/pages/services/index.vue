@@ -1,5 +1,16 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const { waLink } = useSettings()
+
+const heroLinks = computed(() => [
+  { label: t('services.viewPackages'), to: '/packages', color: 'warning', icon: 'i-lucide-package' },
+  { label: t('services.bookConsultation'), to: waLink.value, color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
+])
+
+const ctaLinks = computed(() => [
+  { label: t('services.viewPackages'), to: '/packages', color: 'warning', icon: 'i-lucide-package' },
+  { label: t('services.cta.whatsapp'), to: waLink.value, color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
+])
 
 useSeoMeta({
   title: 'Services | Drive Master Academy',
@@ -136,10 +147,7 @@ const serviceAreas = [
     <UPageHero
       :title="t('services.heroTitle')"
       :description="t('services.heroDesc')"
-      :links="[
-        { label: t('services.viewPackages'), to: '/packages', color: 'warning', icon: 'i-lucide-package' },
-        { label: t('services.bookConsultation'), to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
-      ]"
+      :links="heroLinks"
     />
 
     <!-- Our Services -->
@@ -228,10 +236,7 @@ const serviceAreas = [
     <UPageCTA
       :title="t('services.cta.title')"
       :description="t('services.cta.description')"
-      :links="[
-        { label: t('services.viewPackages'), to: '/packages', color: 'warning', icon: 'i-lucide-package' },
-        { label: t('services.cta.whatsapp'), to: 'https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi', color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
-      ]"
+      :links="ctaLinks"
     />
   </div>
 </template>

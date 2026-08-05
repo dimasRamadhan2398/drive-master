@@ -34,6 +34,7 @@ type PackageResponse struct {
 	DiscountPrice   float64   `json:"discountPrice"`
 	Sessions        int       `json:"sessions"`        // Number of sessions included
 	TotalSessions   int       `json:"totalSessions"`   // JSON field returned by core-service
+	StudentCount    int       `json:"studentCount"`    // Number of students who bought package
 	Duration        int       `json:"duration"`        // Duration per session in minutes
 	ValidityDays    int       `json:"validityDays"`   // Validity period in days
 	IsActive        bool      `json:"isActive"`

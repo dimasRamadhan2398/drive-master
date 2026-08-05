@@ -24,6 +24,7 @@ export interface PackageApiResponse {
   highlight: boolean;
   status: "active" | "inactive";
   imageUrl: string;
+  studentCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -70,7 +71,7 @@ export const mapApiToPackage = (item: PackageApiResponse): Package => {
     isPopular: item.highlight || false,
     packageType: item.packageType,
     imageUrl: item.imageUrl || "",
-    totalSold: 0, // Not available in API response
+    totalSold: item.studentCount ?? 0,
   };
 };
 

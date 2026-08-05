@@ -59,6 +59,7 @@ type PackageResponse struct {
 	TotalSessions   int                   `json:"totalSessions"`
 	Status          models.PackageStatus  `json:"status"`
 	ImageURL        string                `json:"imageUrl"`
+	StudentCount    int                   `json:"studentCount"`
 	Features        models.StringArray    `json:"features,omitempty"`
 	Highlight       bool                  `json:"highlight"`
 	CreatedAt       time.Time             `json:"createdAt"`

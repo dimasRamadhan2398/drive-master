@@ -15,7 +15,7 @@ type Registry struct {
 
 // GetEventService implements [IServiceRegistry].
 func (r *Registry) GetEventService() IEventService {
-	return NewEventService(r.repoRegistry.GetEvent(), r.repoRegistry.GetCache())
+	return NewEventService(r.repoRegistry.GetEvent(), r.repoRegistry.GetCache(), r.repoRegistry.GetPackage())
 }
 
 // GetRegionService implements [IServiceRegistry].

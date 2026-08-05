@@ -65,6 +65,16 @@ type PackageDeletedEvent struct {
 	PackageID string `json:"packageId"`
 }
 
+type EnrollmentPaidEvent struct {
+	EnrollmentID  string                 `json:"enrollment_id,omitempty"`
+	UserID        string                 `json:"user_id,omitempty"`
+	PackageID     string                 `json:"package_id,omitempty"`
+	TotalPrice    float64                `json:"total_price,omitempty"`
+	TotalSessions int                    `json:"total_sessions,omitempty"`
+	PackageName   string                 `json:"package_name,omitempty"`
+	Data          map[string]interface{} `json:"data,omitempty"`
+}
+
 // ========== ARTICLE EVENTS ==========
 
 type ArticleCreatedEvent struct {

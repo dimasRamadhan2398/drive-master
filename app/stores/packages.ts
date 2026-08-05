@@ -366,7 +366,7 @@ const getTodayDate = (): string => {
 export const usePackagesStore = defineStore("packages", {
   state: (): PackagesState => ({
     packages: [],
-    addons: initialAddons,
+    addons: [],
     isLoading: false,
     isAddLoading: false,
     error: null,
@@ -615,7 +615,7 @@ export const usePackagesStore = defineStore("packages", {
     updateAddonLocal(id: string, data: Partial<Addon>): Addon | null {
       const index = this.addons.findIndex((a) => a.id === id);
       if (index !== -1) {
-        this.addons[index] = { ...this.addons[index], ...data };
+        this.addons[index] = { ...this.addons[index], ...data } as Addon;
         return this.addons[index];
       }
       return null;
