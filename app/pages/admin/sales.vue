@@ -47,8 +47,8 @@ const packageTransactions = computed(() => {
   if (!packageId.value) return []
   return salesStore.transactionsByPackage(packageId.value)
 })
-const packageTotalRevenue = computed(() => packageTransactions.value.reduce((sum, t) => sum + t.amount, 0))
-const packageTotalSales = computed(() => packageTransactions.value.length)
+const packageTotalRevenue = computed(() => packageTransactions.value.filter(t => t.status === 'Completed').reduce((sum, t) => sum + t.amount, 0))
+const packageTotalSales = computed(() => packageTransactions.value.filter(t => t.status === 'Completed').length)
 
 // Data for specific addon view
 const selectedAddon = computed(() => addons.value.find(a => a.id === addonId.value))

@@ -197,17 +197,17 @@ export const useSalesStore = defineStore("sales", {
     },
 
     totalRevenue: (state) => {
-      return state.transactions.reduce((sum, t) => sum + t.amount, 0);
+      return state.transactions.filter((t) => t.status === "Completed").reduce((sum, t) => sum + t.amount, 0);
     },
 
     filteredTotalRevenue(): number {
-      return this.filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
+      return this.filteredTransactions.filter((t) => t.status === "Completed").reduce((sum, t) => sum + t.amount, 0);
     },
 
-    totalSales: (state) => state.transactions.length,
+    totalSales: (state) => state.transactions.filter((t) => t.status === "Completed").length,
 
     filteredTotalSales(): number {
-      return this.filteredTransactions.length;
+      return this.filteredTransactions.filter((t) => t.status === "Completed").length;
     },
 
     packageSummary(): PackageSummary[] {
