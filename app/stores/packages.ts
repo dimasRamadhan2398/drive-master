@@ -64,7 +64,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "bronze",
     imageUrl: "",
-    totalSold: 89,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111102",
@@ -80,7 +80,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "bronze",
     imageUrl: "",
-    totalSold: 45,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111103",
@@ -96,7 +96,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "bronze",
     imageUrl: "",
-    totalSold: 62,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111104",
@@ -118,7 +118,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "bronze",
     imageUrl: "",
-    totalSold: 38,
+    totalSold: 0,
   },
   // 8 sessions (silver)
   {
@@ -134,7 +134,7 @@ const initialPackages: Package[] = [
     isPopular: true,
     packageType: "silver",
     imageUrl: "",
-    totalSold: 22,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111202",
@@ -150,7 +150,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "silver",
     imageUrl: "",
-    totalSold: 15,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111203",
@@ -166,7 +166,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "silver",
     imageUrl: "",
-    totalSold: 18,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111204",
@@ -188,7 +188,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "silver",
     imageUrl: "",
-    totalSold: 12,
+    totalSold: 0,
   },
   // 10 sessions (gold)
   {
@@ -204,7 +204,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "gold",
     imageUrl: "",
-    totalSold: 22,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111302",
@@ -220,7 +220,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "gold",
     imageUrl: "",
-    totalSold: 15,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111303",
@@ -241,7 +241,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "gold",
     imageUrl: "",
-    totalSold: 20,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111304",
@@ -263,7 +263,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "gold",
     imageUrl: "",
-    totalSold: 10,
+    totalSold: 0,
   },
   // 12 sessions (platinum)
   {
@@ -279,7 +279,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "platinum",
     imageUrl: "",
-    totalSold: 22,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111402",
@@ -295,7 +295,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "platinum",
     imageUrl: "",
-    totalSold: 18,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111403",
@@ -316,7 +316,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "platinum",
     imageUrl: "",
-    totalSold: 25,
+    totalSold: 0,
   },
   {
     id: "11111111-1111-1111-1111-111111111404",
@@ -338,7 +338,7 @@ const initialPackages: Package[] = [
     isPopular: false,
     packageType: "platinum",
     imageUrl: "",
-    totalSold: 30,
+    totalSold: 0,
   },
 ];
 
@@ -348,7 +348,7 @@ const initialAddons: Addon[] = [
     name: "Extra Session",
     price: 350000,
     description: "Additional training session (90 mins)",
-    sold: 42,
+    sold: 0,
     sessions: 1,
     status: "active",
   },
@@ -357,7 +357,7 @@ const initialAddons: Addon[] = [
     name: "SIM A Express Processing",
     price: 750000,
     description: "Priority handling and administrative assistant for SIM A",
-    sold: 28,
+    sold: 0,
     sessions: 0,
     status: "active",
   },
@@ -366,7 +366,7 @@ const initialAddons: Addon[] = [
     name: "Night Driving Practice",
     price: 450000,
     description: "Special night driving coaching with high visibility vehicles",
-    sold: 19,
+    sold: 0,
     sessions: 2,
     status: "active",
   },
@@ -375,7 +375,7 @@ const initialAddons: Addon[] = [
     name: "Highway & Toll Driving Module",
     price: 500000,
     description: "Advanced highway speed & toll lane maneuvering practice",
-    sold: 15,
+    sold: 0,
     sessions: 2,
     status: "active",
   },

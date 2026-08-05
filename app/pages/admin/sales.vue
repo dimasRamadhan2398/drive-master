@@ -57,16 +57,10 @@ const addonTransactions = computed(() => {
   return salesStore.transactionsByAddon(addonId.value)
 })
 const addonTotalRevenue = computed(() => {
-  if (!addonTransactions.value.length && selectedAddon.value) {
-    return (selectedAddon.value.sold || 0) * selectedAddon.value.price
-  }
-  return addonTransactions.value.reduce((sum, t) => sum + t.amount, 0)
+  return addonTransactions.value.filter(t => t.status === 'Completed').reduce((sum, t) => sum + t.amount, 0)
 })
 const addonTotalSales = computed(() => {
-  if (!addonTransactions.value.length && selectedAddon.value) {
-    return selectedAddon.value.sold || 0
-  }
-  return addonTransactions.value.length
+  return addonTransactions.value.filter(t => t.status === 'Completed').length
 })
 
 // Data for general dashboard view
@@ -76,11 +70,9 @@ const overallTotalSales = computed(() => salesStore.filteredTotalSales)
 // Sales breakdown by package
 const salesByPackage = computed(() => {
   return packages.value.map(pkg => {
-    const pkgTransactions = filteredTransactions.value.filter(t => t.packageId === pkg.id)
-    const salesFromTx = pkgTransactions.length
-    const revFromTx = pkgTransactions.reduce((sum, t) => sum + t.amount, 0)
-    const totalSales = salesFromTx > 0 ? salesFromTx : (pkg.totalSold || 0)
-    const revenue = revFromTx > 0 ? revFromTx : (pkg.totalSold || 0) * (pkg.discountPrice || pkg.price)
+    const pkgTransactions = filteredTransactions.value.filter(t => t.packageId === pkg.id && t.status === 'Completed')
+    const totalSales = pkgTransactions.length
+    const revenue = pkgTransactions.reduce((sum, t) => sum + t.amount, 0)
     return {
       ...pkg,
       totalSales,
@@ -92,11 +84,9 @@ const salesByPackage = computed(() => {
 // Sales breakdown by addon
 const salesByAddon = computed(() => {
   return addons.value.map(addon => {
-    const addonTx = filteredTransactions.value.filter(t => t.addonId === addon.id)
-    const salesFromTx = addonTx.length
-    const revFromTx = addonTx.reduce((sum, t) => sum + t.amount, 0)
-    const totalSales = salesFromTx > 0 ? salesFromTx : (addon.sold || 0)
-    const revenue = revFromTx > 0 ? revFromTx : (addon.sold || 0) * addon.price
+    const addonTx = filteredTransactions.value.filter(t => t.addonId === addon.id && t.status === 'Completed')
+    const totalSales = addonTx.length
+    const revenue = addonTx.reduce((sum, t) => sum + t.amount, 0)
     return {
       ...addon,
       totalSales,
