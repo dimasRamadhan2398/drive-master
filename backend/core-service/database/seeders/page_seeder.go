@@ -93,6 +93,60 @@ func RunPageSeeder(db *gorm.DB) error {
   }
 ]`
 
+	aboutSections := `[
+  {
+    "id": "about-hero",
+    "type": "hero",
+    "data": {
+      "heading": "Langkah Maju, Belajar dari Masa Depan",
+      "subheading": "Drive Master bukan hanya tentang mengajar cara mengemudi, ini tentang mendefinisikan ulang standar pendidikan mengemudi di Indonesia. Sebagai pelopor sekolah mengemudi Kendaraan Listrik, kami percaya bahwa pengemudi masa depan harus lahir dari teknologi masa depan—modern, cerdas, dan ramah lingkungan.",
+      "ctaText": "Mulai Perjalanan Anda",
+      "ctaLink": "/auth/register",
+      "secondaryCtaText": "Hubungi Kami",
+      "secondaryCtaLink": "/contact",
+      "features": [
+        { "title": "Pelopor EV Bebas Emisi", "icon": "i-lucide-leaf" },
+        { "title": "Instruktur Bersertifikat", "icon": "i-lucide-award" }
+      ]
+    }
+  },
+  {
+    "id": "about-safety",
+    "type": "specifications",
+    "data": {
+      "headline": "Keselamatan Utama",
+      "title": "Prioritas Kami adalah Keselamatan Anda",
+      "description": "Dalam bisnis kursus mengemudi, keselamatan bukan hanya sebuah fitur; itu adalah fondasi inti kami.",
+      "items": [
+        {
+          "title": "Instruktur Bersertifikat",
+          "subtitle": "Instruktur kami adalah profesional berlisensi yang bersertifikat khusus untuk mengoperasikan kendaraan listrik premium.",
+          "icon": "i-lucide-award",
+          "description": []
+        },
+        {
+          "title": "Teknologi Keselamatan Aktif",
+          "subtitle": "Memanfaatkan fitur keselamatan bawaan EV seperti Collision Avoidance dan Blind Spot Monitoring untuk meminimalkan risiko.",
+          "icon": "i-lucide-radar",
+          "description": []
+        }
+      ]
+    }
+  },
+  {
+    "id": "about-quote",
+    "type": "quote",
+    "data": {
+      "quote": "Visi kami bukan hanya untuk menghasilkan pengemudi yang bisa memutar kemudi, tetapi untuk membina pengemudi yang cerdas dan aman yang siap merangkul era elektrifikasi.",
+      "description": "Di Drive Master Indonesia, kami percaya bahwa cara kita belajar mengemudi harus berevolusi seiring dengan evolusi teknologi otomotif. Kami berkomitmen untuk menjadi standar baru dalam pendidikan mengemudi yang ramah lingkungan, memastikan bahwa setiap lulusan memiliki keterampilan mengemudi tingkat tinggi serta kesadaran akan masa depan mobilitas yang berkelanjutan.",
+      "ctaText": "Mulai Perjalanan Anda",
+      "ctaLink": "/auth/register",
+      "secondaryCtaText": "Chat WhatsApp",
+      "secondaryCtaLink": "https://wa.me/628119124848"
+    }
+  }
+]`
+
 	servicesSections := `[
   {
     "id": "hero-services",
@@ -169,6 +223,35 @@ func RunPageSeeder(db *gorm.DB) error {
   }
 ]`
 
+	contactSections := `[
+  {
+    "id": "contact-hero",
+    "type": "hero",
+    "data": {
+      "heading": "Kami di Sini untuk Membantu",
+      "subheading": "Punya pertanyaan tentang paket mengemudi EV kami atau penjadwalan? Hubungi tim kami melalui metode di bawah ini.",
+      "ctaText": "Chat WhatsApp",
+      "ctaLink": "https://wa.me/628119124848",
+      "secondaryCtaText": "Lihat FAQ",
+      "secondaryCtaLink": "/#faq"
+    }
+  },
+  {
+    "id": "contact-cta",
+    "type": "cta",
+    "data": {
+      "heading": "Hubungi Customer Service",
+      "description": "Tim kami siap memberikan informasi detail mengenai jadwal, paket, dan lokasi pelatihan.",
+      "buttonText": "Lihat Paket",
+      "buttonLink": "/packages",
+      "buttonIcon": "i-lucide-package",
+      "secondaryButtonText": "Chat WhatsApp Sekarang",
+      "secondaryButtonLink": "https://wa.me/628119124848",
+      "secondaryButtonIcon": "i-simple-icons-whatsapp"
+    }
+  }
+]`
+
 	pages := []models.Page{
 		{
 			ID:        uuid.MustParse("00000000-0000-0000-0000-000000000001"),
@@ -183,8 +266,8 @@ func RunPageSeeder(db *gorm.DB) error {
 			ID:        uuid.MustParse("00000000-0000-0000-0000-000000000002"),
 			Title:     "About Us",
 			Slug:      "/about",
-			Status:    models.PageStatusDraft,
-			Sections:  "[]",
+			Status:    models.PageStatusPublished,
+			Sections:  aboutSections,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
@@ -197,14 +280,31 @@ func RunPageSeeder(db *gorm.DB) error {
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
+		{
+			ID:        uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			Title:     "Contact Us",
+			Slug:      "/contact",
+			Status:    models.PageStatusPublished,
+			Sections:  "[]",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 	}
 
 	for _, page := range pages {
-		var count int64
-		db.Model(&models.Page{}).Where("id = ? OR slug = ?", page.ID, page.Slug).Count(&count)
-		if count == 0 {
+		var existing models.Page
+		err := db.Where("id = ? OR slug = ?", page.ID, page.Slug).First(&existing).Error
+		if err != nil {
 			if err := db.Create(&page).Error; err != nil {
 				return err
+			}
+		} else {
+			if existing.Sections == "" || existing.Sections == "[]" || existing.Status == models.PageStatusDraft {
+				db.Model(&existing).Updates(map[string]interface{}{
+					"title":    page.Title,
+					"status":   page.Status,
+					"sections": page.Sections,
+				})
 			}
 		}
 	}

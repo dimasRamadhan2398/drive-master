@@ -6,7 +6,9 @@ import { usePackagesStore } from "~/stores/packages";
 export interface Transaction {
   id: string | number;
   studentName: string;
-  packageId: string | number;
+  packageId?: string | number;
+  addonId?: string | number;
+  type?: "package" | "addon";
   purchaseDate: string;
   amount: number;
   status: "Completed" | "Pending" | "Refunded";
@@ -34,6 +36,7 @@ const initialTransactions: Transaction[] = [
     id: 101,
     studentName: "John Doe",
     packageId: "11111111-1111-1111-1111-111111111101",
+    type: "package",
     purchaseDate: "2026-03-10",
     amount: 1750000,
     status: "Completed",
@@ -42,6 +45,7 @@ const initialTransactions: Transaction[] = [
     id: 102,
     studentName: "Jane Smith",
     packageId: "11111111-1111-1111-1111-111111111101",
+    type: "package",
     purchaseDate: "2026-03-12",
     amount: 1750000,
     status: "Completed",
@@ -50,6 +54,7 @@ const initialTransactions: Transaction[] = [
     id: 103,
     studentName: "Budi Santoso",
     packageId: "11111111-1111-1111-1111-111111111102",
+    type: "package",
     purchaseDate: "2026-03-15",
     amount: 1950000,
     status: "Completed",
@@ -58,6 +63,7 @@ const initialTransactions: Transaction[] = [
     id: 104,
     studentName: "Amanda Chen",
     packageId: "11111111-1111-1111-1111-111111111101",
+    type: "package",
     purchaseDate: "2026-03-20",
     amount: 1750000,
     status: "Completed",
@@ -66,6 +72,7 @@ const initialTransactions: Transaction[] = [
     id: 105,
     studentName: "David Lee",
     packageId: "11111111-1111-1111-1111-111111111102",
+    type: "package",
     purchaseDate: "2026-03-22",
     amount: 1950000,
     status: "Completed",
@@ -74,6 +81,7 @@ const initialTransactions: Transaction[] = [
     id: 106,
     studentName: "Sarah Putri",
     packageId: "11111111-1111-1111-1111-111111111103",
+    type: "package",
     purchaseDate: "2026-04-01",
     amount: 2250000,
     status: "Completed",
@@ -82,6 +90,7 @@ const initialTransactions: Transaction[] = [
     id: 107,
     studentName: "Michael Brown",
     packageId: "11111111-1111-1111-1111-111111111101",
+    type: "package",
     purchaseDate: "2026-04-02",
     amount: 1750000,
     status: "Completed",
@@ -90,6 +99,7 @@ const initialTransactions: Transaction[] = [
     id: 108,
     studentName: "Emily Davis",
     packageId: "11111111-1111-1111-1111-111111111104",
+    type: "package",
     purchaseDate: "2026-04-05",
     amount: 2650000,
     status: "Completed",
@@ -98,6 +108,7 @@ const initialTransactions: Transaction[] = [
     id: 109,
     studentName: "Ricky Wijaya",
     packageId: "11111111-1111-1111-1111-111111111102",
+    type: "package",
     purchaseDate: "2026-04-10",
     amount: 1950000,
     status: "Completed",
@@ -106,8 +117,54 @@ const initialTransactions: Transaction[] = [
     id: 110,
     studentName: "Anita Sari",
     packageId: "11111111-1111-1111-1111-111111111103",
+    type: "package",
     purchaseDate: "2026-04-12",
     amount: 2250000,
+    status: "Completed",
+  },
+  {
+    id: 111,
+    studentName: "Rudi Hermawan",
+    addonId: "00000000-0000-0000-0000-000000000001",
+    type: "addon",
+    purchaseDate: "2026-03-25",
+    amount: 350000,
+    status: "Completed",
+  },
+  {
+    id: 112,
+    studentName: "Dian Sastro",
+    addonId: "00000000-0000-0000-0000-000000000002",
+    type: "addon",
+    purchaseDate: "2026-03-28",
+    amount: 750000,
+    status: "Completed",
+  },
+  {
+    id: 113,
+    studentName: "Fajar Nugraha",
+    addonId: "00000000-0000-0000-0000-000000000003",
+    type: "addon",
+    purchaseDate: "2026-04-03",
+    amount: 450000,
+    status: "Completed",
+  },
+  {
+    id: 114,
+    studentName: "Bambang Pamungkas",
+    addonId: "00000000-0000-0000-0000-000000000001",
+    type: "addon",
+    purchaseDate: "2026-04-08",
+    amount: 350000,
+    status: "Completed",
+  },
+  {
+    id: 115,
+    studentName: "Citra Kirana",
+    addonId: "00000000-0000-0000-0000-000000000004",
+    type: "addon",
+    purchaseDate: "2026-04-14",
+    amount: 500000,
     status: "Completed",
   },
 ];
@@ -133,6 +190,10 @@ export const useSalesStore = defineStore("sales", {
 
     transactionsByPackage: (state) => (packageId: string | number) => {
       return state.transactions.filter((t) => t.packageId === packageId);
+    },
+
+    transactionsByAddon: (state) => (addonId: string | number) => {
+      return state.transactions.filter((t) => t.addonId === addonId);
     },
 
     totalRevenue: (state) => {

@@ -103,7 +103,226 @@ const initialPages: Page[] = [
     title: "About Us",
     slug: "/about",
     lastUpdated: "Apr 9, 2026",
-    status: "draft",
+    status: "published",
+    sections: [
+      {
+        id: "about-hero",
+        type: "hero",
+        data: {
+          heading: "Langkah Maju, Belajar dari Masa Depan",
+          subheading: "Drive Master bukan hanya tentang mengajar cara mengemudi, ini tentang mendefinisikan ulang standar pendidikan mengemudi di Indonesia. Sebagai pelopor sekolah mengemudi Kendaraan Listrik, kami percaya bahwa pengemudi masa depan harus lahir dari teknologi masa depan—modern, cerdas, dan ramah lingkungan.",
+          ctaText: "Mulai Perjalanan Anda",
+          ctaLink: "/auth/register",
+          secondaryCtaText: "Hubungi Kami",
+          secondaryCtaLink: "/contact",
+          features: [
+            { title: "Pelopor EV Bebas Emisi", icon: "i-lucide-leaf" },
+            { title: "Instruktur Bersertifikat", icon: "i-lucide-award" }
+          ]
+        }
+      },
+      {
+        id: "about-safety",
+        type: "specifications",
+        data: {
+          headline: "Keselamatan Utama",
+          title: "Prioritas Kami adalah Keselamatan Anda",
+          description: "Dalam bisnis kursus mengemudi, keselamatan bukan hanya sebuah fitur; itu adalah fondasi inti kami.",
+          items: [
+            {
+              title: "Instruktur Bersertifikat",
+              subtitle: "Instruktur kami adalah profesional berlisensi yang bersertifikat khusus untuk mengoperasikan kendaraan listrik premium.",
+              icon: "i-lucide-award",
+              description: []
+            },
+            {
+              title: "Teknologi Keselamatan Aktif",
+              subtitle: "Memanfaatkan fitur keselamatan bawaan EV seperti Collision Avoidance dan Blind Spot Monitoring untuk meminimalkan risiko.",
+              icon: "i-lucide-radar",
+              description: []
+            }
+          ]
+        }
+      },
+      {
+        id: "about-quote",
+        type: "quote",
+        data: {
+          quote: "Visi kami bukan hanya untuk menghasilkan pengemudi yang bisa memutar kemudi, tetapi untuk membina pengemudi yang cerdas dan aman yang siap merangkul era elektrifikasi.",
+          description: "Di Drive Master Indonesia, kami percaya bahwa cara kita belajar mengemudi harus berevolusi seiring dengan evolusi teknologi otomotif. Kami berkomitmen untuk menjadi standar baru dalam pendidikan mengemudi yang ramah lingkungan, memastikan bahwa setiap lulusan memiliki keterampilan mengemudi tingkat tinggi serta kesadaran akan masa depan mobilitas yang berkelanjutan.",
+          ctaText: "Mulai Perjalanan Anda",
+          ctaLink: "/auth/register",
+          secondaryCtaText: "Chat WhatsApp",
+          secondaryCtaLink: "https://wa.me/628119124848"
+        }
+      }
+    ],
+  },
+  {
+    id: 3,
+    title: "Services",
+    slug: "/services",
+    lastUpdated: "Apr 9, 2026",
+    status: "published",
+    sections: [
+      {
+        id: "services-hero",
+        type: "hero",
+        data: {
+          heading: "Driving Courses for Every Driver",
+          subheading: "Comprehensive driving courses designed for the electric future. From beginners to advanced drivers, we have the perfect program for you.",
+          ctaText: "Lihat Paket",
+          ctaLink: "/packages",
+          secondaryCtaText: "Konsultasi Gratis",
+          secondaryCtaLink: "/contact"
+        }
+      },
+      {
+        id: "services-specifications",
+        type: "specifications",
+        data: {
+          headline: "Pilihan Spesifikasi & Layanan",
+          title: "Layanan Kursus Mengemudi",
+          description: "Program fleksibel dengan fasilitas lengkap disesuaikan kebutuhan Anda",
+          items: [
+            {
+              title: "Layanan Khusus SIM",
+              subtitle: "Termasuk Shuttle & Sertifikat",
+              icon: "i-lucide-star",
+              description: [
+                "Pendaftaran SIM A / C",
+                "Antar Jemput Gratis",
+                "Materi Teori Lengkap",
+                "Sertifikat Kelulusan Resmi"
+              ]
+            },
+            {
+              title: "Waktu Sesi Belajar",
+              subtitle: "Fleksibel Setiap Hari",
+              icon: "i-lucide-car",
+              description: [
+                "Senin - Jumat (08:00 - 17:00)",
+                "Durasi 2 Jam per Sesi",
+                "Pilihan Sesi Malam",
+                "Pilihan Sesi Akhir Pekan"
+              ]
+            },
+            {
+              title: "Transmisi Kendaraan",
+              subtitle: "Mobil Matic Modern",
+              icon: "i-lucide-car",
+              description: [
+                "Armada Mobil Matic Terbaru",
+                "Dual Control Safety System",
+                "AC & Kursi Nyaman"
+              ]
+            },
+            {
+              title: "Sesi Malam",
+              subtitle: "Latihan Mengemudi Malam Hari",
+              icon: "i-lucide-moon",
+              description: [
+                "Jam Operasional 18:00 - 21:00",
+                "Paket 6x Sesi Malam",
+                "Paket 8x Sesi Malam",
+                "Paket 10x Sesi Malam"
+              ]
+            },
+            {
+              title: "Sesi Akhir Pekan",
+              subtitle: "Sabtu & Minggu",
+              icon: "i-lucide-clock",
+              description: [
+                "Jam Operasional Weekend 08:00 - 17:00",
+                "Paket 6x Sesi Weekend",
+                "Paket 8x Sesi Weekend",
+                "Paket 10x Sesi Weekend"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        id: "services-material",
+        type: "course_material",
+        data: {
+          headline: "Kurikulum Pengajaran",
+          title: "Materi Kursus Mengemudi",
+          description: "Kurikulum terstruktur dari dasar hingga mahir mengemudi di jalan raya",
+          materials: [
+            {
+              title: "Teori & Pengenalan",
+              icon: "i-lucide-book-open",
+              description: [
+                "Aturan lalu lintas & rambu",
+                "Pengenalan instrumen mobil EV",
+                "Posisi duduk & cermin ergonomis",
+                "Etika berkendara aman"
+              ]
+            },
+            {
+              title: "Kontrol Dasar",
+              icon: "i-lucide-shield-check",
+              description: [
+                "Menyalakan & mematikan mesin",
+                "Penggunaan pedal & rem halus",
+                "Operasi transmisi otomatis",
+                "Pemeriksaan keselamatan kendaraan"
+              ]
+            },
+            {
+              title: "Maniver & Parkir",
+              icon: "i-lucide-radar",
+              description: [
+                "Teknik parkir seri & paralel",
+                "Mengemudi di jalan tanjakan",
+                "Penggunaan kaca spion & blind spot",
+                "Maniver berbelok cepat"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        id: "services-coverage",
+        type: "service_areas",
+        data: {
+          headline: "Jangkauan Layanan",
+          title: "Area Operasional Kami",
+          description: "Kami melayani antar-jemput gratis di berbagai wilayah berikut",
+          footer: "Area Anda belum tertera? Hubungi tim kami untuk informasi lebih lanjut.",
+          areas: [
+            "Alam Sutera & sekitarnya",
+            "Serpong & BSD City",
+            "Tangerang City Center",
+            "Gading Serpong",
+            "Lippo Karawaci",
+            "Bintaro Jaya (terbatas)"
+          ]
+        }
+      },
+      {
+        id: "services-cta",
+        type: "cta",
+        data: {
+          heading: "Siap Memulai Perjalanan Mengemudi Anda?",
+          description: "Bergabunglah bersama ratusan siswa yang telah berhasil mendapatkan SIM & mahir mengemudi bersama instruktur bersertifikat.",
+          buttonText: "Lihat Paket Sekarang",
+          buttonLink: "/packages",
+          buttonIcon: "i-lucide-package",
+          secondaryButtonText: "Konsultasi WhatsApp",
+          secondaryButtonLink: "/contact",
+          secondaryButtonIcon: "i-simple-icons-whatsapp"
+        }
+      }
+    ],
+  },
+  {
+    id: 4,
+    title: "Contact Us",
+    slug: "/contact",
+    lastUpdated: "Apr 9, 2026",
+    status: "published",
     sections: [],
   },
 ];
@@ -167,9 +386,28 @@ export const useContentStore = defineStore("content", {
       this.isLoading = true;
       try {
         const rawPages = await contentService.fetchPages();
-        this.pages = rawPages.map((p) => this._mapResponseToPage(p));
+        if (rawPages && rawPages.length > 0) {
+          const fetchedMapped = rawPages.map((p) => this._mapResponseToPage(p));
+          const merged = [...fetchedMapped];
+          for (const defaultPage of initialPages) {
+            const existingIndex = merged.findIndex((p) => p.slug === defaultPage.slug);
+            if (existingIndex === -1) {
+              merged.push(defaultPage);
+            } else if (
+              (!merged[existingIndex].sections || merged[existingIndex].sections.length === 0) &&
+              defaultPage.sections &&
+              defaultPage.sections.length > 0
+            ) {
+              merged[existingIndex].sections = defaultPage.sections;
+            }
+          }
+          this.pages = merged;
+        } else {
+          this.pages = initialPages;
+        }
       } catch (e) {
         console.error("Failed to fetch pages:", e);
+        this.pages = initialPages;
         this.error = "Failed to fetch pages";
       } finally {
         this.isLoading = false;
@@ -184,6 +422,18 @@ export const useContentStore = defineStore("content", {
           const mapped = this._mapResponseToPage(created);
           this.pages.push(mapped);
           return mapped;
+        } else {
+          const newId = String(Date.now());
+          const newPage: Page = {
+            id: newId,
+            title: data.title,
+            slug: data.slug,
+            status: data.status,
+            lastUpdated: this.formatDate(new Date()),
+            sections: [],
+          };
+          this.pages.push(newPage);
+          return newPage;
         }
       } catch (e) {
         console.error("Failed to create page:", e);
@@ -210,9 +460,28 @@ export const useContentStore = defineStore("content", {
             this.pages[index] = mapped;
           }
           return mapped;
+        } else {
+          const index = this.pages.findIndex((p) => String(p.id) === String(id));
+          if (index !== -1) {
+            this.pages[index] = {
+              ...this.pages[index],
+              ...data,
+              lastUpdated: this.formatDate(new Date()),
+            } as Page;
+            return this.pages[index];
+          }
         }
       } catch (e) {
         console.error("Failed to update page:", e);
+        const index = this.pages.findIndex((p) => String(p.id) === String(id));
+        if (index !== -1) {
+          this.pages[index] = {
+            ...this.pages[index],
+            ...data,
+            lastUpdated: this.formatDate(new Date()),
+          } as Page;
+          return this.pages[index];
+        }
       } finally {
         this.isLoading = false;
       }

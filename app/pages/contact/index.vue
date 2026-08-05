@@ -13,6 +13,11 @@ useSeoMeta({
 
 const settingsStore = useSettingsStore()
 const { waLink } = useSettings()
+const { pages } = useContent()
+
+const contactPage = computed(() =>
+  pages.value.find((p) => p.slug === '/contact' && p.status === 'published')
+)
 
 const operatingHoursStr = computed(() => {
   const s = settingsStore.generalSettings
@@ -109,13 +114,22 @@ const subjects = computed(() => [
 
 <template>
   <div>
-    <!-- Hero Section -->
-    <UPageHero
-      :title="t('contact.heroTitle')"
-      :description="t('contact.heroDesc')"
-      align="center"
-      class="py-16 md:py-24"
-    />
+    <!-- Dynamic Admin Sections for Contact Page -->
+    <template v-if="contactPage && contactPage.sections.length > 0">
+      <ContentSectionRenderer
+        v-for="section in contactPage.sections"
+        :key="section.id"
+        :section="section"
+      />
+    </template>
+    <template v-else>
+      <!-- Hero Section -->
+      <UPageHero
+        :title="t('contact.heroTitle')"
+        :description="t('contact.heroDesc')"
+        align="center"
+        class="py-16 md:py-24"
+      />
 
     <!-- Contact Info Grid -->
     <UPageSection class="bg-muted/30">
@@ -226,5 +240,6 @@ const subjects = computed(() => [
         <UButton icon="i-simple-icons-facebook" label="Facebook" color="neutral" variant="outline" size="lg" />
       </div>
     </UPageSection>
+    </template>
   </div>
 </template>

@@ -4,12 +4,12 @@ const { waLink } = useSettings()
 
 const heroLinks = computed(() => [
   { label: t('services.viewPackages'), to: '/packages', color: 'warning', icon: 'i-lucide-package' },
-  { label: t('services.bookConsultation'), to: waLink.value, color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
+  { label: t('services.bookConsultation'), to: waLink.value, color: 'success', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
 ])
 
 const ctaLinks = computed(() => [
   { label: t('services.viewPackages'), to: '/packages', color: 'warning', icon: 'i-lucide-package' },
-  { label: t('services.cta.whatsapp'), to: waLink.value, color: 'primary', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
+  { label: t('services.cta.whatsapp'), to: waLink.value, color: 'success', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
 ])
 
 useSeoMeta({
@@ -139,16 +139,30 @@ const serviceAreas = [
   'Lippo Karawaci',
   'Bintaro Jaya (limited)'
 ]
+
+const { pages } = useContent()
+const servicesPage = computed(() =>
+  pages.value.find((p) => p.slug === '/services' && p.status === 'published')
+)
 </script>
 
 <template>
   <div>
-    <!-- Hero -->
-    <UPageHero
-      :title="t('services.heroTitle')"
-      :description="t('services.heroDesc')"
-      :links="heroLinks"
-    />
+    <!-- Dynamic Admin Sections for Services Page -->
+    <template v-if="servicesPage && servicesPage.sections.length > 0">
+      <ContentSectionRenderer
+        v-for="section in servicesPage.sections"
+        :key="section.id"
+        :section="section"
+      />
+    </template>
+    <template v-else>
+      <!-- Hero -->
+      <UPageHero
+        :title="t('services.heroTitle')"
+        :description="t('services.heroDesc')"
+        :links="heroLinks"
+      />
 
     <!-- Our Services -->
     <UPageSection
@@ -238,5 +252,6 @@ const serviceAreas = [
       :description="t('services.cta.description')"
       :links="ctaLinks"
     />
+    </template>
   </div>
 </template>
