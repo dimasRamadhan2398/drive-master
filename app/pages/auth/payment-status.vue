@@ -36,7 +36,7 @@ const pollStatus = async (oid: string) => {
   const check = async () => {
     attempts++
     const res = await paymentsStore.checkPaymentStatus(oid)
-    if (res === 'success' || res === 'paid') {
+    if (res === 'paid') {
       status.value = 'success'
       if (pollInterval) clearInterval(pollInterval)
       setTimeout(() => {
@@ -63,7 +63,7 @@ const manualCheckStatus = async () => {
   const toast = useToast()
   try {
     const res = await paymentsStore.checkPaymentStatus(orderId.value)
-    if (res === 'success' || res === 'paid') {
+    if (res === 'paid') {
       status.value = 'success'
       toast.add({
         title: 'Payment Confirmed!',

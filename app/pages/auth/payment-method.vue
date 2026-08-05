@@ -318,7 +318,7 @@ async function onSubmit() {
 
       // If payment is already success/paid (bypassed), redirect to status page directly with success status
       const planParam = resolvedPackageName.value ? `&plan=${encodeURIComponent(resolvedPackageName.value)}` : "";
-      if (payment.status === "success" || payment.status === "paid") {
+      if (payment.status === "paid") {
         navigateTo(`/auth/payment-status?status=success&orderId=${payment.orderId}&email=${formData.email}${planParam}`);
       } else if (payment.paymentUrl) {
         window.location.href = payment.paymentUrl;
@@ -449,7 +449,7 @@ async function onSubmit() {
                     color="warning"
                     variant="ghost"
                     class="underline mx-0 px-0 h-auto py-0 text-sm"
-                    @click="showTermsModal = true"
+                    @click="() => { showTermsModal = true }"
                   />
                   <UModal v-model:open="showTermsModal" :title="t('register.terms.termsOfService')">
                     <template #body>
@@ -596,7 +596,7 @@ async function onSubmit() {
                     color="warning"
                     variant="ghost"
                     class="underline mx-0 px-0 h-auto py-0 text-sm"
-                    @click="showPrivacyModal = true"
+                    @click="() => { showPrivacyModal = true }"
                   />
                   <UModal v-model:open="showPrivacyModal" :title="t('register.terms.privacyPolicy')">
                     <template #body>

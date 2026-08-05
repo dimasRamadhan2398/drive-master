@@ -223,7 +223,9 @@ onMounted(() => {
             icon="i-lucide-user-plus"
             color="warning"
             :label="t('admin.addNew')"
-            @click="showAddModal = true"
+            @click="() => {
+              showAddModal = true
+            }"
           />
           <!-- Add Student Modal -->
           <UModal v-model:open="showAddModal" :title="t('admin.addNew')">
@@ -275,7 +277,9 @@ onMounted(() => {
                   :label="t('common.cancel')"
                   variant="ghost"
                   color="neutral"
-                  @click="showAddModal = false"
+                  @click="() => {
+                    showAddModal = false
+                  }"
                 />
                 <UButton
                   :label="t('admin.createStudent')"

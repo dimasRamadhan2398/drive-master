@@ -27,7 +27,7 @@ onMounted(async () => {
   if (!selectedPlanId.value && packagesStore.activePackages.length > 0) {
     // Default to the popular package or first active package
     const popular = packagesStore.popularPackages[0];
-    selectedPlanId.value = popular?.id || packagesStore.activePackages[0].id;
+    selectedPlanId.value = popular?.id || packagesStore.activePackages[0]?.id || null;
   }
 });
 
