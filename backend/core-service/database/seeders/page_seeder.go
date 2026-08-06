@@ -285,7 +285,7 @@ func RunPageSeeder(db *gorm.DB) error {
 			Title:     "Contact Us",
 			Slug:      "/contact",
 			Status:    models.PageStatusPublished,
-			Sections:  "[]",
+			Sections:  contactSections,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},

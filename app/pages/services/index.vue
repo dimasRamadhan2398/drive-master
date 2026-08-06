@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import type { ButtonProps } from '#ui/types'
+
 const { t } = useI18n()
 const { waLink } = useSettings()
 
-const heroLinks = computed(() => [
+const heroLinks = computed<ButtonProps[]>(() => [
   { label: t('services.viewPackages'), to: '/packages', color: 'warning', icon: 'i-lucide-package' },
   { label: t('services.bookConsultation'), to: waLink.value, color: 'success', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
 ])
 
-const ctaLinks = computed(() => [
+const ctaLinks = computed<ButtonProps[]>(() => [
   { label: t('services.viewPackages'), to: '/packages', color: 'warning', icon: 'i-lucide-package' },
   { label: t('services.cta.whatsapp'), to: waLink.value, color: 'success', variant: 'outline', icon: 'i-simple-icons-whatsapp', external: true }
 ])
