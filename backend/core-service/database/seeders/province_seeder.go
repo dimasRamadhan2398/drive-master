@@ -18,7 +18,8 @@ func RunProvinceSeeder(db *gorm.DB) error {
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return fmt.Errorf("province seeder: file not found at %s", filePath)
+		fmt.Printf("province seeder: warning - file not found at %s, skipping\n", filePath)
+		return nil
 	}
 
 	file, err := os.Open(filePath)

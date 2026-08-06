@@ -1,10 +1,65 @@
 <script setup lang="ts">
+import { ref, reactive, computed } from 'vue'
+
 defineProps<{
   section: {
     type: string
     data: any
   }
 }>()
+
+const { t } = useI18n()
+const toast = useToast()
+const api = useApi()
+
+const isSubmitting = ref(false)
+const form = reactive({
+  name: '',
+  email: '',
+  subject: '',
+  message: ''
+})
+
+const subjects = computed(() => [
+  { label: t('contact.form.subjects.general') || 'Pertanyaan Umum', value: 'General Inquiry' },
+  { label: t('contact.form.subjects.package') || 'Informasi Paket', value: 'Package Information' },
+  { label: t('contact.form.subjects.schedule') || 'Jadwal & Sesi', value: 'Scheduling Issue' },
+  { label: t('contact.form.subjects.technical') || 'Dukungan Teknis', value: 'Technical Support' }
+])
+
+async function handleSubmit() {
+  isSubmitting.value = true
+  try {
+    await api('/contact', {
+      method: 'POST',
+      body: {
+        name: form.name,
+        email: form.email,
+        subject: form.subject,
+        message: form.message
+      }
+    })
+    toast.add({
+      title: t('contact.form.success') || 'Pesan Terkirim',
+      description: t('contact.form.successDesc') || 'Terima kasih telah menghubungi kami. Tim kami akan segera merespon.',
+      color: 'success',
+      icon: 'i-lucide-check-circle'
+    })
+    form.name = ''
+    form.email = ''
+    form.subject = ''
+    form.message = ''
+  } catch (error) {
+    toast.add({
+      title: t('common.error') || 'Gagal Mengirim',
+      description: 'Gagal mengirim pesan. Silakan coba lagi.',
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -14,7 +69,7 @@ defineProps<{
       v-if="section.type === 'hero'"
       :title="section.data.heading"
       :description="section.data.subheading"
-      orientation="horizontal"
+      :orientation="section.data.bgImage ? 'horizontal' : 'vertical'"
       :links="[
         ...(section.data.ctaText ? [{ label: section.data.ctaText, to: section.data.ctaLink || '#', color: 'warning' as const, size: 'lg' as const, icon: 'i-lucide-calendar-check' }] : []),
         ...(section.data.secondaryCtaText ? [{ label: section.data.secondaryCtaText, to: section.data.secondaryCtaLink || '#', color: 'neutral' as const, variant: 'outline' as const, trailingIcon: 'i-lucide-arrow-right', size: 'lg' as const }] : [])
@@ -43,6 +98,16 @@ defineProps<{
             />
             <span>{{ feat.title }}</span>
           </div>
+        </div>
+      </div>
+      <div v-else-if="section.data.features && section.data.features.length > 0" class="mt-6 flex flex-wrap justify-center items-center gap-4">
+        <div
+          v-for="feat in section.data.features"
+          :key="feat.title"
+          class="inline-flex items-center gap-2 text-warning font-semibold text-sm"
+        >
+          <UIcon :name="feat.icon || 'i-lucide-leaf'" class="size-4 text-warning" />
+          <span>{{ feat.title }}</span>
         </div>
       </div>
     </UPageHero>
@@ -190,6 +255,116 @@ defineProps<{
             variant="outline"
           />
         </div>
+      </div>
+    </UPageSection>
+
+    <!-- Contact Info Cards Grid Section -->
+    <UPageSection v-else-if="section.type === 'contact_methods'" class="bg-muted/30">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <UPageCard
+          v-for="method in section.data.methods"
+          :key="method.title"
+          :icon="method.icon || 'i-lucide-info'"
+          :title="method.title"
+          :description="method.description"
+          :ui="{ leadingIcon: 'text-warning text-3xl' }"
+        >
+          <template #footer>
+            <UButton
+              v-if="method.actionText"
+              :label="method.actionText"
+              :to="method.actionLink || '#'"
+              :target="method.target || '_self'"
+              color="warning"
+              variant="link"
+              class="p-0"
+              trailing-icon="i-lucide-arrow-right"
+            />
+          </template>
+        </UPageCard>
+      </div>
+    </UPageSection>
+
+    <!-- Form & Map Section -->
+    <UPageSection
+      v-else-if="section.type === 'contact_form_map'"
+      :headline="section.data.headline"
+      :title="section.data.title"
+      :description="section.data.description"
+    >
+      <div class="grid lg:grid-cols-2 gap-12 items-start">
+        <!-- Contact Form -->
+        <UCard>
+          <form @submit.prevent="handleSubmit" class="space-y-4">
+            <div class="grid sm:grid-cols-2 gap-4">
+              <UFormField :label="t('contact.form.name') || 'Nama Lengkap'" required>
+                <UInput v-model="form.name" placeholder="John Doe" class="w-full" />
+              </UFormField>
+              <UFormField :label="t('contact.form.email') || 'Alamat Email'" required>
+                <UInput v-model="form.email" type="email" placeholder="john@example.com" class="w-full" />
+              </UFormField>
+            </div>
+            <UFormField :label="t('contact.form.subject') || 'Subjek'" required>
+              <USelect
+                v-model="form.subject"
+                :items="subjects"
+                :placeholder="t('contact.form.subjectPlaceholder') || 'Pilih subjek'"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField :label="t('contact.form.message') || 'Pesan'" required>
+              <UTextarea v-model="form.message" :placeholder="t('contact.form.messagePlaceholder') || 'Bagaimana kami bisa membantu Anda?'" :rows="5" class="w-full" />
+            </UFormField>
+            <div class="pt-2">
+              <UButton 
+                type="submit" 
+                :label="t('contact.form.send') || 'Kirim Pesan'"
+                icon="i-lucide-send" 
+                color="warning" 
+                :loading="isSubmitting"
+                block 
+              />
+            </div>
+          </form>
+        </UCard>
+
+        <!-- Large Map View -->
+        <div class="space-y-6">
+          <div class="aspect-square rounded-2xl overflow-hidden border border-default shadow-lg bg-elevated">
+            <iframe 
+              :src="section.data.mapEmbedUrl || 'https://maps.google.com/maps?q=-6.22369663061115,106.66409468196608&z=17&output=embed'" 
+              width="100%" 
+              height="100%" 
+              style="border:0;" 
+              allowfullscreen 
+              loading="lazy" 
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    </UPageSection>
+
+    <!-- Social Media Section -->
+    <UPageSection
+      v-else-if="section.type === 'social_media'"
+      :headline="section.data.headline"
+      :title="section.data.title"
+      :description="section.data.description"
+      class="bg-muted/30"
+    >
+      <div class="flex flex-wrap justify-center gap-6">
+        <UButton
+          v-for="link in section.data.links"
+          :key="link.label"
+          :icon="link.icon || 'i-lucide-link'"
+          :label="link.label"
+          color="neutral"
+          variant="outline"
+          size="lg"
+          :to="link.to || '#'"
+          target="_blank"
+        />
       </div>
     </UPageSection>
 

@@ -100,13 +100,8 @@ func RunPageSeeder(db *gorm.DB) error {
     "data": {
       "heading": "Langkah Maju, Belajar dari Masa Depan",
       "subheading": "Drive Master bukan hanya tentang mengajar cara mengemudi, ini tentang mendefinisikan ulang standar pendidikan mengemudi di Indonesia. Sebagai pelopor sekolah mengemudi Kendaraan Listrik, kami percaya bahwa pengemudi masa depan harus lahir dari teknologi masa depan—modern, cerdas, dan ramah lingkungan.",
-      "ctaText": "Mulai Perjalanan Anda",
-      "ctaLink": "/auth/register",
-      "secondaryCtaText": "Hubungi Kami",
-      "secondaryCtaLink": "/contact",
       "features": [
-        { "title": "Pelopor EV Bebas Emisi", "icon": "i-lucide-leaf" },
-        { "title": "Instruktur Bersertifikat", "icon": "i-lucide-award" }
+        { "title": "Pelopor Pendidikan Mengemudi Bebas Emisi", "icon": "i-lucide-leaf" }
       ]
     }
   },
@@ -166,49 +161,149 @@ func RunPageSeeder(db *gorm.DB) error {
     }
   },
   {
+    "id": "specifications-services",
+    "type": "specifications",
+    "data": {
+      "headline": "",
+      "title": "",
+      "description": "",
+      "items": [
+        {
+          "title": "Layanan Khusus",
+          "subtitle": "Keuntungan memilih Kami",
+          "icon": "i-lucide-star",
+          "description": [
+            "SIM",
+            "Antar-jemput gratis (Alam Sutera, BSD, Gading Serpong)",
+            "Materi teori termasuk",
+            "Sertifikat penyelesaian"
+          ]
+        },
+        {
+          "title": "Waktu Sesi",
+          "subtitle": "Waktu sesi asli kami",
+          "icon": "i-lucide-car",
+          "description": [
+            "Sesi di hari kerja buka dari jam 08:00 sampai 17:00",
+            "60 menit per sesi",
+            "Sesi Malam: 18:00 - 20:00",
+            "Sabtu - Minggu: 08:00 - 17:00"
+          ]
+        },
+        {
+          "title": "Transmisi Mobil",
+          "subtitle": "Mobil kami menggunakan transmisi matic",
+          "icon": "i-lucide-car",
+          "description": [
+            "Transmisi Matic"
+          ]
+        },
+        {
+          "title": "Sesi Malam",
+          "subtitle": "Harga tambahan untuk sesi malam",
+          "icon": "i-lucide-moon",
+          "description": [
+            "Sesi di malam hari buka dari jam 18:00 sampai 20:00",
+            "Harga dasar 6x + Rp.100.000 untuk sesi malam",
+            "Harga dasar 8x + Rp.100.000 untuk sesi malam",
+            "Harga dasar 10x + Rp.100.000 untuk sesi malam",
+            "Harga dasar 12x + Rp.100.000 untuk sesi malam"
+          ]
+        },
+        {
+          "title": "Sesi Akhir Pekan",
+          "subtitle": "Harga tambahan untuk sesi akhir pekan",
+          "icon": "i-lucide-clock",
+          "description": [
+            "Sesi di akhir pekan buka dari jam 08:00 sampai 17:00",
+            "Harga dasar 6x + Rp.100.000 untuk sesi akhir pekan",
+            "Harga dasar 8x + Rp.100.000 untuk sesi akhir pekan",
+            "Harga dasar 10x + Rp.100.000 untuk sesi akhir pekan",
+            "Harga dasar 12x + Rp.100.000 untuk sesi akhir pekan"
+          ]
+        }
+      ]
+    }
+  },
+  {
     "id": "material-services",
     "type": "course_material",
     "data": {
       "headline": "Materi kursus yang akan Anda pelajari",
-      "title": "Materi Kursus Komprehensif",
-      "description": "Kurikulum pelatihan terstruktur kami mencakup dasar-dasar hingga manuver tingkat lanjut.",
+      "title": "Materi Kursus",
+      "description": "Materi kursus yang Anda pelajari akan membuat Anda lebih percaya diri dalam mengemudi.",
       "materials": [
         {
-          "title": "Teori & Pengenalan",
+          "title": "Teori Materi",
           "icon": "i-lucide-book-open",
           "description": [
-            "Pengenalan instrumen & kontrol kendaraan",
-            "Posisi berkendara ergonomis & keselamatan dasar",
-            "Pemeriksaan keselamatan kendaraan (pre-drive checks)"
+            "Pengenalan Kendaraan dan Kontrol Dasar",
+            "Pelatihan kokpit (posisi duduk ergonomis, penyesuaian spion tengah dan samping, penggunaan sabuk pengaman)",
+            "Pengenalan instrumen (pedal gas, rem, tuas transmisi, rem tangan, lampu indikator di dashboard)",
+            "Cek keselamatan (periksa kondisi ban, oli, dan air radiator sebelum berkendara)"
           ]
         },
         {
-          "title": "Kontrol Kendaraan",
+          "title": "Kontrol Awal",
           "icon": "i-lucide-shield-check",
           "description": [
-            "Akselerasi & deselerasi halus",
-            "Pengereman presisi & darurat",
-            "Penggunaan gigi & transmisi matic"
+            "Menghidupkan & menghentikan mesin (prosedur standar untuk menghidupkan mesin dengan aman)",
+            "Teknik pedal gas dengan aman (seimbang dan halus)",
+            "Teknik rem dan pemberhentian (pengereman halus dan cara berhenti di titik tertentu dengan tepat)"
           ]
         },
         {
-          "title": "Manuver Jalan Raya",
+          "title": "Teknik Manuver Dasar",
           "icon": "i-lucide-radar",
           "description": [
-            "Teknik belok & persimpangan",
-            "Mengemudi di jalan tanjakan & turunan",
-            "Teknik mundur dengan cermin"
+            "Kontrol kemudi (teknik memutar kemudi saat belok cepat)",
+            "Mundur (mengendalikan mobil mundur hanya dengan spion belakang)",
+            "Belok di persimpangan (teknik mengambil sudut belok yang benar ke kiri atau kanan)"
           ]
         },
         {
-          "title": "Parkir & Tol",
+          "title": "Teknik Mengemudi di Jalan Naik & Turun",
           "icon": "i-lucide-car",
           "description": [
-            "Parkir mundur (slot parkir)",
-            "Parkir paralel di antara kendaraan",
-            "Navigasi jalan tol & pindah jalur aman"
+            "Teknik start-stop di tanjakan",
+            "Teknik start-stop di turunan"
+          ]
+        },
+        {
+          "title": "Teknik Parkir",
+          "icon": "i-lucide-car",
+          "description": [
+            "Parkir mundur sudut atau lurus (masuk slot parkir dengan mobil mundur)",
+            "Parkir paralel (teknik memasukkan mobil di antara dua mobil lain yang paralel)"
+          ]
+        },
+        {
+          "title": "Mengemudi di Jalan Tol",
+          "icon": "i-lucide-car",
+          "description": [
+            "Rambu dan marka jalan (mematuhi rambu lalu lintas, rambu dilarang parkir dan marka jalan)",
+            "Etika berkendara (menggunakan sein, menjaga jarak aman, dan cara menyalip kendaraan lain dengan benar)",
+            "Blind spot (teknik memeriksa area yang tidak terlihat di spion sebelum berganti jalur)"
           ]
         }
+      ]
+    }
+  },
+  {
+    "id": "coverage-services",
+    "type": "service_areas",
+    "data": {
+      "headline": "Jangkauan Layanan",
+      "title": "Area Operasional Kami",
+      "description": "Kami melayani antar-jemput gratis di berbagai wilayah berikut",
+      "footer": "Area Anda belum tertera? Hubungi tim kami untuk informasi lebih lanjut.",
+      "areas": [
+        "Alam Sutera & sekitarnya",
+        "Serpong & BSD City",
+        "Tangerang City Center",
+        "Gading Serpong",
+        "Lippo Karawaci",
+        "Bintaro Jaya (terbatas)"
       ]
     }
   },
@@ -216,38 +311,90 @@ func RunPageSeeder(db *gorm.DB) error {
     "id": "cta-services",
     "type": "cta",
     "data": {
-      "heading": "Siap untuk menguasai jalanan bersama kami?",
-      "buttonText": "Daftar Sekarang",
-      "buttonLink": "/auth/register"
+      "heading": "Siap Memulai Perjalanan Mengemudi Anda?",
+      "description": "Bergabunglah bersama ratusan siswa yang telah berhasil mendapatkan SIM & mahir mengemudi bersama instruktur bersertifikat.",
+      "buttonText": "Lihat Paket Sekarang",
+      "buttonLink": "/packages",
+      "buttonIcon": "i-lucide-package",
+      "secondaryButtonText": "Konsultasi WhatsApp",
+      "secondaryButtonLink": "https://wa.me/628119124848",
+      "secondaryButtonIcon": "i-simple-icons-whatsapp"
     }
   }
 ]`
 
 	contactSections := `[
   {
-    "id": "contact-hero",
+    "id": "hero-contact",
     "type": "hero",
     "data": {
       "heading": "Kami di Sini untuk Membantu",
-      "subheading": "Punya pertanyaan tentang paket mengemudi EV kami atau penjadwalan? Hubungi tim kami melalui metode di bawah ini.",
-      "ctaText": "Chat WhatsApp",
-      "ctaLink": "https://wa.me/628119124848",
-      "secondaryCtaText": "Lihat FAQ",
-      "secondaryCtaLink": "/#faq"
+      "subheading": "Punya pertanyaan tentang paket mengemudi EV kami atau penjadwalan? Hubungi tim kami melalui metode di bawah ini atau isi formulir."
     }
   },
   {
-    "id": "contact-cta",
-    "type": "cta",
+    "id": "methods-contact",
+    "type": "contact_methods",
     "data": {
-      "heading": "Hubungi Customer Service",
-      "description": "Tim kami siap memberikan informasi detail mengenai jadwal, paket, dan lokasi pelatihan.",
-      "buttonText": "Lihat Paket",
-      "buttonLink": "/packages",
-      "buttonIcon": "i-lucide-package",
-      "secondaryButtonText": "Chat WhatsApp Sekarang",
-      "secondaryButtonLink": "https://wa.me/628119124848",
-      "secondaryButtonIcon": "i-simple-icons-whatsapp"
+      "methods": [
+        {
+          "title": "Pusat Pelatihan",
+          "description": "The Smith Office, 9th Floor, Unit 0902 Jl. Jalur Sutera Timur, RT 002/003, Kunciran, Kec. Pinang, Kota Tangerang, Provinsi Banten 15144",
+          "icon": "i-lucide-map-pin",
+          "actionText": "Dapatkan Petunjuk Arah",
+          "actionLink": "https://maps.app.goo.gl/qGngC2sF4G3jt8Vs8",
+          "target": "_blank"
+        },
+        {
+          "title": "Dukungan WhatsApp",
+          "description": "+62 811-9124-848 (Available 08:00 - 18:00)",
+          "icon": "i-simple-icons-whatsapp",
+          "actionText": "Chat Sekarang",
+          "actionLink": "https://wa.me/628119124848?text=Halo%20Drive%20Master%2C%20saya%20ingin%20bertanya%20tentang%20kursus%20mengemudi",
+          "target": "_blank"
+        },
+        {
+          "title": "Alamat Email",
+          "description": "info@evdriveacademy.id",
+          "icon": "i-lucide-mail",
+          "actionText": "Kirim Email",
+          "actionLink": "mailto:info@evdriveacademy.id",
+          "target": "_self"
+        },
+        {
+          "title": "Jam Operasional",
+          "description": "Senin - Jumat: 08:00 - 17:00 | Sabtu - Minggu: 08:00 - 17:00 | Sesi Malam: 18:00 - 20:00",
+          "icon": "i-lucide-clock",
+          "actionText": "Lihat FAQ",
+          "actionLink": "/#faq",
+          "target": "_self"
+        }
+      ]
+    }
+  },
+  {
+    "id": "form-map-contact",
+    "type": "contact_form_map",
+    "data": {
+      "headline": "Hubungi Kami",
+      "title": "Kirim Pesan",
+      "description": "Isi formulir di bawah ini dan tim sukses pelanggan kami akan segera menghubungi Anda.",
+      "mapEmbedUrl": "https://maps.google.com/maps?q=-6.22369663061115,106.66409468196608&z=17&output=embed"
+    }
+  },
+  {
+    "id": "social-contact",
+    "type": "social_media",
+    "data": {
+      "headline": "Bergabunglah dengan Komunitas Kami",
+      "title": "Media Sosial",
+      "description": "Ikuti kami di media sosial untuk tips mengemudi, berita EV, dan cerita sukses murid.",
+      "links": [
+        { "label": "TikTok", "icon": "i-simple-icons-tiktok", "to": "https://tiktok.com" },
+        { "label": "Facebook", "icon": "i-simple-icons-facebook", "to": "https://facebook.com" },
+        { "label": "Instagram", "icon": "i-simple-icons-instagram", "to": "https://instagram.com" },
+        { "label": "YouTube", "icon": "i-simple-icons-youtube", "to": "https://youtube.com" }
+      ]
     }
   }
 ]`
@@ -292,19 +439,11 @@ func RunPageSeeder(db *gorm.DB) error {
 	}
 
 	for _, page := range pages {
-		var existing models.Page
-		err := db.Where("id = ? OR slug = ?", page.ID, page.Slug).First(&existing).Error
-		if err != nil {
+		var count int64
+		db.Model(&models.Page{}).Where("id = ? OR slug = ?", page.ID, page.Slug).Count(&count)
+		if count == 0 {
 			if err := db.Create(&page).Error; err != nil {
 				return err
-			}
-		} else {
-			if existing.Sections == "" || existing.Sections == "[]" || existing.Status == models.PageStatusDraft {
-				db.Model(&existing).Updates(map[string]interface{}{
-					"title":    page.Title,
-					"status":   page.Status,
-					"sections": page.Sections,
-				})
 			}
 		}
 	}

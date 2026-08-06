@@ -26,6 +26,9 @@ const sectionTypes = [
   { label: t('admin.specificationsGrid'), value: 'specifications', icon: 'i-lucide-layout-grid' },
   { label: 'Course Material Grid', value: 'course_material', icon: 'i-lucide-book-open' },
   { label: t('admin.serviceAreas'), value: 'service_areas', icon: 'i-lucide-map-pin' },
+  { label: 'Contact Methods Grid', value: 'contact_methods', icon: 'i-lucide-phone-call' },
+  { label: 'Contact Form & Map', value: 'contact_form_map', icon: 'i-lucide-map' },
+  { label: 'Social Media Grid', value: 'social_media', icon: 'i-simple-icons-tiktok' },
   { label: t('admin.quoteSection'), value: 'quote', icon: 'i-lucide-quote' },
   { label: t('admin.textBlock'), value: 'text', icon: 'i-lucide-align-left' },
   { label: t('admin.imageText'), value: 'image_text', icon: 'i-lucide-image' },
@@ -106,6 +109,39 @@ function addSection(type: string) {
       description: '',
       footer: '',
       areas: []
+    }
+  }
+  else if (type === 'contact_methods') {
+    defaultData = {
+      methods: [
+        {
+          title: "Pusat Pelatihan",
+          description: "The Smith Office, 9th Floor, Unit 0902...",
+          icon: "i-lucide-map-pin",
+          actionText: "Dapatkan Petunjuk Arah",
+          actionLink: "https://maps.app.goo.gl/qGngC2sF4G3jt8Vs8",
+          target: "_blank"
+        }
+      ]
+    }
+  }
+  else if (type === 'contact_form_map') {
+    defaultData = {
+      headline: "Hubungi Kami",
+      title: "Kirim Pesan",
+      description: "Isi formulir di bawah ini dan tim sukses pelanggan kami akan segera menghubungi Anda.",
+      mapEmbedUrl: "https://maps.google.com/maps?q=-6.22369663061115,106.66409468196608&z=17&output=embed"
+    }
+  }
+  else if (type === 'social_media') {
+    defaultData = {
+      headline: "Bergabunglah dengan Komunitas Kami",
+      title: "Media Sosial",
+      description: "Ikuti kami di media sosial untuk tips mengemudi, berita EV, dan cerita sukses murid.",
+      links: [
+        { label: "TikTok", icon: "i-simple-icons-tiktok", to: "https://tiktok.com" },
+        { label: "Facebook", icon: "i-simple-icons-facebook", to: "https://facebook.com" }
+      ]
     }
   }
   else if (type === 'quote') {
@@ -368,6 +404,35 @@ function handleImageFileChange(event: Event, section: any) {
 
 function clearImage(section: any) {
   section.data.image = ''
+}
+
+function addContactMethod(section: any) {
+  if (!section.data.methods) section.data.methods = []
+  section.data.methods.push({
+    title: '',
+    description: '',
+    icon: 'i-lucide-info',
+    actionText: '',
+    actionLink: '',
+    target: '_self'
+  })
+}
+
+function removeContactMethod(section: any, index: number) {
+  section.data.methods.splice(index, 1)
+}
+
+function addSocialLink(section: any) {
+  if (!section.data.links) section.data.links = []
+  section.data.links.push({
+    label: '',
+    icon: 'i-lucide-link',
+    to: ''
+  })
+}
+
+function removeSocialLink(section: any, index: number) {
+  section.data.links.splice(index, 1)
 }
 
 // ==================== ACTIONS ====================
@@ -850,6 +915,93 @@ function handleClose() {
                 <div class="col-span-2">
                   <label class="block text-xs font-medium text-muted mb-1.5">Footer Note / Description</label>
                   <UInput v-model="section.data.footer" placeholder="e.g. Lokasi Anda belum tertera? Hubungi tim kami." class="w-full" />
+                </div>
+              </div>
+            </div>
+
+            <!-- CONTACT METHODS FORM -->
+            <div v-if="section.type === 'contact_methods'" class="space-y-4">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold text-muted uppercase tracking-wider">Contact Cards Grid</span>
+                <UButton label="Add Contact Card" icon="i-lucide-plus" size="xs" color="neutral" variant="soft" @click="addContactMethod(section)" />
+              </div>
+              <div class="space-y-4">
+                <div v-for="(method, mIdx) in section.data.methods" :key="mIdx" class="p-4 rounded-lg border border-default bg-muted/20 relative">
+                  <UButton icon="i-lucide-trash" color="error" variant="ghost" size="xs" class="absolute top-2 right-2" @click="removeContactMethod(section, mIdx)" />
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Title</label>
+                      <UInput v-model="method.title" placeholder="e.g. Pusat Pelatihan" size="sm" class="w-full" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Icon</label>
+                      <UInput v-model="method.icon" placeholder="e.g. i-lucide-map-pin" size="sm" class="w-full" />
+                    </div>
+                    <div class="col-span-2">
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Description / Details</label>
+                      <UInput v-model="method.description" placeholder="Address or details" size="sm" class="w-full" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Action Button Text</label>
+                      <UInput v-model="method.actionText" placeholder="e.g. Dapatkan Petunjuk Arah" size="sm" class="w-full" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Action Link URL</label>
+                      <UInput v-model="method.actionLink" placeholder="e.g. https://maps.app.goo.gl/..." size="sm" class="w-full" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CONTACT FORM & MAP FORM -->
+            <div v-if="section.type === 'contact_form_map'" class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-muted mb-1.5">Headline</label>
+                <UInput v-model="section.data.headline" placeholder="e.g. Hubungi Kami" class="w-full" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted mb-1.5">Title</label>
+                <UInput v-model="section.data.title" placeholder="e.g. Kirim Pesan" class="w-full" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-muted mb-1.5">Description</label>
+                <UInput v-model="section.data.description" placeholder="Description under title" class="w-full" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-muted mb-1.5">Google Maps Embed URL</label>
+                <UInput v-model="section.data.mapEmbedUrl" placeholder="https://maps.google.com/maps?q=..." class="w-full" />
+              </div>
+            </div>
+
+            <!-- SOCIAL MEDIA FORM -->
+            <div v-if="section.type === 'social_media'" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-muted mb-1.5">Headline</label>
+                  <UInput v-model="section.data.headline" placeholder="e.g. Bergabunglah dengan Komunitas Kami" class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-muted mb-1.5">Title</label>
+                  <UInput v-model="section.data.title" placeholder="e.g. Media Sosial" class="w-full" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-muted mb-1.5">Description</label>
+                  <UInput v-model="section.data.description" placeholder="Description..." class="w-full" />
+                </div>
+              </div>
+              <div class="border-t border-default pt-4 mt-2">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold text-muted uppercase tracking-wider">Social Buttons</span>
+                  <UButton label="Add Social Link" icon="i-lucide-plus" size="xs" color="neutral" variant="soft" @click="addSocialLink(section)" />
+                </div>
+                <div class="space-y-2">
+                  <div v-for="(link, sIdx) in section.data.links" :key="sIdx" class="flex gap-2 items-center">
+                    <UInput v-model="link.label" placeholder="Platform (e.g. TikTok)" class="w-36" size="sm" />
+                    <UInput v-model="link.icon" placeholder="Icon (e.g. i-simple-icons-tiktok)" class="w-48" size="sm" />
+                    <UInput v-model="link.to" placeholder="Profile URL" class="flex-1" size="sm" />
+                    <UButton icon="i-lucide-trash" color="error" variant="ghost" size="xs" @click="removeSocialLink(section, sIdx)" />
+                  </div>
                 </div>
               </div>
             </div>
