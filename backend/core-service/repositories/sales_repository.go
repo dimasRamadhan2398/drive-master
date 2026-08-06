@@ -264,7 +264,7 @@ func (r *SalesRepository) GetOverviewStats(ctx context.Context, startDate, endDa
 	sql := `
 		SELECT
 			COALESCE(SUM(CASE WHEN status = 'completed' THEN final_amount ELSE 0 END), 0)::float8 as total_revenue,
-			COUNT(*)::bigint as total_sales,
+			COUNT(CASE WHEN status = 'completed' THEN 1 END)::bigint as total_sales,
 			COALESCE(SUM(CASE WHEN status = 'refunded' THEN final_amount ELSE 0 END), 0)::float8 as total_refunds,
 			COALESCE(SUM(CASE WHEN status = 'completed' THEN final_amount ELSE 0 END), 0)::float8 as net_revenue,
 			COALESCE(AVG(CASE WHEN status = 'completed' THEN final_amount END), 0)::float8 as avg_order_value,

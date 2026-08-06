@@ -103,7 +103,23 @@ const initialPages: Page[] = [
     title: "About Us",
     slug: "/about",
     lastUpdated: "Apr 9, 2026",
-    status: "draft",
+    status: "published",
+    sections: [],
+  },
+  {
+    id: 3,
+    title: "Services",
+    slug: "/services",
+    lastUpdated: "Apr 9, 2026",
+    status: "published",
+    sections: [],
+  },
+  {
+    id: 4,
+    title: "Contact Us",
+    slug: "/contact",
+    lastUpdated: "Apr 9, 2026",
+    status: "published",
     sections: [],
   },
 ];
@@ -167,9 +183,22 @@ export const useContentStore = defineStore("content", {
       this.isLoading = true;
       try {
         const rawPages = await contentService.fetchPages();
-        this.pages = rawPages.map((p) => this._mapResponseToPage(p));
+        if (rawPages && rawPages.length > 0) {
+          const fetchedMapped = rawPages.map((p) => this._mapResponseToPage(p));
+          const merged = [...fetchedMapped];
+          for (const defaultPage of initialPages) {
+            const existingIndex = merged.findIndex((p) => p.slug === defaultPage.slug);
+            if (existingIndex === -1) {
+              merged.push(defaultPage);
+            }
+          }
+          this.pages = merged;
+        } else {
+          this.pages = initialPages;
+        }
       } catch (e) {
         console.error("Failed to fetch pages:", e);
+        this.pages = initialPages;
         this.error = "Failed to fetch pages";
       } finally {
         this.isLoading = false;
@@ -184,6 +213,18 @@ export const useContentStore = defineStore("content", {
           const mapped = this._mapResponseToPage(created);
           this.pages.push(mapped);
           return mapped;
+        } else {
+          const newId = String(Date.now());
+          const newPage: Page = {
+            id: newId,
+            title: data.title,
+            slug: data.slug,
+            status: data.status,
+            lastUpdated: this.formatDate(new Date()),
+            sections: [],
+          };
+          this.pages.push(newPage);
+          return newPage;
         }
       } catch (e) {
         console.error("Failed to create page:", e);
@@ -210,9 +251,28 @@ export const useContentStore = defineStore("content", {
             this.pages[index] = mapped;
           }
           return mapped;
+        } else {
+          const index = this.pages.findIndex((p) => String(p.id) === String(id));
+          if (index !== -1) {
+            this.pages[index] = {
+              ...this.pages[index],
+              ...data,
+              lastUpdated: this.formatDate(new Date()),
+            } as Page;
+            return this.pages[index];
+          }
         }
       } catch (e) {
         console.error("Failed to update page:", e);
+        const index = this.pages.findIndex((p) => String(p.id) === String(id));
+        if (index !== -1) {
+          this.pages[index] = {
+            ...this.pages[index],
+            ...data,
+            lastUpdated: this.formatDate(new Date()),
+          } as Page;
+          return this.pages[index];
+        }
       } finally {
         this.isLoading = false;
       }

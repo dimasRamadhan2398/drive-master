@@ -11,7 +11,7 @@ const emit = defineEmits(['close', 'save'])
 const toast = useToast()
 
 // Working copy of the page data to avoid mutating props directly until save
-const formData = ref(JSON.parse(JSON.stringify(props.page)))
+const formData = ref<{ sections: any[]; [key: string]: any }>(JSON.parse(JSON.stringify(props.page)))
 if (!formData.value.sections) {
   formData.value.sections = []
 }
@@ -19,18 +19,59 @@ if (!formData.value.sections) {
 // Generate unique ID for new sections
 const generateId = () => Math.random().toString(36).substr(2, 9)
 
+const { waLink } = useSettings()
+
 const sectionTypes = [
   { label: t('admin.heroSection'), value: 'hero', icon: 'i-lucide-layout-template' },
+  { label: t('admin.specificationsGrid'), value: 'specifications', icon: 'i-lucide-layout-grid' },
+  { label: 'Course Material Grid', value: 'course_material', icon: 'i-lucide-book-open' },
+  { label: t('admin.serviceAreas'), value: 'service_areas', icon: 'i-lucide-map-pin' },
+  { label: 'Contact Methods Grid', value: 'contact_methods', icon: 'i-lucide-phone-call' },
+  { label: 'Contact Form & Map', value: 'contact_form_map', icon: 'i-lucide-map' },
+  { label: 'Social Media Grid', value: 'social_media', icon: 'i-simple-icons-tiktok' },
+  { label: t('admin.quoteSection'), value: 'quote', icon: 'i-lucide-quote' },
   { label: t('admin.textBlock'), value: 'text', icon: 'i-lucide-align-left' },
   { label: t('admin.imageText'), value: 'image_text', icon: 'i-lucide-image' },
   { label: t('admin.ctaSection'), value: 'cta', icon: 'i-lucide-megaphone' },
-  { label: 'Course Material Grid', value: 'course_material', icon: 'i-lucide-book-open' }
+  { label: '⚡ Quick WhatsApp CTA', value: 'cta_whatsapp', icon: 'i-simple-icons-whatsapp' }
 ]
+
+function fillWhatsAppCTA(section: any, target: 'primary' | 'secondary' = 'secondary') {
+  const defaultWaUrl = waLink.value || 'https://wa.me/628119124848'
+  if (target === 'primary') {
+    section.data.buttonText = 'Chat WhatsApp'
+    section.data.buttonLink = defaultWaUrl
+    section.data.buttonIcon = 'i-simple-icons-whatsapp'
+  } else {
+    section.data.secondaryButtonText = 'Chat WhatsApp'
+    section.data.secondaryButtonLink = defaultWaUrl
+    section.data.secondaryButtonIcon = 'i-simple-icons-whatsapp'
+  }
+  toast.add({
+    title: 'Shortcut WhatsApp Berhasil',
+    description: 'Tombol WhatsApp telah terisi secara otomatis.',
+    color: 'success'
+  })
+}
 
 function addSection(type: string) {
   let defaultData = {}
-  
-  if (type === 'hero') {
+  let actualType = type
+
+  if (type === 'cta_whatsapp') {
+    actualType = 'cta'
+    defaultData = {
+      heading: 'Butuh Informasi Lebih Lanjut?',
+      description: 'Hubungi customer service kami secara langsung via WhatsApp untuk konsultasi paket dan pendaftaran.',
+      buttonText: 'Lihat Paket',
+      buttonLink: '/packages',
+      buttonIcon: 'i-lucide-package',
+      secondaryButtonText: 'Chat WhatsApp Sekarang',
+      secondaryButtonLink: waLink.value || 'https://wa.me/628119124848',
+      secondaryButtonIcon: 'i-simple-icons-whatsapp'
+    }
+  }
+  else if (type === 'hero') {
     defaultData = {
       heading: '',
       subheading: '',
@@ -44,7 +85,7 @@ function addSection(type: string) {
   }
   else if (type === 'text') defaultData = { content: '' }
   else if (type === 'image_text') defaultData = { image: '', content: '' }
-  else if (type === 'cta') defaultData = { heading: '', buttonText: '', buttonLink: '' }
+  else if (type === 'cta') defaultData = { heading: '', description: '', buttonText: '', buttonLink: '', buttonIcon: '', secondaryButtonText: '', secondaryButtonLink: '', secondaryButtonIcon: '' }
   else if (type === 'course_material') {
     defaultData = {
       headline: '',
@@ -53,16 +94,173 @@ function addSection(type: string) {
       materials: []
     }
   }
+  else if (type === 'specifications') {
+    defaultData = {
+      headline: '',
+      title: '',
+      description: '',
+      items: []
+    }
+  }
+  else if (type === 'service_areas') {
+    defaultData = {
+      headline: '',
+      title: '',
+      description: '',
+      footer: '',
+      areas: []
+    }
+  }
+  else if (type === 'contact_methods') {
+    defaultData = {
+      methods: [
+        {
+          title: "Pusat Pelatihan",
+          description: "The Smith Office, 9th Floor, Unit 0902...",
+          icon: "i-lucide-map-pin",
+          actionText: "Dapatkan Petunjuk Arah",
+          actionLink: "https://maps.app.goo.gl/qGngC2sF4G3jt8Vs8",
+          target: "_blank"
+        }
+      ]
+    }
+  }
+  else if (type === 'contact_form_map') {
+    defaultData = {
+      headline: "Hubungi Kami",
+      title: "Kirim Pesan",
+      description: "Isi formulir di bawah ini dan tim sukses pelanggan kami akan segera menghubungi Anda.",
+      mapEmbedUrl: "https://maps.google.com/maps?q=-6.22369663061115,106.66409468196608&z=17&output=embed"
+    }
+  }
+  else if (type === 'social_media') {
+    defaultData = {
+      headline: "Bergabunglah dengan Komunitas Kami",
+      title: "Media Sosial",
+      description: "Ikuti kami di media sosial untuk tips mengemudi, berita EV, dan cerita sukses murid.",
+      links: [
+        { label: "TikTok", icon: "i-simple-icons-tiktok", to: "https://tiktok.com" },
+        { label: "Facebook", icon: "i-simple-icons-facebook", to: "https://facebook.com" }
+      ]
+    }
+  }
+  else if (type === 'quote') {
+    defaultData = {
+      quote: '',
+      description: '',
+      ctaText: '',
+      ctaLink: '',
+      secondaryCtaText: '',
+      secondaryCtaLink: ''
+    }
+  }
 
   formData.value.sections.push({
     id: generateId(),
-    type,
+    type: actualType,
     data: defaultData
   })
 }
 
-function removeSection(index: number) {
-  formData.value.sections.splice(index, 1)
+function loadAboutUsTemplate() {
+  formData.value.sections = [
+    {
+      id: generateId(),
+      type: "hero",
+      data: {
+        heading: "Langkah Maju, Belajar dari Masa Depan",
+        subheading: "Drive Master bukan hanya tentang mengajar cara mengemudi, ini tentang mendefinisikan ulang standar pendidikan mengemudi di Indonesia. Sebagai pelopor sekolah mengemudi Kendaraan Listrik, kami percaya bahwa pengemudi masa depan harus lahir dari teknologi masa depan—modern, cerdas, dan ramah lingkungan.",
+        ctaText: "Mulai Perjalanan Anda",
+        ctaLink: "/auth/register",
+        secondaryCtaText: "Hubungi Kami",
+        secondaryCtaLink: "/contact",
+        features: [
+          { title: "Pelopor EV Bebas Emisi", icon: "i-lucide-leaf" },
+          { title: "Instruktur Bersertifikat", icon: "i-lucide-award" }
+        ]
+      }
+    },
+    {
+      id: generateId(),
+      type: "specifications",
+      data: {
+        headline: "Keselamatan Utama",
+        title: "Prioritas Kami adalah Keselamatan Anda",
+        description: "Dalam bisnis kursus mengemudi, keselamatan bukan hanya sebuah fitur; itu adalah fondasi inti kami.",
+        items: [
+          {
+            title: "Instruktur Bersertifikat",
+            subtitle: "Instruktur kami adalah profesional berlisensi yang bersertifikat khusus untuk mengoperasikan kendaraan listrik premium.",
+            icon: "i-lucide-award",
+            description: []
+          },
+          {
+            title: "Teknologi Keselamatan Aktif",
+            subtitle: "Memanfaatkan fitur keselamatan bawaan EV seperti Collision Avoidance dan Blind Spot Monitoring untuk meminimalkan risiko.",
+            icon: "i-lucide-radar",
+            description: []
+          }
+        ]
+      }
+    },
+    {
+      id: generateId(),
+      type: "quote",
+      data: {
+        quote: "Visi kami bukan hanya untuk menghasilkan pengemudi yang bisa memutar kemudi, tetapi untuk membina pengemudi yang cerdas dan aman yang siap merangkul era elektrifikasi.",
+        description: "Di Drive Master Indonesia, kami percaya bahwa cara kita belajar mengemudi harus berevolusi seiring dengan evolusi teknologi otomotif. Kami berkomitmen untuk menjadi standar baru dalam pendidikan mengemudi yang ramah lingkungan, memastikan bahwa setiap lulusan memiliki keterampilan mengemudi tingkat tinggi serta kesadaran akan masa depan mobilitas yang berkelanjutan.",
+        ctaText: "Mulai Perjalanan Anda",
+        ctaLink: "/auth/register",
+        secondaryCtaText: "Chat WhatsApp",
+        secondaryCtaLink: waLink.value || "https://wa.me/628119124848"
+      }
+    }
+  ]
+  toast.add({
+    title: "Template Loaded",
+    description: "Template About Us berhasil dimuat ke editor.",
+    color: "success"
+  })
+}
+
+function loadContactUsTemplate() {
+  formData.value.sections = [
+    {
+      id: generateId(),
+      type: "hero",
+      data: {
+        heading: "Kami di Sini untuk Membantu",
+        subheading: "Punya pertanyaan tentang paket mengemudi EV kami atau penjadwalan? Hubungi tim kami melalui metode di bawah ini.",
+        ctaText: "Chat WhatsApp",
+        ctaLink: waLink.value || "https://wa.me/628119124848",
+        secondaryCtaText: "Lihat FAQ",
+        secondaryCtaLink: "/#faq"
+      }
+    },
+    {
+      id: generateId(),
+      type: "cta",
+      data: {
+        heading: "Hubungi Customer Service",
+        description: "Tim kami siap memberikan informasi detail mengenai jadwal, paket, dan lokasi pelatihan.",
+        buttonText: "Lihat Paket",
+        buttonLink: "/packages",
+        buttonIcon: "i-lucide-package",
+        secondaryButtonText: "Chat WhatsApp Sekarang",
+        secondaryButtonLink: waLink.value || "https://wa.me/628119124848",
+        secondaryButtonIcon: "i-simple-icons-whatsapp"
+      }
+    }
+  ]
+  toast.add({
+    title: "Template Loaded",
+    description: "Template Contact Us berhasil dimuat ke editor.",
+    color: "success"
+  })
+}
+
+function removeSection(index: number | string) {
+  formData.value.sections.splice(Number(index), 1)
 }
 
 function getSectionTitle(type: string) {
@@ -76,8 +274,8 @@ function getSectionIcon(type: string) {
 // ==================== DRAG & DROP LOGIC ====================
 const dragIndex = ref<number | null>(null)
 
-function onDragStart(index: number, event: DragEvent) {
-  dragIndex.value = index
+function onDragStart(index: number | string, event: DragEvent) {
+  dragIndex.value = Number(index)
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
   }
@@ -90,10 +288,11 @@ function onDragOver(event: DragEvent) {
   }
 }
 
-function onDrop(targetIndex: number) {
-  if (dragIndex.value === null || dragIndex.value === targetIndex) return
+function onDrop(targetIndex: number | string) {
+  const target = Number(targetIndex)
+  if (dragIndex.value === null || dragIndex.value === target) return
   const item = formData.value.sections.splice(dragIndex.value, 1)[0]
-  formData.value.sections.splice(targetIndex, 0, item)
+  formData.value.sections.splice(target, 0, item)
   dragIndex.value = null
 }
 
@@ -106,8 +305,8 @@ function addFeature(section: any) {
   section.data.features.push({ title: '', icon: 'i-lucide-check-circle' })
 }
 
-function removeFeature(section: any, index: number) {
-  section.data.features.splice(index, 1)
+function removeFeature(section: any, index: number | string) {
+  section.data.features.splice(Number(index), 1)
 }
 
 function addMaterial(section: any) {
@@ -115,8 +314,8 @@ function addMaterial(section: any) {
   section.data.materials.push({ title: '', icon: 'i-lucide-book-open', description: [] })
 }
 
-function removeMaterial(section: any, index: number) {
-  section.data.materials.splice(index, 1)
+function removeMaterial(section: any, index: number | string) {
+  section.data.materials.splice(Number(index), 1)
 }
 
 function getBulletsText(description: string[] | undefined) {
@@ -126,6 +325,24 @@ function getBulletsText(description: string[] | undefined) {
 
 function setBulletsText(material: any, text: string) {
   material.description = text.split('\n').map(line => line.trim()).filter(line => line.length > 0)
+}
+
+function addSpecification(section: any) {
+  if (!section.data.items) section.data.items = []
+  section.data.items.push({ title: '', subtitle: '', icon: 'i-lucide-star', description: [] })
+}
+
+function removeSpecification(section: any, index: number | string) {
+  section.data.items.splice(Number(index), 1)
+}
+
+function getAreasText(areas: string[] | undefined) {
+  if (!areas) return ''
+  return areas.join('\n')
+}
+
+function setAreasText(section: any, text: string) {
+  section.data.areas = text.split('\n').map(line => line.trim()).filter(line => line.length > 0)
 }
 
 // ==================== IMAGE UPLOADS ====================
@@ -189,6 +406,35 @@ function clearImage(section: any) {
   section.data.image = ''
 }
 
+function addContactMethod(section: any) {
+  if (!section.data.methods) section.data.methods = []
+  section.data.methods.push({
+    title: '',
+    description: '',
+    icon: 'i-lucide-info',
+    actionText: '',
+    actionLink: '',
+    target: '_self'
+  })
+}
+
+function removeContactMethod(section: any, index: number) {
+  section.data.methods.splice(index, 1)
+}
+
+function addSocialLink(section: any) {
+  if (!section.data.links) section.data.links = []
+  section.data.links.push({
+    label: '',
+    icon: 'i-lucide-link',
+    to: ''
+  })
+}
+
+function removeSocialLink(section: any, index: number) {
+  section.data.links.splice(index, 1)
+}
+
 // ==================== ACTIONS ====================
 function handleSave() {
   emit('save', formData.value)
@@ -213,6 +459,22 @@ function handleClose() {
         <p class="text-sm text-muted ml-11">Path: <code>{{ formData.slug }}</code></p>
       </div>
       <div class="flex items-center gap-3">
+        <UButton
+          v-if="formData.slug === '/about'"
+          label="Load About Us Template"
+          icon="i-lucide-sparkles"
+          color="warning"
+          variant="soft"
+          @click="loadAboutUsTemplate"
+        />
+        <UButton
+          v-if="formData.slug === '/contact'"
+          label="Load Contact Us Template"
+          icon="i-lucide-sparkles"
+          color="warning"
+          variant="soft"
+          @click="loadContactUsTemplate"
+        />
         <UButton :label="t('admin.discardChanges')" color="neutral" variant="ghost" @click="handleClose" />
         <UButton :label="t('admin.savePage')" icon="i-lucide-save" @click="handleSave" />
       </div>
@@ -226,6 +488,24 @@ function handleClose() {
         <UIcon name="i-lucide-layout-dashboard" class="size-12 text-muted mb-3 mx-auto" />
         <h3 class="text-lg font-medium mb-1">{{ t('admin.noSections') }}</h3>
         <p class="text-muted text-sm mb-4">{{ t('admin.addSectionDesc') }}</p>
+        <div v-if="formData.slug === '/about'" class="mt-4">
+          <UButton
+            label="Muat Template About Us"
+            icon="i-lucide-sparkles"
+            color="warning"
+            variant="soft"
+            @click="loadAboutUsTemplate"
+          />
+        </div>
+        <div v-if="formData.slug === '/contact'" class="mt-4">
+          <UButton
+            label="Muat Template Contact Us"
+            icon="i-lucide-sparkles"
+            color="warning"
+            variant="soft"
+            @click="loadContactUsTemplate"
+          />
+        </div>
       </div>
 
       <!-- Sections List -->
@@ -466,17 +746,291 @@ function handleClose() {
 
             <!-- CTA FORM -->
             <div v-if="section.type === 'cta'" class="grid grid-cols-2 gap-4 bg-primary/5 p-4 rounded-lg border border-primary/20">
+              <!-- WhatsApp Quick Fill Banner -->
+              <div class="col-span-2 flex flex-wrap items-center justify-between bg-green-500/10 border border-green-500/30 p-3 rounded-lg gap-2">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-simple-icons-whatsapp" class="size-5 text-green-600 dark:text-green-400" />
+                  <span class="text-xs font-semibold text-green-700 dark:text-green-300">Shortcut Tombol WhatsApp:</span>
+                </div>
+                <div class="flex gap-2">
+                  <UButton
+                    label="+ Set Tombol Utama WA"
+                    icon="i-simple-icons-whatsapp"
+                    size="xs"
+                    color="success"
+                    variant="soft"
+                    @click="fillWhatsAppCTA(section, 'primary')"
+                  />
+                  <UButton
+                    label="+ Set Tombol Kedua WA"
+                    icon="i-simple-icons-whatsapp"
+                    size="xs"
+                    color="success"
+                    variant="solid"
+                    @click="fillWhatsAppCTA(section, 'secondary')"
+                  />
+                </div>
+              </div>
+
               <div class="col-span-2">
                 <label class="block text-xs font-medium text-primary mb-1.5">{{ t('admin.ctaSection') }} {{ t('admin.heading') }}</label>
                 <UInput v-model="section.data.heading" placeholder="e.g. Ready to start driving?" class="w-full" />
               </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-primary mb-1.5">Description / Subtitle</label>
+                <UTextarea v-model="section.data.description" placeholder="e.g. Join hundreds of students learning with our BNSP certified instructors." :rows="2" class="w-full" />
+              </div>
+
+              <!-- Primary Button -->
+              <div class="col-span-2 border-t border-primary/10 pt-3">
+                <span class="text-xs font-bold text-primary uppercase tracking-wider block mb-2">Primary Button</span>
+                <div class="grid grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-[10px] font-bold text-muted uppercase mb-1">{{ t('admin.buttonText') }}</label>
+                    <UInput v-model="section.data.buttonText" placeholder="e.g. Lihat Paket" class="w-full" size="sm" />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-muted uppercase mb-1">{{ t('admin.buttonLink') }}</label>
+                    <UInput v-model="section.data.buttonLink" placeholder="e.g. /packages" class="w-full" size="sm" />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-muted uppercase mb-1">Button Icon</label>
+                    <UInput v-model="section.data.buttonIcon" placeholder="e.g. i-lucide-package" class="w-full" size="sm" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Secondary Button -->
+              <div class="col-span-2 border-t border-primary/10 pt-3">
+                <span class="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Secondary Button (Optional)</span>
+                <div class="grid grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-[10px] font-bold text-muted uppercase mb-1">Button Text</label>
+                    <UInput v-model="section.data.secondaryButtonText" placeholder="e.g. Hubungi Kami" class="w-full" size="sm" />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-muted uppercase mb-1">Button Link</label>
+                    <UInput v-model="section.data.secondaryButtonLink" placeholder="e.g. /contact" class="w-full" size="sm" />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-muted uppercase mb-1">Button Icon</label>
+                    <UInput v-model="section.data.secondaryButtonIcon" placeholder="e.g. i-simple-icons-whatsapp" class="w-full" size="sm" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SPECIFICATIONS GRID FORM -->
+            <div v-if="section.type === 'specifications'" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-muted mb-1.5">Headline</label>
+                  <UInput v-model="section.data.headline" placeholder="e.g. Layanan Utama" class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-muted mb-1.5">Title</label>
+                  <UInput v-model="section.data.title" placeholder="e.g. Spesifikasi & Layanan Khusus" class="w-full" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-muted mb-1.5">Description</label>
+                  <UInput v-model="section.data.description" placeholder="e.g. Fasilitas dan pilihan sesi terbaik untuk Anda" class="w-full" />
+                </div>
+              </div>
+
+              <!-- Specifications Items Manager -->
+              <div class="border-t border-default pt-4 mt-2">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold text-muted uppercase tracking-wider">Specification Cards</span>
+                  <UButton label="Add Card" icon="i-lucide-plus" size="xs" color="neutral" variant="soft" @click="addSpecification(section)" />
+                </div>
+                <div class="space-y-4">
+                  <div 
+                    v-for="(spec, sIdx) in section.data.items" 
+                    :key="sIdx" 
+                    class="p-4 rounded-lg border border-default bg-muted/20 relative"
+                  >
+                    <UButton 
+                      icon="i-lucide-trash" 
+                      color="error" 
+                      variant="ghost" 
+                      size="xs" 
+                      class="absolute top-2 right-2" 
+                      @click="removeSpecification(section, sIdx)" 
+                    />
+                    <div class="grid grid-cols-3 gap-4 mb-3">
+                      <div>
+                        <label class="block text-[10px] font-bold uppercase text-muted mb-1">Card Title</label>
+                        <UInput v-model="spec.title" placeholder="e.g. Layanan Khusus SIM" size="sm" class="w-full" />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold uppercase text-muted mb-1">Subtitle</label>
+                        <UInput v-model="spec.subtitle" placeholder="e.g. Termasuk Fasilitas Lengkap" size="sm" class="w-full" />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold uppercase text-muted mb-1">Card Icon</label>
+                        <UInput v-model="spec.icon" placeholder="e.g. i-lucide-star" size="sm" class="w-full" />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Bullet Points (One per line)</label>
+                      <UTextarea 
+                        :model-value="getBulletsText(spec.description)" 
+                        @update:model-value="setBulletsText(spec, $event)"
+                        placeholder="Bullet 1&#10;Bullet 2&#10;Bullet 3" 
+                        size="sm" 
+                        :rows="3" 
+                        class="w-full" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SERVICE AREAS FORM -->
+            <div v-if="section.type === 'service_areas'" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-muted mb-1.5">Headline</label>
+                  <UInput v-model="section.data.headline" placeholder="e.g. Jangkauan Layanan" class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-muted mb-1.5">Title</label>
+                  <UInput v-model="section.data.title" placeholder="e.g. Area Jangkauan Kursus Kami" class="w-full" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-muted mb-1.5">Description</label>
+                  <UInput v-model="section.data.description" placeholder="e.g. Kami melayani lokasi di wilayah berikut" class="w-full" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-muted mb-1.5">Service Area Locations (One per line)</label>
+                  <UTextarea 
+                    :model-value="getAreasText(section.data.areas)" 
+                    @update:model-value="setAreasText(section, $event)"
+                    placeholder="Alam Sutera & sekitarnya&#10;Serpong & BSD City&#10;Tangerang Kota" 
+                    :rows="4" 
+                    class="w-full" 
+                  />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-muted mb-1.5">Footer Note / Description</label>
+                  <UInput v-model="section.data.footer" placeholder="e.g. Lokasi Anda belum tertera? Hubungi tim kami." class="w-full" />
+                </div>
+              </div>
+            </div>
+
+            <!-- CONTACT METHODS FORM -->
+            <div v-if="section.type === 'contact_methods'" class="space-y-4">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold text-muted uppercase tracking-wider">Contact Cards Grid</span>
+                <UButton label="Add Contact Card" icon="i-lucide-plus" size="xs" color="neutral" variant="soft" @click="addContactMethod(section)" />
+              </div>
+              <div class="space-y-4">
+                <div v-for="(method, mIdx) in section.data.methods" :key="mIdx" class="p-4 rounded-lg border border-default bg-muted/20 relative">
+                  <UButton icon="i-lucide-trash" color="error" variant="ghost" size="xs" class="absolute top-2 right-2" @click="removeContactMethod(section, mIdx)" />
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Title</label>
+                      <UInput v-model="method.title" placeholder="e.g. Pusat Pelatihan" size="sm" class="w-full" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Icon</label>
+                      <UInput v-model="method.icon" placeholder="e.g. i-lucide-map-pin" size="sm" class="w-full" />
+                    </div>
+                    <div class="col-span-2">
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Description / Details</label>
+                      <UInput v-model="method.description" placeholder="Address or details" size="sm" class="w-full" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Action Button Text</label>
+                      <UInput v-model="method.actionText" placeholder="e.g. Dapatkan Petunjuk Arah" size="sm" class="w-full" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase text-muted mb-1">Action Link URL</label>
+                      <UInput v-model="method.actionLink" placeholder="e.g. https://maps.app.goo.gl/..." size="sm" class="w-full" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CONTACT FORM & MAP FORM -->
+            <div v-if="section.type === 'contact_form_map'" class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-medium text-primary mb-1.5">{{ t('admin.buttonText') }}</label>
-                <UInput v-model="section.data.buttonText" placeholder="e.g. Contact Us" class="w-full" />
+                <label class="block text-xs font-medium text-muted mb-1.5">Headline</label>
+                <UInput v-model="section.data.headline" placeholder="e.g. Hubungi Kami" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-primary mb-1.5">{{ t('admin.buttonLink') }}</label>
-                <UInput v-model="section.data.buttonLink" placeholder="e.g. /contact" class="w-full" />
+                <label class="block text-xs font-medium text-muted mb-1.5">Title</label>
+                <UInput v-model="section.data.title" placeholder="e.g. Kirim Pesan" class="w-full" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-muted mb-1.5">Description</label>
+                <UInput v-model="section.data.description" placeholder="Description under title" class="w-full" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-muted mb-1.5">Google Maps Embed URL</label>
+                <UInput v-model="section.data.mapEmbedUrl" placeholder="https://maps.google.com/maps?q=..." class="w-full" />
+              </div>
+            </div>
+
+            <!-- SOCIAL MEDIA FORM -->
+            <div v-if="section.type === 'social_media'" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-muted mb-1.5">Headline</label>
+                  <UInput v-model="section.data.headline" placeholder="e.g. Bergabunglah dengan Komunitas Kami" class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-muted mb-1.5">Title</label>
+                  <UInput v-model="section.data.title" placeholder="e.g. Media Sosial" class="w-full" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-muted mb-1.5">Description</label>
+                  <UInput v-model="section.data.description" placeholder="Description..." class="w-full" />
+                </div>
+              </div>
+              <div class="border-t border-default pt-4 mt-2">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold text-muted uppercase tracking-wider">Social Buttons</span>
+                  <UButton label="Add Social Link" icon="i-lucide-plus" size="xs" color="neutral" variant="soft" @click="addSocialLink(section)" />
+                </div>
+                <div class="space-y-2">
+                  <div v-for="(link, sIdx) in section.data.links" :key="sIdx" class="flex gap-2 items-center">
+                    <UInput v-model="link.label" placeholder="Platform (e.g. TikTok)" class="w-36" size="sm" />
+                    <UInput v-model="link.icon" placeholder="Icon (e.g. i-simple-icons-tiktok)" class="w-48" size="sm" />
+                    <UInput v-model="link.to" placeholder="Profile URL" class="flex-1" size="sm" />
+                    <UButton icon="i-lucide-trash" color="error" variant="ghost" size="xs" @click="removeSocialLink(section, sIdx)" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- QUOTE / VISION FORM -->
+            <div v-if="section.type === 'quote'" class="grid grid-cols-2 gap-4 bg-warning/5 p-4 rounded-lg border border-warning/20">
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-warning mb-1.5">Quote / Highlight Text</label>
+                <UTextarea v-model="section.data.quote" placeholder="e.g. Driving for a better, greener future." :rows="3" class="w-full" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-muted mb-1.5">Subdescription</label>
+                <UTextarea v-model="section.data.description" placeholder="Additional explanation..." :rows="2" class="w-full" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted mb-1.5">Primary CTA Text</label>
+                <UInput v-model="section.data.ctaText" placeholder="e.g. Mulai Sekarang" class="w-full" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted mb-1.5">Primary CTA Link</label>
+                <UInput v-model="section.data.ctaLink" placeholder="e.g. /auth/register" class="w-full" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted mb-1.5">Secondary CTA Text</label>
+                <UInput v-model="section.data.secondaryCtaText" placeholder="e.g. Hubungi Kami" class="w-full" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted mb-1.5">Secondary CTA Link</label>
+                <UInput v-model="section.data.secondaryCtaLink" placeholder="e.g. /contact" class="w-full" />
               </div>
             </div>
 

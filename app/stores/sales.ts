@@ -6,7 +6,9 @@ import { usePackagesStore } from "~/stores/packages";
 export interface Transaction {
   id: string | number;
   studentName: string;
-  packageId: string | number;
+  packageId?: string | number;
+  addonId?: string | number;
+  type?: "package" | "addon";
   purchaseDate: string;
   amount: number;
   status: "Completed" | "Pending" | "Refunded";
@@ -29,92 +31,11 @@ interface SalesState {
   error: string | null;
 }
 
-const initialTransactions: Transaction[] = [
-  {
-    id: 101,
-    studentName: "John Doe",
-    packageId: "11111111-1111-1111-1111-111111111101",
-    purchaseDate: "2026-03-10",
-    amount: 1750000,
-    status: "Completed",
-  },
-  {
-    id: 102,
-    studentName: "Jane Smith",
-    packageId: "11111111-1111-1111-1111-111111111101",
-    purchaseDate: "2026-03-12",
-    amount: 1750000,
-    status: "Completed",
-  },
-  {
-    id: 103,
-    studentName: "Budi Santoso",
-    packageId: "11111111-1111-1111-1111-111111111102",
-    purchaseDate: "2026-03-15",
-    amount: 1950000,
-    status: "Completed",
-  },
-  {
-    id: 104,
-    studentName: "Amanda Chen",
-    packageId: "11111111-1111-1111-1111-111111111101",
-    purchaseDate: "2026-03-20",
-    amount: 1750000,
-    status: "Completed",
-  },
-  {
-    id: 105,
-    studentName: "David Lee",
-    packageId: "11111111-1111-1111-1111-111111111102",
-    purchaseDate: "2026-03-22",
-    amount: 1950000,
-    status: "Completed",
-  },
-  {
-    id: 106,
-    studentName: "Sarah Putri",
-    packageId: "11111111-1111-1111-1111-111111111103",
-    purchaseDate: "2026-04-01",
-    amount: 2250000,
-    status: "Completed",
-  },
-  {
-    id: 107,
-    studentName: "Michael Brown",
-    packageId: "11111111-1111-1111-1111-111111111101",
-    purchaseDate: "2026-04-02",
-    amount: 1750000,
-    status: "Completed",
-  },
-  {
-    id: 108,
-    studentName: "Emily Davis",
-    packageId: "11111111-1111-1111-1111-111111111104",
-    purchaseDate: "2026-04-05",
-    amount: 2650000,
-    status: "Completed",
-  },
-  {
-    id: 109,
-    studentName: "Ricky Wijaya",
-    packageId: "11111111-1111-1111-1111-111111111102",
-    purchaseDate: "2026-04-10",
-    amount: 1950000,
-    status: "Completed",
-  },
-  {
-    id: 110,
-    studentName: "Anita Sari",
-    packageId: "11111111-1111-1111-1111-111111111103",
-    purchaseDate: "2026-04-12",
-    amount: 2250000,
-    status: "Completed",
-  },
-];
+const initialTransactions: Transaction[] = [];
 
 export const useSalesStore = defineStore("sales", {
   state: (): SalesState => ({
-    transactions: initialTransactions,
+    transactions: [],
     startDate: "",
     endDate: "",
     isLoading: false,
@@ -135,18 +56,22 @@ export const useSalesStore = defineStore("sales", {
       return state.transactions.filter((t) => t.packageId === packageId);
     },
 
+    transactionsByAddon: (state) => (addonId: string | number) => {
+      return state.transactions.filter((t) => t.addonId === addonId);
+    },
+
     totalRevenue: (state) => {
-      return state.transactions.reduce((sum, t) => sum + t.amount, 0);
+      return state.transactions.filter((t) => t.status === "Completed").reduce((sum, t) => sum + t.amount, 0);
     },
 
     filteredTotalRevenue(): number {
-      return this.filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
+      return this.filteredTransactions.filter((t) => t.status === "Completed").reduce((sum, t) => sum + t.amount, 0);
     },
 
-    totalSales: (state) => state.transactions.length,
+    totalSales: (state) => state.transactions.filter((t) => t.status === "Completed").length,
 
     filteredTotalSales(): number {
-      return this.filteredTransactions.length;
+      return this.filteredTransactions.filter((t) => t.status === "Completed").length;
     },
 
     packageSummary(): PackageSummary[] {

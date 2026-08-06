@@ -352,7 +352,9 @@ onMounted(() => {
                   :label="t('common.cancel')"
                   variant="ghost"
                   color="neutral"
-                  @click="showEditModal = false"
+                  @click="() => {
+                    showEditModal = false
+                  }"
                 />
                 <UButton
                   :label="t('admin.saveChanges')"
@@ -597,7 +599,9 @@ onMounted(() => {
                   :label="t('dashboard.close')"
                   variant="ghost"
                   color="neutral"
-                  @click="showDetailModal = false"
+                  @click="() => {
+                    showDetailModal = false
+                  }"
                 />
                 <UButton
                   :label="t('common.edit') + ' ' + t('admin.students')"

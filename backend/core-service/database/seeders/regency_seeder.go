@@ -18,7 +18,8 @@ func RunRegencySeeder(db *gorm.DB) error {
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return fmt.Errorf("regency seeder: file not found at %s", filePath)
+		fmt.Printf("regency seeder: warning - file not found at %s, skipping\n", filePath)
+		return nil
 	}
 
 	file, err := os.Open(filePath)

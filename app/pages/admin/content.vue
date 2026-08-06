@@ -369,6 +369,7 @@ async function deletePageItem(id: number | string) {
 onMounted(() => {
   contentStore.fetchBlogPosts();
   contentStore.fetchFaqs();
+  contentStore.fetchPages();
 });
 </script>
 
@@ -532,7 +533,9 @@ onMounted(() => {
               :label="t('common.cancel')"
               variant="ghost"
               color="neutral"
-              @click="isFAQModalOpen = false"
+              @click="() => {
+                isFAQModalOpen = false
+              }"
             />
             <UButton
               :label="t('admin.content.saveFaq')"
@@ -586,7 +589,9 @@ onMounted(() => {
           label="Cancel"
           variant="ghost"
           color="neutral"
-          @click="isPageModalOpen = false"
+          @click="() => {
+            isPageModalOpen = false
+          }"
         />
         <UButton
           label="Create Page"
