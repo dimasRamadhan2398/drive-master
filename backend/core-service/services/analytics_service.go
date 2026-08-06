@@ -194,38 +194,9 @@ func (s *AnalyticsService) GetFunnelReport(ctx context.Context) ([]GAFunnelStep,
 }
 
 func (s *AnalyticsService) generateMockOverview(startDate, endDate string) []GAOverview {
-	var results []GAOverview
-	days := 30
-	now := time.Now()
-
-	for i := days; i >= 0; i-- {
-		t := now.AddDate(0, 0, -i)
-		dateStr := t.Format("2006-01-02")
-		weekday := int(t.Weekday())
-
-		// Weekend traffic is lower, weekday traffic is higher
-		baseUsers := int64(150 + (weekday * 15))
-		if weekday == 0 || weekday == 6 {
-			baseUsers = int64(80 + (weekday * 10))
-		}
-		
-		// Page views are typically 3x the user count
-		pageViews := baseUsers * 3
-
-		results = append(results, GAOverview{
-			Date:      dateStr,
-			Users:     baseUsers,
-			PageViews: pageViews,
-		})
-	}
-	return results
+	return []GAOverview{}
 }
 
 func (s *AnalyticsService) generateMockFunnel() []GAFunnelStep {
-	return []GAFunnelStep{
-		{EventName: "page_view", Count: 1250},
-		{EventName: "view_item", Count: 820},
-		{EventName: "begin_checkout", Count: 340},
-		{EventName: "purchase", Count: 85},
-	}
+	return []GAFunnelStep{}
 }
