@@ -142,7 +142,11 @@ const serviceAreas = [
   'Bintaro Jaya (limited)'
 ]
 
+const contentStore = useContentStore()
 const { pages } = useContent()
+
+await useAsyncData('services-page-sections', () => contentStore.fetchPages())
+
 const servicesPage = computed(() =>
   pages.value.find((p) => p.slug === '/services' && p.status === 'published')
 )

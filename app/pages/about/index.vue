@@ -12,7 +12,10 @@ useSeoMeta({
 })
 
 const { waLink, fetchGeneralSettings } = useSettings()
+const contentStore = useContentStore()
 const { pages } = useContent()
+
+await useAsyncData('about-page-sections', () => contentStore.fetchPages())
 
 const aboutPage = computed(() =>
   pages.value.find((p) => p.slug === '/about' && p.status === 'published')

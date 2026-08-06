@@ -13,7 +13,10 @@ useSeoMeta({
 
 const settingsStore = useSettingsStore()
 const { waLink } = useSettings()
+const contentStore = useContentStore()
 const { pages } = useContent()
+
+await useAsyncData('contact-page-sections', () => contentStore.fetchPages())
 
 const contactPage = computed(() =>
   pages.value.find((p) => p.slug === '/contact' && p.status === 'published')
