@@ -41,6 +41,13 @@ export default defineNuxtConfig({
     preference: "dark",
   },
   runtimeConfig: {
+    // Private (server-side only): used by SSR to call API internally
+    ssrApiBase:
+      process.env.NUXT_SSR_API_BASE ||
+      process.env.NUXT_PUBLIC_API_BASE_URL ||
+      (process.env.NODE_ENV === "production"
+        ? "https://drivemaster.id/api/v1"
+        : "http://localhost:8088/api/v1"),
     public: {
       apiBase:
         process.env.NUXT_PUBLIC_API_BASE_URL ||

@@ -34,8 +34,15 @@ export const useApiClients = () => {
 
   // Create a reactive fetcher that includes auth headers dynamically
   const createFetcher = () => {
+    // On server (SSR), use the private ssrApiBase to call the API directly
+    // (avoids going through the external HTTPS domain which can timeout on VPS)
+    // On client, use the public apiBase as usual.
+    const baseURL = import.meta.server
+      ? (config.ssrApiBase as string) || (config.public.apiBase as string)
+      : (config.public.apiBase as string);
+
     return $fetch.create({
-      baseURL: config.public.apiBase as string,
+      baseURL,
       headers: {
         get Authorization() {
           return authStore.accessToken ? `Bearer ${authStore.accessToken}` : "";
